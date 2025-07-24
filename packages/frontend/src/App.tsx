@@ -1,36 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useAuth } from './hooks/useAuth';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { ChatPage } from './pages/ChatPage';
 
-const API_URL = import.meta.env.VITE_API_URL as string;
+type View = 'login' | 'register';
 
 function App() {
-  const [message, setMessage] = useState('Connecting to backend...');
-  const [timestamp, setTimestamp] = useState('');
+  const { token, saveToken, logout } = useAuth();
+  const [view, setView] = useState<View>('login');
 
-  useEffect(() => {
-    fetch(`${API_URL}/api/status`)
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error('Network response was not ok');
-        }
-        return res.json();
-      })
-      .then((data) => {
-        setMessage(data.message);
-        setTimestamp(new Date(data.timestamp).toLocaleString());
-      })
-      .catch((error) => {
-        console.error("Fetch error:", error);
-        setMessage('Connection failed. Is the backend running? Check the console.');
-      });
-  }, []);
+  if (token) {
+    return <ChatPage token={token} onLogout={logout} />;
+  }
 
   return (
-    <div className='bg-gray-900 text-white min-h-screen flex items-center justify-center text-center'>
-      <div>
-        <h1 className='text-4xl font-bold mb-4'>Dat Bitch Cartrita</h1>
-        <p className='text-xl text-cyan-400'>"{message}"</p>
-        {timestamp && <p className='text-sm text-gray-500 mt-2'>Last Seen: {timestamp}</p>}
-      </div>
+    <div className='bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center font-mono p-4'>
+       <header className="text-center mb-12">
+        <h1 className='text-5xl font-bold text-cyan-400'>Dat Bitch Cartrita</h1>
+        <p className="text-gray-500 mt-2">Your AGI with Attitude</p>
+      </header>
+      {view === 'login' ? (
+        <LoginPage 
+          onLoginSuccess={saveToken} 
+          onSwitchToRegister={() => setView('register')} 
+        />
+      ) : (
+        <RegisterPage 
+          onRegisterSuccess={() => setView('login')}
+          onSwitchToLogin={() => setView('login')}
+        />
+      )}
     </div>
   );
 }
