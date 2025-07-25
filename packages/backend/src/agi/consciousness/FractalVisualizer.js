@@ -1,18 +1,32 @@
-// This backend component will generate the DATA for the frontend visualizer.
 class FractalVisualizer {
+  constructor() {
+    this.activeSubAgents = [];
+  }
+
+  // Simulate spawning a sub-agent
+  spawn(agentType) {
+    if (!this.activeSubAgents.includes(agentType)) {
+      this.activeSubAgents.push(agentType);
+    }
+  }
+
+  // Simulate despawning a sub-agent
+  despawn(agentType) {
+    this.activeSubAgents = this.activeSubAgents.filter(agent => agent !== agentType);
+  }
+
   getVisualizationData() {
-    // Placeholder data representing a main agent and two sub-agents
-    return {
-      nodes: [
-        { id: 'core', type: 'core' },
-        { id: 'researcher', type: 'sub-agent' },
-        { id: 'comedian', type: 'sub-agent' }
-      ],
-      links: [
-        { source: 'core', target: 'researcher' },
-        { source: 'core', target: 'comedian' }
-      ]
-    };
+    const nodes = [{ id: 'core', type: 'core', name: 'Cartrita Core' }];
+    const links = [];
+
+    this.activeSubAgents.forEach(agentType => {
+      nodes.push({ id: agentType, type: 'sub-agent', name: `${agentType.charAt(0).toUpperCase() + agentType.slice(1)} Agent` });
+      links.push({ source: 'core', target: agentType });
+    });
+
+    return { nodes, links };
   }
 }
-module.exports = FractalVisualizer;
+
+// Export a single instance to maintain state
+module.exports = new FractalVisualizer();

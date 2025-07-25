@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from './hooks/useAuth';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
-import { ChatPage } from './pages/ChatPage';
+import { DashboardPage } from './pages/DashboardPage';
 
 type View = 'login' | 'register';
 
@@ -11,7 +11,7 @@ function App() {
   const [view, setView] = useState<View>('login');
 
   if (token) {
-    return <ChatPage token={token} onLogout={logout} />;
+    return <DashboardPage token={token} onLogout={logout} />;
   }
 
   return (
@@ -21,15 +21,9 @@ function App() {
         <p className="text-gray-500 mt-2">Your AGI with Attitude</p>
       </header>
       {view === 'login' ? (
-        <LoginPage 
-          onLoginSuccess={saveToken} 
-          onSwitchToRegister={() => setView('register')} 
-        />
+        <LoginPage onLoginSuccess={saveToken} onSwitchToRegister={() => setView('register')} />
       ) : (
-        <RegisterPage 
-          onRegisterSuccess={() => setView('login')}
-          onSwitchToLogin={() => setView('login')}
-        />
+        <RegisterPage onRegisterSuccess={() => setView('login')} onSwitchToLogin={() => setView('login')} />
       )}
     </div>
   );
