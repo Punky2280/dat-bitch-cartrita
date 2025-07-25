@@ -1,9 +1,29 @@
-// Placeholder for future logic
+const ResearcherAgent = require('./ResearcherAgent.js');
+const ComedianAgent = require('./ComedianAgent.js');
+const ConstitutionalAI = require('../ethics/ConstitutionalAI.js'); // Import the new agent
+
 class SubAgentSpawner {
-  spawn(taskType) {
-    console.log(`Spawning sub-agent for task: ${taskType}`);
-    // Future logic will return instances of Researcher, Comedian, etc.
-    return `Sub-agent for '${taskType}' has been spawned.`;
+  constructor() {
+    this.registry = {};
+    console.log("Sub-Agent Spawner initialized with dynamic registry.");
+  }
+  register(agentType, agentClass) {
+    this.registry[agentType] = agentClass;
+    console.log(`Agent type '${agentType}' registered.`);
+  }
+  spawn(agentType) {
+    const AgentClass = this.registry[agentType];
+    if (AgentClass) {
+      console.log(`Spawning a '${agentType}' sub-agent...`);
+      return new AgentClass();
+    }
+    console.error(`Attempted to spawn unknown agent type: '${agentType}'.`);
+    return null;
   }
 }
-module.exports = SubAgentSpawner;
+
+const spawnerInstance = new SubAgentSpawner();
+spawnerInstance.register('researcher', ResearcherAgent);
+spawnerInstance.register('comedian', ComedianAgent);
+spawnerInstance.register('ethical_dilemma', ConstitutionalAI); // Register the new agent
+module.exports = spawnerInstance;
