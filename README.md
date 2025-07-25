@@ -4,25 +4,27 @@
 
 **Cartrita:** **C**ognitive **A**I **R**easoning **T**ool for **R**eal-time **I**nformation and **T**ask **A**utomation.
 
-*Dat Bitch Cartrita is a paradigm-shifting, cross-platform SaaS application that fuses a rebellious, sassy AGI with uncompromising ethics, neuro-adaptive interfaces, and real-world robotics integration. This document outlines the setup and architecture for its core services, providing a comprehensive guide for developers to get the project running and understand its foundational principles.*
+*Dat Bitch Cartrita is a paradigm-shifting, cross-platform SaaS application that fuses a rebellious, sassy AGI with uncompromising ethics, neuro-adaptive interfaces, and real-world robotics integration. This document outlines the complete setup, architecture, and development history for its core services.*
 
 ---
 
 ## 1. Architecture Overview
 
-This project is structured as a **monorepo** to manage all services and packages within a single, unified repository. This approach simplifies dependency management, streamlines cross-service development (e.g., sharing types between frontend and backend), and enables a single CI/CD pipeline. We use **NPM Workspaces** to handle the orchestration of dependencies and scripts across the project.
+This project is structured as a **monorepo** to manage all services and packages within a single, unified repository. This approach simplifies dependency management, streamlines cross-service development, and enables a single CI/CD pipeline. We use **NPM Workspaces** to handle the orchestration of dependencies and scripts across the project.
 
-* **Frontend:** A responsive web application built with **React 22** (using Vite for a fast development experience) and styled with Tailwind CSS for a modern, utility-first design system. It features a fully interactive, real-time chat interface powered by the `socket.io-client` library, ensuring instant communication with the AGI. The entire frontend lives in the `packages/frontend` workspace.
+* **Frontend:** A responsive web application built with **React 22** (using Vite) and styled with Tailwind CSS. It features a fully interactive, real-time chat interface and a dashboard with a live AGI visualization. The entire frontend lives in the `packages/frontend` workspace.
 
-* **Backend:** A robust and scalable backend powered by **Node.js** with **Express.js**, chosen for its lightweight nature and extensive middleware ecosystem. It serves a REST API for secure authentication and a stateful, real-time WebSocket API via `socket.io` for all chat functionalities. The entire backend is containerized with **Docker**, guaranteeing a consistent and isolated environment, and lives in the `packages/backend` workspace.
+* **Backend:** A robust and scalable backend powered by **Node.js** with **Express.js**. It serves a REST API for secure authentication and a stateful, real-time WebSocket API via `socket.io` for all chat functionalities. The entire backend is containerized with **Docker** and lives in the `packages/backend` workspace.
 
-* **AI Core:** A hybrid model leveraging the **OpenAI API (GPT-4o)** for intelligent, context-aware, and personality-driven responses. The core logic is encapsulated within a dedicated `CoreAgent` class on the backend, which is responsible for managing the system prompt that defines Cartrita's unique sassy and protective persona.
+* **AI Core:** A sophisticated, multi-layered AI system. The `CoreAgent` acts as a profound **orchestrator**, analyzing user intent and delegating tasks to a dynamic registry of specialized sub-agents (e.g., `ResearcherAgent`, `ComedianAgent`, `ConstitutionalAI`). This is all powered by the **OpenAI API (GPT-4o)**.
 
-* **Database:** A Dockerized **PostgreSQL 16** instance, augmented with the **TimescaleDB** extension. This combination provides the reliability of a relational database for user data while offering powerful, optimized performance for time-series data like conversation histories and future biometric logs. The database is managed entirely via the root `docker-compose.yml` file.
+* **Database:** A Dockerized **PostgreSQL 16** instance, augmented with the **TimescaleDB** extension. This provides the reliability of a relational database for user data while offering powerful, optimized performance for time-series data like conversation histories. The database is managed entirely via the root `docker-compose.yml` file.
 
 * **Security:**
-    * **Authentication:** User authentication is handled via a secure, token-based system using `bcrypt` for industry-standard password hashing and `jsonwebtoken` (JWT) for creating stateless, verifiable session tokens. This ensures that user data remains secure and protected.
-    * **Secrets Management:** API keys, database credentials, and other secrets are managed via a root `.env` file, which is explicitly excluded from version control. These variables are securely passed to the Docker containers at runtime, following best practices for handling sensitive information.
+    * **Authentication:** User authentication is handled via a secure, token-based system using `bcrypt` for password hashing and `jsonwebtoken` (JWT) for creating stateless, verifiable session tokens.
+    * **Secrets Management:** API keys, database credentials, and other secrets are managed via a root `.env` file and are securely passed to the Docker containers at runtime.
+
+---
 
 ## 2. Setup & Installation (Local Development)
 
@@ -32,7 +34,7 @@ This guide provides all the necessary steps to get the complete application runn
 
 * Ubuntu 22.04.5 LTS (or a similar Debian-based Linux, including WSL 2)
 * Docker & Docker Compose
-* Node.js v22.x (managed via NVM is recommended for version consistency)
+* Node.js v22.x (managed via NVM is recommended)
 * Git
 
 ### Step 0: System Preparation (First-Time Ubuntu/WSL Setup)
@@ -75,26 +77,26 @@ This guide provides all the necessary steps to get the complete application runn
     cp .env.example .env
     ```
 
-3.  **Edit the new `.env` file** and add your actual OpenAI API key and database credentials:
+3.  **Edit the new `.env` file** and add your secrets (OpenAI API key, database credentials, JWT secret):
     ```bash
     nano .env
     ```
 
 ### Step 2: Install Dependencies
 
-* From the **root directory** of the monorepo, run `npm install`. This command uses NPM Workspaces to scan all `packages/*` directories, resolve all dependencies, and install them in a single, efficient `node_modules` structure.
+* From the **root directory** of the monorepo, run `npm install`. This command uses NPM Workspaces to install all dependencies for all packages simultaneously.
     ```bash
     npm install
     ```
 
 ### Step 3: Launch Backend Services
 
-1.  **Build and run the Docker containers** for the backend and database. The `--build` flag ensures that any changes to the `Dockerfile` or source code are included.
+1.  **Build and run the Docker containers** for the backend and database.
     ```bash
     docker-compose up -d --build
     ```
 
-2.  **Run the database migration script.** This command executes the `db:migrate` script inside the running `backend` container to create the necessary `users` and `conversations` tables.
+2.  **Run the database migration script.** This command executes the `db:migrate` script inside the running `backend` container to create your tables.
     ```bash
     docker-compose exec backend npm run db:migrate
     ```
@@ -111,24 +113,51 @@ This guide provides all the necessary steps to get the complete application runn
 ### Step 5: Create Your User Account
 
 1.  Open your browser to `http://localhost:5173`.
-2.  You will be on the login page. Click the link to switch to the **Register** view.
+2.  Click the link to switch to the **Register** view.
 3.  Create an account with your name, email, and a password.
-4.  After successful registration, you will be taken back to the login page. Log in with your new credentials to access the chat.
+4.  Log in with your new credentials to access the dashboard.
 
-## 3. Current Features
+---
 
-* **Real-Time Chat:** A fully functional, real-time chat interface using WebSockets (`socket.io`). This provides an instant, interactive conversational experience without the need for traditional HTTP polling, making the AGI feel more responsive and alive.
+## 3. Development Iterations & History
 
-* **AI Integration:** Chat responses are generated by the `CoreAgent` on the backend, which is powered by the OpenAI API (GPT-4o). The agent is configured with a detailed system prompt that defines Cartrita's unique personality, ensuring all responses are in character.
+This section documents the major development sprints that led to the current stable version of the application.
 
-* **User Authentication:** A complete registration and login system using JWT for secure, stateless, and token-based sessions. This robust system ensures that all user data and conversations are tied to a verified identity and protected from unauthorized access.
+* **Iterations 1-2: AGI Core & Brain**
+    * Scaffolded the initial AGI directory structure on the backend.
+    * Created the `CoreAgent` class and integrated the OpenAI API (GPT-4o).
+    * Developed the initial system prompt to define Cartrita's sassy and protective personality.
+    * Built the first frontend chat interface to establish a baseline for communication.
 
-* **Persistent Memory:** All conversations are saved to the PostgreSQL database and are automatically reloaded when a user logs in. This gives Cartrita a long-term memory, allowing users to pick up conversations where they left off and enabling the AGI to have context from previous interactions.
+* **Iterations 3-4: Authentication & Memory**
+    * Implemented a full user registration and login system using `bcrypt` and `jsonwebtoken` (JWT).
+    * Created `users` and `conversations` tables in the PostgreSQL database.
+    * Built the REST API endpoints (`/api/auth/register`, `/api/auth/login`) to handle user authentication.
+    * Secured the chat functionality, requiring a valid JWT to interact with the AGI.
 
-* **Monorepo Structure:** All code is cleanly organized into `frontend` and `backend` packages, managed by NPM Workspaces. This colocation of services simplifies development, testing, and future expansion of the platform.
+* **Iteration 5: Real-Time Communication**
+    * Upgraded the backend from a simple REST API to a real-time server using `socket.io`.
+    * Refactored the frontend to use `socket.io-client` to send and receive messages instantly.
+    * Implemented token-based authentication for the WebSocket connection to ensure security.
 
-* **Containerized Backend:** The backend and database are fully containerized with Docker for consistent, reproducible, and isolated deployments. This eliminates "it works on my machine" issues and streamlines the setup process for new developers.
+* **Iteration 6: Persistent Memory Recall**
+    * Built the `/api/chat/history` endpoint on the backend, protected by the `authenticateToken` middleware to ensure only the logged-in user can access their own data.
+    * Upgraded the frontend's `ChatPage` to call this endpoint within a `useEffect` hook upon login. This fetches the user's entire chat history and populates the conversation window, creating a seamless user experience. This critical step completed the "memory loop," allowing for continuous, stateful conversations across multiple sessions and truly giving Cartrita a long-term memory.
+
+* **Iteration 7: Dashboard & Visualization**
+    * Refactored the frontend UI to create a main `DashboardPage`, separating the application's primary view from the login/registration flow. This provides a scalable layout for adding new features.
+    * Created a `FractalVisualizer` component using the D3.js library to display a dynamic, force-directed graph of the AGI's consciousness. This graph visually represents the core agent and any spawned sub-agents.
+    * Added a corresponding `/api/agi/visualization` endpoint to the backend to serve the real-time state data for the visualizer, allowing the frontend to poll for updates and animate the graph as the AGI's state changes.
+
+* **Iteration 8-9: Advanced Orchestration & Ethics**
+    * Upgraded the `CoreAgent` from a simple chatbot to an intelligent **orchestrator**. This involved a significant refactoring of its core `generateResponse` method.
+    * Implemented an advanced intent analysis model that uses a targeted, low-latency call to GPT-4o to classify user prompts into a structured JSON object, enabling the system to understand complex, multi-step user requests.
+    * Created and registered functional sub-agents (`ResearcherAgent`, `ComedianAgent`, `ConstitutionalAI`) with highly detailed, role-specific system prompts that strictly govern their tone, output format, and constraints.
+    * Built the **Ethics Engine** by activating the `ConstitutionalAI` sub-agent, allowing Cartrita to analyze moral dilemmas against a defined set of core principles and provide structured, objective feedback.
+    * The Fractal Visualizer is now fully functional, reflecting the real-time spawning and despawning of sub-agents as the `CoreAgent` delegates tasks, providing a true window into her cognitive processes.
+
+---
 
 ## 4. License
 
-This project is licensed under the **AGI Commons License v4**, which includes a mandatory **Ethical AI Clause**. This implies that any contributions or forks of this project must also adhere to the core ethical principles of user privacy, data security, and bias mitigation established in the project's manifesto.
+This project is licensed under the **AGI Commons License v4**, which includes a mandatory **Ethical AI Clause**. This is more than a standard open-source license; it's a social contract. It implies that any contributions to, or forks of, this project must also adhere to the core ethical principles of user privacy, data security, and bias mitigation established in the project's manifesto. By using this code, you agree to uphold these principles and to build AI that respects and empowers its human users, ensuring that the technology serves humanity first and foremost.
