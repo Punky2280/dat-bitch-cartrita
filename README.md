@@ -71,7 +71,7 @@ This guide provides all the necessary steps to get the complete application runn
 
 1. Clone the repository:
    ```bash
-   git clone <your-github-repo-url>
+   git clone https://github.com/punky2280/dat-bitch-cartrita.git
    cd dat-bitch-cartrita
    ```
 
