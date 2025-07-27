@@ -1,0 +1,26 @@
+{
+  "settings": {
+    "title": "Configuración",
+    "appearance": "Apariencia",
+    "theme": "Tema",
+    "switchToLight": "Cambiar a Modo Claro",
+    "switchToDark": "Cambiar a Modo Oscuro",
+    "profileInfo": "Información del Perfil",
+    "email": "Correo Electrónico",
+    "name": "Nombre",
+    "updateProfile": "Actualizar Perfil",
+    "changePassword": "Cambiar Contraseña",
+    "currentPassword": "Contraseña Actual",
+    "newPassword": "Nueva Contraseña",
+    "confirmNewPassword": "Confirmar Nueva Contraseña"
+  },
+  "dashboard": {
+    "chat": "Chat",
+    "visualizer": "Visualizador",
+    "backstory": "Historia",
+    "settings": "Configuración",
+    "logout": "Cerrar Sesión",
+    "about": "Acerca de",
+    "license": "Licencia"
+  }
+}

@@ -3,9 +3,8 @@
 import { useState, useEffect, FormEvent, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import ReactMarkdown from 'react-markdown';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-// FINAL FIX: Changed to a direct file import, which is more reliable with Vite.
-import vscDarkPlus from 'react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus';
+import { Highlight, themes } from 'prism-react-renderer';
+import { useTranslation } from 'react-i18next'; // Import the hook
 
 // Define the structure of a message object
 interface Message {
@@ -20,6 +19,7 @@ interface ChatComponentProps {
 }
 
 export const ChatComponent = ({ token }: ChatComponentProps) => {
+  const { i18n } = useTranslation(); // Get the i18n instance
   const [socket, setSocket] = useState<Socket | null>(null);
   const [conversation, setConversation] = useState<Message[]>([]);
   const [userInput, setUserInput] = useState('');
@@ -33,6 +33,7 @@ export const ChatComponent = ({ token }: ChatComponentProps) => {
 
   useEffect(() => {
     const fetchHistory = async () => {
+      // ... fetch history logic ...
       try {
         const res = await fetch('/api/chat/history', { headers: { 'Authorization': `Bearer ` + token } });
         if (!res.ok) throw new Error('Failed to fetch history');
@@ -46,7 +47,7 @@ export const ChatComponent = ({ token }: ChatComponentProps) => {
     };
     fetchHistory();
 
-    const newSocket = io('http://localhost:8000', { auth: { token } });
+    const newSocket = io({ auth: { token } });
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
@@ -78,13 +79,17 @@ export const ChatComponent = ({ token }: ChatComponentProps) => {
     const userMessage: Message = { text: userInput, speaker: 'user' };
     setConversation(prev => [...prev, userMessage]);
     
-    socket.emit('chat message', userInput);
+    // FIXED: Send an object containing the text and the current language
+    socket.emit('chat message', { 
+      text: userInput, 
+      language: i18n.language 
+    });
     
     setUserInput('');
   };
 
-  // Custom Code component for rendering code blocks with a copy button
   const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
+    // ... CodeBlock logic remains the same ...
     const [isCopied, setIsCopied] = useState(false);
     const match = /language-(\w+)/.exec(className || '');
     const codeText = String(children).replace(/\n$/, '');
@@ -105,25 +110,34 @@ export const ChatComponent = ({ token }: ChatComponentProps) => {
     };
 
     return !inline && match ? (
-      <div className="relative bg-gray-900 rounded-md my-2 border border-gray-700">
-        <div className="flex items-center justify-between px-4 py-1 bg-gray-800 rounded-t-md">
-            <span className="text-xs text-gray-400">{match[1]}</span>
-            <button 
-                onClick={handleCopy}
-                className="text-xs text-white bg-gray-600 hover:bg-cyan-600 rounded px-2 py-1 transition-colors"
+        <div className="relative bg-gray-900 rounded-md my-2 border border-gray-700">
+            <div className="flex items-center justify-between px-4 py-1 bg-gray-800 rounded-t-md">
+                <span className="text-xs text-gray-400">{match[1]}</span>
+                <button 
+                    onClick={handleCopy}
+                    className="text-xs text-white bg-gray-600 hover:bg-cyan-600 rounded px-2 py-1 transition-colors"
+                >
+                    {isCopied ? 'Copied!' : 'Copy'}
+                </button>
+            </div>
+            <Highlight
+                theme={themes.vsDark}
+                code={codeText}
+                language={match[1]}
             >
-                {isCopied ? 'Copied!' : 'Copy'}
-            </button>
+                {({ className, style, tokens, getLineProps, getTokenProps }) => (
+                <pre className={`${className} p-4 overflow-x-auto text-sm`} style={style}>
+                    {tokens.map((line, i) => (
+                      <div {...getLineProps({ line, key: i })}>
+                        {line.map((token, key) => (
+                        <span {...getTokenProps({ token, key })} />
+                        ))}
+                      </div>
+                    ))}
+                </pre>
+                )}
+            </Highlight>
         </div>
-        <SyntaxHighlighter
-          style={vscDarkPlus}
-          language={match[1]}
-          PreTag="div"
-          {...props}
-        >
-          {codeText}
-        </SyntaxHighlighter>
-      </div>
     ) : (
       <code className="bg-gray-800 text-red-400 rounded-sm px-1 text-sm font-mono" {...props}>
         {children}

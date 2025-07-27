@@ -1,0 +1,26 @@
+{
+  "settings": {
+    "title": "Settings",
+    "appearance": "Appearance",
+    "theme": "Theme",
+    "switchToLight": "Switch to Light Mode",
+    "switchToDark": "Switch to Dark Mode",
+    "profileInfo": "Profile Information",
+    "email": "Email",
+    "name": "Name",
+    "updateProfile": "Update Profile",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password"
+  },
+  "dashboard": {
+    "chat": "Chat",
+    "visualizer": "Visualizer",
+    "backstory": "Backstory",
+    "settings": "Settings",
+    "logout": "Logout",
+    "about": "About",
+    "license": "License"
+  }
+}
