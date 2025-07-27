@@ -1,27 +1,85 @@
-// CORRECTED PATHS: Changed from relative to absolute paths from src
+// packages/frontend/src/pages/DashboardPage.tsx
+import { useState } from 'react';
 import { ChatComponent } from '../components/ChatComponent';
 import { FractalVisualizer } from '../components/FractalVisualizer';
+import SettingsPage from './SettingsPage';
+import AboutPage from './AboutPage'; // Import new page
+import LicensePage from './LicensePage'; // Import new page
+import BackstoryPage from './BackstoryPage'; // Import new page
 
 interface DashboardPageProps {
   token: string;
   onLogout: () => void;
 }
 
+// Define the possible views
+type View = 'chat' | 'visualizer' | 'settings' | 'about' | 'license' | 'backstory';
+
 export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
+  const [currentView, setCurrentView] = useState<View>('chat');
+
+  const renderView = () => {
+    switch (currentView) {
+      case 'chat':
+        return <ChatComponent token={token} />;
+      case 'visualizer':
+        return <FractalVisualizer />;
+      case 'settings':
+        return <SettingsPage token={token} />;
+      case 'about':
+        return <AboutPage />;
+      case 'license':
+        return <LicensePage />;
+      case 'backstory':
+        return <BackstoryPage />;
+      default:
+        return <ChatComponent token={token} />;
+    }
+  };
+
+  const getButtonClass = (view: View) => {
+    return `px-4 py-2 font-bold rounded-lg transition-colors ${
+      currentView === view
+        ? 'bg-cyan-500 text-white'
+        : 'bg-gray-700 text-cyan-300 hover:bg-gray-600'
+    }`;
+  };
+
   return (
-    <div className='bg-gray-900 text-white min-h-screen w-full flex flex-col items-center p-4 font-mono'>
-      <header className="w-full max-w-7xl flex justify-between items-center my-8">
-        <h1 className='text-5xl font-bold text-cyan-400'>Dat Bitch Cartrita</h1>
-        <button onClick={onLogout} className="bg-red-600 hover:bg-red-500 p-2 rounded-lg font-bold">Logout</button>
+    <div className="w-screen h-screen bg-gray-900 text-white flex flex-col p-4 gap-4">
+      <header className="flex justify-between items-center bg-black bg-opacity-20 p-4 rounded-lg border border-gray-700">
+        <h1 className="text-2xl font-bold text-cyan-400 cursor-pointer" onClick={() => setCurrentView('chat')}>
+          Dat Bitch Cartrita
+        </h1>
+        <nav className="flex items-center gap-2 sm:gap-4 flex-wrap justify-end">
+          <button onClick={() => setCurrentView('chat')} className={getButtonClass('chat')}>
+            Chat
+          </button>
+          <button onClick={() => setCurrentView('visualizer')} className={getButtonClass('visualizer')}>
+            Visualizer
+          </button>
+          <button onClick={() => setCurrentView('backstory')} className={getButtonClass('backstory')}>
+            Backstory
+          </button>
+          <button onClick={() => setCurrentView('settings')} className={getButtonClass('settings')}>
+            Settings
+          </button>
+          <button 
+            onClick={onLogout} 
+            className="bg-red-600 hover:bg-red-500 px-4 py-2 font-bold rounded-lg transition-colors"
+          >
+            Logout
+          </button>
+        </nav>
       </header>
-      <main className="w-full max-w-7xl flex-grow grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <section className="h-[70vh]">
-          <ChatComponent token={token} />
-        </section>
-        <section className="h-[70vh]">
-          <FractalVisualizer token={token} />
-        </section>
+      <main className="flex-grow h-full overflow-hidden">
+        {renderView()}
       </main>
+      <footer className="text-center text-xs text-gray-500">
+        <button onClick={() => setCurrentView('about')} className="hover:text-cyan-400 transition-colors">About</button>
+        <span className="mx-2">|</span>
+        <button onClick={() => setCurrentView('license')} className="hover:text-cyan-400 transition-colors">License</button>
+      </footer>
     </div>
   );
 };

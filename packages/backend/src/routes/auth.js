@@ -1,110 +1,79 @@
+// packages/backend/src/routes/auth.js
+
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { Pool } = require('pg');
+// FIXED: Added the missing import for the Pool class from the 'pg' library.
+const { Pool } = require('pg'); 
+
 const router = express.Router();
 
-// Use the same database pool
+// Initialize the database connection pool
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-// Register endpoint
+// User Registration Endpoint
 router.post('/register', async (req, res) => {
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: 'All fields are required.' });
+  }
+
   try {
-    const { email, password, name } = req.body;
-    
-    if (!email || !password || !name) {
-      return res.status(400).json({ error: 'All fields are required' });
+    // Check if user already exists
+    const userCheck = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (userCheck.rows.length > 0) {
+      return res.status(409).json({ message: 'User with that email already exists.' });
     }
-    
-    const client = await pool.connect();
-    
-    try {
-      // Check if user already exists
-      const existingUser = await client.query('SELECT id FROM users WHERE email = $1', [email]);
-      if (existingUser.rows.length > 0) {
-        return res.status(400).json({ error: 'User already exists' });
-      }
-      
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, 10);
-      
-      // Create user
-      const result = await client.query(
-        'INSERT INTO users (email, name, password_hash, created_at) VALUES ($1, $2, $3, NOW()) RETURNING id, email, name',
-        [email, name, hashedPassword]
-      );
-      
-      const user = result.rows[0];
-      
-      // Generate JWT
-      const token = jwt.sign(
-        { userId: user.id, email: user.email },
-        process.env.JWT_SECRET || 'cartrita-secret-key',
-        { expiresIn: '24h' }
-      );
-      
-      res.status(201).json({
-        message: 'User created successfully',
-        token,
-        user: { id: user.id, email: user.email, name: user.name }
-      });
-    } finally {
-      client.release();
-    }
+
+    // Hash the password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Insert new user into the database
+    const newUser = await pool.query(
+      'INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, name, email',
+      [name, email, hashedPassword]
+    );
+
+    res.status(201).json({ message: 'User registered successfully.', user: newUser.rows[0] });
   } catch (error) {
-    console.error('Register error:', error);
-    res.status(500).json({ error: 'Server error during registration' });
+    console.error('Registration error:', error);
+    res.status(500).json({ message: 'Server error during registration.' });
   }
 });
 
-// Login endpoint
+// User Login Endpoint
 router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email and password are required.' });
+  }
+
   try {
-    const { email, password } = req.body;
-    
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    // Find the user by email
+    const userResult = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ message: 'Invalid credentials.' });
     }
-    
-    const client = await pool.connect();
-    
-    try {
-      // Find user
-      const result = await client.query(
-        'SELECT id, email, name, password_hash FROM users WHERE email = $1',
-        [email]
-      );
-      
-      if (result.rows.length === 0) {
-        return res.status(400).json({ error: 'Invalid credentials' });
-      }
-      
-      const user = result.rows[0];
-      
-      // Check password
-      const isValidPassword = await bcrypt.compare(password, user.password_hash);
-      if (!isValidPassword) {
-        return res.status(400).json({ error: 'Invalid credentials' });
-      }
-      
-      // Generate JWT
-      const token = jwt.sign(
-        { userId: user.id, email: user.email },
-        process.env.JWT_SECRET || 'cartrita-secret-key',
-        { expiresIn: '24h' }
-      );
-      
-      res.json({
-        message: 'Login successful',
-        token,
-        user: { id: user.id, email: user.email, name: user.name }
-      });
-    } finally {
-      client.release();
+
+    const user = userResult.rows[0];
+
+    // Compare the provided password with the stored hash
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid credentials.' });
     }
+
+    // Create and sign a JWT
+    const payload = { userId: user.id, name: user.name };
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' });
+
+    res.status(200).json({ message: 'Login successful.', token });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Server error during login' });
+    res.status(500).json({ message: 'Server error during login.' });
   }
 });
 

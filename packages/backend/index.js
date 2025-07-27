@@ -1,111 +1,105 @@
+// packages/backend/index.js
 require('dotenv').config();
 const express = require('express');
-const { createServer } = require('http');
+const http = require('http');
 const { Server } = require('socket.io');
-const { Pool } = require('pg');
 const cors = require('cors');
-const CoreAgent = require('./src/agi/consciousness/CoreAgent.js');
-const authRoutes = require('./src/routes/auth.js');
-const fractalVisualizer = require('./src/agi/consciousness/FractalVisualizer.js');
-const jwt = require('jsonwebtoken');
+const { Pool } = require('pg'); // Make sure Pool is imported
+const authRoutes = require('./src/routes/auth');
+const userRoutes = require('./src/routes/user');
+const chatHistoryRoutes = require('./src/routes/chatHistory');
+const authenticateTokenSocket = require('./src/middleware/authenticateTokenSocket');
+const CoreAgent = require('./src/agi/consciousness/CoreAgent');
 
 const app = express();
-const httpServer = createServer(app);
-const io = new Server(httpServer, {
-  cors: {
-    origin: "http://localhost:5173",
-    methods: ["GET", "POST"]
-  }
+const server = http.createServer(app);
+const pool = new Pool({ connectionString: process.env.DATABASE_URL }); // Create a pool instance
+
+// CORS Configuration
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173"
+];
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ["GET", "POST", "PUT"]
+};
+
+const io = new Server(server, {
+  cors: corsOptions // Use the same CORS options for Socket.IO
 });
 
-const port = 8000;
-const cartrita = new CoreAgent();
+const coreAgent = new CoreAgent();
 
-app.use(cors());
+// Middleware
+app.use(cors(corsOptions)); // Use the CORS options for Express
 app.use(express.json());
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-
-// --- Middleware to protect routes ---
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  if (token == null) return res.sendStatus(401);
-
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      console.error("JWT Verification Error:", err);
-      return res.sendStatus(403);
-    }
-    req.user = user;
-    next();
+// Root Route for Health Check
+app.get('/', (req, res) => {
+  res.status(200).json({ 
+    message: "Cartrita backend is alive and kicking.",
+    status: "OK",
+    timestamp: new Date().toISOString()
   });
-};
+});
 
-// --- Socket.io Middleware & Connection Logic ---
-const getUserFromToken = (socket, next) => {
-  const token = socket.handshake.auth.token;
-  if (!token) return next(new Error("Auth error: Token not provided"));
-  
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) return next(new Error("Auth error: Invalid token"));
-    socket.user = user;
-    next();
-  });
-};
+// REST API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/chat', chatHistoryRoutes);
 
-io.use(getUserFromToken);
+// Socket.IO connection
+io.use(authenticateTokenSocket);
 
 io.on('connection', (socket) => {
-  console.log(`User connected via WebSocket: ${socket.user.userId}`); 
+  console.log(`[Socket.IO] User connected: ${socket.user.name} (ID: ${socket.user.userId})`);
 
   socket.on('chat message', async (msg) => {
+    console.log(`[Socket.IO] Message from ${socket.user.name}: ${msg}`);
     const userId = socket.user.userId;
-    if (!msg) return;
 
     try {
-      const response = await cartrita.generateResponse(msg);
-      
-      // Save user message
+      // Step 1: Save the user's message to the database
       await pool.query(
         'INSERT INTO conversations (user_id, speaker, text) VALUES ($1, $2, $3)',
         [userId, 'user', msg]
       );
+
+      // Step 2: Get a response from the CoreAgent
+      const agentResponse = await coreAgent.generateResponse(msg);
       
-      // Save Cartrita's response
+      // Step 3: Save the agent's response to the database
       await pool.query(
-        'INSERT INTO conversations (user_id, speaker, text, model, tokens_used) VALUES ($1, $2, $3, $4, $5)',
-        [userId, 'cartrita', response.text, response.model, response.tokens_used]
+        'INSERT INTO conversations (user_id, speaker, text, model) VALUES ($1, $2, $3, $4)',
+        [userId, 'cartrita', agentResponse.text, agentResponse.model]
       );
-      
-      socket.emit('chat message', response);
+
+      // Step 4: Emit the response back to the client
+      socket.emit('chat message', agentResponse);
 
     } catch (error) {
-      console.error('Socket chat error:', error);
-      socket.emit('chat message', { text: "My circuits are fried. I can't talk right now.", speaker: 'cartrita', error: true });
+      console.error("Error processing chat message:", error);
+      socket.emit('chat message', {
+        text: "I've hit a snag in my core processing. Give me a moment.",
+        speaker: 'cartrita',
+        error: true
+      });
     }
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`[Socket.IO] User disconnected: ${socket.user.name}`);
   });
 });
 
-// --- API Endpoints ---
-app.use('/api/auth', authRoutes);
-
-app.get('/api/chat/history', authenticateToken, async (req, res) => {
-    const userId = req.user.userId;
-    try {
-        const history = await pool.query(
-            'SELECT speaker, text, model, tokens_used FROM conversations WHERE user_id = $1 ORDER BY created_at ASC',
-            [userId]
-        );
-        res.json(history.rows);
-    } catch (error) {
-        console.error('History fetch error:', error);
-        res.status(500).json({ error: 'Could not retrieve chat history.' });
-    }
-});
-
-app.get('/', (req, res) => res.send('Cartrita Backend is alive!'));
-
-httpServer.listen(port, () => {
-  console.log(`Cartrita real-time backend listening at http://localhost:${port}`); 
+const PORT = process.env.PORT || 8000;
+server.listen(PORT, () => {
+  console.log(`Cartrita backend is live on port ${PORT}`);
 });

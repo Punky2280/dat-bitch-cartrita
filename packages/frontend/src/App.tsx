@@ -1,32 +1,49 @@
-import { useState } from 'react';
-import { useAuth } from './hooks/useAuth';
+// packages/frontend/src/App.tsx
+import { useState, useEffect } from 'react';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { useTheme } from './hooks/useTheme'; // Import the new hook
 
-type View = 'login' | 'register';
+type AuthView = 'login' | 'register';
 
 function App() {
-  const { token, saveToken, logout } = useAuth();
-  const [view, setView] = useState<View>('login');
+  const [token, setToken] = useState<string | null>(localStorage.getItem('authToken'));
+  const [authView, setAuthView] = useState<AuthView>('login');
+  
+  // Initialize the theme hook to apply the theme on load
+  useTheme();
 
-  if (token) {
-    return <DashboardPage token={token} onLogout={logout} />;
+  useEffect(() => {
+    const storedToken = localStorage.getItem('authToken');
+    if (storedToken) {
+      setToken(storedToken);
+    }
+  }, []);
+
+  const handleLogin = (newToken: string) => {
+    localStorage.setItem('authToken', newToken);
+    setToken(newToken);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    setToken(null);
+    setAuthView('login'); // Go back to login page on logout
+  };
+
+  const handleRegisterSuccess = () => {
+    setAuthView('login');
+  };
+
+  if (!token) {
+    if (authView === 'login') {
+      return <LoginPage onLoginSuccess={handleLogin} onSwitchToRegister={() => setAuthView('register')} />;
+    }
+    return <RegisterPage onSwitchToLogin={() => setAuthView('login')} onRegisterSuccess={handleRegisterSuccess} />;
   }
 
-  return (
-    <div className='bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center font-mono p-4'>
-       <header className="text-center mb-12">
-        <h1 className='text-5xl font-bold text-cyan-400'>Dat Bitch Cartrita</h1>
-        <p className="text-gray-500 mt-2">Your AGI with Attitude</p>
-      </header>
-      {view === 'login' ? (
-        <LoginPage onLoginSuccess={saveToken} onSwitchToRegister={() => setView('register')} />
-      ) : (
-        <RegisterPage onRegisterSuccess={() => setView('login')} onSwitchToLogin={() => setView('login')} />
-      )}
-    </div>
-  );
+  return <DashboardPage token={token} onLogout={handleLogout} />;
 }
 
 export default App;
