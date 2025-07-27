@@ -1,8 +1,7 @@
 // packages/backend/src/agi/consciousness/CoreAgent.js
 const OpenAI = require('openai');
-const SubAgentSpawner = require('./SubAgentSpawner.js');
-const fractalVisualizer = require('./FractalVisualizer.js');
-const CodeWriterAgent = require('./CodeWriterAgent.js');
+const MessageBus = require('../../system/MessageBus'); // Import the message bus
+const { v4: uuidv4 } = require('uuid'); // To generate unique task IDs
 
 class CoreAgent {
   constructor() {
@@ -10,10 +9,8 @@ class CoreAgent {
 
     if (process.env.OPENAI_API_KEY) {
       this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-      this.codeWriterAgent = new CodeWriterAgent();
     } else {
       this.openai = null;
-      this.codeWriterAgent = null;
     }
   }
 
@@ -33,7 +30,6 @@ class CoreAgent {
     }
   }
 
-  // FIXED: generateResponse now accepts a language parameter
   async generateResponse(prompt, language = 'en') {
     console.log(`[Telemetry] CoreAgent received prompt: "${prompt}"`);
     if (!this.openai) return { text: "My brain's not connected - get me an API key.", speaker: 'cartrita', model: 'fallback', error: true };
@@ -41,31 +37,48 @@ class CoreAgent {
     const intent = await this._determineIntent(prompt);
     const subAgentResponses = [];
 
-    for (const task of intent.tasks) {
-      if (task === 'general') continue;
-      // ... (delegation logic remains the same)
-      console.log(`[Telemetry] Delegating task '${task}' to sub-agent.`);
-      fractalVisualizer.spawn(task);
-      let subAgentResponseText;
-      if (task === 'coding') {
-        if (this.codeWriterAgent) {
-            subAgentResponseText = await this.codeWriterAgent.execute(intent.topic);
+    // Use Promise.all to run tasks in parallel
+    await Promise.all(intent.tasks.map(async (task) => {
+      if (task === 'general') return;
+
+      const taskId = uuidv4(); // Unique ID for this specific task
+      console.log(`[CoreAgent] Emitting task '${task}' with ID '${taskId}' to MessageBus.`);
+
+      // This Promise will wait for the sub-agent to complete its task
+      const taskPromise = new Promise((resolve, reject) => {
+        // Listen for the specific completion event for this task
+        MessageBus.once(`task:complete:${taskId}`, (result) => {
+          console.log(`[CoreAgent] Received completion for task '${taskId}'.`);
+          subAgentResponses.push({ task, content: result.text });
+          resolve();
+        });
+
+        // Handle task failure
+        MessageBus.once(`task:fail:${taskId}`, (error) => {
+          console.error(`[CoreAgent] Task '${taskId}' failed:`, error);
+          reject(new Error(`Sub-agent task '${task}' failed.`));
+        });
+
+        // Set a timeout in case the sub-agent never responds
+        setTimeout(() => {
+          reject(new Error(`Task '${taskId}' timed out.`));
+        }, 30000); // 30-second timeout
+      });
+
+      // Emit the task request onto the bus for any listening sub-agent
+      MessageBus.emit('task:request', {
+        id: taskId,
+        type: task,
+        payload: {
+          prompt: intent.topic,
+          language: language
         }
-      } else {
-        const subAgent = SubAgentSpawner.spawn(task);
-        if (subAgent) {
-          const response = await subAgent.generateResponse(intent.topic);
-          subAgentResponseText = response.text;
-        }
-      }
-      if (subAgentResponseText) {
-          subAgentResponses.push({ task, content: subAgentResponseText });
-      }
-      fractalVisualizer.despawn(task);
-    }
+      });
+
+      return taskPromise;
+    }));
 
     let finalPrompt;
-    // FIXED: Add language instruction to the final synthesis prompt
     const languageInstruction = `\n\nIMPORTANT: You MUST respond in the following language code: ${language}.`;
 
     if (subAgentResponses.length > 0) {
