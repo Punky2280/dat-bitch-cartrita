@@ -22,7 +22,7 @@ class SchedulerAgent {
           const result = await this.execute(task.payload);
           MessageBus.emit(`task:complete:${task.id}`, { text: result });
         } catch (error) {
-          console.error('[SchedulerAgent] Error:', error.message);
+          console.error('[SchedulerAgent] CRITICAL ERROR:', error);
           MessageBus.emit(`task:fail:${task.id}`, { error: error.message });
         }
       }
@@ -30,6 +30,7 @@ class SchedulerAgent {
   }
 
   async getGoogleAuth(userId) {
+    console.log(`[SchedulerAgent] Fetching Google Calendar key for user ${userId}...`);
     const keyResult = await pool.query(
       'SELECT key_data FROM user_api_keys WHERE user_id = $1 AND service_name = $2',
       [userId, 'GoogleCalendar']
@@ -42,6 +43,7 @@ class SchedulerAgent {
     const encryptedKey = keyResult.rows[0].key_data;
     const keyJson = EncryptionService.decrypt(encryptedKey);
     const credentials = JSON.parse(keyJson);
+    console.log('[SchedulerAgent] Credentials decrypted successfully.');
 
     const auth = new google.auth.GoogleAuth({
       credentials,
@@ -60,7 +62,14 @@ class SchedulerAgent {
     const auth = await this.getGoogleAuth(userId);
     const calendar = google.calendar({ version: 'v3', auth });
 
+    console.log('[SchedulerAgent] Determining calendar intent from prompt...');
     const intent = await this.determineCalendarIntent(prompt);
+    console.log('[SchedulerAgent] Intent determined:', JSON.stringify(intent, null, 2));
+
+    // FIXED: Correctly handle the AI returning an error action
+    if (intent.action === 'error') {
+        return intent.message; // Access intent.message directly
+    }
 
     switch (intent.action) {
       case 'list':
@@ -73,31 +82,72 @@ class SchedulerAgent {
   }
 
   async determineCalendarIntent(prompt) {
-    // FIXED: Pre-calculate date ranges to remove ambiguity for the AI.
     const timeZone = 'America/New_York';
     const now = new Date();
-    
-    const todayStart = new Date(now.toLocaleString('en-US', { timeZone }));
-    todayStart.setHours(0, 0, 0, 0);
-
-    const todayEnd = new Date(todayStart);
-    todayEnd.setHours(23, 59, 59, 999);
-
-    const tomorrowStart = new Date(todayStart);
-    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
-
-    const tomorrowEnd = new Date(tomorrowStart);
-    tomorrowEnd.setHours(23, 59, 59, 999);
+    const userLocaleTime = now.toLocaleString('en-US', { timeZone });
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowDate = tomorrow.toISOString().split('T')[0];
 
     const systemPrompt = `
-      You are a function calling expert. Your job is to analyze a user's prompt and determine which calendar function to call: 'list' or 'create'.
-      Respond with a JSON object with two keys: "action" (string) and "parameters" (object).
-      - For 'list', parameters should include 'timeMin' and 'timeMax' in ISO 8601 format.
-      - For 'create', parameters must include 'summary' (string), and 'start' and 'end' objects. These objects must have a 'dateTime' (ISO 8601 string) and a 'timeZone' key.
+      You are a precise data extraction tool. Your only job is to parse a user's request into a structured JSON object for a calendar API.
+      Respond ONLY with a valid JSON object. Do not add any commentary.
+
+      **Actions & Parameters:**
+      1.  **action: 'list'**: For when the user wants to see their events.
+          - \`timeMin\` (string): The start of the date range in ISO 8601 format.
+          - \`timeMax\` (string): The end of the date range in ISO 8601 format.
+      2.  **action: 'create'**: For when the user wants to add a new event.
+          - \`summary\` (string): The title of the event. THIS IS REQUIRED.
+          - \`startDateTime\` (string): The start time of the event in ISO 8601 format. THIS IS REQUIRED.
+          - \`durationMinutes\` (number): The length of the event in minutes. Default to 60 if not specified.
+      3. **action: 'error'**: If you cannot determine the required parameters (e.g., a missing title for a create request).
+          - \`message\` (string): A helpful message to the user explaining what is missing.
+
+      **Context for Calculations:**
       - The user's current timezone is '${timeZone}'.
-      - Use the following precise date ranges if the user uses relative terms:
-        - "today": Use timeMin: "${todayStart.toISOString()}" and timeMax: "${todayEnd.toISOString()}".
-        - "tomorrow": Use timeMin: "${tomorrowStart.toISOString()}" and timeMax: "${tomorrowEnd.toISOString()}".
+      - The current date and time for the user is: **${userLocaleTime}**.
+      - Tomorrow's date is: **${tomorrowDate}**.
+      - Use this as the absolute reference for all relative terms like 'today' or 'tomorrow'.
+
+      **Time Parsing Rules:**
+      - "9 am" or "9am" = "09:00:00"
+      - "10 am" or "10am" = "10:00:00"
+      - "tomorrow morning" refers to tomorrow's date
+      - "from X to Y" or "X till Y" means calculate duration from start to end time
+      - Always use 24-hour format in ISO strings
+
+      **Example 1:**
+      User Prompt: "Create an event for a 'Project Meeting' tomorrow at 10am for one hour."
+      Your JSON Response:
+      {
+        "action": "create",
+        "parameters": {
+          "summary": "Project Meeting",
+          "startDateTime": "${tomorrowDate}T10:00:00",
+          "durationMinutes": 60
+        }
+      }
+
+      **Example 2:**
+      User Prompt: "lets create a google calendar event named project cartrita and is for 9 am till 10 am tomorrow morning."
+      Your JSON Response:
+      {
+        "action": "create",
+        "parameters": {
+          "summary": "project cartrita",
+          "startDateTime": "${tomorrowDate}T09:00:00",
+          "durationMinutes": 60
+        }
+      }
+      
+      **Example 3:**
+      User Prompt: "create an event"
+      Your JSON Response:
+      {
+        "action": "error",
+        "message": "I can do that. What should the event be called, and when should it be?"
+      }
     `;
     const completion = await this.openai.chat.completions.create({
       model: 'gpt-4o',
@@ -108,33 +158,67 @@ class SchedulerAgent {
   }
 
   async listEvents(calendar, { timeMin, timeMax }) {
-    const res = await calendar.events.list({
-      calendarId: 'primary',
-      timeMin,
-      timeMax,
-      maxResults: 10,
-      singleEvents: true,
-      orderBy: 'startTime',
-    });
-    const events = res.data.items;
-    if (!events || events.length === 0) {
-      return 'No upcoming events found in that time range.';
+    try {
+      console.log(`[SchedulerAgent] Listing events from ${timeMin} to ${timeMax}`);
+      
+      const response = await calendar.events.list({
+        calendarId: 'primary',
+        timeMin: timeMin,
+        timeMax: timeMax,
+        maxResults: 10,
+        singleEvents: true,
+        orderBy: 'startTime',
+      });
+
+      const events = response.data.items;
+      if (!events || events.length === 0) {
+        return 'No events found for that time period.';
+      }
+
+      const eventList = events.map(event => {
+        const start = event.start.dateTime || event.start.date;
+        const startTime = new Date(start).toLocaleString('en-US', { 
+          timeZone: 'America/New_York',
+          weekday: 'short',
+          month: 'short', 
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit'
+        });
+        return `• ${event.summary} at ${startTime}`;
+      }).join('\n');
+
+      return `Here are your upcoming events:\n\n${eventList}`;
+    } catch (error) {
+      console.error("Google Calendar API Error:", error);
+      return `I couldn't retrieve your events. The calendar API returned an error: ${error.message}`;
     }
-    const eventList = events.map(event => {
-      const start = event.start.dateTime || event.start.date;
-      return `- ${event.summary} (at ${new Date(start).toLocaleString()})`;
-    }).join('\n');
-    return `Here are your upcoming events:\n${eventList}`;
   }
 
-  async createEvent(calendar, { summary, start, end }) {
+  async createEvent(calendar, { summary, startDateTime, durationMinutes = 60 }) {
     try {
+      console.log(`[SchedulerAgent] Attempting to create event: "${summary}" at ${startDateTime}`);
+      const timeZone = 'America/New_York';
+      const startDate = new Date(startDateTime);
+      const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
+
+      const eventPayload = {
+        summary,
+        start: { dateTime: startDate.toISOString(), timeZone },
+        end: { dateTime: endDate.toISOString(), timeZone },
+      };
+      
+      console.log('[SchedulerAgent] Sending this payload to Google:', JSON.stringify(eventPayload, null, 2));
+
       const event = await calendar.events.insert({
         calendarId: 'primary',
-        requestBody: { summary, start, end },
+        requestBody: eventPayload,
       });
+
+      console.log('[SchedulerAgent] Received response from Google API:', event.data);
+
       if (event.data.id) {
-        return `Success. I've created the event "${summary}" for you at ${new Date(start.dateTime).toLocaleString()}.`;
+        return `Success. I've created the event "${summary}" for you at ${startDate.toLocaleString('en-US', { timeZone })}.`;
       } else {
         throw new Error('The API did not confirm the event creation.');
       }
