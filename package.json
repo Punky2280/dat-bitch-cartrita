@@ -11,6 +11,6 @@
     "start:backend": "npm run start --workspace=backend"
   },
   "dependencies": {
-    "react-syntax-highlighter": "^15.6.1"
+    "react-syntax-highlighter": "^5.8.0"
   }
 }

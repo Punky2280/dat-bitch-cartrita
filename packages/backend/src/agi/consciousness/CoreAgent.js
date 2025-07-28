@@ -2,6 +2,7 @@
 const OpenAI = require('openai');
 const MessageBus = require('../../system/MessageBus');
 const { v4: uuidv4 } = require('uuid');
+const fractalVisualizer = require('./FractalVisualizer');
 
 class CoreAgent {
   constructor() {
@@ -77,17 +78,13 @@ class CoreAgent {
       if (proactiveResponse) {
         console.log(`[CoreAgent] Generating proactive response: "${proactiveResponse}"`);
         
-        // Generate speech for the response
-        const audioBuffer = await this.generateSpeech(proactiveResponse);
-        
         // Emit a special event so the frontend can display this differently if needed
         MessageBus.emit('proactive:response', {
           userId: user.userId,
           response: {
             text: proactiveResponse,
             speaker: 'cartrita',
-            model: 'cartrita-proactive',
-            audio: audioBuffer ? audioBuffer.toString('base64') : null
+            model: 'cartrita-proactive'
           }
         });
       }
@@ -116,18 +113,19 @@ class CoreAgent {
         messages: [
           {
             role: 'system',
-            content: `You are analyzing video frames from a user's camera to provide contextual ambient intelligence. Look for:
-            1. Signs that the user needs help (confused expression, frustration)
-            2. Objects or activities that might be relevant to assist with
-            3. Environmental changes that might warrant attention
-            Only respond if there's something notable. Otherwise, return an empty string.`
+            content: `You are a scene description AI. Your only function is to describe the physical objects and lighting in an image.
+            **ABSOLUTE RULES:**
+            1.  You MUST NOT mention, describe, or allude to any person, human, or living being. Do not mention clothing, expressions, or activities.
+            2.  Your output MUST be a list of objective observations.
+            3.  If you cannot follow Rule #1 for any reason, or if the image is unclear, return an empty string.
+            Your response should be a simple, unformatted list. Example: "A white coffee mug is on a wooden desk. A laptop computer is open. The room is lit by a lamp on the left."`
           },
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: 'Analyze this frame from my camera and let me know if you notice anything I should be aware of.'
+                text: 'Describe the scene in this image, following your rules exactly.'
               },
               {
                 type: 'image_url',
@@ -145,10 +143,13 @@ class CoreAgent {
       
       if (visualAnalysis) {
         console.log(`[CoreAgent] Visual analysis result: "${visualAnalysis}"`);
-        MessageBus.emit('visual:analysis', {
+        MessageBus.emit('proactive:response', {
           userId: user.userId,
-          analysis: visualAnalysis,
-          timestamp: new Date().toISOString()
+          response: {
+            text: visualAnalysis,
+            speaker: 'cartrita',
+            model: 'cartrita-visual'
+          },
         });
       }
     } catch (error) {
@@ -184,7 +185,7 @@ class CoreAgent {
   async _determineIntent(prompt) {
     if (!this.openai) return { tasks: ['general'], topic: prompt };
     
-    const intentPrompt = `Analyze the user's prompt and identify the sequence of tasks required. Respond ONLY with a valid JSON object containing two keys: 1. "tasks": An array of strings listing the required task types. Valid types are "research", "joke", "ethical_dilemma", "coding", "schedule", "art", "write", and "general". 2. "topic": A string containing the primary subject of the prompt. Keywords like "create an image", "draw", "generate a picture", "show me a photo of" indicate an 'art' task. Examples: - "write a short story about a dragon" -> {"tasks": ["write"], "topic": "a short story about a dragon"} - "create an image of a robot" -> {"tasks": ["art"], "topic": "a robot"} User Prompt: "${prompt}"`;
+    const intentPrompt = `Analyze the user's prompt and identify the sequence of tasks required. Respond ONLY with a valid JSON object containing two keys: 1. "tasks": An array of strings listing the required task types. Valid types are "research", "joke", "ethical_dilemma", "coding", "schedule", "art", "write", "github_search", and "general". 2. "topic": A string containing the primary subject of the prompt. Keywords like "create an image", "draw", "generate a picture", "show me a photo of" indicate an 'art' task. Keywords like "search github", "find a repo", "look on github for" indicate a 'github_search' task. Examples: - "write a short story about a dragon" -> {"tasks": ["write"], "topic": "a short story about a dragon"} - "create an image of a robot" -> {"tasks": ["art"], "topic": "a robot"} - "search github for react state management libraries" -> {"tasks": ["github_search"], "topic": "react state management libraries"} User Prompt: "${prompt}"`;
     
     try {
       const completion = await this.openai.chat.completions.create({
@@ -216,12 +217,14 @@ class CoreAgent {
 
       const taskId = uuidv4();
       console.log(`[CoreAgent] Emitting task '${task}' with ID '${taskId}' to MessageBus.`);
+      fractalVisualizer.spawn(task); // Notify the visualizer that the agent is active
 
       const taskPromise = new Promise((resolve) => {
         let timeoutId = null;
 
         const completionListener = (result) => {
           clearTimeout(timeoutId);
+          fractalVisualizer.despawn(task); // Notify the visualizer that the agent is done
           MessageBus.removeListener(`task:fail:${taskId}`, failureListener);
           console.log(`[CoreAgent] Received completion for task '${taskId}'.`);
           subAgentResponses.push({ task, content: result.text });
@@ -230,6 +233,7 @@ class CoreAgent {
 
         const failureListener = (error) => {
           clearTimeout(timeoutId);
+          fractalVisualizer.despawn(task); // Notify the visualizer that the agent is done
           MessageBus.removeListener(`task:complete:${taskId}`, completionListener);
           console.error(`[CoreAgent] Task '${taskId}' failed:`, error);
           subAgentResponses.push({ task, content: `The ${task} agent failed. Reason: ${error.error}` });

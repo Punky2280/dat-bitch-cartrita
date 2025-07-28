@@ -16,6 +16,7 @@ const initializeAgents = require('./src/agi/agentInitializer');
 const SensoryProcessingService = require('./src/system/SensoryProcessingService');
 const LiveChatService = require('./src/system/LiveChatService');
 const MessageBus = require('./src/system/MessageBus'); // Import the MessageBus
+const fractalVisualizer = require('./src/agi/consciousness/FractalVisualizer');
 
 const app = express();
 const server = http.createServer(app);
@@ -52,6 +53,11 @@ app.use('/api/user', userRoutes);
 app.use('/api/chat', chatHistoryRoutes);
 app.use('/api/workflows', workflowRoutes);
 app.use('/api/keys', apiKeyRoutes);
+
+// --- AGI Visualization Endpoint ---
+app.get('/api/agi/visualization', (req, res) => {
+  res.json(fractalVisualizer.getVisualizationData());
+});
 
 // Main chat namespace
 const chatNamespace = io.of('/');
@@ -102,47 +108,34 @@ MessageBus.on('proactive:response', async ({ userId, response }) => {
   const userChatSocket = chatSockets.find(s => s.user.userId === userId);
   const userAmbientSocket = ambientSockets.find(s => s.user.userId === userId);
 
-  let textMessageSent = false;
-
-  // Prioritize sending text to the main chat socket, but fall back to ambient
+  // 1. Send the text part of the response immediately to all available sockets.
   if (userChatSocket) {
     console.log(`[Proactive] Found main chat socket. Emitting text message.`);
     userChatSocket.emit('chat message', response);
-    textMessageSent = true;
   } else if (userAmbientSocket) {
     console.log(`[Proactive] Main chat socket not found. Emitting text message to ambient socket.`);
     userAmbientSocket.emit('chat message', response);
-    textMessageSent = true;
   }
 
-  // If the message was delivered to any socket, save it to the database
-  if (textMessageSent) {
+  // 2. Save the text message to the database.
+  if (userChatSocket || userAmbientSocket) {
     await pool.query(
       'INSERT INTO conversations (user_id, speaker, text, model) VALUES ($1, $2, $3, $4)',
       [userId, 'cartrita', response.text, response.model]
     );
   } else {
-    console.log(`[Proactive] Could not find any active socket for user ID: ${userId}. Text message not sent.`);
+    console.log(`[Proactive] Could not find any active socket for user ID: ${userId}. Message not sent or saved.`);
+    return; // No point in generating audio if there's no one to send it to.
   }
 
-  // Always send the audio for playback to the ambient socket if it exists
-  if (ambientUserSocket) {
-    console.log(`[Proactive] Emitting to ambient socket for audio playback.`);
-    ambientUserSocket.emit('proactive_response', { userId, response });
-  }
-});
-
-// --- NEW: Listen for visual analysis from the MessageBus ---
-MessageBus.on('visual:analysis', async ({ userId, analysis, timestamp }) => {
-  console.log(`[Visual] Received visual analysis for user ID: ${userId}`);
-  
-  // Find the ambient socket for this user
-  const ambientSockets = await ambientNamespace.fetchSockets();
-  const ambientUserSocket = ambientSockets.find(s => s.user.userId === userId);
-  
-  if (ambientUserSocket) {
-    console.log(`[Visual] Emitting visual analysis to ambient socket.`);
-    ambientUserSocket.emit('visual_analysis', { userId, analysis, timestamp });
+  // 3. Generate speech and send the audio only to the ambient socket.
+  if (userAmbientSocket && response.text) {
+    console.log(`[Proactive] Generating speech for proactive response...`);
+    const audioBuffer = await coreAgent.generateSpeech(response.text);
+    if (audioBuffer) {
+      console.log(`[Proactive] Emitting audio to ambient socket.`);
+      userAmbientSocket.emit('proactive_audio', { audio: audioBuffer.toString('base64') });
+    }
   }
 });
 
