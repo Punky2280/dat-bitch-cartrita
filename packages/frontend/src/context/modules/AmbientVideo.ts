@@ -33,6 +33,11 @@ export function startVideoCapture(
   onFrame: (blob: Blob) => void
 ): NodeJS.Timeout {
   video.srcObject = stream;
+  video.play().catch(e => {
+    // Autoplay can be blocked, but it's worth trying.
+    // The user has already granted camera permissions, so it's likely to succeed.
+    console.error('[AmbientVideo] Error attempting to play video element:', e);
+  });
 
   const videoTrack = stream.getVideoTracks()[0];
   if (videoTrack) {
