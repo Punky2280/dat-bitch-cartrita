@@ -174,7 +174,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ token }) => {
                 </button>
               ) : (
                 <button
-                  onClick={enableAmbientMode}
+                  onClick={() => enableAmbientMode(token)}
                   disabled={permissionState === 'denied'}
                   className="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-600 disabled:cursor-not-allowed"
                 >

@@ -101,6 +101,29 @@ MessageBus.on('proactive:response', async ({ userId, response }) => {
   } else {
     console.log(`[Proactive] Could not find active socket for user ID: ${userId}. Message not sent.`);
   }
+
+  // Also emit to ambient namespace for audio playback
+  const ambientSockets = await ambientNamespace.fetchSockets();
+  const ambientUserSocket = ambientSockets.find(s => s.user.userId === userId);
+  
+  if (ambientUserSocket) {
+    console.log(`[Proactive] Emitting to ambient socket for audio playback.`);
+    ambientUserSocket.emit('proactive_response', { userId, response });
+  }
+});
+
+// --- NEW: Listen for visual analysis from the MessageBus ---
+MessageBus.on('visual:analysis', async ({ userId, analysis, timestamp }) => {
+  console.log(`[Visual] Received visual analysis for user ID: ${userId}`);
+  
+  // Find the ambient socket for this user
+  const ambientSockets = await ambientNamespace.fetchSockets();
+  const ambientUserSocket = ambientSockets.find(s => s.user.userId === userId);
+  
+  if (ambientUserSocket) {
+    console.log(`[Visual] Emitting visual analysis to ambient socket.`);
+    ambientUserSocket.emit('visual_analysis', { userId, analysis, timestamp });
+  }
 });
 
 const PORT = process.env.PORT || 8000;

@@ -35,12 +35,19 @@ class CoreAgent {
    * @param {object} user - The user object from the socket connection.
    */
   async handleAmbientTranscript(transcript, user) {
-    if (!this.openai) return;
+    console.log(`[CoreAgent] handleAmbientTranscript called with: "${transcript}" for user: ${user.name}`);
+    
+    if (!this.openai) {
+      console.log(`[CoreAgent] No OpenAI client available, skipping processing`);
+      return;
+    }
 
     const lowerCaseTranscript = transcript.toLowerCase();
+    console.log(`[CoreAgent] Checking for wake word 'cartrita' in: "${lowerCaseTranscript}"`);
     
     // Simple keyword check for a "wake word" to be efficient.
     if (!lowerCaseTranscript.includes('cartrita')) {
+      console.log(`[CoreAgent] Wake word 'cartrita' not found, ignoring transcript`);
       return; // Ignore if the wake word isn't present
     }
 
@@ -69,13 +76,18 @@ class CoreAgent {
 
       if (proactiveResponse) {
         console.log(`[CoreAgent] Generating proactive response: "${proactiveResponse}"`);
+        
+        // Generate speech for the response
+        const audioBuffer = await this.generateSpeech(proactiveResponse);
+        
         // Emit a special event so the frontend can display this differently if needed
         MessageBus.emit('proactive:response', {
           userId: user.userId,
           response: {
             text: proactiveResponse,
             speaker: 'cartrita',
-            model: 'cartrita-proactive'
+            model: 'cartrita-proactive',
+            audio: audioBuffer ? audioBuffer.toString('base64') : null
           }
         });
       }
@@ -84,6 +96,90 @@ class CoreAgent {
     }
   }
 
+  // --- NEW: Method to handle video frames from the user's camera ---
+  /**
+   * Processes a video frame from the user's environment for visual analysis.
+   * @param {Buffer} videoData - The video frame data.
+   * @param {object} user - The user object from the socket connection.
+   */
+  async handleVideoFrame(videoData, user) {
+    if (!this.openai) return;
+
+    console.log(`[CoreAgent] Processing video frame for user ${user.name}...`);
+    
+    try {
+      // Convert video frame to base64 for vision analysis
+      const base64Image = videoData.toString('base64');
+      
+      const completion = await this.openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: `You are analyzing video frames from a user's camera to provide contextual ambient intelligence. Look for:
+            1. Signs that the user needs help (confused expression, frustration)
+            2. Objects or activities that might be relevant to assist with
+            3. Environmental changes that might warrant attention
+            Only respond if there's something notable. Otherwise, return an empty string.`
+          },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: 'Analyze this frame from my camera and let me know if you notice anything I should be aware of.'
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64Image}`
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 150
+      });
+
+      const visualAnalysis = completion.choices[0].message.content.trim();
+      
+      if (visualAnalysis) {
+        console.log(`[CoreAgent] Visual analysis result: "${visualAnalysis}"`);
+        MessageBus.emit('visual:analysis', {
+          userId: user.userId,
+          analysis: visualAnalysis,
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error('[CoreAgent] Error during video frame analysis:', error);
+    }
+  }
+
+  // --- NEW: Method to generate speech from text ---
+  /**
+   * Converts text to speech using OpenAI's TTS API.
+   * @param {string} text - The text to convert to speech.
+   * @returns {Buffer} - The audio data as a buffer.
+   */
+  async generateSpeech(text) {
+    if (!this.openai) return null;
+
+    try {
+      const response = await this.openai.audio.speech.create({
+        model: 'tts-1',
+        voice: 'nova',
+        input: text,
+        response_format: 'mp3'
+      });
+
+      const buffer = Buffer.from(await response.arrayBuffer());
+      return buffer;
+    } catch (error) {
+      console.error('[CoreAgent] Error generating speech:', error);
+      return null;
+    }
+  }
 
   async _determineIntent(prompt) {
     if (!this.openai) return { tasks: ['general'], topic: prompt };
