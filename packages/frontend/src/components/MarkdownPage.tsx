@@ -42,7 +42,7 @@ const MarkdownPage: React.FC<MarkdownPageProps> = ({ fileName }) => {
     <div className="prose prose-invert prose-lg max-w-4xl mx-auto p-4 sm:p-6 md:p-8 text-white bg-black bg-opacity-30 border border-gray-700 rounded-lg overflow-y-auto h-full">
       <ReactMarkdown
         components={{
-          code({ node, inline, className, children, ...props }) {
+          code({ inline, className, children }: any) {
             const match = /language-(\w+)/.exec(className || '');
             const codeText = String(children).replace(/\n$/, '');
             return !inline && match ? (
@@ -64,7 +64,7 @@ const MarkdownPage: React.FC<MarkdownPageProps> = ({ fileName }) => {
                 )}
               </Highlight>
             ) : (
-              <code className="bg-gray-800 text-red-400 rounded-sm px-1 font-mono" {...props}>
+              <code className={`${className || ''} bg-gray-800 text-red-400 rounded-sm px-1 font-mono`}>
                 {children}
               </code>
             );

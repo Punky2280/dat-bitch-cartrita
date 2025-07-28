@@ -4,12 +4,15 @@ import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import './i18n';
-import { AmbientProvider } from './context/AmbientContext'; // Import the provider
+import { AuthProvider } from './context/AuthContext.tsx';
+import { AmbientProvider } from './context/AmbientContext.tsx';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <AmbientProvider>
-      <App />
-    </AmbientProvider>
+    <AuthProvider>
+      <AmbientProvider>
+        <App />
+      </AmbientProvider>
+    </AuthProvider>
   </React.StrictMode>,
 );

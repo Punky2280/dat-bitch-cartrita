@@ -1,6 +1,6 @@
-import React, { useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import React from 'react';
 import { useLiveChat } from '../hooks/useLiveChat';
+import { useAuth } from '../hooks/useAuth';
 import SpeakingIndicator from './SpeakingIndicator';
 import { Mic, MicOff } from 'lucide-react';
 
@@ -10,7 +10,7 @@ interface LiveChatModalProps {
 }
 
 const LiveChatModal: React.FC<LiveChatModalProps> = ({ isOpen, onClose }) => {
-  const { token } = useContext(AuthContext);
+  const { token } = useAuth();
   const {
     agentStatus,
     isRecording,
