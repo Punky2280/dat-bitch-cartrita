@@ -1,4 +1,3 @@
-import { getSupportedMimeType } from './mimeUtils';
 import { createSafeMediaRecorder } from './createSafeMediaRecorder';
 
 export function setupAmbientAudio(
@@ -12,17 +11,11 @@ export function setupAmbientAudio(
       return null;
     }
 
-    console.log(`[AmbientAudio] Found ${audioTracks.length} audio track(s)`);
+    console.log(`[AmbientAudio] Found ${audioTracks.length} audio track(s). Attempting to create recorder.`);
 
-    const mimeType = getSupportedMimeType();
-    if (!mimeType) {
-      console.error('[AmbientAudio] No supported MIME type found');
-      return null;
-    }
-
-    console.log(`[AmbientAudio] Using MIME type: ${mimeType}`);
+    // Let createSafeMediaRecorder handle finding the best mimeType.
+    // We just pass the desired options and it will find a compatible format.
     const recorder = createSafeMediaRecorder(stream, {
-      mimeType,
       audioBitsPerSecond: 128000,
     });
 
@@ -31,25 +24,23 @@ export function setupAmbientAudio(
       return null;
     }
 
-    const chunks: Blob[] = [];
+    console.log(`[AmbientAudio] MediaRecorder created with mimeType: "${recorder.mimeType}"`);
 
-    recorder.addEventListener('dataavailable', (event: BlobEvent) => {
+    // This is the correct logic for streaming.
+    // Send data as it becomes available from the timeslice.
+    recorder.addEventListener('dataavailable', async (event: BlobEvent) => {
       if (event.data.size > 0) {
-        chunks.push(event.data);
+        try {
+          const buffer = await event.data.arrayBuffer();
+          onData(buffer);
+        } catch (err) {
+          console.error('[AmbientAudio] Failed to process data chunk:', err);
+        }
       }
     });
 
-    recorder.addEventListener('stop', async () => {
-      if (chunks.length > 0) {
-        try {
-          const blob = new Blob(chunks, { type: recorder.mimeType });
-          const buffer = await blob.arrayBuffer();
-          onData(buffer);
-          chunks.length = 0;
-        } catch (err) {
-          console.error('[AmbientAudio] Failed to convert blob to ArrayBuffer:', err);
-        }
-      }
+    recorder.addEventListener('stop', () => {
+      console.log('[AmbientAudio] Recording stopped.');
     });
 
     recorder.addEventListener('error', (event: Event) => {
@@ -57,8 +48,9 @@ export function setupAmbientAudio(
     });
 
     try {
+      // The timeslice here is what triggers the streaming 'dataavailable' event.
       recorder.start(1000);
-      console.log('[AmbientAudio] Recording started');
+      console.log('[AmbientAudio] Recording started with 1-second timeslice.');
     } catch (err) {
       console.error('[AmbientAudio] Failed to start recording:', err);
       return null;

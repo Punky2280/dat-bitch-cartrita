@@ -2,8 +2,13 @@ export function setupVideoElements() {
   const video = document.createElement('video');
   video.autoplay = true;
   video.muted = true;
-  video.style.display = 'none';
   video.setAttribute('playsinline', 'true'); // Important for mobile
+  // Use off-screen positioning instead of 'display: none' to ensure
+  // the browser rendering engine processes the video frames. This prevents
+  // capturing black frames.
+  video.style.position = 'absolute';
+  video.style.top = '-9999px';
+  video.style.left = '-9999px';
   document.body.appendChild(video);
 
   const canvas = document.createElement('canvas');
