@@ -5,7 +5,8 @@ function initializeAgents() {
   
   // Import each agent to activate its listener
   require('./consciousness/CodeWriterAgent');
-  require('./consciousness/SchedulerAgent'); // ACTIVATE THE NEW AGENT
+  require('./consciousness/SchedulerAgent');
+  require('./consciousness/ArtistAgent'); // ACTIVATE THE NEW AGENT
   // require('./consciousness/ResearcherAgent'); 
   // require('./consciousness/ComedianAgent');
   // require('./ethics/ConstitutionalAI');

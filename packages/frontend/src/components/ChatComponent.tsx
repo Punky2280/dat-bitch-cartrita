@@ -69,65 +69,7 @@ export const ChatComponent = ({ token }: ChatComponentProps) => {
   };
 
   const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
-    const [isCopied, setIsCopied] = useState(false);
-    const match = /language-(\w+)/.exec(className || '');
-    const codeText = String(children).replace(/\n$/, '');
-
-    const handleCopy = () => {
-      const textArea = document.createElement('textarea');
-      textArea.value = codeText;
-      document.body.appendChild(textArea);
-      textArea.select();
-      try {
-        document.execCommand('copy');
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2000);
-      } catch (err) {
-        console.error('Failed to copy text: ', err);
-      }
-      document.body.removeChild(textArea);
-    };
-
-    return !inline && match ? (
-        <div className="relative bg-gray-900 rounded-md my-2 border border-gray-700">
-            <div className="flex items-center justify-between px-4 py-1 bg-gray-800 rounded-t-md">
-                <span className="text-xs text-gray-400">{match[1]}</span>
-                <button 
-                    onClick={handleCopy}
-                    className="text-xs text-white bg-gray-600 hover:bg-cyan-600 rounded px-2 py-1 transition-colors"
-                >
-                    {isCopied ? 'Copied!' : 'Copy'}
-                </button>
-            </div>
-            <Highlight
-                theme={themes.vsDark}
-                code={codeText}
-                language={match[1]}
-            >
-                {({ className, style, tokens, getLineProps, getTokenProps }) => (
-                <pre className={`${className} p-4 overflow-x-auto text-sm`} style={style}>
-                    {tokens.map((line, i) => {
-                      // FIXED: Destructure the key from the rest of the props
-                      const { key, ...restLineProps } = getLineProps({ line, key: i });
-                      return (
-                        <div key={key} {...restLineProps}>
-                          {line.map((token, keyIndex) => {
-                            // FIXED: Destructure the key from the rest of the props
-                            const { key: tokenKey, ...restTokenProps } = getTokenProps({ token, key: keyIndex });
-                            return <span key={tokenKey} {...restTokenProps} />;
-                          })}
-                        </div>
-                      );
-                    })}
-                </pre>
-                )}
-            </Highlight>
-        </div>
-    ) : (
-      <code className="bg-gray-800 text-red-400 rounded-sm px-1 text-sm font-mono" {...props}>
-        {children}
-      </code>
-    );
+    // ... CodeBlock logic ...
   };
 
   return (
@@ -146,7 +88,59 @@ export const ChatComponent = ({ token }: ChatComponentProps) => {
             <div className={`p-3 rounded-lg max-w-2xl ${msg.speaker === 'user' ? 'bg-blue-600' : 'bg-gray-700'}`}>
               <ReactMarkdown
                 components={{
-                  code: CodeBlock,
+                  // FIXED: Add a custom renderer for images
+                  img: ({node, ...props}) => <img className="rounded-lg my-2 max-w-full" {...props} />,
+                  code: ({ node, inline, className, children, ...props }: any) => {
+                    const [isCopied, setIsCopied] = useState(false);
+                    const match = /language-(\w+)/.exec(className || '');
+                    const codeText = String(children).replace(/\n$/, '');
+
+                    const handleCopy = () => {
+                      navigator.clipboard.writeText(codeText).then(() => {
+                        setIsCopied(true);
+                        setTimeout(() => setIsCopied(false), 2000);
+                      });
+                    };
+
+                    return !inline && match ? (
+                        <div className="relative bg-gray-900 rounded-md my-2 border border-gray-700">
+                            <div className="flex items-center justify-between px-4 py-1 bg-gray-800 rounded-t-md">
+                                <span className="text-xs text-gray-400">{match[1]}</span>
+                                <button 
+                                    onClick={handleCopy}
+                                    className="text-xs text-white bg-gray-600 hover:bg-cyan-600 rounded px-2 py-1 transition-colors"
+                                >
+                                    {isCopied ? 'Copied!' : 'Copy'}
+                                </button>
+                            </div>
+                            <Highlight
+                                theme={themes.vsDark}
+                                code={codeText}
+                                language={match[1]}
+                            >
+                                {({ className, style, tokens, getLineProps, getTokenProps }) => (
+                                <pre className={`${className} p-4 overflow-x-auto text-sm`} style={style}>
+                                    {tokens.map((line, i) => {
+                                      const { key, ...restLineProps } = getLineProps({ line, key: i });
+                                      return (
+                                        <div key={key} {...restLineProps}>
+                                          {line.map((token, keyIndex) => {
+                                            const { key: tokenKey, ...restTokenProps } = getTokenProps({ token, key: keyIndex });
+                                            return <span key={tokenKey} {...restTokenProps} />;
+                                          })}
+                                        </div>
+                                      );
+                                    })}
+                                </pre>
+                                )}
+                            </Highlight>
+                        </div>
+                    ) : (
+                      <code className="bg-gray-800 text-red-400 rounded-sm px-1 text-sm font-mono" {...props}>
+                        {children}
+                      </code>
+                    );
+                  },
                 }}
               >
                 {msg.text}
