@@ -2,6 +2,7 @@
 import React, { useState, useEffect, FormEvent } from 'react';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from 'react-i18next';
+import { useAmbient } from '../context/AmbientContext';
 
 // --- Interfaces ---
 interface ApiKey {
@@ -18,36 +19,32 @@ interface SettingsPageProps {
 const SettingsPage: React.FC<SettingsPageProps> = ({ token }) => {
   const { t, i18n } = useTranslation();
   const [theme, toggleTheme] = useTheme();
+  const { isAmbientModeEnabled, permissionState, enableAmbientMode, disableAmbientMode } = useAmbient();
 
-  // State for user profile
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  
-  // State for password change
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
-
-  // State for API Key Vault
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [newKeyService, setNewKeyService] = useState('');
   const [newKeyValue, setNewKeyValue] = useState('');
-
-  // General state
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // --- Data Fetching ---
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const userRes = await fetch('/api/user/me', { headers: { 'Authorization': `Bearer ${token}` } });
+        const [userRes, keysRes] = await Promise.all([
+          fetch('/api/user/me', { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch('/api/keys', { headers: { 'Authorization': `Bearer ${token}` } })
+        ]);
+
         if (!userRes.ok) throw new Error('Failed to fetch user data');
         const userData = await userRes.json();
         setName(userData.name);
         setEmail(userData.email);
 
-        const keysRes = await fetch('/api/keys', { headers: { 'Authorization': `Bearer ${token}` } });
         if (!keysRes.ok) throw new Error('Failed to fetch API keys');
         const keysData = await keysRes.json();
         setApiKeys(keysData);
@@ -61,7 +58,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ token }) => {
     fetchAllData();
   }, [token]);
 
-  // --- Handlers ---
   const handleUpdateProfile = async (e: FormEvent) => {
     e.preventDefault();
     setMessage(null);
@@ -102,7 +98,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ token }) => {
       setMessage({ type: 'error', text: error.message });
     }
   };
-
+  
   const handleAddApiKey = async (e: FormEvent) => {
     e.preventDefault();
     setMessage(null);
@@ -143,10 +139,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ token }) => {
     }
   };
 
-  // FIXED: Add the changeLanguage function to use the i18n instance
-  const changeLanguage = (lng: string) => {
-    i18n.changeLanguage(lng);
-  };
+  const changeLanguage = (lng: string) => { i18n.changeLanguage(lng); };
 
   if (isLoading) {
     return <div className="text-white text-center p-8">Loading settings...</div>;
@@ -164,7 +157,34 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ token }) => {
         )}
 
         <div className="space-y-8">
-          {/* FIXED: Re-added the Language and Appearance sections */}
+          {/* Ambient Intelligence Section */}
+          <div className="bg-black bg-opacity-30 border-2 border-green-500 p-6 rounded-lg shadow-lg shadow-green-500/20">
+            <h2 className="text-xl font-semibold mb-4 text-green-300">Ambient Intelligence</h2>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-300">Allow Cartrita to see and hear your environment.</p>
+                <p className="text-xs text-gray-500">This requires microphone and camera access.</p>
+              </div>
+              {isAmbientModeEnabled ? (
+                <button
+                  onClick={disableAmbientMode}
+                  className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg"
+                >
+                  Disable Ambient Mode
+                </button>
+              ) : (
+                <button
+                  onClick={enableAmbientMode}
+                  disabled={permissionState === 'denied'}
+                  className="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-600 disabled:cursor-not-allowed"
+                >
+                  {permissionState === 'denied' ? 'Permissions Denied' : 'Enable Ambient Mode'}
+                </button>
+              )}
+            </div>
+             {permissionState === 'denied' && <p className="text-red-400 text-xs mt-2">You have denied permissions. To enable this feature, you must grant microphone and camera access in your browser's site settings.</p>}
+          </div>
+
           <div className="bg-black bg-opacity-30 border border-gray-700 p-6 rounded-lg">
             <h2 className="text-xl font-semibold mb-4">Language & Appearance</h2>
             <div className="space-y-4">
@@ -186,25 +206,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ token }) => {
               </div>
             </div>
           </div>
-
-          {/* API Key Vault Section */}
+          
           <div className="bg-black bg-opacity-30 border-2 border-purple-500 p-6 rounded-lg shadow-lg shadow-purple-500/20">
             <h2 className="text-xl font-semibold mb-4 text-purple-300">API Key Vault</h2>
             <form onSubmit={handleAddApiKey} className="space-y-4 mb-6">
-              <input
-                type="text"
-                placeholder="Service Name (e.g., GoogleCalendar)"
-                value={newKeyService}
-                onChange={(e) => setNewKeyService(e.target.value)}
-                className="mt-1 block w-full bg-gray-800 border border-gray-600 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-              <input
-                type="password"
-                placeholder="Paste API Key Here"
-                value={newKeyValue}
-                onChange={(e) => setNewKeyValue(e.target.value)}
-                className="mt-1 block w-full bg-gray-800 border border-gray-600 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
+              <input type="text" placeholder="Service Name (e.g., GoogleCalendar)" value={newKeyService} onChange={(e) => setNewKeyService(e.target.value)} className="mt-1 block w-full bg-gray-800 border border-gray-600 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+              <input type="password" placeholder="Paste API Key Here" value={newKeyValue} onChange={(e) => setNewKeyValue(e.target.value)} className="mt-1 block w-full bg-gray-800 border border-gray-600 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500" />
               <div className="text-right">
                 <button type="submit" className="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-2 font-bold rounded-lg hover:from-purple-700 hover:to-pink-600 transition-all">
                   Save Key
@@ -224,7 +231,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ token }) => {
             </div>
           </div>
           
-          {/* Profile Information Section */}
           <div className="bg-black bg-opacity-30 border border-gray-700 p-6 rounded-lg">
             <h2 className="text-xl font-semibold mb-4">{t('settings.profileInfo')}</h2>
             <form onSubmit={handleUpdateProfile} className="space-y-4">
@@ -242,7 +248,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ token }) => {
             </form>
           </div>
 
-          {/* Change Password Section */}
           <div className="bg-black bg-opacity-30 border border-gray-700 p-6 rounded-lg">
             <h2 className="text-xl font-semibold mb-4">{t('settings.changePassword')}</h2>
             <form onSubmit={handleChangePassword} className="space-y-4">
