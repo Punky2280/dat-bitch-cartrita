@@ -4,9 +4,9 @@ import { useState, useEffect, FormEvent, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import ReactMarkdown from 'react-markdown';
 import { Highlight, themes } from 'prism-react-renderer';
-import { useTranslation } from 'react-i18next'; // Import the hook
+import { useTranslation } from 'react-i18next';
 
-// Define the structure of a message object
+// --- Interfaces ---
 interface Message {
   text: string;
   speaker: 'user' | 'cartrita';
@@ -18,8 +18,9 @@ interface ChatComponentProps {
   token: string;
 }
 
+// --- Component ---
 export const ChatComponent = ({ token }: ChatComponentProps) => {
-  const { i18n } = useTranslation(); // Get the i18n instance
+  const { i18n } = useTranslation();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [conversation, setConversation] = useState<Message[]>([]);
   const [userInput, setUserInput] = useState('');
@@ -33,7 +34,6 @@ export const ChatComponent = ({ token }: ChatComponentProps) => {
 
   useEffect(() => {
     const fetchHistory = async () => {
-      // ... fetch history logic ...
       try {
         const res = await fetch('/api/chat/history', { headers: { 'Authorization': `Bearer ` + token } });
         if (!res.ok) throw new Error('Failed to fetch history');
@@ -50,24 +50,11 @@ export const ChatComponent = ({ token }: ChatComponentProps) => {
     const newSocket = io({ auth: { token } });
     setSocket(newSocket);
 
-    newSocket.on('connect', () => {
-      console.log('FRONTEND: Socket connected!');
-      setIsConnected(true);
-    });
-    newSocket.on('disconnect', () => {
-      console.log('FRONTEND: Socket disconnected!');
-      setIsConnected(false);
-    });
-
-    newSocket.on('chat message', (msg: Message) => {
-      console.log('FRONTEND: Received message from backend:', msg);
-      setConversation(prev => [...prev, msg]);
-    });
+    newSocket.on('connect', () => setIsConnected(true));
+    newSocket.on('disconnect', () => setIsConnected(false));
+    newSocket.on('chat message', (msg: Message) => setConversation(prev => [...prev, msg]));
 
     return () => { 
-      newSocket.off('connect');
-      newSocket.off('disconnect');
-      newSocket.off('chat message');
       newSocket.disconnect(); 
     };
   }, [token]);
@@ -75,21 +62,13 @@ export const ChatComponent = ({ token }: ChatComponentProps) => {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!userInput.trim() || !socket || !isConnected) return;
-
     const userMessage: Message = { text: userInput, speaker: 'user' };
     setConversation(prev => [...prev, userMessage]);
-    
-    // FIXED: Send an object containing the text and the current language
-    socket.emit('chat message', { 
-      text: userInput, 
-      language: i18n.language 
-    });
-    
+    socket.emit('chat message', { text: userInput, language: i18n.language });
     setUserInput('');
   };
 
   const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
-    // ... CodeBlock logic remains the same ...
     const [isCopied, setIsCopied] = useState(false);
     const match = /language-(\w+)/.exec(className || '');
     const codeText = String(children).replace(/\n$/, '');
@@ -127,13 +106,19 @@ export const ChatComponent = ({ token }: ChatComponentProps) => {
             >
                 {({ className, style, tokens, getLineProps, getTokenProps }) => (
                 <pre className={`${className} p-4 overflow-x-auto text-sm`} style={style}>
-                    {tokens.map((line, i) => (
-                      <div {...getLineProps({ line, key: i })}>
-                        {line.map((token, key) => (
-                        <span {...getTokenProps({ token, key })} />
-                        ))}
-                      </div>
-                    ))}
+                    {tokens.map((line, i) => {
+                      // FIXED: Destructure the key from the rest of the props
+                      const { key, ...restLineProps } = getLineProps({ line, key: i });
+                      return (
+                        <div key={key} {...restLineProps}>
+                          {line.map((token, keyIndex) => {
+                            // FIXED: Destructure the key from the rest of the props
+                            const { key: tokenKey, ...restTokenProps } = getTokenProps({ token, key: keyIndex });
+                            return <span key={tokenKey} {...restTokenProps} />;
+                          })}
+                        </div>
+                      );
+                    })}
                 </pre>
                 )}
             </Highlight>

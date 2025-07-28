@@ -1,57 +1,74 @@
 // packages/frontend/src/pages/SettingsPage.tsx
 import React, { useState, useEffect, FormEvent } from 'react';
 import { useTheme } from '../hooks/useTheme';
-import { useTranslation } from 'react-i18next'; // Import the hook
+import { useTranslation } from 'react-i18next';
+
+// --- Interfaces ---
+interface ApiKey {
+  id: number;
+  service_name: string;
+  updated_at: string;
+}
 
 interface SettingsPageProps {
   token: string;
 }
 
+// --- Component ---
 const SettingsPage: React.FC<SettingsPageProps> = ({ token }) => {
-  const { t, i18n } = useTranslation(); // Initialize the translation hook
+  const { t, i18n } = useTranslation();
+  const [theme, toggleTheme] = useTheme();
+
+  // State for user profile
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  
+  // State for password change
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
+  // State for API Key Vault
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const [newKeyService, setNewKeyService] = useState('');
+  const [newKeyValue, setNewKeyValue] = useState('');
+
+  // General state
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
-  const [theme, toggleTheme] = useTheme();
 
+  // --- Data Fetching ---
   useEffect(() => {
-    const fetchUserData = async () => {
-      // ... (fetch logic remains the same)
+    const fetchAllData = async () => {
       try {
-        const res = await fetch('/api/user/me', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!res.ok) throw new Error('Failed to fetch user data');
-        const data = await res.json();
-        setName(data.name);
-        setEmail(data.email);
-      } catch (error) {
-        console.error(error);
-        setMessage({ type: 'error', text: 'Could not load user data.' });
+        const userRes = await fetch('/api/user/me', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!userRes.ok) throw new Error('Failed to fetch user data');
+        const userData = await userRes.json();
+        setName(userData.name);
+        setEmail(userData.email);
+
+        const keysRes = await fetch('/api/keys', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!keysRes.ok) throw new Error('Failed to fetch API keys');
+        const keysData = await keysRes.json();
+        setApiKeys(keysData);
+
+      } catch (error: any) {
+        setMessage({ type: 'error', text: error.message });
       } finally {
         setIsLoading(false);
       }
     };
-    fetchUserData();
+    fetchAllData();
   }, [token]);
 
+  // --- Handlers ---
   const handleUpdateProfile = async (e: FormEvent) => {
-    // ... (update profile logic remains the same)
     e.preventDefault();
     setMessage(null);
     try {
       const res = await fetch('/api/user/me', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ name })
       });
       const data = await res.json();
@@ -63,7 +80,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ token }) => {
   };
 
   const handleChangePassword = async (e: FormEvent) => {
-    // ... (change password logic remains the same)
     e.preventDefault();
     setMessage(null);
     if (newPassword !== confirmNewPassword) {
@@ -73,10 +89,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ token }) => {
     try {
       const res = await fetch('/api/user/me/password', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ currentPassword, newPassword })
       });
       const data = await res.json();
@@ -90,13 +103,54 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ token }) => {
     }
   };
 
-  if (isLoading) {
-    return <div className="text-white text-center p-8">Loading settings...</div>;
-  }
+  const handleAddApiKey = async (e: FormEvent) => {
+    e.preventDefault();
+    setMessage(null);
+    if (!newKeyService || !newKeyValue) {
+      setMessage({ type: 'error', text: 'Service name and API key are required.' });
+      return;
+    }
+    try {
+      const res = await fetch('/api/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ service_name: newKeyService, api_key: newKeyValue }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to save API key.');
+      
+      setMessage({ type: 'success', text: `API key for ${data.service_name} saved.` });
+      setApiKeys(prev => [...prev.filter(k => k.service_name !== data.service_name), data]);
+      setNewKeyService('');
+      setNewKeyValue('');
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message });
+    }
+  };
 
+  const handleDeleteApiKey = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this API key?')) return;
+    try {
+      const res = await fetch(`/api/keys/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to delete API key.');
+      setMessage({ type: 'success', text: 'API key deleted.' });
+      setApiKeys(prev => prev.filter(key => key.id !== id));
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message });
+    }
+  };
+
+  // FIXED: Add the changeLanguage function to use the i18n instance
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
   };
+
+  if (isLoading) {
+    return <div className="text-white text-center p-8">Loading settings...</div>;
+  }
 
   return (
     <div className="h-full overflow-y-auto p-4 sm:p-6 md:p-8 text-white">
@@ -110,29 +164,63 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ token }) => {
         )}
 
         <div className="space-y-8">
-          {/* Language Section */}
+          {/* FIXED: Re-added the Language and Appearance sections */}
           <div className="bg-black bg-opacity-30 border border-gray-700 p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-4">Language</h2>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-300">Select Language</span>
-              <div className="flex gap-2">
-                <button onClick={() => changeLanguage('en')} className={`font-bold py-2 px-4 rounded-lg ${i18n.language === 'en' ? 'bg-cyan-500' : 'bg-gray-700 hover:bg-gray-600'}`}>English</button>
-                <button onClick={() => changeLanguage('es')} className={`font-bold py-2 px-4 rounded-lg ${i18n.language === 'es' ? 'bg-cyan-500' : 'bg-gray-700 hover:bg-gray-600'}`}>Español</button>
+            <h2 className="text-xl font-semibold mb-4">Language & Appearance</h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-300">Language</span>
+                <div className="flex gap-2">
+                  <button onClick={() => changeLanguage('en')} className={`font-bold py-2 px-4 rounded-lg ${i18n.language === 'en' ? 'bg-cyan-500' : 'bg-gray-700 hover:bg-gray-600'}`}>English</button>
+                  <button onClick={() => changeLanguage('es')} className={`font-bold py-2 px-4 rounded-lg ${i18n.language === 'es' ? 'bg-cyan-500' : 'bg-gray-700 hover:bg-gray-600'}`}>Español</button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-300">{t('settings.theme')}</span>
+                <button
+                  onClick={toggleTheme}
+                  className="bg-gray-700 hover:bg-gray-600 text-cyan-300 font-bold py-2 px-4 rounded-lg capitalize"
+                >
+                  {theme === 'dark' ? t('settings.switchToLight') : t('settings.switchToDark')}
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Appearance Section */}
-          <div className="bg-black bg-opacity-30 border border-gray-700 p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-4">{t('settings.appearance')}</h2>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-300">{t('settings.theme')}</span>
-              <button
-                onClick={toggleTheme}
-                className="bg-gray-700 hover:bg-gray-600 text-cyan-300 font-bold py-2 px-4 rounded-lg capitalize"
-              >
-                {theme === 'dark' ? t('settings.switchToLight') : t('settings.switchToDark')}
-              </button>
+          {/* API Key Vault Section */}
+          <div className="bg-black bg-opacity-30 border-2 border-purple-500 p-6 rounded-lg shadow-lg shadow-purple-500/20">
+            <h2 className="text-xl font-semibold mb-4 text-purple-300">API Key Vault</h2>
+            <form onSubmit={handleAddApiKey} className="space-y-4 mb-6">
+              <input
+                type="text"
+                placeholder="Service Name (e.g., GoogleCalendar)"
+                value={newKeyService}
+                onChange={(e) => setNewKeyService(e.target.value)}
+                className="mt-1 block w-full bg-gray-800 border border-gray-600 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              <input
+                type="password"
+                placeholder="Paste API Key Here"
+                value={newKeyValue}
+                onChange={(e) => setNewKeyValue(e.target.value)}
+                className="mt-1 block w-full bg-gray-800 border border-gray-600 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              <div className="text-right">
+                <button type="submit" className="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-2 font-bold rounded-lg hover:from-purple-700 hover:to-pink-600 transition-all">
+                  Save Key
+                </button>
+              </div>
+            </form>
+            <h3 className="text-lg font-semibold mb-2 text-gray-300">Saved Keys</h3>
+            <div className="space-y-2">
+              {apiKeys.length > 0 ? apiKeys.map(key => (
+                <div key={key.id} className="flex justify-between items-center bg-gray-800 p-3 rounded-lg">
+                  <span className="font-mono text-cyan-400">{key.service_name}</span>
+                  <button onClick={() => handleDeleteApiKey(key.id)} className="text-red-400 hover:text-red-300 font-bold text-sm">DELETE</button>
+                </div>
+              )) : (
+                <p className="text-gray-500">No API keys saved yet.</p>
+              )}
             </div>
           </div>
           

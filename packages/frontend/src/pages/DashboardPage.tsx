@@ -1,22 +1,24 @@
 // packages/frontend/src/pages/DashboardPage.tsx
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next'; // Import the hook
+import { useTranslation } from 'react-i18next';
 import { ChatComponent } from '../components/ChatComponent';
 import { FractalVisualizer } from '../components/FractalVisualizer';
 import SettingsPage from './SettingsPage';
 import AboutPage from './AboutPage';
 import LicensePage from './LicensePage';
 import BackstoryPage from './BackstoryPage';
+import WorkflowBuilderPage from './WorkflowBuilderPage'; // Import the new page
 
 interface DashboardPageProps {
   token: string;
   onLogout: () => void;
 }
 
-type View = 'chat' | 'visualizer' | 'settings' | 'about' | 'license' | 'backstory';
+// Add 'workflows' to the possible views
+type View = 'chat' | 'visualizer' | 'settings' | 'about' | 'license' | 'backstory' | 'workflows';
 
 export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
-  const { t } = useTranslation(); // Initialize the translation hook
+  const { t } = useTranslation();
   const [currentView, setCurrentView] = useState<View>('chat');
 
   const renderView = () => {
@@ -33,6 +35,8 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
         return <LicensePage />;
       case 'backstory':
         return <BackstoryPage />;
+      case 'workflows':
+        return <WorkflowBuilderPage token={token} />;
       default:
         return <ChatComponent token={token} />;
     }
@@ -58,6 +62,10 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
           </button>
           <button onClick={() => setCurrentView('visualizer')} className={getButtonClass('visualizer')}>
             {t('dashboard.visualizer')}
+          </button>
+          {/* Add the new Workflows button */}
+          <button onClick={() => setCurrentView('workflows')} className={getButtonClass('workflows')}>
+            Workflows
           </button>
           <button onClick={() => setCurrentView('backstory')} className={getButtonClass('backstory')}>
             {t('dashboard.backstory')}
