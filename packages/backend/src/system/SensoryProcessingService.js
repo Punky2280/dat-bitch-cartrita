@@ -6,10 +6,14 @@ class SensoryProcessingService {
   constructor(coreAgent) {
     this.coreAgent = coreAgent;
     this.connections = new Map();
-    
-    // Temporarily disable Deepgram to test mock mode
-    console.log('[SensoryService] Using mock transcription mode for testing.');
-    this.deepgram = null;
+
+    if (process.env.DEEPGRAM_API_KEY) {
+      this.deepgram = createClient(process.env.DEEPGRAM_API_KEY);
+      console.log('[SensoryService] Deepgram client initialized successfully.');
+    } else {
+      this.deepgram = null;
+      console.warn('[SensoryService] DEEPGRAM_API_KEY not found. Service will use mock transcription mode.');
+    }
   }
 
   handleConnection(socket) {

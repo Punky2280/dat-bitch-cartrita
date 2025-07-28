@@ -14,6 +14,7 @@ const authenticateTokenSocket = require('./src/middleware/authenticateTokenSocke
 const CoreAgent = require('./src/agi/consciousness/CoreAgent');
 const initializeAgents = require('./src/agi/agentInitializer');
 const SensoryProcessingService = require('./src/system/SensoryProcessingService');
+const LiveChatService = require('./src/system/LiveChatService');
 const MessageBus = require('./src/system/MessageBus'); // Import the MessageBus
 
 const app = express();
@@ -35,6 +36,7 @@ const corsOptions = {
 const io = new Server(server, { cors: corsOptions });
 const coreAgent = new CoreAgent();
 const sensoryService = new SensoryProcessingService(coreAgent);
+const liveChatService = new LiveChatService(coreAgent);
 
 initializeAgents();
 
@@ -82,30 +84,48 @@ ambientNamespace.on('connection', (socket) => {
   sensoryService.handleConnection(socket);
 });
 
+// --- NEW: Dedicated namespace for live voice chat ---
+const liveChatNamespace = io.of('/live-chat');
+liveChatNamespace.use(authenticateTokenSocket);
+liveChatNamespace.on('connection', (socket) => {
+  liveChatService.handleConnection(socket);
+});
+
 // --- NEW: Listen for proactive responses from the MessageBus ---
 MessageBus.on('proactive:response', async ({ userId, response }) => {
   console.log(`[Proactive] Received proactive response for user ID: ${userId}`);
-  
-  // Find the right user's socket in the main chat namespace
-  const sockets = await chatNamespace.fetchSockets();
-  const userSocket = sockets.find(s => s.user.userId === userId);
 
-  if (userSocket) {
-    console.log(`[Proactive] Found user socket. Emitting message.`);
-    userSocket.emit('chat message', response);
-    // Also save the proactive message to the database
+  // Fetch sockets from both namespaces to ensure delivery
+  const chatSockets = await chatNamespace.fetchSockets();
+  const ambientSockets = await ambientNamespace.fetchSockets();
+
+  const userChatSocket = chatSockets.find(s => s.user.userId === userId);
+  const userAmbientSocket = ambientSockets.find(s => s.user.userId === userId);
+
+  let textMessageSent = false;
+
+  // Prioritize sending text to the main chat socket, but fall back to ambient
+  if (userChatSocket) {
+    console.log(`[Proactive] Found main chat socket. Emitting text message.`);
+    userChatSocket.emit('chat message', response);
+    textMessageSent = true;
+  } else if (userAmbientSocket) {
+    console.log(`[Proactive] Main chat socket not found. Emitting text message to ambient socket.`);
+    userAmbientSocket.emit('chat message', response);
+    textMessageSent = true;
+  }
+
+  // If the message was delivered to any socket, save it to the database
+  if (textMessageSent) {
     await pool.query(
       'INSERT INTO conversations (user_id, speaker, text, model) VALUES ($1, $2, $3, $4)',
       [userId, 'cartrita', response.text, response.model]
     );
   } else {
-    console.log(`[Proactive] Could not find active socket for user ID: ${userId}. Message not sent.`);
+    console.log(`[Proactive] Could not find any active socket for user ID: ${userId}. Text message not sent.`);
   }
 
-  // Also emit to ambient namespace for audio playback
-  const ambientSockets = await ambientNamespace.fetchSockets();
-  const ambientUserSocket = ambientSockets.find(s => s.user.userId === userId);
-  
+  // Always send the audio for playback to the ambient socket if it exists
   if (ambientUserSocket) {
     console.log(`[Proactive] Emitting to ambient socket for audio playback.`);
     ambientUserSocket.emit('proactive_response', { userId, response });
