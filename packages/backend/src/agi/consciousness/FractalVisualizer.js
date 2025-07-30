@@ -12,7 +12,9 @@ class FractalVisualizer {
 
   // Simulate despawning a sub-agent
   despawn(agentType) {
-    this.activeSubAgents = this.activeSubAgents.filter(agent => agent !== agentType);
+    this.activeSubAgents = this.activeSubAgents.filter(
+      agent => agent !== agentType
+    );
   }
 
   getVisualizationData() {
@@ -20,7 +22,11 @@ class FractalVisualizer {
     const links = [];
 
     this.activeSubAgents.forEach(agentType => {
-      nodes.push({ id: agentType, type: 'sub-agent', name: `${agentType.charAt(0).toUpperCase() + agentType.slice(1)} Agent` });
+      nodes.push({
+        id: agentType,
+        type: 'sub-agent',
+        name: `${agentType.charAt(0).toUpperCase() + agentType.slice(1)} Agent`,
+      });
       links.push({ source: 'core', target: agentType });
     });
 

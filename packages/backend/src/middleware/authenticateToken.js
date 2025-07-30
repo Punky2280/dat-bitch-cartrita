@@ -1,20 +1,32 @@
-// packages/backend/src/middleware/authenticateToken.js
 const jwt = require('jsonwebtoken');
 
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-  if (token == null) {
-    return res.sendStatus(401); // Unauthorized if no token
+  if (!token) {
+    console.warn(
+      '[Auth Middleware] 🚫 No token found in Authorization header.'
+    );
+    return res.status(401).json({ error: 'Unauthorized: No token provided.' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  jwt.verify(token, process.env.JWT_SECRET, (err, decodedPayload) => {
     if (err) {
-      console.error('JWT Verification Error:', err);
-      return res.sendStatus(403); // Forbidden if token is invalid
+      console.error('[Auth Middleware] ❌ JWT Verification Error:', err);
+      return res.status(403).json({ error: 'Forbidden: Invalid token.' });
     }
-    req.user = user; // Add the user payload to the request object
+
+    // --- FIX: Create a consistent user object ---
+    // The decoded payload has { sub, email, name }. We map 'sub' to 'id'.
+    req.user = {
+      id: decodedPayload.sub,
+      name: decodedPayload.name,
+      email: decodedPayload.email,
+    };
+
+    console.log('[Auth Middleware] ✅ Authenticated user:', req.user.id);
+    console.log('[Auth Middleware] 🔍 Full user object:', JSON.stringify(req.user));
     next();
   });
 }

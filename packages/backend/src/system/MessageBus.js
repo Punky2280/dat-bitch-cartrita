@@ -1,19 +1,29 @@
-// packages/backend/src/system/MessageBus.js
 const EventEmitter = require('events');
 
-/**
- * The MessageBus is a singleton event emitter that serves as the central
- * communication channel for all AGI components. It allows for a decoupled
- * architecture where agents can communicate without direct dependencies.
- * This is the foundation of the Multi-Agent Communication Protocol (MCP).
- *
- * It allows agents to:
- * - Emit events (e.g., 'task:start', 'task:complete', 'data:retrieved')
- * - Listen for events from other agents
- */
-class MessageBus extends EventEmitter {}
+class MessageBus extends EventEmitter {
+  constructor() {
+    super();
+    this.initialized = true;
+    console.log('✅ MessageBus ready');
+  }
 
-// Create a single, shared instance of the bus to be used across the application.
-const instance = new MessageBus();
+  getStatus() {
+    return {
+      service: 'MessageBus',
+      initialized: this.initialized,
+      timestamp: new Date().toISOString(),
+      listenerCount: this.listenerCount(),
+    };
+  }
 
-module.exports = instance;
+  // Helper method to safely emit events
+  safeEmit(event, data) {
+    try {
+      this.emit(event, data);
+    } catch (error) {
+      console.error(`[MessageBus] Error emitting ${event}:`, error);
+    }
+  }
+}
+
+module.exports = new MessageBus();

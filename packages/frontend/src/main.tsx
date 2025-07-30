@@ -1,18 +1,14 @@
-// packages/frontend/src/main.tsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App.tsx';
+import App from './App';
 import './index.css';
 import './i18n';
-import { AuthProvider } from './context/AuthContext.tsx';
-import { AmbientProvider } from './context/AmbientContext.tsx';
+import { AmbientProvider } from '@/context/AmbientContext';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <AuthProvider>
-      <AmbientProvider>
-        <App />
-      </AmbientProvider>
-    </AuthProvider>
-  </React.StrictMode>,
+    <AmbientProvider>
+      <App />
+    </AmbientProvider>
+  </React.StrictMode>
 );

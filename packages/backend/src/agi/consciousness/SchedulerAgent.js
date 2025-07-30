@@ -1,43 +1,36 @@
 // packages/backend/src/agi/consciousness/SchedulerAgent.js
 const { google } = require('googleapis');
 const { Pool } = require('pg');
-const OpenAI = require('openai');
-const MessageBus = require('../../system/MessageBus');
-const EncryptionService = require('../../system/EncryptionService');
+const BaseAgent = require('../../system/BaseAgent');
+const EncryptionService = require('../../services/SimpleEncryption');
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-class SchedulerAgent {
+class SchedulerAgent extends BaseAgent {
   constructor() {
-    this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    this.listen();
+    super('SchedulerAgent', 'main', ['schedule', 'calendar', 'time_management']);
   }
 
-  listen() {
+  async onInitialize() {
     console.log('[SchedulerAgent] Listening for schedule tasks...');
-    MessageBus.on('task:request', async (task) => {
-      if (task.type === 'schedule') {
-        console.log(`[SchedulerAgent] Received schedule task: ${task.id}`);
-        try {
-          const result = await this.execute(task.payload);
-          MessageBus.emit(`task:complete:${task.id}`, { text: result });
-        } catch (error) {
-          console.error('[SchedulerAgent] CRITICAL ERROR:', error);
-          MessageBus.emit(`task:fail:${task.id}`, { error: error.message });
-        }
-      }
-    });
+    
+    // Register task handlers for MCP
+    this.registerTaskHandler('schedule', this.execute.bind(this));
   }
 
   async getGoogleAuth(userId) {
-    console.log(`[SchedulerAgent] Fetching Google Calendar key for user ${userId}...`);
+    console.log(
+      `[SchedulerAgent] Fetching Google Calendar key for user ${userId}...`
+    );
     const keyResult = await pool.query(
       'SELECT key_data FROM user_api_keys WHERE user_id = $1 AND service_name = $2',
       [userId, 'GoogleCalendar']
     );
 
     if (keyResult.rows.length === 0) {
-      throw new Error("Google Calendar API key not found. Please add it in the settings page.");
+      throw new Error(
+        'Google Calendar API key not found. Please add it in the settings page.'
+      );
     }
 
     const encryptedKey = keyResult.rows[0].key_data;
@@ -49,26 +42,29 @@ class SchedulerAgent {
       credentials,
       scopes: [
         'https://www.googleapis.com/auth/calendar',
-        'https://www.googleapis.com/auth/calendar.readonly'
+        'https://www.googleapis.com/auth/calendar.readonly',
       ],
     });
 
     return auth.getClient();
   }
 
-  async execute({ prompt, userId }) {
-    if (!userId) throw new Error("User ID is missing from the task payload.");
-    
+  async execute(prompt, language, userId, payload) {
+    if (!userId) throw new Error('User ID is missing from the task payload.');
+
     const auth = await this.getGoogleAuth(userId);
     const calendar = google.calendar({ version: 'v3', auth });
 
     console.log('[SchedulerAgent] Determining calendar intent from prompt...');
     const intent = await this.determineCalendarIntent(prompt);
-    console.log('[SchedulerAgent] Intent determined:', JSON.stringify(intent, null, 2));
+    console.log(
+      '[SchedulerAgent] Intent determined:',
+      JSON.stringify(intent, null, 2)
+    );
 
     // FIXED: Correctly handle the AI returning an error action
     if (intent.action === 'error') {
-        return intent.message; // Access intent.message directly
+      return intent.message; // Access intent.message directly
     }
 
     switch (intent.action) {
@@ -151,16 +147,21 @@ class SchedulerAgent {
     `;
     const completion = await this.openai.chat.completions.create({
       model: 'gpt-4o',
-      messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: prompt }],
-      response_format: { type: "json_object" }
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: prompt },
+      ],
+      response_format: { type: 'json_object' },
     });
     return JSON.parse(completion.choices[0].message.content);
   }
 
   async listEvents(calendar, { timeMin, timeMax }) {
     try {
-      console.log(`[SchedulerAgent] Listing events from ${timeMin} to ${timeMax}`);
-      
+      console.log(
+        `[SchedulerAgent] Listing events from ${timeMin} to ${timeMax}`
+      );
+
       const response = await calendar.events.list({
         calendarId: 'primary',
         timeMin: timeMin,
@@ -175,29 +176,36 @@ class SchedulerAgent {
         return 'No events found for that time period.';
       }
 
-      const eventList = events.map(event => {
-        const start = event.start.dateTime || event.start.date;
-        const startTime = new Date(start).toLocaleString('en-US', { 
-          timeZone: 'America/New_York',
-          weekday: 'short',
-          month: 'short', 
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit'
-        });
-        return `• ${event.summary} at ${startTime}`;
-      }).join('\n');
+      const eventList = events
+        .map(event => {
+          const start = event.start.dateTime || event.start.date;
+          const startTime = new Date(start).toLocaleString('en-US', {
+            timeZone: 'America/New_York',
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+          });
+          return `• ${event.summary} at ${startTime}`;
+        })
+        .join('\n');
 
       return `Here are your upcoming events:\n\n${eventList}`;
     } catch (error) {
-      console.error("Google Calendar API Error:", error);
+      console.error('Google Calendar API Error:', error);
       return `I couldn't retrieve your events. The calendar API returned an error: ${error.message}`;
     }
   }
 
-  async createEvent(calendar, { summary, startDateTime, durationMinutes = 60 }) {
+  async createEvent(
+    calendar,
+    { summary, startDateTime, durationMinutes = 60 }
+  ) {
     try {
-      console.log(`[SchedulerAgent] Attempting to create event: "${summary}" at ${startDateTime}`);
+      console.log(
+        `[SchedulerAgent] Attempting to create event: "${summary}" at ${startDateTime}`
+      );
       const timeZone = 'America/New_York';
       const startDate = new Date(startDateTime);
       const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
@@ -207,15 +215,21 @@ class SchedulerAgent {
         start: { dateTime: startDate.toISOString(), timeZone },
         end: { dateTime: endDate.toISOString(), timeZone },
       };
-      
-      console.log('[SchedulerAgent] Sending this payload to Google:', JSON.stringify(eventPayload, null, 2));
+
+      console.log(
+        '[SchedulerAgent] Sending this payload to Google:',
+        JSON.stringify(eventPayload, null, 2)
+      );
 
       const event = await calendar.events.insert({
         calendarId: 'primary',
         requestBody: eventPayload,
       });
 
-      console.log('[SchedulerAgent] Received response from Google API:', event.data);
+      console.log(
+        '[SchedulerAgent] Received response from Google API:',
+        event.data
+      );
 
       if (event.data.id) {
         return `Success. I've created the event "${summary}" for you at ${startDate.toLocaleString('en-US', { timeZone })}.`;
@@ -223,7 +237,7 @@ class SchedulerAgent {
         throw new Error('The API did not confirm the event creation.');
       }
     } catch (error) {
-      console.error("Google Calendar API Error:", error);
+      console.error('Google Calendar API Error:', error);
       return `I couldn't create the event. The calendar API returned an error: ${error.message}`;
     }
   }

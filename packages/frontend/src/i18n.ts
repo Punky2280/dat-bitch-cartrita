@@ -1,36 +1,41 @@
-// packages/frontend/src/i18n.ts
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import HttpApi from 'i18next-http-backend';
 
 i18n
-  // Use i18next-http-backend to load translations from your /public folder
   .use(HttpApi)
-  // Detect user language
   .use(LanguageDetector)
-  // Pass the i18n instance to react-i18next.
   .use(initReactI18next)
-  // Initialize i18next
   .init({
-    // Set default language
     fallbackLng: 'en',
-    debug: true, // Set to false in production
-    
-    // Configure backend to load translation files
+    debug: false,
     backend: {
       loadPath: '/locales/{{lng}}/translation.json',
+      // Handle load failures gracefully
+      requestOptions: {
+        cache: 'no-cache',
+      },
     },
-
     interpolation: {
-      escapeValue: false, // React already safes from xss
+      escapeValue: false,
     },
-    
-    // Options for language detector
     detection: {
+      // Check localStorage first, then navigator, then HTML tag
       order: ['localStorage', 'navigator', 'htmlTag'],
+      // Store selection in localStorage
       caches: ['localStorage'],
+      // Use preferredLanguage key to match our component
+      lookupLocalStorage: 'preferredLanguage',
     },
+    // Preload fallback language
+    preload: ['en'],
+    // Handle load failures
+    saveMissing: false,
+    // Custom key separator
+    keySeparator: '.',
+    // Custom namespace separator
+    nsSeparator: ':',
   });
 
 export default i18n;

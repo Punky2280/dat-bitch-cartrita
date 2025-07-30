@@ -1,36 +1,55 @@
-// packages/frontend/src/App.tsx
-import { useState } from 'react';
-import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { useTheme } from './hooks/useTheme'; // Import the new hook
-import { useAuth } from './hooks/useAuth';
+import { useState, useEffect } from 'react';
+import { LoginPage } from '@/pages/LoginPage';
+import { RegisterPage } from '@/pages/RegisterPage';
+import { DashboardPage } from '@/pages/DashboardPage';
+import { ThemeProvider } from '@/context/ThemeContext';
+import '@/i18n';
 
 type AuthView = 'login' | 'register';
 
 function App() {
-  const { token, setToken, logout } = useAuth();
+  const [token, setToken] = useState<string | null>(
+    localStorage.getItem('authToken')
+  );
   const [authView, setAuthView] = useState<AuthView>('login');
-  
-  // Initialize the theme hook to apply the theme on load
-  useTheme();
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem('authToken');
+    if (storedToken) setToken(storedToken);
+  }, []);
 
   const handleLogin = (newToken: string) => {
+    localStorage.setItem('authToken', newToken);
     setToken(newToken);
   };
 
-  const handleRegisterSuccess = () => {
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    setToken(null);
     setAuthView('login');
   };
 
-  if (!token) {
-    if (authView === 'login') {
-      return <LoginPage onLoginSuccess={handleLogin} onSwitchToRegister={() => setAuthView('register')} />;
-    }
-    return <RegisterPage onSwitchToLogin={() => setAuthView('login')} onRegisterSuccess={handleRegisterSuccess} />;
-  }
+  const handleRegisterSuccess = () => setAuthView('login');
 
-  return <DashboardPage token={token} onLogout={logout} />;
+  return (
+    <ThemeProvider>
+      {!token ? (
+        authView === 'login' ? (
+          <LoginPage
+            onLoginSuccess={handleLogin}
+            onSwitchToRegister={() => setAuthView('register')}
+          />
+        ) : (
+          <RegisterPage
+            onSwitchToLogin={() => setAuthView('login')}
+            onRegisterSuccess={handleRegisterSuccess}
+          />
+        )
+      ) : (
+        <DashboardPage token={token} onLogout={handleLogout} />
+      )}
+    </ThemeProvider>
+  );
 }
 
 export default App;

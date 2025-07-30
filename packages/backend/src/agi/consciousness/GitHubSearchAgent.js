@@ -1,18 +1,31 @@
 // packages/backend/src/agi/consciousness/GitHubSearchAgent.js
-const { Octokit } = require('octokit');
 const OpenAI = require('openai');
 const MessageBus = require('../../system/MessageBus');
 
 class GitHubSearchAgent {
   constructor() {
     this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    this.octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+    this.octokit = null;
+    this.initOctokit();
     this.listen();
+  }
+
+  async initOctokit() {
+    try {
+      const { Octokit } = await import('octokit');
+      this.octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+      console.log('[GitHubSearchAgent] Octokit initialized');
+    } catch (error) {
+      console.error(
+        '[GitHubSearchAgent] Failed to initialize Octokit:',
+        error.message
+      );
+    }
   }
 
   listen() {
     console.log('[GitHubSearchAgent] Listening for GitHub search tasks...');
-    MessageBus.on('task:request', async (task) => {
+    MessageBus.on('task:request', async task => {
       if (task.type === 'github_search') {
         console.log(`[GitHubSearchAgent] Received task: ${task.id}`);
         try {
@@ -52,7 +65,9 @@ class GitHubSearchAgent {
   }
 
   async execute(query) {
-    console.log(`[GitHubSearchAgent] Searching for repositories with query: "${query}"`);
+    console.log(
+      `[GitHubSearchAgent] Searching for repositories with query: "${query}"`
+    );
     const { data } = await this.octokit.rest.search.repos({
       q: query,
       sort: 'stars',

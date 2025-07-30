@@ -1,0 +1,643 @@
+const express = require('express');
+const EncryptionService = require('../services/SimpleEncryption');
+const authenticateToken = require('../middleware/authenticateToken');
+const pool = require('../db'); // Use shared database connection
+
+const router = express.Router();
+
+// Get all API providers
+router.get('/providers', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id, name, display_name, description, icon, documentation_url, 
+             default_base_url, required_fields, is_active
+      FROM api_providers 
+      WHERE is_active = true 
+      ORDER BY display_name
+    `);
+
+    res.json({
+      success: true,
+      providers: result.rows
+    });
+  } catch (error) {
+    console.error('Error fetching API providers:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get user's API keys (with masked keys for security)
+router.get('/keys', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { provider_id, active_only = true } = req.query;
+
+    let query = `
+      SELECT uak.id, uak.key_name, 0 as usage_count, uak.updated_at as last_used_at, 
+             uak.is_active, uak.expires_at, uak.created_at, uak.updated_at,
+             uak.rotation_interval_days, uak.next_rotation_at,
+             ap.name as provider_name, ap.display_name as provider_display_name,
+             ap.icon as provider_icon,
+             CASE 
+               WHEN uak.key_data IS NOT NULL THEN true 
+               ELSE false 
+             END as has_key
+      FROM user_api_keys uak
+      JOIN api_providers ap ON uak.provider_id = ap.id
+      WHERE uak.user_id = $1
+    `;
+
+    const params = [userId];
+    let paramCount = 1;
+
+    if (provider_id) {
+      paramCount++;
+      query += ` AND uak.provider_id = $${paramCount}`;
+      params.push(provider_id);
+    }
+
+    if (active_only === 'true') {
+      query += ` AND uak.is_active = true`;
+    }
+
+    query += ` ORDER BY uak.created_at DESC`;
+
+    const result = await pool.query(query, params);
+
+    // Calculate usage statistics
+    const keysWithStats = await Promise.all(result.rows.map(async (key) => {
+      const usageStats = await pool.query(`
+        SELECT 
+          COUNT(*) as total_requests,
+          COUNT(*) FILTER (WHERE success = true) as successful_requests,
+          COUNT(*) FILTER (WHERE success = false) as failed_requests,
+          SUM(tokens_used) as total_tokens,
+          SUM(cost_estimate) as total_cost,
+          AVG(response_time_ms) as avg_response_time
+        FROM api_key_usage 
+        WHERE user_api_key_id = $1 
+          AND request_timestamp >= NOW() - INTERVAL '30 days'
+      `, [key.id]);
+
+      return {
+        ...key,
+        usage_stats: usageStats.rows[0],
+        needs_rotation: EncryptionService.shouldRotateKey(
+          key.created_at,
+          key.last_used_at,
+          key.rotation_interval_days,
+          key.usage_count
+        )
+      };
+    }));
+
+    res.json({
+      success: true,
+      keys: keysWithStats
+    });
+  } catch (error) {
+    console.error('Error fetching user API keys:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Add new API key
+router.post('/keys', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const {
+      provider_id,
+      key_name,
+      api_key,
+      metadata = {},
+      expires_at,
+      rotation_interval_days
+    } = req.body;
+
+    // Validate required fields
+    if (!provider_id || !key_name || !api_key) {
+      return res.status(400).json({
+        success: false,
+        error: 'Provider ID, key name, and API key are required'
+      });
+    }
+
+    // Get provider info for validation
+    const providerResult = await pool.query(
+      'SELECT name, display_name FROM api_providers WHERE id = $1',
+      [provider_id]
+    );
+
+    if (providerResult.rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid provider ID'
+      });
+    }
+
+    const provider = providerResult.rows[0];
+
+    // Validate API key format
+    if (!EncryptionService.validateApiKeyFormat(provider.name, api_key)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid API key format for ${provider.display_name}`
+      });
+    }
+
+    // Check for duplicate key names
+    const duplicateCheck = await pool.query(
+      'SELECT id FROM user_api_keys WHERE user_id = $1 AND provider_id = $2 AND key_name = $3',
+      [userId, provider_id, key_name]
+    );
+
+    if (duplicateCheck.rows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'A key with this name already exists for the selected provider'
+      });
+    }
+
+    // Encrypt the API key and metadata
+    const encryptedKey = EncryptionService.encrypt(api_key);
+    const keyHash = EncryptionService.createHash(api_key);
+    const encryptedMetadata = metadata && Object.keys(metadata).length > 0 ? EncryptionService.encrypt(JSON.stringify(metadata)) : null;
+
+    // Calculate next rotation date
+    let nextRotationAt = null;
+    if (rotation_interval_days) {
+      nextRotationAt = new Date();
+      nextRotationAt.setDate(nextRotationAt.getDate() + rotation_interval_days);
+    }
+
+    // Insert the new API key
+    const insertResult = await pool.query(`
+      INSERT INTO user_api_keys 
+      (user_id, provider_id, service_name, key_name, key_data, key_hash)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id, key_name, created_at
+    `, [
+      userId, provider_id, provider.name, key_name, encryptedKey, keyHash
+    ]);
+
+    // Log security event
+    await logSecurityEvent(userId, insertResult.rows[0].id, 'created', 'info', 
+      `API key "${key_name}" created for ${provider.display_name}`, req);
+
+    res.json({
+      success: true,
+      message: 'API key added successfully',
+      key: {
+        id: insertResult.rows[0].id,
+        key_name: insertResult.rows[0].key_name,
+        created_at: insertResult.rows[0].created_at
+      }
+    });
+  } catch (error) {
+    console.error('Error adding API key:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update API key
+router.put('/keys/:id', authenticateToken, async (req, res) => {
+  try {
+    const keyId = req.params.id;
+    const userId = req.user.id;
+    const {
+      key_name,
+      api_key,
+      metadata,
+      is_active,
+      expires_at,
+      rotation_interval_days
+    } = req.body;
+
+    // Verify ownership
+    const existingKey = await pool.query(
+      'SELECT * FROM user_api_keys WHERE id = $1 AND user_id = $2',
+      [keyId, userId]
+    );
+
+    if (existingKey.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'API key not found' });
+    }
+
+    const updates = [];
+    const params = [];
+    let paramCount = 0;
+
+    if (key_name !== undefined) {
+      paramCount++;
+      updates.push(`key_name = $${paramCount}`);
+      params.push(key_name);
+    }
+
+    if (api_key !== undefined) {
+      // Re-encrypt the new API key
+      const encryptedKey = EncryptionService.encrypt(api_key);
+      const keyHash = EncryptionService.createHash(api_key);
+
+      paramCount++;
+      updates.push(`key_data = $${paramCount}`);
+      params.push(encryptedKey);
+
+      paramCount++;
+      updates.push(`key_hash = $${paramCount}`);
+      params.push(keyHash);
+    }
+
+    if (metadata !== undefined) {
+      paramCount++;
+      updates.push(`encrypted_metadata = $${paramCount}`);
+      params.push(EncryptionService.encryptMetadata(metadata));
+    }
+
+    if (is_active !== undefined) {
+      paramCount++;
+      updates.push(`is_active = $${paramCount}`);
+      params.push(is_active);
+    }
+
+    if (expires_at !== undefined) {
+      paramCount++;
+      updates.push(`expires_at = $${paramCount}`);
+      params.push(expires_at);
+    }
+
+    if (rotation_interval_days !== undefined) {
+      paramCount++;
+      updates.push(`rotation_interval_days = $${paramCount}`);
+      params.push(rotation_interval_days);
+
+      // Update next rotation date
+      if (rotation_interval_days) {
+        const nextRotationAt = new Date();
+        nextRotationAt.setDate(nextRotationAt.getDate() + rotation_interval_days);
+        paramCount++;
+        updates.push(`next_rotation_at = $${paramCount}`);
+        params.push(nextRotationAt);
+      }
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ success: false, error: 'No valid updates provided' });
+    }
+
+    updates.push('updated_at = NOW()');
+    
+    const query = `
+      UPDATE user_api_keys 
+      SET ${updates.join(', ')}
+      WHERE id = $${paramCount + 1} AND user_id = $${paramCount + 2}
+      RETURNING id, key_name, updated_at
+    `;
+    params.push(keyId, userId);
+
+    const result = await pool.query(query, params);
+
+    // Log security event
+    await logSecurityEvent(userId, keyId, 'updated', 'info', 
+      `API key "${result.rows[0].key_name}" updated`, req);
+
+    res.json({
+      success: true,
+      message: 'API key updated successfully',
+      key: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error updating API key:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Delete API key
+router.delete('/keys/:id', authenticateToken, async (req, res) => {
+  try {
+    const keyId = req.params.id;
+    const userId = req.user.id;
+
+    const result = await pool.query(
+      'DELETE FROM user_api_keys WHERE id = $1 AND user_id = $2 RETURNING key_name',
+      [keyId, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'API key not found' });
+    }
+
+    // Log security event
+    await logSecurityEvent(userId, null, 'deleted', 'warning', 
+      `API key "${result.rows[0].key_name}" deleted`, req);
+
+    res.json({
+      success: true,
+      message: 'API key deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting API key:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get decrypted API key (for internal use by other services)
+router.get('/keys/:id/decrypt', authenticateToken, async (req, res) => {
+  try {
+    const keyId = req.params.id;
+    const userId = req.user.id;
+
+    const result = await pool.query(`
+      SELECT uak.key_data, uak.encrypted_metadata, uak.key_name,
+             ap.name as provider_name
+      FROM user_api_keys uak
+      JOIN api_providers ap ON uak.provider_id = ap.id
+      WHERE uak.id = $1 AND uak.user_id = $2 AND uak.is_active = true
+    `, [keyId, userId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'API key not found or inactive' });
+    }
+
+    const row = result.rows[0];
+    
+    // Decrypt the API key and metadata
+    const decryptedKey = EncryptionService.decrypt(row.key_data);
+    const decryptedMetadata = row.encrypted_metadata ? JSON.parse(EncryptionService.decrypt(row.encrypted_metadata)) : {};
+
+    // Update last used timestamp and usage count
+    await pool.query(
+      'UPDATE user_api_keys SET last_used_at = NOW(), usage_count = usage_count + 1 WHERE id = $1',
+      [keyId]
+    );
+
+    // Log access event
+    await logSecurityEvent(userId, keyId, 'accessed', 'info', 
+      `API key "${row.key_name}" accessed`, req);
+
+    res.json({
+      success: true,
+      api_key: decryptedKey,
+      metadata: decryptedMetadata,
+      provider: row.provider_name
+    });
+  } catch (error) {
+    console.error('Error decrypting API key:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get API key usage analytics
+router.get('/keys/:id/analytics', authenticateToken, async (req, res) => {
+  try {
+    const keyId = req.params.id;
+    const userId = req.user.id;
+    const { days = 30 } = req.query;
+
+    // Verify ownership
+    const ownershipCheck = await pool.query(
+      'SELECT key_name FROM user_api_keys WHERE id = $1 AND user_id = $2',
+      [keyId, userId]
+    );
+
+    if (ownershipCheck.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'API key not found' });
+    }
+
+    // Get usage analytics
+    const analyticsQuery = `
+      SELECT 
+        DATE(request_timestamp) as date,
+        COUNT(*) as total_requests,
+        COUNT(*) FILTER (WHERE success = true) as successful_requests,
+        COUNT(*) FILTER (WHERE success = false) as failed_requests,
+        SUM(tokens_used) as tokens_used,
+        SUM(cost_estimate) as cost,
+        AVG(response_time_ms) as avg_response_time,
+        array_agg(DISTINCT service_name) as services_used
+      FROM api_key_usage 
+      WHERE user_api_key_id = $1 
+        AND request_timestamp >= NOW() - INTERVAL '${days} days'
+      GROUP BY DATE(request_timestamp)
+      ORDER BY date DESC
+    `;
+
+    const analyticsResult = await pool.query(analyticsQuery, [keyId]);
+
+    // Get top endpoints
+    const endpointsQuery = `
+      SELECT endpoint, COUNT(*) as usage_count, AVG(response_time_ms) as avg_response_time
+      FROM api_key_usage 
+      WHERE user_api_key_id = $1 
+        AND request_timestamp >= NOW() - INTERVAL '${days} days'
+      GROUP BY endpoint
+      ORDER BY usage_count DESC
+      LIMIT 10
+    `;
+
+    const endpointsResult = await pool.query(endpointsQuery, [keyId]);
+
+    res.json({
+      success: true,
+      analytics: {
+        key_name: ownershipCheck.rows[0].key_name,
+        daily_usage: analyticsResult.rows,
+        top_endpoints: endpointsResult.rows,
+        period_days: days
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching API key analytics:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get security events
+router.get('/security-events', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { severity, limit = 50, offset = 0 } = req.query;
+
+    let query = `
+      SELECT akse.*, uak.key_name, ap.display_name as provider_name
+      FROM api_key_security_events akse
+      LEFT JOIN user_api_keys uak ON akse.user_api_key_id = uak.id
+      LEFT JOIN api_providers ap ON uak.provider_id = ap.id
+      WHERE akse.user_id = $1
+    `;
+
+    const params = [userId];
+    let paramCount = 1;
+
+    if (severity) {
+      paramCount++;
+      query += ` AND akse.severity = $${paramCount}`;
+      params.push(severity);
+    }
+
+    query += ` ORDER BY akse.created_at DESC LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`;
+    params.push(limit, offset);
+
+    const result = await pool.query(query, params);
+
+    res.json({
+      success: true,
+      events: result.rows
+    });
+  } catch (error) {
+    console.error('Error fetching security events:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Test API key functionality
+router.post('/keys/:id/test', authenticateToken, async (req, res) => {
+  try {
+    const keyId = req.params.id;
+    const userId = req.user.id;
+
+    // Get the API key
+    const keyResult = await pool.query(`
+      SELECT uak.key_data, uak.key_name, ap.name as provider_name, 
+             ap.default_base_url, ap.display_name
+      FROM user_api_keys uak
+      JOIN api_providers ap ON uak.provider_id = ap.id
+      WHERE uak.id = $1 AND uak.user_id = $2 AND uak.is_active = true
+    `, [keyId, userId]);
+
+    if (keyResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'API key not found or inactive' });
+    }
+
+    const { key_data, key_name, provider_name, default_base_url, display_name } = keyResult.rows[0];
+    const decryptedKey = EncryptionService.decrypt(key_data);
+
+    // Perform a simple test based on provider
+    let testResult;
+    const startTime = Date.now();
+
+    try {
+      testResult = await performProviderTest(provider_name, decryptedKey, default_base_url);
+      const responseTime = Date.now() - startTime;
+
+      // Log successful test
+      await pool.query(`
+        INSERT INTO api_key_usage 
+        (user_api_key_id, service_name, request_type, endpoint, status_code, 
+         response_time_ms, success)
+        VALUES ($1, 'vault_test', 'GET', 'test_endpoint', 200, $2, true)
+      `, [keyId, responseTime]);
+
+      res.json({
+        success: true,
+        test_result: {
+          provider: display_name,
+          key_name: key_name,
+          status: 'success',
+          response_time_ms: responseTime,
+          message: testResult.message,
+          details: testResult.details
+        }
+      });
+    } catch (testError) {
+      const responseTime = Date.now() - startTime;
+
+      // Log failed test
+      await pool.query(`
+        INSERT INTO api_key_usage 
+        (user_api_key_id, service_name, request_type, endpoint, status_code, 
+         response_time_ms, success, error_message)
+        VALUES ($1, 'vault_test', 'GET', 'test_endpoint', 400, $2, false, $3)
+      `, [keyId, responseTime, testError.message]);
+
+      res.json({
+        success: false,
+        test_result: {
+          provider: display_name,
+          key_name: key_name,
+          status: 'failed',
+          response_time_ms: responseTime,
+          error: testError.message
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error testing API key:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Helper function to log security events
+async function logSecurityEvent(userId, keyId, eventType, severity, description, req) {
+  try {
+    await pool.query(`
+      INSERT INTO api_key_security_events 
+      (user_api_key_id, user_id, event_type, severity, description, ip_address, user_agent)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `, [
+      keyId,
+      userId,
+      eventType,
+      severity,
+      description,
+      req.ip || req.connection.remoteAddress,
+      req.get('User-Agent')
+    ]);
+  } catch (error) {
+    console.error('Error logging security event:', error);
+  }
+}
+
+// Helper function to test API keys for different providers
+async function performProviderTest(provider, apiKey, baseUrl) {
+  const axios = require('axios');
+
+  const tests = {
+    openai: async () => {
+      const response = await axios.get('https://api.openai.com/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}` },
+        timeout: 5000
+      });
+      return {
+        message: 'OpenAI API key is valid',
+        details: `Found ${response.data.data.length} available models`
+      };
+    },
+
+    anthropic: async () => {
+      const response = await axios.get('https://api.anthropic.com/v1/messages', {
+        headers: { 
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        timeout: 5000
+      });
+      return {
+        message: 'Anthropic API key is valid',
+        details: 'Successfully connected to Anthropic API'
+      };
+    },
+
+    github: async () => {
+      const response = await axios.get('https://api.github.com/user', {
+        headers: { 'Authorization': `token ${apiKey}` },
+        timeout: 5000
+      });
+      return {
+        message: 'GitHub API key is valid',
+        details: `Connected as ${response.data.login}`
+      };
+    }
+  };
+
+  const testFunction = tests[provider];
+  if (!testFunction) {
+    return {
+      message: 'API key format appears valid',
+      details: 'No specific test available for this provider'
+    };
+  }
+
+  return await testFunction();
+}
+
+module.exports = router;

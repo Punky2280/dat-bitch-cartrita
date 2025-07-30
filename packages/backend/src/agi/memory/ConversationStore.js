@@ -1,1 +1,318 @@
-class ConversationStore { constructor() { this.history = []; console.log('Conversation store initialized.'); } }
+const MessageBus = require('../../system/MessageBus');
+const { Pool } = require('pg');
+
+class ConversationStore {
+  constructor() {
+    this.history = new Map(); // userId -> conversation history
+    this.conversationSummaries = new Map(); // userId -> conversation summaries
+    this.contextWindows = new Map(); // userId -> current context window
+    this.memoryMetrics = {
+      totalConversations: 0,
+      totalMessages: 0,
+      avgMessagesPerConversation: 0,
+      memoryCompressionEvents: 0,
+    };
+
+    this.maxHistoryLength = 1000; // Messages per user
+    this.contextWindowSize = 20; // Recent messages for immediate context
+    this.summaryTriggerLength = 50; // Trigger summarization after N messages
+
+    // Initialize database connection if available
+    if (process.env.DATABASE_URL) {
+      this.pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    } else {
+      this.pool = null;
+      console.warn(
+        '[ConversationStore] Database connection not available, using memory only.'
+      );
+    }
+
+    // Listen for conversation events
+    MessageBus.on('conversation:message', this.storeMessage.bind(this));
+    MessageBus.on(
+      'conversation:summary-request',
+      this.generateConversationSummary.bind(this)
+    );
+    MessageBus.on('conversation:context-request', this.getContext.bind(this));
+
+    console.log(
+      '[ConversationStore] Advanced conversation memory system initialized.'
+    );
+  }
+
+  async storeMessage(messageData) {
+    const { userId, speaker, text, timestamp, metadata = {} } = messageData;
+
+    if (!userId || !text) {
+      console.warn(
+        '[ConversationStore] Invalid message data, skipping storage.'
+      );
+      return;
+    }
+
+    // Initialize user history if needed
+    if (!this.history.has(userId)) {
+      this.history.set(userId, []);
+      this.contextWindows.set(userId, []);
+    }
+
+    const message = {
+      id: Date.now() + Math.random(),
+      speaker,
+      text: text.substring(0, 2000), // Limit message length
+      timestamp: timestamp || new Date().toISOString(),
+      metadata,
+      tokens: this.estimateTokens(text),
+    };
+
+    // Add to user's history
+    const userHistory = this.history.get(userId);
+    userHistory.push(message);
+    this.memoryMetrics.totalMessages++;
+
+    // Update context window (recent messages)
+    const contextWindow = this.contextWindows.get(userId);
+    contextWindow.push(message);
+    if (contextWindow.length > this.contextWindowSize) {
+      contextWindow.shift();
+    }
+
+    // Check if we need to compress old memories
+    if (userHistory.length > this.maxHistoryLength) {
+      await this.compressOldMemories(userId);
+    }
+
+    // Check if we need to generate a summary
+    if (userHistory.length % this.summaryTriggerLength === 0) {
+      await this.generateConversationSummary(userId);
+    }
+
+    // Store in database if available
+    if (this.pool) {
+      try {
+        await this.pool.query(
+          'INSERT INTO conversation_memory (user_id, speaker, text, metadata, timestamp) VALUES ($1, $2, $3, $4, $5)',
+          [userId, speaker, text, JSON.stringify(metadata), message.timestamp]
+        );
+      } catch (error) {
+        console.warn(
+          '[ConversationStore] Database storage failed:',
+          error.message
+        );
+      }
+    }
+  }
+
+  async getContext(requestData) {
+    const { userId, contextType = 'recent', limit = 20 } = requestData;
+
+    if (!this.history.has(userId)) {
+      return { context: [], summary: null };
+    }
+
+    let context = [];
+    let summary = null;
+
+    switch (contextType) {
+      case 'recent':
+        context = this.contextWindows.get(userId) || [];
+        break;
+      case 'full':
+        context = this.history.get(userId).slice(-limit);
+        break;
+      case 'summary':
+        summary = this.conversationSummaries.get(userId);
+        context = this.contextWindows.get(userId) || [];
+        break;
+      default:
+        context = this.contextWindows.get(userId) || [];
+    }
+
+    return {
+      context: context.map(msg => ({
+        speaker: msg.speaker,
+        text: msg.text,
+        timestamp: msg.timestamp,
+        tokens: msg.tokens,
+      })),
+      summary,
+      totalMessages: this.history.get(userId)?.length || 0,
+    };
+  }
+
+  async generateConversationSummary(userId) {
+    const userHistory = this.history.get(userId);
+    if (!userHistory || userHistory.length < 10) return;
+
+    try {
+      // Simple extractive summarization for now
+      const recentMessages = userHistory.slice(-30);
+      const topics = this.extractTopics(recentMessages);
+      const keyPoints = this.extractKeyPoints(recentMessages);
+
+      const summary = {
+        userId,
+        timestamp: new Date().toISOString(),
+        messageCount: userHistory.length,
+        topics: topics.slice(0, 5),
+        keyPoints: keyPoints.slice(0, 10),
+        timespan: {
+          start: userHistory[0]?.timestamp,
+          end: userHistory[userHistory.length - 1]?.timestamp,
+        },
+      };
+
+      this.conversationSummaries.set(userId, summary);
+
+      MessageBus.emit('conversation:summary-generated', {
+        userId,
+        summary,
+      });
+    } catch (error) {
+      console.error('[ConversationStore] Summary generation failed:', error);
+    }
+  }
+
+  extractTopics(messages) {
+    // Simple topic extraction based on word frequency
+    const words = messages
+      .map(msg => msg.text.toLowerCase())
+      .join(' ')
+      .replace(/[^\w\s]/g, '')
+      .split(/\s+/)
+      .filter(word => word.length > 3);
+
+    const frequency = {};
+    words.forEach(word => {
+      frequency[word] = (frequency[word] || 0) + 1;
+    });
+
+    return Object.entries(frequency)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 10)
+      .map(([word, count]) => ({ word, count }));
+  }
+
+  extractKeyPoints(messages) {
+    // Extract messages that might be key points (questions, decisions, conclusions)
+    const keyPatterns = [
+      /\b(decided|concluded|realized|learned|discovered)\b/i,
+      /\b(important|crucial|key|main|primary)\b/i,
+      /\?$/,
+      /\b(will|plan to|going to|should|must)\b/i,
+    ];
+
+    return messages
+      .filter(msg => keyPatterns.some(pattern => pattern.test(msg.text)))
+      .slice(-10)
+      .map(msg => ({
+        text: msg.text.substring(0, 200),
+        speaker: msg.speaker,
+        timestamp: msg.timestamp,
+      }));
+  }
+
+  async compressOldMemories(userId) {
+    const userHistory = this.history.get(userId);
+    if (!userHistory || userHistory.length <= this.maxHistoryLength) return;
+
+    // Keep recent messages and generate summary of older ones
+    const keepRecent = userHistory.slice(
+      -Math.floor(this.maxHistoryLength * 0.7)
+    );
+    const toCompress = userHistory.slice(
+      0,
+      -Math.floor(this.maxHistoryLength * 0.7)
+    );
+
+    // Generate summary of compressed messages
+    if (toCompress.length > 0) {
+      const compressedSummary = {
+        type: 'compressed-memory',
+        messageCount: toCompress.length,
+        timespan: {
+          start: toCompress[0]?.timestamp,
+          end: toCompress[toCompress.length - 1]?.timestamp,
+        },
+        topics: this.extractTopics(toCompress),
+        keyPoints: this.extractKeyPoints(toCompress),
+      };
+
+      // Add compressed summary as a special message
+      keepRecent.unshift({
+        id: 'compressed-' + Date.now(),
+        speaker: 'system',
+        text: `[Compressed Memory: ${toCompress.length} messages from ${compressedSummary.timespan.start} to ${compressedSummary.timespan.end}]`,
+        timestamp: new Date().toISOString(),
+        metadata: { compressed: true, summary: compressedSummary },
+        tokens: 100,
+      });
+    }
+
+    this.history.set(userId, keepRecent);
+    this.memoryMetrics.memoryCompressionEvents++;
+
+    console.log(
+      `[ConversationStore] Compressed ${toCompress.length} messages for user ${userId}`
+    );
+  }
+
+  estimateTokens(text) {
+    // Rough token estimation (1 token ≈ 4 characters for English)
+    return Math.ceil(text.length / 4);
+  }
+
+  getUserStats(userId) {
+    const userHistory = this.history.get(userId) || [];
+    const contextWindow = this.contextWindows.get(userId) || [];
+    const summary = this.conversationSummaries.get(userId);
+
+    return {
+      totalMessages: userHistory.length,
+      recentMessages: contextWindow.length,
+      hasSummary: !!summary,
+      totalTokens: userHistory.reduce((sum, msg) => sum + (msg.tokens || 0), 0),
+      firstMessage: userHistory[0]?.timestamp,
+      lastMessage: userHistory[userHistory.length - 1]?.timestamp,
+      memoryUtilization: userHistory.length / this.maxHistoryLength,
+    };
+  }
+
+  getSystemStats() {
+    return {
+      ...this.memoryMetrics,
+      activeUsers: this.history.size,
+      totalStoredMessages: Array.from(this.history.values()).reduce(
+        (sum, hist) => sum + hist.length,
+        0
+      ),
+      memoryUsage: {
+        histories: this.history.size,
+        summaries: this.conversationSummaries.size,
+        contextWindows: this.contextWindows.size,
+      },
+    };
+  }
+
+  // Cleanup old data
+  cleanup(maxAgeHours = 168) {
+    // Default 1 week
+    const cutoff = new Date(Date.now() - maxAgeHours * 60 * 60 * 1000);
+    let cleaned = 0;
+
+    for (const [userId, history] of this.history) {
+      const filteredHistory = history.filter(
+        msg => new Date(msg.timestamp) > cutoff
+      );
+      if (filteredHistory.length !== history.length) {
+        this.history.set(userId, filteredHistory);
+        cleaned += history.length - filteredHistory.length;
+      }
+    }
+
+    console.log(`[ConversationStore] Cleaned up ${cleaned} old messages`);
+    return cleaned;
+  }
+}
+
+module.exports = new ConversationStore();

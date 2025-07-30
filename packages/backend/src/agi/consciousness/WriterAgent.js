@@ -1,6 +1,5 @@
 // packages/backend/src/agi/consciousness/WriterAgent.js
-const OpenAI = require('openai');
-const MessageBus = require('../../system/MessageBus');
+const BaseAgent = require('../../system/BaseAgent');
 
 /**
  * The WriterAgent is a highly specialized sub-agent for Cartrita, designed for
@@ -8,30 +7,19 @@ const MessageBus = require('../../system/MessageBus');
  * sophisticated two-step process (Plan -> Write) to ensure coherence,
  * structure, and adherence to the user's creative vision.
  */
-class WriterAgent {
+class WriterAgent extends BaseAgent {
   constructor() {
-    this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    this.listen();
+    super('WriterAgent', 'main', ['write', 'creative_writing', 'content_generation']);
   }
 
   /**
-   * Listens for 'write' tasks on the MessageBus and initiates the execution pipeline.
+   * Initialize WriterAgent for MCP
    */
-  listen() {
+  async onInitialize() {
     console.log('[WriterAgent] Listening for writing tasks...');
-    MessageBus.on('task:request', async (task) => {
-      if (task.type === 'write') {
-        console.log(`[WriterAgent] Received writing task: ${task.id}`);
-        try {
-          const result = await this.execute(task.payload);
-          // The result is the final, long-form text.
-          MessageBus.emit(`task:complete:${task.id}`, { text: result });
-        } catch (error) {
-          console.error('[WriterAgent] Error:', error.message);
-          MessageBus.emit(`task:fail:${task.id}`, { error: error.message });
-        }
-      }
-    });
+    
+    // Register task handlers for MCP
+    this.registerTaskHandler('write', this.execute.bind(this));
   }
 
   /**
@@ -69,12 +57,12 @@ class WriterAgent {
 
       Generate a plan for the following user prompt.
     `;
-    
+
     const completion = await this.openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
+        { role: 'user', content: userPrompt },
       ],
       temperature: 0.5,
     });
@@ -116,7 +104,7 @@ class WriterAgent {
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: finalPrompt }
+        { role: 'user', content: finalPrompt },
       ],
       temperature: 0.7,
       max_tokens: 3000, // Allow for very long-form content
@@ -130,7 +118,7 @@ class WriterAgent {
    * @param {string} payload.prompt - The user's request.
    * @returns {Promise<string>} The final, generated long-form text.
    */
-  async execute({ prompt }) {
+  async execute(prompt, language, userId, payload) {
     const plan = await this.generatePlan(prompt);
     const finalContent = await this.writeContent(prompt, plan);
     console.log(`[WriterAgent] Long-form content generated successfully.`);

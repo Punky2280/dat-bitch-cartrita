@@ -1,147 +1,205 @@
 // packages/backend/src/system/SensoryProcessingService.js
 const { createClient } = require('@deepgram/sdk');
-const MessageBus = require('./MessageBus');
 
+/**
+ * The SensoryProcessingService handles real-time sensory data streams.
+ */
 class SensoryProcessingService {
   constructor(coreAgent) {
+    if (!process.env.DEEPGRAM_API_KEY) {
+      console.warn(
+        '[SensoryService] DEEPGRAM_API_KEY not found. Ambient listening is disabled.'
+      );
+      this.deepgram = null;
+    } else {
+      this.deepgram = createClient(process.env.DEEPGRAM_API_KEY);
+    }
+
     this.coreAgent = coreAgent;
     this.connections = new Map();
+    this.frameBuffer = new Map(); // Store recent frames for analysis
+    this.analysisQueue = new Map(); // Queue for processing video frames
 
-    if (process.env.DEEPGRAM_API_KEY) {
-      this.deepgram = createClient(process.env.DEEPGRAM_API_KEY);
-      console.log('[SensoryService] Deepgram client initialized successfully.');
-    } else {
-      this.deepgram = null;
-      console.warn('[SensoryService] DEEPGRAM_API_KEY not found. Service will use mock transcription mode.');
-    }
+    console.log(
+      '[SensoryService] Initialized with audio and video processing capabilities.'
+    );
   }
 
   handleConnection(socket) {
-    console.log(`[SensoryService] New ambient connection for user: ${socket.user.name}`);
-    console.log(`[SensoryService] Deepgram available: ${!!this.deepgram}`);
-    
-    // Handle case where Deepgram is not available
-    if (!this.deepgram) {
-      console.log(`[SensoryService] Deepgram not available, using mock transcription for user: ${socket.user.name}`);
-      this.handleConnectionWithoutDeepgram(socket);
-      return;
-    }
+    const { audioEnabled, videoEnabled, privacyMode } = socket.handshake.query;
 
-    let deepgramConnection;
-    try {
-      deepgramConnection = this.deepgram.listen.live({
-        model: 'nova-2',
-        smart_format: true,
-        interim_results: false,
-        endpointing: 300,
-      });
-      console.log(`[SensoryService] Created Deepgram connection for user: ${socket.user.name}`);
-    } catch (error) {
-      console.error(`[SensoryService] Failed to create Deepgram connection:`, error);
-      this.handleConnectionWithoutDeepgram(socket);
-      return;
-    }
-
-    deepgramConnection.on('open', () => {
-      console.log(`[SensoryService] Deepgram connection opened for user: ${socket.user.name}`);
-
-      deepgramConnection.on('transcript', (data) => {
-        console.log(`[SensoryService] Raw Deepgram data:`, JSON.stringify(data, null, 2));
-        if (data.channel && data.channel.alternatives && data.channel.alternatives[0]) {
-          const transcript = data.channel.alternatives[0].transcript;
-          if (transcript && transcript.trim()) {
-            console.log(`[SensoryService] Transcript received: "${transcript}"`);
-            console.log(`[SensoryService] Calling handleAmbientTranscript for user: ${socket.user.name}`);
-            this.coreAgent.handleAmbientTranscript(transcript, socket.user);
-          } else {
-            console.log(`[SensoryService] Empty transcript received`);
-          }
-        } else {
-          console.log(`[SensoryService] Invalid transcript data structure`);
-        }
-      });
-
-      deepgramConnection.on('error', (error) => {
-        console.error('[SensoryService] Deepgram error:', error);
-        // Fallback to mock transcription on error
-        console.log(`[SensoryService] Falling back to mock transcription for user: ${socket.user.name}`);
-        this.handleConnectionWithoutDeepgram(socket);
-      });
-      deepgramConnection.on('close', () => {
-        console.log(`[SensoryService] Deepgram connection closed for user: ${socket.user.name}`);
-        this.connections.delete(socket.id);
-      });
-    });
-
-    socket.on('audio_stream', (audioData) => {
-      // DEBUG LOG: Confirm that audio data is being received.
-      console.log(`[SensoryService] Received audio chunk of size: ${audioData.byteLength || audioData.length}, type: ${typeof audioData}`);
-      console.log(`[SensoryService] Deepgram connection ready state: ${deepgramConnection.getReadyState()}`);
-      
-      if (deepgramConnection.getReadyState() === 1) {
-        try {
-          // Ensure audio data is in the right format
-          const buffer = Buffer.from(audioData);
-          deepgramConnection.send(buffer);
-          console.log(`[SensoryService] Successfully sent ${buffer.length} bytes to Deepgram`);
-        } catch (error) {
-          console.error(`[SensoryService] Error sending audio to Deepgram:`, error);
-        }
-      } else {
-        console.log(`[SensoryService] Deepgram connection not ready, skipping audio chunk`);
+    console.log(
+      `[SensoryService] New ambient connection for user: ${socket.user.name}`,
+      {
+        audio: audioEnabled === 'true',
+        video: videoEnabled === 'true',
+        privacy: privacyMode,
       }
-    });
+    );
 
-    socket.on('video_frame', (videoData) => {
-      console.log(`[SensoryService] Received video frame of size: ${videoData.byteLength || videoData.length} for user: ${socket.user.name}`);
-      // Process video frame for visual analysis
-      const buffer = Buffer.from(videoData);
-      this.coreAgent.handleVideoFrame(buffer, socket.user);
-    });
+    const connectionData = {
+      user: socket.user,
+      audioEnabled: audioEnabled === 'true',
+      videoEnabled: videoEnabled === 'true',
+      privacyMode: privacyMode || 'standard',
+      deepgramConnection: null,
+      lastVideoAnalysis: 0,
+    };
+
+    // Setup audio processing if enabled
+    if (connectionData.audioEnabled && this.deepgram) {
+      this.setupAudioProcessing(socket, connectionData);
+    }
+
+    // Setup video processing if enabled
+    if (connectionData.videoEnabled) {
+      this.setupVideoProcessing(socket, connectionData);
+    }
 
     socket.on('disconnect', () => {
-      console.log(`[SensoryService] Ambient socket disconnected for user: ${socket.user.name}`);
-      if (deepgramConnection) {
-        deepgramConnection.finish();
-      }
+      console.log(
+        `[SensoryService] Ambient socket disconnected for user: ${socket.user.name}`
+      );
+      this.cleanupConnection(socket.id);
     });
 
-    this.connections.set(socket.id, deepgramConnection);
+    this.connections.set(socket.id, connectionData);
   }
 
-  // Fallback method when Deepgram is not available
-  handleConnectionWithoutDeepgram(socket) {
-    console.log(`[SensoryService] Setting up mock transcription for user: ${socket.user.name}`);
-    
-    // Mock transcription - for testing purposes, we'll simulate hearing "cartrita"
-    let mockTranscriptTimer = null;
-    
-    socket.on('audio_stream', (audioData) => {
-      console.log(`[SensoryService] Received audio chunk (mock mode): ${audioData.byteLength || audioData.length} bytes`);
-      
-      // For testing - simulate hearing "cartrita" every 30 seconds
-      if (!mockTranscriptTimer) {
-        mockTranscriptTimer = setTimeout(() => {
-          console.log(`[SensoryService] Mock transcript: "hey cartrita can you help me"`);
-          this.coreAgent.handleAmbientTranscript("hey cartrita can you help me", socket.user);
-          mockTranscriptTimer = null;
-        }, 10000); // 10 seconds for testing
+  setupAudioProcessing(socket, connectionData) {
+    const deepgramConnection = this.deepgram.listen.live({
+      model: 'nova-2',
+      smart_format: true,
+      interim_results: false,
+      endpointing: 300,
+    });
+
+    deepgramConnection.on('open', () => {
+      console.log(
+        `[SensoryService] Deepgram connection opened for user: ${connectionData.user.name}`
+      );
+
+      deepgramConnection.on('transcript', data => {
+        const transcript = data.channel.alternatives[0].transcript;
+        if (transcript) {
+          console.log(`[SensoryService] Transcript received: "${transcript}"`);
+          this.coreAgent.handleAmbientTranscript(
+            transcript,
+            connectionData.user
+          );
+        }
+      });
+
+      deepgramConnection.on('error', error => {
+        console.error('[SensoryService] Deepgram error:', error);
+      });
+
+      deepgramConnection.on('close', () => {
+        console.log(
+          `[SensoryService] Deepgram connection closed for user: ${connectionData.user.name}`
+        );
+      });
+    });
+
+    socket.on('audio_stream', audioData => {
+      if (deepgramConnection && deepgramConnection.getReadyState() === 1) {
+        deepgramConnection.send(audioData);
       }
     });
 
-    socket.on('video_frame', (videoData) => {
-      console.log(`[SensoryService] Received video frame (mock mode): ${videoData.byteLength || videoData.length} bytes`);
-      const buffer = Buffer.from(videoData);
-      this.coreAgent.handleVideoFrame(buffer, socket.user);
-    });
+    connectionData.deepgramConnection = deepgramConnection;
+  }
 
-    socket.on('disconnect', () => {
-      console.log(`[SensoryService] Mock ambient socket disconnected for user: ${socket.user.name}`);
-      if (mockTranscriptTimer) {
-        clearTimeout(mockTranscriptTimer);
+  setupVideoProcessing(socket, connectionData) {
+    console.log(
+      `[SensoryService] Setting up video processing for user: ${connectionData.user.name}`
+    );
+
+    socket.on('video_frame', async frameData => {
+      try {
+        // Rate limiting: process frames at most every 5 seconds for privacy and performance
+        const now = Date.now();
+        if (now - connectionData.lastVideoAnalysis < 5000) {
+          return;
+        }
+
+        connectionData.lastVideoAnalysis = now;
+
+        // Process the video frame
+        const analysisResult = await this.analyzeVideoFrame(
+          frameData,
+          connectionData
+        );
+
+        if (analysisResult) {
+          // Send to CoreAgent for potential proactive response
+          this.coreAgent.handleVideoFrame(analysisResult, connectionData.user);
+        }
+      } catch (error) {
+        console.error('[SensoryService] Video frame processing error:', error);
       }
     });
+  }
+
+  async analyzeVideoFrame(frameData, connectionData) {
+    try {
+      // For privacy, we'll do basic scene analysis without storing the image
+      const analysis = await this.processVideoFrame(
+        frameData,
+        connectionData.privacyMode
+      );
+
+      console.log(
+        `[SensoryService] Video analysis for ${connectionData.user.name}:`,
+        analysis.scene
+      );
+
+      return analysis;
+    } catch (error) {
+      console.error('[SensoryService] Video analysis error:', error);
+      return null;
+    }
+  }
+
+  async processVideoFrame(frameData, privacyMode) {
+    // For now, we'll create a mock analysis
+    // In production, this would use OpenAI Vision API or similar
+    const mockAnalysis = {
+      scene: this.generateMockSceneDescription(),
+      objects: ['person', 'computer', 'desk'],
+      activities: ['working', 'typing'],
+      mood: 'focused',
+      confidence: 0.8,
+      timestamp: new Date().toISOString(),
+      privacyMode,
+    };
+
+    return mockAnalysis;
+  }
+
+  generateMockSceneDescription() {
+    const scenes = [
+      'Person working at a computer desk',
+      'Someone reading documents',
+      'Individual typing on a keyboard',
+      'Person in a video call',
+      'Someone taking notes',
+      'Individual looking at multiple monitors',
+    ];
+
+    return scenes[Math.floor(Math.random() * scenes.length)];
+  }
+
+  cleanupConnection(socketId) {
+    const connectionData = this.connections.get(socketId);
+    if (connectionData) {
+      if (connectionData.deepgramConnection) {
+        connectionData.deepgramConnection.finish();
+      }
+      this.connections.delete(socketId);
+    }
   }
 }
 
+// FIXED: Export the class itself, not an instance.
 module.exports = SensoryProcessingService;

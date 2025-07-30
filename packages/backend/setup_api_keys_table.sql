@@ -32,4 +32,4 @@ BEGIN
 END
 $$;
 
-\echo "✅ 'user_api_keys' table is ready."
+-- ✅ User API Keys table is ready.

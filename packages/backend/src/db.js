@@ -1,8 +1,19 @@
 const { Pool } = require('pg');
 
-// This will use the DATABASE_URL from the .env file loaded in index.js
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  user: process.env.POSTGRES_USER || 'robert',
+  host: process.env.POSTGRES_HOST || 'db',
+  database: process.env.POSTGRES_DB || 'dat-bitch-cartrita',
+  password: process.env.POSTGRES_PASSWORD || 'punky1',
+  port: process.env.POSTGRES_PORT || 5432,
+});
+
+pool.on('connect', () => {
+  console.log('✅ Database connected successfully');
+});
+
+pool.on('error', err => {
+  console.error('❌ Database connection error:', err);
 });
 
 module.exports = pool;

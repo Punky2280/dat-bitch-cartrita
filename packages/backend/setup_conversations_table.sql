@@ -1,18 +1,19 @@
--- packages/backend/setup_conversations_table.sql
+-- =====================================================
+-- CONVERSATIONS TABLE SETUP
+-- =====================================================
 
--- Create the 'conversations' table if it doesn't already exist.
--- This table will store the entire chat history for all users.
+-- Create conversations table (depends on users)
 CREATE TABLE IF NOT EXISTS conversations (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id),
-    speaker TEXT NOT NULL, -- 'user' or 'cartrita'
-    text TEXT NOT NULL,
-    model TEXT, -- The model used for the response, e.g., 'cartrita-orchestrator'
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  speaker TEXT NOT NULL CHECK (speaker IN ('user', 'cartrita')),
+  text TEXT NOT NULL,
+  model TEXT, -- The model used for the response
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Create an index on user_id for faster history lookups.
+-- Create indexes for faster lookups
 CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON conversations(user_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_created_at ON conversations(created_at);
 
--- Notify that the script has run
-\echo "✅ 'conversations' table is ready."
+-- ✅ Conversations table is ready.

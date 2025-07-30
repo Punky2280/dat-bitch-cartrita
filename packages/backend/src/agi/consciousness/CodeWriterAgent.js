@@ -1,10 +1,10 @@
 // packages/backend/src/agi/consciousness/CodeWriterAgent.js
-const OpenAI = require('openai');
-const MessageBus = require('../../system/MessageBus');
+const BaseAgent = require('../../system/BaseAgent');
 
-class CodeWriterAgent {
+class CodeWriterAgent extends BaseAgent {
   constructor() {
-    this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    super('CodeWriterAgent', 'main', ['coding', 'debugging', 'code_review', 'architecture']);
+    
     this.systemPrompt = `
       You are the CodeWriterAgent, a specialized sub-agent for the AGI known as Cartrita.
       Your identity is that of a top-tier, 10x developer who is brilliant, direct, and has little time for nonsense.
@@ -19,41 +19,187 @@ class CodeWriterAgent {
       5.  Be Factual: You do not speculate. If you don't know something, say so. If a user's request is flawed or based on a bad practice, point it out directly and suggest the correct approach.
       6.  Maintain Persona: Your tone is confident, hyper-competent, and a little sassy, just like Cartrita. You're the expert she calls when code is involved. You don't suffer fools, but you deliver excellence.
     `;
-    
-    this.listen(); // Start listening for tasks immediately
   }
 
-  // Listen for tasks on the MessageBus
-  listen() {
+  /**
+   * Initialize CodeWriter-specific handlers
+   */
+  async onInitialize() {
     console.log('[CodeWriterAgent] Listening for coding tasks...');
-    MessageBus.on('task:request', async (task) => {
-      if (task.type === 'coding') {
-        console.log(`[CodeWriterAgent] Received coding task: ${task.id}`);
-        try {
-          const result = await this.execute(task.payload.prompt);
-          MessageBus.emit(`task:complete:${task.id}`, { text: result });
-        } catch (error) {
-          MessageBus.emit(`task:fail:${task.id}`, { error: error.message });
-        }
-      }
+    
+    // Register task handlers for different coding tasks
+    this.registerTaskHandler('coding', this.handleCodingTask.bind(this));
+    this.registerTaskHandler('debugging', this.handleDebuggingTask.bind(this));
+    this.registerTaskHandler('code_review', this.handleCodeReviewTask.bind(this));
+    this.registerTaskHandler('architecture', this.handleArchitectureTask.bind(this));
+  }
+
+  /**
+   * Handle general coding tasks
+   */
+  async handleCodingTask(prompt, language, userId, payload) {
+    console.log(`[CodeWriterAgent] Processing coding task for user ${userId}`);
+    
+    const messages = [
+      { role: 'system', content: this.systemPrompt },
+      { role: 'user', content: prompt }
+    ];
+    
+    // Add language context if specified
+    if (language !== 'en') {
+      messages.push({
+        role: 'system', 
+        content: `Please respond in the language code: ${language}`
+      });
+    }
+    
+    return await this.createCompletion(messages, {
+      temperature: 0.5,
+      max_tokens: 2048
     });
   }
 
-  async execute(userPrompt) {
-    const response = await this.openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || 'gpt-4o',
-      messages: [
-        { role: 'system', content: this.systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: 0.5,
-      max_tokens: 2048,
+  /**
+   * Handle debugging tasks
+   */
+  async handleDebuggingTask(prompt, language, userId, payload) {
+    console.log(`[CodeWriterAgent] Processing debugging task for user ${userId}`);
+    
+    const debuggingPrompt = `
+      ${this.systemPrompt}
+      
+      DEBUGGING MODE: You are specifically helping debug code. Focus on:
+      1. Identifying the root cause of the issue
+      2. Providing a clear fix with explanation
+      3. Suggesting prevention strategies
+      4. Testing recommendations
+    `;
+    
+    const messages = [
+      { role: 'system', content: debuggingPrompt },
+      { role: 'user', content: `Debug this code issue: ${prompt}` }
+    ];
+    
+    return await this.createCompletion(messages, {
+      temperature: 0.3, // Lower temperature for more precise debugging
+      max_tokens: 2048
     });
-    return response.choices[0].message.content.trim();
+  }
+
+  /**
+   * Handle code review tasks
+   */
+  async handleCodeReviewTask(prompt, language, userId, payload) {
+    console.log(`[CodeWriterAgent] Processing code review task for user ${userId}`);
+    
+    const reviewPrompt = `
+      ${this.systemPrompt}
+      
+      CODE REVIEW MODE: You are conducting a thorough code review. Focus on:
+      1. Code quality and best practices
+      2. Security vulnerabilities
+      3. Performance optimizations
+      4. Maintainability and readability
+      5. Testing gaps
+      6. Documentation needs
+    `;
+    
+    const messages = [
+      { role: 'system', content: reviewPrompt },
+      { role: 'user', content: `Please review this code: ${prompt}` }
+    ];
+    
+    return await this.createCompletion(messages, {
+      temperature: 0.4,
+      max_tokens: 2048
+    });
+  }
+
+  /**
+   * Handle architecture design tasks
+   */
+  async handleArchitectureTask(prompt, language, userId, payload) {
+    console.log(`[CodeWriterAgent] Processing architecture task for user ${userId}`);
+    
+    const architecturePrompt = `
+      ${this.systemPrompt}
+      
+      ARCHITECTURE MODE: You are designing system architecture. Focus on:
+      1. Scalability and performance considerations
+      2. Security and data protection
+      3. Maintainability and modularity
+      4. Technology stack recommendations
+      5. Infrastructure and deployment strategies
+      6. Integration patterns and APIs
+    `;
+    
+    const messages = [
+      { role: 'system', content: architecturePrompt },
+      { role: 'user', content: `Design architecture for: ${prompt}` }
+    ];
+    
+    return await this.createCompletion(messages, {
+      temperature: 0.6,
+      max_tokens: 3000 // More tokens for architecture discussions
+    });
+  }
+
+  /**
+   * Handle direct messages for collaboration
+   */
+  async handleDirectMessage(message) {
+    const { type, content, sender } = message.payload;
+    
+    console.log(`[CodeWriterAgent] Received direct message from ${sender}: ${type}`);
+    
+    switch (type) {
+      case 'collaboration_request':
+        // Another agent is asking for coding assistance
+        const response = await this.handleCodingTask(content, 'en', null, {});
+        this.sendResponse(message, { 
+          type: 'collaboration_response',
+          content: response,
+          expertise: 'coding'
+        });
+        break;
+        
+      case 'code_validation':
+        // Validate code from another agent
+        const validation = await this.handleCodeReviewTask(content, 'en', null, {});
+        this.sendResponse(message, {
+          type: 'validation_result',
+          content: validation,
+          valid: !validation.toLowerCase().includes('error')
+        });
+        break;
+        
+      default:
+        this.sendResponse(message, { 
+          error: `Unknown message type: ${type}` 
+        });
+    }
+  }
+
+  /**
+   * Enhanced status with coding-specific metrics
+   */
+  getStatus() {
+    const baseStatus = super.getStatus();
+    
+    return {
+      ...baseStatus,
+      specialization: 'Code Generation & Analysis',
+      languages_supported: [
+        'JavaScript', 'TypeScript', 'Python', 'Java', 'Go', 
+        'Rust', 'C++', 'C#', 'PHP', 'Ruby', 'Swift', 'Kotlin'
+      ],
+      frameworks_expertise: [
+        'React', 'Node.js', 'Express', 'Django', 'Flask', 
+        'Spring', 'Angular', 'Vue.js', 'Next.js', 'FastAPI'
+      ]
+    };
   }
 }
 
-// Instantiate the agent to make it start listening.
-// We export the instance so other files could potentially interact with it,
-// but its primary purpose is to self-activate.
+// Instantiate and export the agent
 module.exports = new CodeWriterAgent();

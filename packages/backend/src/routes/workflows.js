@@ -1,116 +1,411 @@
-// packages/backend/src/routes/workflows.js
 const express = require('express');
-const { Pool } = require('pg');
-const authenticateToken = require('../middleware/authenticateToken');
-const WorkflowEngine = require('../system/WorkflowEngine'); // Import the engine
-
 const router = express.Router();
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const db = require('../db');
+const authenticateToken = require('../middleware/authenticateToken');
+const WorkflowEngine = require('../services/WorkflowEngine');
 
-router.use(authenticateToken);
-
-// --- NEW: Endpoint to run a workflow ---
-router.post('/:id/run', async (req, res) => {
-  const { id } = req.params;
+// =================================================================
+// GET /api/workflows - Get user's workflows
+// =================================================================
+router.get('/', authenticateToken, async (req, res) => {
   try {
-    const finalResult = await WorkflowEngine.run(id, req.user.userId);
-    // We can send the final result back, or just a success message
-    // For now, let's send a success message and the result.
-    res.json({ message: 'Workflow executed successfully!', result: finalResult });
-  } catch (error) {
-    console.error(`Error running workflow ${id}:`, error);
-    res.status(500).json({ message: error.message || 'Server error while running workflow.' });
+    const userId = req.user.id;
+    const { category, is_template } = req.query;
+    
+    let query = 'SELECT * FROM workflows WHERE user_id = $1';
+    const params = [userId];
+    
+    if (category) {
+      query += ' AND category = $2';
+      params.push(category);
+    }
+    
+    if (is_template !== undefined) {
+      query += ` AND is_template = $${params.length + 1}`;
+      params.push(is_template === 'true');
+    }
+    
+    query += ' ORDER BY updated_at DESC';
+    
+    const { rows } = await db.query(query, params);
+    
+    res.json({
+      success: true,
+      workflows: rows,
+      count: rows.length
+    });
+  } catch (err) {
+    console.error('[Workflows] Error fetching workflows:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// GET all workflows for the logged-in user
-router.get('/', async (req, res) => {
+// =================================================================
+// GET /api/workflows/templates - Get workflow templates
+// =================================================================
+router.get('/templates', authenticateToken, async (req, res) => {
   try {
-    const result = await pool.query(
-      'SELECT id, name, updated_at FROM workflows WHERE user_id = $1 ORDER BY updated_at DESC',
-      [req.user.userId]
+    const { category } = req.query;
+    
+    let query = 'SELECT * FROM workflows WHERE is_template = true';
+    const params = [];
+    
+    if (category) {
+      query += ' AND category = $1';
+      params.push(category);
+    }
+    
+    query += ' ORDER BY name ASC';
+    
+    const { rows } = await db.query(query, params);
+    
+    res.json({
+      success: true,
+      templates: rows,
+      count: rows.length
+    });
+  } catch (err) {
+    console.error('[Workflows] Error fetching templates:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// =================================================================
+// POST /api/workflows - Create new workflow
+// =================================================================
+router.post('/', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { name, description, workflow_data, category, tags } = req.body;
+    
+    if (!name || !workflow_data) {
+      return res.status(400).json({ error: 'Name and workflow_data are required' });
+    }
+    
+    const { rows } = await db.query(
+      `INSERT INTO workflows (user_id, name, description, workflow_data, category, tags, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+       RETURNING *`,
+      [userId, name, description, workflow_data, category || 'custom', tags || []]
     );
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching workflows:', error);
-    res.status(500).json({ message: 'Server error while fetching workflows.' });
+    
+    res.json({
+      success: true,
+      workflow: rows[0]
+    });
+  } catch (err) {
+    console.error('[Workflows] Error creating workflow:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// POST a new workflow
-router.post('/', async (req, res) => {
-  const { name, definition } = req.body;
-  if (!name || !definition || !Array.isArray(definition)) {
-    return res.status(400).json({ message: 'Workflow name and a valid definition array are required.' });
-  }
+// =================================================================
+// PUT /api/workflows/:id - Update workflow
+// =================================================================
+router.put('/:id', authenticateToken, async (req, res) => {
   try {
-    const result = await pool.query(
-      'INSERT INTO workflows (user_id, name, definition) VALUES ($1, $2, $3) RETURNING *',
-      [req.user.userId, name, JSON.stringify(definition)]
+    const userId = req.user.id;
+    const workflowId = req.params.id;
+    const { name, description, workflow_data, category, tags, is_active } = req.body;
+    
+    const { rows } = await db.query(
+      `UPDATE workflows 
+       SET name = COALESCE($1, name),
+           description = COALESCE($2, description),
+           workflow_data = COALESCE($3, workflow_data),
+           category = COALESCE($4, category),
+           tags = COALESCE($5, tags),
+           is_active = COALESCE($6, is_active),
+           updated_at = NOW()
+       WHERE id = $7 AND user_id = $8
+       RETURNING *`,
+      [name, description, workflow_data, category, tags, is_active, workflowId, userId]
     );
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating workflow:', error);
-    res.status(500).json({ message: 'Server error while creating workflow.' });
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Workflow not found' });
+    }
+    
+    res.json({
+      success: true,
+      workflow: rows[0]
+    });
+  } catch (err) {
+    console.error('[Workflows] Error updating workflow:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// GET a single workflow by ID
-router.get('/:id', async (req, res) => {
-    const { id } = req.params;
-    try {
-        const result = await pool.query(
-            'SELECT * FROM workflows WHERE id = $1 AND user_id = $2',
-            [id, req.user.userId]
-        );
-        if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Workflow not found.' });
-        }
-        res.json(result.rows[0]);
-    } catch (error) {
-        console.error('Error fetching workflow:', error);
-        res.status(500).json({ message: 'Server error.' });
+// =================================================================
+// DELETE /api/workflows/:id - Delete workflow
+// =================================================================
+router.delete('/:id', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const workflowId = req.params.id;
+    
+    const { rows } = await db.query(
+      'DELETE FROM workflows WHERE id = $1 AND user_id = $2 RETURNING id',
+      [workflowId, userId]
+    );
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Workflow not found' });
     }
+    
+    res.json({
+      success: true,
+      message: 'Workflow deleted successfully'
+    });
+  } catch (err) {
+    console.error('[Workflows] Error deleting workflow:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
-// PUT (update) a workflow by ID
-router.put('/:id', async (req, res) => {
-    const { id } = req.params;
-    const { name, definition } = req.body;
-    if (!name || !definition || !Array.isArray(definition)) {
-        return res.status(400).json({ message: 'Workflow name and a valid definition array are required.' });
+// =================================================================
+// POST /api/workflows/:id/execute - Execute workflow
+// =================================================================
+router.post('/:id/execute', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const workflowId = req.params.id;
+    const { input_data } = req.body;
+    
+    // Get workflow
+    const { rows: workflowRows } = await db.query(
+      'SELECT * FROM workflows WHERE id = $1 AND user_id = $2',
+      [workflowId, userId]
+    );
+    
+    if (workflowRows.length === 0) {
+      return res.status(404).json({ error: 'Workflow not found' });
     }
-    try {
-        const result = await pool.query(
-            'UPDATE workflows SET name = $1, definition = $2 WHERE id = $3 AND user_id = $4 RETURNING *',
-            [name, JSON.stringify(definition), id, req.user.userId]
+    
+    const workflow = workflowRows[0];
+    
+    if (!workflow.is_active) {
+      return res.status(400).json({ error: 'Workflow is not active' });
+    }
+    
+    // Create execution record
+    const { rows: executionRows } = await db.query(
+      `INSERT INTO workflow_executions (workflow_id, user_id, trigger_type, input_data, started_at)
+       VALUES ($1, $2, 'manual', $3, NOW())
+       RETURNING *`,
+      [workflowId, userId, input_data || {}]
+    );
+    
+    const execution = executionRows[0];
+    
+    // Execute workflow asynchronously
+    setImmediate(async () => {
+      try {
+        const engine = new WorkflowEngine();
+        const result = await engine.executeWorkflow(workflow, input_data || {}, execution.id);
+        
+        // Update execution with results
+        await db.query(
+          `UPDATE workflow_executions 
+           SET status = $1, output_data = $2, execution_logs = $3, completed_at = NOW(),
+               execution_time_ms = EXTRACT(EPOCH FROM (NOW() - started_at)) * 1000
+           WHERE id = $4`,
+          ['completed', result.output, result.logs, execution.id]
         );
-        if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Workflow not found or you do not have permission to edit it.' });
-        }
-        res.json(result.rows[0]);
-    } catch (error) {
-        console.error('Error updating workflow:', error);
-        res.status(500).json({ message: 'Server error.' });
-    }
+      } catch (error) {
+        console.error('[Workflows] Execution error:', error);
+        
+        // Update execution with error
+        await db.query(
+          `UPDATE workflow_executions 
+           SET status = 'failed', error_message = $1, completed_at = NOW(),
+               execution_time_ms = EXTRACT(EPOCH FROM (NOW() - started_at)) * 1000
+           WHERE id = $2`,
+          [error.message, execution.id]
+        );
+      }
+    });
+    
+    res.json({
+      success: true,
+      execution: {
+        id: execution.id,
+        status: 'running',
+        started_at: execution.started_at
+      }
+    });
+  } catch (err) {
+    console.error('[Workflows] Error executing workflow:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
-// DELETE a workflow by ID
-router.delete('/:id', async (req, res) => {
-    const { id } = req.params;
-    try {
-        const result = await pool.query(
-            'DELETE FROM workflows WHERE id = $1 AND user_id = $2 RETURNING *',
-            [id, req.user.userId]
-        );
-        if (result.rowCount === 0) {
-            return res.status(404).json({ message: 'Workflow not found or you do not have permission to delete it.' });
-        }
-        res.status(204).send();
-    } catch (error) {
-        console.error('Error deleting workflow:', error);
-        res.status(500).json({ message: 'Server error.' });
+// =================================================================
+// GET /api/workflows/:id/executions - Get workflow execution history
+// =================================================================
+router.get('/:id/executions', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const workflowId = req.params.id;
+    const { limit = 50, offset = 0 } = req.query;
+    
+    const { rows } = await db.query(
+      `SELECT * FROM workflow_executions 
+       WHERE workflow_id = $1 AND user_id = $2 
+       ORDER BY started_at DESC 
+       LIMIT $3 OFFSET $4`,
+      [workflowId, userId, limit, offset]
+    );
+    
+    res.json({
+      success: true,
+      executions: rows,
+      count: rows.length
+    });
+  } catch (err) {
+    console.error('[Workflows] Error fetching executions:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// =================================================================
+// GET /api/workflows/executions/:executionId - Get execution details
+// =================================================================
+router.get('/executions/:executionId', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const executionId = req.params.executionId;
+    
+    const { rows } = await db.query(
+      'SELECT * FROM workflow_executions WHERE id = $1 AND user_id = $2',
+      [executionId, userId]
+    );
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Execution not found' });
     }
+    
+    res.json({
+      success: true,
+      execution: rows[0]
+    });
+  } catch (err) {
+    console.error('[Workflows] Error fetching execution:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// =================================================================
+// POST /api/workflows/:id/duplicate - Duplicate workflow
+// =================================================================
+router.post('/:id/duplicate', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const workflowId = req.params.id;
+    
+    // Get original workflow
+    const { rows: originalRows } = await db.query(
+      'SELECT * FROM workflows WHERE id = $1 AND user_id = $2',
+      [workflowId, userId]
+    );
+    
+    if (originalRows.length === 0) {
+      return res.status(404).json({ error: 'Workflow not found' });
+    }
+    
+    const original = originalRows[0];
+    
+    // Create duplicate
+    const { rows: duplicateRows } = await db.query(
+      `INSERT INTO workflows (user_id, name, description, workflow_data, category, tags, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+       RETURNING *`,
+      [
+        userId,
+        `${original.name} (Copy)`,
+        original.description,
+        original.workflow_data,
+        original.category,
+        original.tags
+      ]
+    );
+    
+    res.json({
+      success: true,
+      workflow: duplicateRows[0]
+    });
+  } catch (err) {
+    console.error('[Workflows] Error duplicating workflow:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// =================================================================
+// GET /api/workflows/node-types - Get available node types
+// =================================================================
+router.get('/node-types', authenticateToken, async (req, res) => {
+  try {
+    const nodeTypes = {
+      triggers: [
+        { type: 'manual-trigger', name: 'Manual Trigger', icon: '▶️', description: 'Start workflow manually' },
+        { type: 'schedule-trigger', name: 'Schedule', icon: '⏰', description: 'Time-based trigger' },
+        { type: 'webhook-trigger', name: 'Webhook', icon: '🔗', description: 'HTTP webhook trigger' },
+        { type: 'file-watch-trigger', name: 'File Watcher', icon: '📁', description: 'File system trigger' }
+      ],
+      ai: [
+        { type: 'ai-gpt4', name: 'GPT-4', icon: '🧠', description: 'OpenAI GPT-4 model' },
+        { type: 'ai-claude', name: 'Claude', icon: '🎭', description: 'Anthropic Claude model' },
+        { type: 'ai-local', name: 'Local Model', icon: '🏠', description: 'Local LLM inference' },
+        { type: 'ai-custom-prompt', name: 'Custom Prompt', icon: '💭', description: 'Custom AI prompt template' }
+      ],
+      rag: [
+        { type: 'rag-document-loader', name: 'Document Loader', icon: '📄', description: 'Load and parse documents' },
+        { type: 'rag-text-splitter', name: 'Text Splitter', icon: '✂️', description: 'Split text into chunks' },
+        { type: 'rag-embeddings', name: 'Generate Embeddings', icon: '🔢', description: 'Create vector embeddings' },
+        { type: 'rag-vector-store', name: 'Vector Store', icon: '🗃️', description: 'Store/retrieve vectors' },
+        { type: 'rag-search', name: 'Similarity Search', icon: '🔍', description: 'Find similar content' }
+      ],
+      mcp: [
+        { type: 'mcp-core', name: 'Core Agent', icon: '🎯', description: 'Master orchestration agent' },
+        { type: 'mcp-coder', name: 'Code Writer', icon: '💻', description: 'Code generation and review' },
+        { type: 'mcp-writer', name: 'Writer', icon: '✍️', description: 'Creative writing agent' },
+        { type: 'mcp-artist', name: 'Artist', icon: '🎨', description: 'Image generation agent' },
+        { type: 'mcp-comedian', name: 'Comedian', icon: '😄', description: 'Humor and comedy agent' },
+        { type: 'mcp-emotional', name: 'Emotional Intelligence', icon: '❤️', description: 'Emotional support agent' },
+        { type: 'mcp-scheduler', name: 'Scheduler', icon: '📅', description: 'Calendar and task management' },
+        { type: 'mcp-task-manager', name: 'Task Manager', icon: '✅', description: 'Project and task organization' }
+      ],
+      integrations: [
+        { type: 'http-request', name: 'HTTP Request', icon: '🌐', description: 'Make HTTP API calls' },
+        { type: 'webhook-response', name: 'Webhook Response', icon: '📡', description: 'Send webhook response' },
+        { type: 'database-query', name: 'Database Query', icon: '🗄️', description: 'Execute database queries' },
+        { type: 'file-operations', name: 'File Operations', icon: '📂', description: 'Read/write files' },
+        { type: 'email-send', name: 'Send Email', icon: '📧', description: 'Send email messages' }
+      ],
+      logic: [
+        { type: 'logic-condition', name: 'Condition', icon: '❓', description: 'If/else logic branch' },
+        { type: 'logic-switch', name: 'Switch', icon: '🔄', description: 'Multi-way switch' },
+        { type: 'logic-loop', name: 'Loop', icon: '🔁', description: 'Iterate over data' },
+        { type: 'logic-merge', name: 'Merge', icon: '🔗', description: 'Combine multiple inputs' },
+        { type: 'logic-split', name: 'Split', icon: '⚡', description: 'Split data to multiple outputs' }
+      ],
+      data: [
+        { type: 'data-transform', name: 'Transform', icon: '🔄', description: 'Transform data structure' },
+        { type: 'data-filter', name: 'Filter', icon: '🗃️', description: 'Filter data by criteria' },
+        { type: 'data-aggregate', name: 'Aggregate', icon: '📊', description: 'Aggregate and summarize data' },
+        { type: 'data-validate', name: 'Validate', icon: '✅', description: 'Validate data format' },
+        { type: 'data-extract', name: 'Extract', icon: '📤', description: 'Extract specific data fields' }
+      ]
+    };
+    
+    res.json({
+      success: true,
+      nodeTypes
+    });
+  } catch (err) {
+    console.error('[Workflows] Error fetching node types:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 module.exports = router;

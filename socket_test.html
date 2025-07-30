@@ -1,0 +1,155 @@
+<!doctype html>
+<html>
+  <head>
+    <title>🔌 Socket.IO Test - Dat Bitch Cartrita</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+      body {
+        font-family: monospace;
+        background: #0a0a0a;
+        color: #00ff00;
+        padding: 20px;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      .log {
+        background: #1a1a1a;
+        border: 1px solid #00ff00;
+        padding: 15px;
+        height: 400px;
+        overflow-y: auto;
+        margin: 10px 0;
+      }
+      button {
+        background: #00ff00;
+        color: #000;
+        border: none;
+        padding: 10px 15px;
+        margin: 5px;
+        cursor: pointer;
+      }
+      input {
+        background: #2a2a2a;
+        color: #00ff00;
+        border: 1px solid #00ff00;
+        padding: 8px;
+        margin: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔌 Socket.IO Real-Time Test</h1>
+      <div>
+        <button onclick="connect()">Connect</button>
+        <button onclick="disconnect()">Disconnect</button>
+        <button onclick="testWorkflow()">Test Workflow Event</button>
+        <button onclick="testChat()">Test Chat Event</button>
+      </div>
+
+      <div>
+        <input
+          type="text"
+          id="messageInput"
+          placeholder="Enter message..."
+          style="width: 300px"
+        />
+        <button onclick="sendMessage()">Send Message</button>
+      </div>
+
+      <div class="log" id="log">
+        <div>🔌 Socket.IO Test Client Ready</div>
+        <div>Click 'Connect' to start...</div>
+      </div>
+    </div>
+
+    <script>
+      let socket = null;
+      const log = document.getElementById('log');
+
+      function addLog(message) {
+        const div = document.createElement('div');
+        div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+      }
+
+      function connect() {
+        if (socket) {
+          addLog('❌ Already connected');
+          return;
+        }
+
+        addLog('🔌 Connecting to Socket.IO...');
+        socket = io('http://localhost:8000');
+
+        socket.on('connect', () => {
+          addLog(`✅ Connected! Socket ID: ${socket.id}`);
+        });
+
+        socket.on('disconnect', () => {
+          addLog('❌ Disconnected');
+          socket = null;
+        });
+
+        socket.on('workflow_update', data => {
+          addLog(`🔄 Workflow Update: ${JSON.stringify(data)}`);
+        });
+
+        socket.on('chat_message', data => {
+          addLog(`💬 Chat: ${JSON.stringify(data)}`);
+        });
+
+        socket.on('system_status', data => {
+          addLog(`📊 System: ${JSON.stringify(data)}`);
+        });
+
+        // Listen for any event
+        socket.onAny((eventName, ...args) => {
+          addLog(`📡 Event '${eventName}': ${JSON.stringify(args)}`);
+        });
+      }
+
+      function disconnect() {
+        if (socket) {
+          socket.disconnect();
+          socket = null;
+          addLog('🔌 Disconnected manually');
+        }
+      }
+
+      function testWorkflow() {
+        if (!socket) {
+          addLog('❌ Not connected');
+          return;
+        }
+        socket.emit('workflow_test', { action: 'test', timestamp: Date.now() });
+        addLog('📤 Sent workflow test event');
+      }
+
+      function testChat() {
+        if (!socket) {
+          addLog('❌ Not connected');
+          return;
+        }
+        socket.emit('chat_test', { message: 'Hello AGI!', user: 'test' });
+        addLog('📤 Sent chat test event');
+      }
+
+      function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const message = input.value.trim();
+        if (!message || !socket) {
+          addLog('❌ No message or not connected');
+          return;
+        }
+
+        socket.emit('message', { text: message, timestamp: Date.now() });
+        addLog(`📤 Sent: ${message}`);
+        input.value = '';
+      }
+    </script>
+  </body>
+</html>

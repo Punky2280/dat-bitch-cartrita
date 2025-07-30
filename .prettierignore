@@ -1,0 +1,10 @@
+node_modules/
+dist/
+build/
+coverage/
+.git/
+*.log
+*.lock
+.env
+.env.*
+db-init/*.sql

@@ -1,25 +1,27 @@
-// packages/backend/src/middleware/authenticateTokenSocket.js
 const jwt = require('jsonwebtoken');
 
-/**
- * Socket.IO middleware to authenticate a user via JWT.
- * The token is expected to be in the `auth.token` property of the socket handshake.
- */
 function authenticateTokenSocket(socket, next) {
-  const token = socket.handshake.auth.token;
+  const token = socket.handshake?.auth?.token;
 
-  if (token == null) {
-    console.error('[Socket Auth] Error: No token provided.');
+  if (!token) {
+    console.warn('[Socket Auth] 🚫 No token found in handshake.');
     return next(new Error('Authentication error: No token provided.'));
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  jwt.verify(token, process.env.JWT_SECRET, (err, decodedPayload) => {
     if (err) {
-      console.error('[Socket Auth] Error: Invalid token.');
+      console.error('[Socket Auth] ❌ Invalid token:', err.message);
       return next(new Error('Authentication error: Invalid token.'));
     }
-    // Attach the user payload to the socket object for use in event handlers
-    socket.user = user;
+
+    // Create consistent user object structure matching the HTTP middleware
+    socket.user = {
+      id: decodedPayload.sub,
+      name: decodedPayload.name,
+      email: decodedPayload.email,
+    };
+    
+    console.log('[Socket Auth] ✅ Socket authenticated as:', socket.user.id);
     next();
   });
 }

@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Voice-to-Text Test</title>
+  </head>
+  <body>
+    <button id="recordBtn">Start Recording</button>
+    <button id="stopBtn" disabled>Stop Recording</button>
+    <div id="status"></div>
+    <div id="result"></div>
+
+    <script>
+      let mediaRecorder;
+      let audioChunks = [];
+      let stream;
+
+      const recordBtn = document.getElementById('recordBtn');
+      const stopBtn = document.getElementById('stopBtn');
+      const status = document.getElementById('status');
+      const result = document.getElementById('result');
+
+      recordBtn.onclick = async () => {
+        try {
+          status.textContent = 'Getting microphone access...';
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              sampleRate: 16000,
+            },
+          });
+
+          status.textContent = 'Starting recording...';
+          mediaRecorder = new MediaRecorder(stream, {
+            mimeType: 'audio/webm',
+          });
+
+          audioChunks = [];
+
+          mediaRecorder.ondataavailable = event => {
+            if (event.data.size > 0) {
+              audioChunks.push(event.data);
+            }
+          };
+
+          mediaRecorder.onstop = async () => {
+            status.textContent = 'Processing audio...';
+
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'recording.webm');
+
+            // Use a dummy token for testing - this will fail auth but we can see other errors
+            const response = await fetch('/api/voice-to-text/transcribe', {
+              method: 'POST',
+              headers: {
+                Authorization: 'Bearer dummy-token-for-testing',
+              },
+              body: formData,
+            });
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              result.textContent = `Error: ${response.status} - ${errorText}`;
+              status.textContent = 'Error occurred';
+            } else {
+              const data = await response.json();
+              result.textContent = `Transcript: ${data.transcript}`;
+              status.textContent = 'Success!';
+            }
+
+            // Cleanup
+            stream.getTracks().forEach(track => track.stop());
+          };
+
+          mediaRecorder.start(1000);
+          recordBtn.disabled = true;
+          stopBtn.disabled = false;
+          status.textContent = 'Recording... Speak now!';
+        } catch (error) {
+          status.textContent = `Error: ${error.message}`;
+          console.error('Recording error:', error);
+        }
+      };
+
+      stopBtn.onclick = () => {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+          recordBtn.disabled = false;
+          stopBtn.disabled = true;
+          status.textContent = 'Stopping recording...';
+        }
+      };
+    </script>
+  </body>
+</html>
