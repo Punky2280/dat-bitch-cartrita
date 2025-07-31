@@ -20,6 +20,9 @@ class AnalyticsAgent extends BaseAgent {
   }
 
   setupMessageHandlers() {
+    // Call parent class method to set up MCP message handlers
+    super.setupMessageHandlers();
+    
     // Listen for analytics requests
     MessageBus.on('analytics.process', this.processAnalytics.bind(this));
     MessageBus.on('metrics.generate', this.generateMetrics.bind(this));

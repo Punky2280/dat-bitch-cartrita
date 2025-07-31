@@ -21,6 +21,10 @@ class NotificationAgent extends BaseAgent {
   }
 
   setupMessageHandlers() {
+    // Call parent class method to set up MCP message handlers
+    super.setupMessageHandlers();
+    
+    // Set up notification-specific message handlers
     MessageBus.on('notification.send', this.sendNotification.bind(this));
     MessageBus.on('notification.schedule', this.scheduleNotification.bind(this));
     MessageBus.on('notification.batch', this.sendBatchNotifications.bind(this));

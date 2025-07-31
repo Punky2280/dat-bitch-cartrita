@@ -21,6 +21,10 @@ class TranslationAgent extends BaseAgent {
   }
 
   setupMessageHandlers() {
+    // Call parent class method to set up MCP message handlers
+    super.setupMessageHandlers();
+    
+    // Set up translation-specific message handlers
     MessageBus.on('translate.text', this.translateText.bind(this));
     MessageBus.on('detect.language', this.detectLanguage.bind(this));
     MessageBus.on('localize.content', this.localizeContent.bind(this));

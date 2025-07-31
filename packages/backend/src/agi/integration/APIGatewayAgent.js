@@ -21,6 +21,10 @@ class APIGatewayAgent extends BaseAgent {
   }
 
   setupMessageHandlers() {
+    // Call parent class method to set up MCP message handlers
+    super.setupMessageHandlers();
+    
+    // Set up API gateway-specific message handlers
     MessageBus.on('api.request', this.handleAPIRequest.bind(this));
     MessageBus.on('api.register', this.registerAPI.bind(this));
     MessageBus.on('api.configure', this.configureAPI.bind(this));

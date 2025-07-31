@@ -22,6 +22,10 @@ class DesignAgent extends BaseAgent {
   }
 
   setupMessageHandlers() {
+    // Call parent class method to set up MCP message handlers
+    super.setupMessageHandlers();
+    
+    // Set up design-specific message handlers
     MessageBus.on('design.optimize', this.optimizeDesign.bind(this));
     MessageBus.on('ux.analyze', this.analyzeUX.bind(this));
     MessageBus.on('accessibility.check', this.checkAccessibility.bind(this));

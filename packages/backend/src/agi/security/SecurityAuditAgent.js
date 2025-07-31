@@ -21,6 +21,10 @@ class SecurityAuditAgent extends BaseAgent {
   }
 
   setupMessageHandlers() {
+    // Call parent class method to set up MCP message handlers
+    super.setupMessageHandlers();
+    
+    // Set up security-specific message handlers
     MessageBus.on('security.audit', this.performSecurityAudit.bind(this));
     MessageBus.on('security.scan', this.performVulnerabilityScan.bind(this));
     MessageBus.on('security.monitor', this.monitorSecurityEvents.bind(this));

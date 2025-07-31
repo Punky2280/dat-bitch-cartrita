@@ -139,7 +139,7 @@ router.put('/', authenticateToken, async (req, res) => {
       console.log('[Settings] 🔍 INSERT values:', insertValues);
       
       await db.query(
-        'INSERT INTO user_settings (user_id, sarcasm, verbosity, humor, theme, language, voice_responses, ambient_listening, sound_effects, camera_enabled, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW()),
+        'INSERT INTO user_settings (user_id, sarcasm, verbosity, humor, theme, language, voice_responses, ambient_listening, sound_effects, camera_enabled, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())',
         insertValues
       );
     } else {
