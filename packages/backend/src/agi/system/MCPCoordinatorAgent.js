@@ -22,12 +22,12 @@ class MCPCoordinatorAgent extends BaseAgent {
   }
 
   setupMessageHandlers() {
-    MessageBus.subscribe('mcp.coordinate', this.coordinateAgents.bind(this));
-    MessageBus.subscribe('mcp.balance', this.balanceLoad.bind(this));
-    MessageBus.subscribe('mcp.monitor', this.monitorAgentHealth.bind(this));
-    MessageBus.subscribe('workflow.orchestrate', this.orchestrateWorkflow.bind(this));
-    MessageBus.subscribe('system.optimize', this.optimizeSystem.bind(this));
-    MessageBus.subscribe(`${this.agentId}.health`, this.healthCheck.bind(this));
+    MessageBus.on('mcp.coordinate', this.coordinateAgents.bind(this));
+    // MessageBus.on('mcp.balance', this.balanceLoad.bind(this));
+    // MessageBus.on('mcp.monitor', this.monitorAgentHealth.bind(this));
+    MessageBus.on('workflow.orchestrate', this.orchestrateWorkflow.bind(this));
+    // MessageBus.on('system.optimize', this.optimizeSystem.bind(this));
+    MessageBus.on(`${this.agentId}.health`, this.healthCheck.bind(this));
   }
 
   initializeCoordinatorEngine() {

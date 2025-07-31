@@ -89,7 +89,7 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
           formData.append('audio', audioBlob, 'recording.webm');
           console.log('[VoiceToText] FormData created, sending request...');
 
-          const response = await fetch('/api/voice-to-text/transcribe', {
+          const response = await fetch('http://localhost:8000/api/voice-to-text/transcribe', {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${token}`,

@@ -1,9 +1,11 @@
 // packages/backend/src/routes/voiceToText.js
 
 const express = require('express');
-const { createClient } = require('@deepgram/sdk');
 const multer = require('multer');
 const authenticateToken = require('../middleware/authenticateToken');
+const DeepgramService = require('../services/DeepgramService');
+const VoiceInteractionService = require('../services/VoiceInteractionService');
+const AmbientListeningService = require('../services/AmbientListeningService');
 
 const router = express.Router();
 
@@ -48,38 +50,39 @@ router.post(
 
       console.log(`[VoiceToText] Processing audio for user: ${req.user.name}`);
 
-      const deepgram = createClient(process.env.DEEPGRAM_API_KEY);
+      // Use the enhanced Deepgram service
+      const result = await DeepgramService.transcribeFile(req.file.buffer, {
+        model: 'nova-2',
+        language: 'en-US',
+        smart_format: true,
+        punctuate: true,
+        diarize: false,
+        filler_words: false
+      });
 
-      // Transcribe the audio
-      const response = await deepgram.listen.prerecorded.transcribeFile(
-        req.file.buffer,
-        {
-          model: 'nova-2',
-          language: 'en',
-          smart_format: true,
-          punctuate: true,
-          diarize: false,
-        }
-      );
-
-      const transcript =
-        response.result?.channels?.[0]?.alternatives?.[0]?.transcript;
-
-      if (!transcript) {
-        return res.status(422).json({
-          error: 'No speech detected in audio',
+      if (!result.transcript || result.transcript.trim() === '') {
+        return res.status(200).json({
+          transcript: '',
+          confidence: 0,
+          language: result.language || 'en-US',
+          words: [],
+          message: 'No speech detected in audio - this is normal for silence or background noise'
         });
       }
 
+      // Check for wake word
+      const wakeWordResult = DeepgramService.detectWakeWord(result.transcript);
+
       console.log(
-        `[VoiceToText] Transcription successful: "${transcript.substring(0, 50)}..."`
+        `[VoiceToText] Transcription successful: "${result.transcript.substring(0, 50)}..."`
       );
 
       res.json({
-        transcript: transcript.trim(),
-        confidence:
-          response.result?.channels?.[0]?.alternatives?.[0]?.confidence || 0,
-        language: response.result?.channels?.[0]?.detected_language || 'en',
+        transcript: result.transcript,
+        confidence: result.confidence,
+        language: result.language,
+        words: result.words,
+        wakeWord: wakeWordResult
       });
     } catch (error) {
       console.error('[VoiceToText] Transcription error:', error);

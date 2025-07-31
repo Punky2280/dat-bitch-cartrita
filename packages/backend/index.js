@@ -31,9 +31,14 @@ console.log('[Index] ✅ Vault routes loaded');
 const apiKeyRoutes = require('./src/routes/apiKeys');
 const monitoringRoutes = require('./src/routes/monitoring');
 const voiceToTextRoutes = require('./src/routes/voiceToText');
+const voiceChatRoutes = require('./src/routes/voiceChat');
+const visionRoutes = require('./src/routes/vision');
 const settingsRoutes = require('./src/routes/settings');
 const mcpRoutes = require('./src/routes/mcp');
 const { router: agentRoutes, injectIO } = require('./src/routes/agent'); // ✅ Updated import
+
+// Initialize Cartrita Iteration 21 services
+const ServiceInitializer = require('./src/services/ServiceInitializer');
 
 const authenticateTokenSocket = require('./src/middleware/authenticateTokenSocket');
 const EnhancedCoreAgent = require('./src/agi/consciousness/EnhancedCoreAgent');
@@ -101,9 +106,13 @@ app.use('/api/vault', vaultRoutes);
 app.use('/api/keys', apiKeyRoutes);
 app.use('/api/monitoring', monitoringRoutes);
 app.use('/api/voice-to-text', voiceToTextRoutes);
+app.use('/api/voice-chat', voiceChatRoutes);
+app.use('/api/vision', visionRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/mcp', mcpRoutes);
 console.log('[Index] ✅ MCP routes registered at /api/mcp');
+console.log('[Index] ✅ Voice chat routes registered at /api/voice-chat');
+console.log('[Index] ✅ Vision routes registered at /api/vision');
 
 app.use('/agent', agentRoutes); // ✅ Now emits responses via WebSocket
 
@@ -173,7 +182,52 @@ MessageBus.on('proactive:response', async ({ userId, response }) => {
   }
 });
 
+// Service status and health routes
+app.get('/api/status', (req, res) => {
+  const status = ServiceInitializer.getServiceStatus();
+  res.json({
+    message: 'Dat Bitch Cartrita API is running!',
+    services: status,
+    timestamp: new Date()
+  });
+});
+
+app.get('/api/health', async (req, res) => {
+  try {
+    const health = await ServiceInitializer.healthCheck();
+    res.json(health);
+  } catch (error) {
+    res.status(500).json({
+      overall: 'unhealthy',
+      error: error.message,
+      timestamp: new Date()
+    });
+  }
+});
+
 const PORT = process.env.PORT || 8000;
-server.listen(PORT, () =>
-  console.log(`Cartrita backend is live on port ${PORT}`)
-);
+server.listen(PORT, async () => {
+  console.log(`Cartrita backend is live on port ${PORT}`);
+  
+  // Initialize Cartrita Iteration 21 services
+  try {
+    await ServiceInitializer.initializeServices();
+    console.log('🎉 Cartrita Iteration 21 is fully operational!');
+  } catch (error) {
+    console.error('❌ Failed to initialize Cartrita services:', error);
+    console.warn('⚠️ Server will continue running with limited functionality');
+  }
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('🛑 Received SIGTERM, shutting down gracefully...');
+  await ServiceInitializer.cleanup();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('🛑 Received SIGINT, shutting down gracefully...');
+  await ServiceInitializer.cleanup();
+  process.exit(0);
+});

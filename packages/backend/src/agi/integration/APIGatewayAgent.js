@@ -21,12 +21,12 @@ class APIGatewayAgent extends BaseAgent {
   }
 
   setupMessageHandlers() {
-    MessageBus.subscribe('api.request', this.handleAPIRequest.bind(this));
-    MessageBus.subscribe('api.register', this.registerAPI.bind(this));
-    MessageBus.subscribe('api.configure', this.configureAPI.bind(this));
-    MessageBus.subscribe('webhook.handle', this.handleWebhook.bind(this));
-    MessageBus.subscribe('auth.validate', this.validateAuthentication.bind(this));
-    MessageBus.subscribe(`${this.agentId}.health`, this.healthCheck.bind(this));
+    MessageBus.on('api.request', this.handleAPIRequest.bind(this));
+    MessageBus.on('api.register', this.registerAPI.bind(this));
+    MessageBus.on('api.configure', this.configureAPI.bind(this));
+    MessageBus.on('webhook.handle', this.handleWebhook.bind(this));
+    MessageBus.on('auth.validate', this.validateAuthentication.bind(this));
+    MessageBus.on(`${this.agentId}.health`, this.healthCheck.bind(this));
   }
 
   initializeGatewayEngine() {
@@ -602,6 +602,134 @@ class APIGatewayAgent extends BaseAgent {
         }
       }
     }, 60000); // Clean up every minute
+  }
+
+  async configureAPI(message) {
+    try {
+      const { apiId, configuration, updateMode = 'merge' } = message.payload;
+      
+      if (!this.registeredAPIs.has(apiId)) {
+        throw new Error(`API not registered: ${apiId}`);
+      }
+
+      const currentConfig = this.registeredAPIs.get(apiId);
+      let newConfig;
+
+      if (updateMode === 'replace') {
+        this.validateAPIConfiguration(configuration);
+        newConfig = configuration;
+      } else {
+        // Merge mode
+        newConfig = { ...currentConfig, ...configuration };
+        this.validateAPIConfiguration(newConfig);
+      }
+
+      this.registeredAPIs.set(apiId, newConfig);
+
+      MessageBus.publish(`api.configured.${message.id}`, {
+        status: 'completed',
+        api_id: apiId,
+        configuration: newConfig,
+        update_mode: updateMode,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('[APIGatewayAgent] Error configuring API:', error);
+      MessageBus.publish(`api.configure.error.${message.id}`, {
+        status: 'error',
+        error: error.message
+      });
+    }
+  }
+
+  async validateAuthentication(message) {
+    try {
+      const { token, apiId, authType = 'bearer', context = {} } = message.payload;
+      
+      const validation = await this.performAuthenticationValidation(
+        token,
+        apiId,
+        authType,
+        context
+      );
+
+      MessageBus.publish(`auth.validation.result.${message.id}`, {
+        status: 'completed',
+        validation,
+        api_id: apiId,
+        auth_type: authType,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('[APIGatewayAgent] Error validating authentication:', error);
+      MessageBus.publish(`auth.validation.error.${message.id}`, {
+        status: 'error',
+        error: error.message
+      });
+    }
+  }
+
+  async performAuthenticationValidation(token, apiId, authType, context) {
+    const validation = {
+      is_valid: false,
+      token_type: authType,
+      api_id: apiId,
+      expiry: null,
+      permissions: [],
+      user_context: {}
+    };
+
+    // Basic validation checks
+    if (!token || token.length < 10) {
+      validation.error = 'Invalid token format';
+      return validation;
+    }
+
+    // API-specific validation
+    if (this.registeredAPIs.has(apiId)) {
+      const apiConfig = this.registeredAPIs.get(apiId);
+      
+      if (apiConfig.authentication?.type === authType) {
+        // Check if token matches expected format
+        if (authType === 'bearer' && token.startsWith('Bearer ')) {
+          validation.is_valid = true;
+        } else if (authType === 'token' && token.length > 20) {
+          validation.is_valid = true;
+        } else if (authType === 'api_key' && token.length > 15) {
+          validation.is_valid = true;
+        }
+      }
+    } else {
+      // Generic validation for unknown APIs
+      validation.is_valid = token.length > 15;
+    }
+
+    // Add context-based validations
+    if (context.ip_address && this.isSuspiciousIP(context.ip_address)) {
+      validation.is_valid = false;
+      validation.error = 'Request from suspicious IP address';
+    }
+
+    if (context.user_agent && this.isSuspiciousUserAgent(context.user_agent)) {
+      validation.warnings = ['Unusual user agent detected'];
+    }
+
+    return validation;
+  }
+
+  isSuspiciousIP(ipAddress) {
+    // Simple check - in production would check against threat intelligence
+    const blockedRanges = ['10.0.0.0/8', '192.168.0.0/16'];
+    return false; // Simplified for demo
+  }
+
+  isSuspiciousUserAgent(userAgent) {
+    const suspiciousPatterns = ['bot', 'crawler', 'scraper'];
+    return suspiciousPatterns.some(pattern => 
+      userAgent.toLowerCase().includes(pattern)
+    );
   }
 
   healthCheck() {

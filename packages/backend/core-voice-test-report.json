@@ -1,0 +1,95 @@
+{
+  "timestamp": "2025-07-31T00:13:19.546Z",
+  "summary": {
+    "successCount": 1,
+    "errorCount": 8,
+    "warningCount": 0
+  },
+  "details": [
+    {
+      "timestamp": "2025-07-31T00:13:18.286Z",
+      "type": "test",
+      "message": "Testing backend connectivity..."
+    },
+    {
+      "timestamp": "2025-07-31T00:13:18.323Z",
+      "type": "success",
+      "message": "✅ Backend is responding"
+    },
+    {
+      "timestamp": "2025-07-31T00:13:18.323Z",
+      "type": "info",
+      "message": "Backend message: Cartrita backend is alive and kicking."
+    },
+    {
+      "timestamp": "2025-07-31T00:13:18.323Z",
+      "type": "test",
+      "message": "Testing voice chat API endpoints..."
+    },
+    {
+      "timestamp": "2025-07-31T00:13:18.330Z",
+      "type": "error",
+      "message": "❌ GET /api/voice-chat/status - Error: Request failed with status code 404"
+    },
+    {
+      "timestamp": "2025-07-31T00:13:18.497Z",
+      "type": "error",
+      "message": "❌ POST /api/voice-chat/start-session - Error: Request failed with status code 404"
+    },
+    {
+      "timestamp": "2025-07-31T00:13:18.501Z",
+      "type": "error",
+      "message": "❌ POST /api/voice-chat/stop-session - Error: Request failed with status code 404"
+    },
+    {
+      "timestamp": "2025-07-31T00:13:18.506Z",
+      "type": "error",
+      "message": "❌ POST /api/voice-chat/process-audio - Error: Request failed with status code 404"
+    },
+    {
+      "timestamp": "2025-07-31T00:13:18.507Z",
+      "type": "test",
+      "message": "Testing text-to-speech functionality..."
+    },
+    {
+      "timestamp": "2025-07-31T00:13:18.511Z",
+      "type": "error",
+      "message": "❌ Text-to-speech test failed: Request failed with status code 404"
+    },
+    {
+      "timestamp": "2025-07-31T00:13:18.511Z",
+      "type": "test",
+      "message": "Testing speech-to-text functionality..."
+    },
+    {
+      "timestamp": "2025-07-31T00:13:18.531Z",
+      "type": "error",
+      "message": "❌ Speech-to-text test failed: Request failed with status code 404"
+    },
+    {
+      "timestamp": "2025-07-31T00:13:18.531Z",
+      "type": "test",
+      "message": "Testing voice session management..."
+    },
+    {
+      "timestamp": "2025-07-31T00:13:18.536Z",
+      "type": "error",
+      "message": "❌ Voice session management test failed: Request failed with status code 404"
+    },
+    {
+      "timestamp": "2025-07-31T00:13:18.537Z",
+      "type": "test",
+      "message": "Testing WebSocket connectivity for real-time features..."
+    },
+    {
+      "timestamp": "2025-07-31T00:13:19.545Z",
+      "type": "error",
+      "message": "❌ WebSocket connection error: socket hang up"
+    },
+    {
+      "timestamp": "2025-07-31T00:13:19.545Z",
+      "type": "info",
+      "message": "WebSocket connection closed"
+    }
+  ]
+}

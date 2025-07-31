@@ -21,13 +21,13 @@ class AnalyticsAgent extends BaseAgent {
 
   setupMessageHandlers() {
     // Listen for analytics requests
-    MessageBus.subscribe('analytics.process', this.processAnalytics.bind(this));
-    MessageBus.subscribe('metrics.generate', this.generateMetrics.bind(this));
-    MessageBus.subscribe('insights.extract', this.extractInsights.bind(this));
-    MessageBus.subscribe('trends.identify', this.identifyTrends.bind(this));
+    MessageBus.on('analytics.process', this.processAnalytics.bind(this));
+    MessageBus.on('metrics.generate', this.generateMetrics.bind(this));
+    MessageBus.on('insights.extract', this.extractInsights.bind(this));
+    MessageBus.on('trends.identify', this.identifyTrends.bind(this));
     
     // Health monitoring
-    MessageBus.subscribe(`${this.agentId}.health`, this.healthCheck.bind(this));
+    MessageBus.on(`${this.agentId}.health`, this.healthCheck.bind(this));
   }
 
   initializeAnalyticsEngine() {
@@ -298,6 +298,34 @@ class AnalyticsAgent extends BaseAgent {
     } catch (error) {
       console.error('[AnalyticsAgent] Error extracting insights:', error);
       MessageBus.publish(`insights.error.${message.id}`, {
+        status: 'error',
+        error: error.message
+      });
+    }
+  }
+
+  async identifyTrends(message) {
+    try {
+      const { data, timeframe, options = {} } = message.payload;
+      
+      const trendAnalysis = await this.performTrendAnalysis(data, options);
+      
+      // Store trends for future reference
+      this.analyticsEngine.trends.set(
+        `${timeframe}_${Date.now()}`, 
+        { ...trendAnalysis, timestamp: new Date().toISOString() }
+      );
+
+      MessageBus.publish(`trends.result.${message.id}`, {
+        status: 'completed',
+        trends: trendAnalysis,
+        timeframe,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('[AnalyticsAgent] Error identifying trends:', error);
+      MessageBus.publish(`trends.error.${message.id}`, {
         status: 'error',
         error: error.message
       });

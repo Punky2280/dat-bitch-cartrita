@@ -14,7 +14,7 @@ router.get('/', authenticateToken, async (req, res) => {
     console.log('[Settings] 🔍 Fetching settings for user:', userId);
 
     const { rows } = await db.query(
-      'SELECT sarcasm, verbosity, humor, theme, language, voice_responses, ambient_listening, sound_effects, created_at, updated_at FROM user_settings WHERE user_id = $1',
+      'SELECT sarcasm, verbosity, humor, theme, language, voice_responses, ambient_listening, sound_effects, camera_enabled, created_at, updated_at FROM user_settings WHERE user_id = $1',
       [userId]
     );
 
@@ -31,7 +31,8 @@ router.get('/', authenticateToken, async (req, res) => {
         language: 'en',
         voice_responses: false,
         ambient_listening: false,
-        sound_effects: true
+        sound_effects: true,
+        camera_enabled: false
       };
       return res.json(defaultSettings);
     }
@@ -45,7 +46,8 @@ router.get('/', authenticateToken, async (req, res) => {
       language: rows[0].language || 'en',
       voice_responses: rows[0].voice_responses || false,
       ambient_listening: rows[0].ambient_listening || false,
-      sound_effects: rows[0].sound_effects !== null ? rows[0].sound_effects : true
+      sound_effects: rows[0].sound_effects !== null ? rows[0].sound_effects : true,
+      camera_enabled: rows[0].camera_enabled || false
     };
 
     console.log('[Settings] ✅ Returning settings:', settings);
@@ -99,7 +101,7 @@ router.put('/', authenticateToken, async (req, res) => {
           error: 'Invalid language value. Must be a string.',
         });
       }
-      if (['voice_responses', 'ambient_listening', 'sound_effects'].includes(key) && typeof value !== 'boolean') {
+      if (['voice_responses', 'ambient_listening', 'sound_effects', 'camera_enabled'].includes(key) && typeof value !== 'boolean') {
         return res.status(400).json({
           error: `Invalid ${key} value. Must be a boolean.`,
         });
@@ -107,7 +109,7 @@ router.put('/', authenticateToken, async (req, res) => {
     }
 
     // Build UPDATE query dynamically for only the fields we can update
-    const allowedFields = ['sarcasm', 'verbosity', 'humor', 'theme', 'language', 'voice_responses', 'ambient_listening', 'sound_effects'];
+    const allowedFields = ['sarcasm', 'verbosity', 'humor', 'theme', 'language', 'voice_responses', 'ambient_listening', 'sound_effects', 'camera_enabled'];
     const fieldsToUpdate = Object.keys(updates).filter(key => allowedFields.includes(key));
     
     if (fieldsToUpdate.length === 0) {
@@ -131,12 +133,13 @@ router.put('/', authenticateToken, async (req, res) => {
         updates.language || 'en',
         updates.voice_responses !== undefined ? updates.voice_responses : false,
         updates.ambient_listening !== undefined ? updates.ambient_listening : false,
-        updates.sound_effects !== undefined ? updates.sound_effects : true
+        updates.sound_effects !== undefined ? updates.sound_effects : true,
+        updates.camera_enabled !== undefined ? updates.camera_enabled : false
       ];
       console.log('[Settings] 🔍 INSERT values:', insertValues);
       
       await db.query(
-        'INSERT INTO user_settings (user_id, sarcasm, verbosity, humor, theme, language, voice_responses, ambient_listening, sound_effects, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())',
+        'INSERT INTO user_settings (user_id, sarcasm, verbosity, humor, theme, language, voice_responses, ambient_listening, sound_effects, camera_enabled, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW()),
         insertValues
       );
     } else {
@@ -177,6 +180,10 @@ router.put('/', authenticateToken, async (req, res) => {
         setParts.push(`sound_effects = $${paramCount++}`);
         values.push(updates.sound_effects);
       }
+      if (updates.camera_enabled !== undefined) {
+        setParts.push(`camera_enabled = $${paramCount++}`);
+        values.push(updates.camera_enabled);
+      }
       
       if (setParts.length > 0) {
         setParts.push(`updated_at = NOW()`);
@@ -189,7 +196,7 @@ router.put('/', authenticateToken, async (req, res) => {
 
     // Fetch the updated settings to return
     const { rows } = await db.query(
-      'SELECT sarcasm, verbosity, humor, theme, language, voice_responses, ambient_listening, sound_effects FROM user_settings WHERE user_id = $1',
+      'SELECT sarcasm, verbosity, humor, theme, language, voice_responses, ambient_listening, sound_effects, camera_enabled FROM user_settings WHERE user_id = $1',
       [userId]
     );
 
@@ -201,7 +208,8 @@ router.put('/', authenticateToken, async (req, res) => {
       language: rows[0].language || 'en',
       voice_responses: rows[0].voice_responses || false,
       ambient_listening: rows[0].ambient_listening || false,
-      sound_effects: rows[0].sound_effects !== null ? rows[0].sound_effects : true
+      sound_effects: rows[0].sound_effects !== null ? rows[0].sound_effects : true,
+      camera_enabled: rows[0].camera_enabled || false
     };
 
     console.log('[Settings] ✅ Settings updated successfully:', updatedSettings);

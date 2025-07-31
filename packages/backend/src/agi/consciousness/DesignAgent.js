@@ -22,11 +22,11 @@ class DesignAgent extends BaseAgent {
   }
 
   setupMessageHandlers() {
-    MessageBus.subscribe('design.optimize', this.optimizeDesign.bind(this));
-    MessageBus.subscribe('ux.analyze', this.analyzeUX.bind(this));
-    MessageBus.subscribe('accessibility.check', this.checkAccessibility.bind(this));
-    MessageBus.subscribe('design.generate', this.generateDesign.bind(this));
-    MessageBus.subscribe(`${this.agentId}.health`, this.healthCheck.bind(this));
+    MessageBus.on('design.optimize', this.optimizeDesign.bind(this));
+    MessageBus.on('ux.analyze', this.analyzeUX.bind(this));
+    MessageBus.on('accessibility.check', this.checkAccessibility.bind(this));
+    MessageBus.on('design.generate', this.generateDesign.bind(this));
+    MessageBus.on(`${this.agentId}.health`, this.healthCheck.bind(this));
   }
 
   initializeDesignEngine() {
@@ -274,6 +274,126 @@ class DesignAgent extends BaseAgent {
         error: error.message
       });
     }
+  }
+
+  async generateDesign(message) {
+    try {
+      const { designType, requirements, targetAudience, constraints = {} } = message.payload;
+      
+      const generatedDesign = await this.createDesign(
+        designType,
+        requirements,
+        targetAudience,
+        constraints
+      );
+
+      MessageBus.publish(`design.generated.${message.id}`, {
+        status: 'completed',
+        design: generatedDesign,
+        design_type: designType,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('[DesignAgent] Error generating design:', error);
+      MessageBus.publish(`design.generation.error.${message.id}`, {
+        status: 'error',
+        error: error.message
+      });
+    }
+  }
+
+  async createDesign(designType, requirements, targetAudience, constraints) {
+    const design = {
+      type: designType,
+      layout: await this.generateLayout(requirements, constraints),
+      colors: await this.generateColorScheme(targetAudience, requirements),
+      typography: await this.generateTypography(requirements),
+      components: await this.generateComponents(designType, requirements),
+      accessibility: await this.generateAccessibilityFeatures(requirements)
+    };
+
+    // Apply AI design recommendations
+    design.ai_enhancements = await this.generateAIDesignRecommendations(
+      designType,
+      design,
+      requirements,
+      targetAudience
+    );
+
+    return design;
+  }
+
+  async generateLayout(requirements, constraints) {
+    return {
+      structure: 'responsive_grid',
+      breakpoints: this.designPrinciples.responsive_breakpoints,
+      spacing: this.designPrinciples.visual_hierarchy.spacing_rules,
+      grid_system: '12-column',
+      layout_type: requirements.layout_preference || 'modern_clean'
+    };
+  }
+
+  async generateColorScheme(targetAudience, requirements) {
+    const baseColors = {
+      primary: requirements.brand_color || '#007bff',
+      secondary: '#6c757d',
+      accent: '#28a745',
+      background: '#ffffff',
+      text: '#212529'
+    };
+
+    return {
+      ...baseColors,
+      scheme_type: 'complementary',
+      accessibility_compliant: true,
+      dark_mode_variant: this.generateDarkModeColors(baseColors)
+    };
+  }
+
+  async generateTypography(requirements) {
+    return {
+      font_family: requirements.font_preference || 'Inter, system-ui, sans-serif',
+      font_sizes: this.designPrinciples.visual_hierarchy.size_ratios,
+      line_heights: { tight: 1.25, normal: 1.5, relaxed: 1.75 },
+      font_weights: { light: 300, normal: 400, medium: 500, bold: 700 }
+    };
+  }
+
+  async generateComponents(designType, requirements) {
+    const components = [];
+    
+    if (designType === 'web_application') {
+      components.push(
+        { type: 'navigation', style: 'horizontal_tabs' },
+        { type: 'sidebar', style: 'collapsible' },
+        { type: 'cards', style: 'elevated_rounded' },
+        { type: 'buttons', style: 'filled_rounded' }
+      );
+    }
+
+    return components;
+  }
+
+  async generateAccessibilityFeatures(requirements) {
+    return {
+      focus_indicators: true,
+      high_contrast_mode: true,
+      keyboard_navigation: true,
+      screen_reader_support: true,
+      color_blind_friendly: true,
+      wcag_compliance: requirements.accessibility_level || 'AA'
+    };
+  }
+
+  generateDarkModeColors(baseColors) {
+    return {
+      primary: baseColors.primary,
+      secondary: '#adb5bd',
+      accent: baseColors.accent,
+      background: '#1a1a1a',
+      text: '#ffffff'
+    };
   }
 
   async performAccessibilityAudit(htmlContent, cssStyles, targetCompliance) {

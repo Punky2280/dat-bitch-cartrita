@@ -37,6 +37,7 @@ interface AudioFormData {
   voice_responses: boolean;
   ambient_listening: boolean;
   sound_effects: boolean;
+  camera_enabled: boolean;
 }
 
 export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
@@ -60,6 +61,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     voice_responses: false,
     ambient_listening: false,
     sound_effects: true,
+    camera_enabled: false,
   });
 
   const [loading, setLoading] = useState(true);
@@ -86,7 +88,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
           fetch('/api/user/me', {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch('/api/settings', {
+          fetch('http://localhost:8000/api/settings', {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -120,6 +122,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
           voice_responses: settingsData.voice_responses,
           ambient_listening: settingsData.ambient_listening,
           sound_effects: settingsData.sound_effects,
+          camera_enabled: settingsData.camera_enabled || false,
         });
       } catch (err: any) {
         console.error('Error during settings page data fetch:', err); // Log the full error
@@ -222,7 +225,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     setError('');
 
     try {
-      const response = await fetch('/api/settings', {
+      const response = await fetch('http://localhost:8000/api/settings', {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -281,7 +284,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     setError('');
 
     try {
-      const response = await fetch('/api/settings', {
+      const response = await fetch('http://localhost:8000/api/settings', {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -308,7 +311,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     setTheme(newTheme as Theme);
     
     try {
-      await fetch('/api/settings', {
+      await fetch('http://localhost:8000/api/settings', {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -328,7 +331,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     }
 
     try {
-      const response = await fetch('/api/settings/clear-chat-history', {
+      const response = await fetch('http://localhost:8000/api/settings/clear-chat-history', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -345,7 +348,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
 
   const handleExportData = async () => {
     try {
-      const response = await fetch('/api/settings/export-data', {
+      const response = await fetch('http://localhost:8000/api/settings/export-data', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -381,7 +384,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     }
 
     try {
-      const response = await fetch('/api/settings/delete-account', {
+      const response = await fetch('http://localhost:8000/api/settings/delete-account', {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -843,6 +846,15 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                             type="checkbox" 
                             checked={audioForm.ambient_listening}
                             onChange={(e) => handleAudioChange('ambient_listening', e.target.checked)}
+                            className="toggle" 
+                          />
+                        </label>
+                        <label className="flex items-center justify-between">
+                          <span>Camera Access</span>
+                          <input 
+                            type="checkbox" 
+                            checked={audioForm.camera_enabled}
+                            onChange={(e) => handleAudioChange('camera_enabled', e.target.checked)}
                             className="toggle" 
                           />
                         </label>

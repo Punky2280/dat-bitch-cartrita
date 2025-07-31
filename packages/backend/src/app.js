@@ -4,13 +4,25 @@ const socketIo = require('socket.io');
 const cors = require('cors');
 require('dotenv').config();
 
+// Initialize Cartrita services
+const ServiceInitializer = require('./services/ServiceInitializer');
+
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: [
+      process.env.FRONTEND_URL || 'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'http://localhost:3000'
+    ],
     methods: ['GET', 'POST'],
+    credentials: true
   },
+  transports: ['polling', 'websocket'],
+  allowEIO3: true,
+  pingTimeout: 60000,
+  pingInterval: 25000,
 });
 
 const PORT = process.env.PORT || 8000;
@@ -25,6 +37,8 @@ const chatHistoryRoutes = require('./routes/chatHistory');
 const userRoutes = require('./routes/user');
 const settingsRoutes = require('./routes/settings');
 const voiceToTextRoutes = require('./routes/voiceToText');
+const voiceChatRoutes = require('./routes/voiceChat');
+const visionRoutes = require('./routes/vision');
 const workflowRoutes = require('./routes/workflows');
 const apiKeysRoutes = require('./routes/apiKeys');
 
@@ -33,8 +47,33 @@ app.use('/api/chat', chatHistoryRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/voice-to-text', voiceToTextRoutes);
+app.use('/api/voice-chat', voiceChatRoutes);
+app.use('/api/vision', visionRoutes);
 app.use('/api/workflows', workflowRoutes);
 app.use('/api/keys', apiKeysRoutes);
+
+// Service status route
+app.get('/api/status', (req, res) => {
+  const status = ServiceInitializer.getServiceStatus();
+  res.json({
+    message: 'Dat Bitch Cartrita API is running!',
+    services: status
+  });
+});
+
+// Service health check route
+app.get('/api/health', async (req, res) => {
+  try {
+    const health = await ServiceInitializer.healthCheck();
+    res.json(health);
+  } catch (error) {
+    res.status(500).json({
+      overall: 'unhealthy',
+      error: error.message,
+      timestamp: new Date()
+    });
+  }
+});
 
 // Basic route
 app.get('/', (req, res) => {
@@ -52,6 +91,13 @@ io.on('connection', socket => {
   console.log(
     `🔗 User ${socket.user.name} (${socket.user.email}) connected - Socket ID: ${socket.id}`
   );
+
+  // Send connection confirmation
+  socket.emit('connected', { 
+    id: socket.id, 
+    user: socket.user.name,
+    timestamp: new Date()
+  });
 
   // Handle ping/pong for latency monitoring
   socket.on('ping', startTime => {
@@ -196,7 +242,29 @@ io.on('connection', socket => {
   }, 1000);
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📡 WebSocket server ready for connections`);
+  
+  // Initialize Cartrita services
+  try {
+    await ServiceInitializer.initializeServices();
+    console.log('🎉 Cartrita Iteration 21 is fully operational!');
+  } catch (error) {
+    console.error('❌ Failed to initialize Cartrita services:', error);
+    console.warn('⚠️ Server will continue running with limited functionality');
+  }
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('🛑 Received SIGTERM, shutting down gracefully...');
+  await ServiceInitializer.cleanup();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('🛑 Received SIGINT, shutting down gracefully...');
+  await ServiceInitializer.cleanup();
+  process.exit(0);
 });

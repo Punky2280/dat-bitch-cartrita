@@ -3,6 +3,7 @@ import { LoginPage } from '@/pages/LoginPage';
 import { RegisterPage } from '@/pages/RegisterPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { ThemeProvider } from '@/context/ThemeContext';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import '@/i18n';
 
 type AuthView = 'login' | 'register';
@@ -32,23 +33,25 @@ function App() {
   const handleRegisterSuccess = () => setAuthView('login');
 
   return (
-    <ThemeProvider>
-      {!token ? (
-        authView === 'login' ? (
-          <LoginPage
-            onLoginSuccess={handleLogin}
-            onSwitchToRegister={() => setAuthView('register')}
-          />
+    <ErrorBoundary>
+      <ThemeProvider>
+        {!token ? (
+          authView === 'login' ? (
+            <LoginPage
+              onLoginSuccess={handleLogin}
+              onSwitchToRegister={() => setAuthView('register')}
+            />
+          ) : (
+            <RegisterPage
+              onSwitchToLogin={() => setAuthView('login')}
+              onRegisterSuccess={handleRegisterSuccess}
+            />
+          )
         ) : (
-          <RegisterPage
-            onSwitchToLogin={() => setAuthView('login')}
-            onRegisterSuccess={handleRegisterSuccess}
-          />
-        )
-      ) : (
-        <DashboardPage token={token} onLogout={handleLogout} />
-      )}
-    </ThemeProvider>
+          <DashboardPage token={token} onLogout={handleLogout} />
+        )}
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

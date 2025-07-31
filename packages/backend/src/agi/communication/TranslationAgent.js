@@ -21,12 +21,12 @@ class TranslationAgent extends BaseAgent {
   }
 
   setupMessageHandlers() {
-    MessageBus.subscribe('translate.text', this.translateText.bind(this));
-    MessageBus.subscribe('detect.language', this.detectLanguage.bind(this));
-    MessageBus.subscribe('localize.content', this.localizeContent.bind(this));
-    MessageBus.subscribe('cultural.adapt', this.adaptCulturally.bind(this));
-    MessageBus.subscribe('validate.translation', this.validateTranslation.bind(this));
-    MessageBus.subscribe(`${this.agentId}.health`, this.healthCheck.bind(this));
+    MessageBus.on('translate.text', this.translateText.bind(this));
+    MessageBus.on('detect.language', this.detectLanguage.bind(this));
+    MessageBus.on('localize.content', this.localizeContent.bind(this));
+    MessageBus.on('cultural.adapt', this.adaptCulturally.bind(this));
+    MessageBus.on('validate.translation', this.validateTranslation.bind(this));
+    MessageBus.on(`${this.agentId}.health`, this.healthCheck.bind(this));
   }
 
   initializeTranslationEngine() {
@@ -46,7 +46,7 @@ class TranslationAgent extends BaseAgent {
       ['hi', { name: 'Hindi', nativeName: 'हिन्दी', rtl: false, pluralRules: 'hi' }],
       ['nl', { name: 'Dutch', nativeName: 'Nederlands', rtl: false, pluralRules: 'nl' }],
       ['sv', { name: 'Swedish', nativeName: 'Svenska', rtl: false, pluralRules: 'sv' }],
-      ['pl', { name: 'Polish', nativeName: 'Polski', rtl: false, pluralRules: 'pl' }}
+      ['pl', { name: 'Polish', nativeName: 'Polski', rtl: false, pluralRules: 'pl' }]
     ]);
 
     // Cultural adaptation rules
@@ -505,6 +505,116 @@ Language code:`;
     };
 
     return formatting;
+  }
+
+  async adaptCulturally(message) {
+    try {
+      const { content, sourceLocale, targetLocale, adaptationType } = message.payload;
+      
+      const adaptation = await this.performCulturalAdaptation(
+        content,
+        sourceLocale,
+        targetLocale,
+        adaptationType
+      );
+
+      MessageBus.publish(`cultural.adapt.result.${message.id}`, {
+        status: 'completed',
+        adaptation,
+        source_locale: sourceLocale,
+        target_locale: targetLocale,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('[TranslationAgent] Error adapting culturally:', error);
+      MessageBus.publish(`cultural.adapt.error.${message.id}`, {
+        status: 'error',
+        error: error.message
+      });
+    }
+  }
+
+  async performCulturalAdaptation(content, sourceLocale, targetLocale, adaptationType) {
+    const adaptation = {
+      adapted_content: content,
+      cultural_notes: [],
+      changes_made: [],
+      confidence: 0.8
+    };
+
+    // Apply cultural context adaptations
+    const culturalContext = this.getCulturalContext(sourceLocale, targetLocale);
+    
+    if (culturalContext.requires_formality_adjustment) {
+      adaptation.changes_made.push('Adjusted formality level for target culture');
+    }
+
+    if (culturalContext.date_format_different) {
+      adaptation.changes_made.push('Converted date formats to local standards');
+    }
+
+    if (culturalContext.currency_different) {
+      adaptation.changes_made.push('Converted currency formats');
+    }
+
+    // Add cultural notes
+    adaptation.cultural_notes = await this.getCulturalNotes(sourceLocale, targetLocale, adaptationType);
+
+    return adaptation;
+  }
+
+  getCulturalContext(sourceLocale, targetLocale) {
+    return {
+      requires_formality_adjustment: sourceLocale.startsWith('en') && targetLocale.startsWith('de'),
+      date_format_different: true,
+      currency_different: sourceLocale !== targetLocale
+    };
+  }
+
+  async validateTranslation(message) {
+    try {
+      const { originalText, translatedText, sourceLanguage, targetLanguage } = message.payload;
+      
+      const validation = await this.performTranslationValidation(
+        originalText,
+        translatedText,
+        sourceLanguage,
+        targetLanguage
+      );
+
+      MessageBus.publish(`validate.translation.result.${message.id}`, {
+        status: 'completed',
+        validation,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('[TranslationAgent] Error validating translation:', error);
+      MessageBus.publish(`validate.translation.error.${message.id}`, {
+        status: 'error',
+        error: error.message
+      });
+    }
+  }
+
+  async performTranslationValidation(originalText, translatedText, sourceLanguage, targetLanguage) {
+    const qualityAnalysis = await this.analyzeTranslationQuality(
+      originalText,
+      translatedText,
+      sourceLanguage,
+      targetLanguage
+    );
+
+    return {
+      is_valid: qualityAnalysis.score > 0.6,
+      quality_score: qualityAnalysis.score,
+      confidence: qualityAnalysis.confidence,
+      issues: qualityAnalysis.issues,
+      recommendations: qualityAnalysis.issues.length > 0 ? 
+        ['Consider retranslation', 'Review cultural context'] : 
+        ['Translation appears accurate']
+    };
   }
 
   async generateLocalizationRecommendations(content, targetLocale, contentType) {

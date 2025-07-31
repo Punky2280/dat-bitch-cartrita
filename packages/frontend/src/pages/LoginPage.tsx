@@ -16,14 +16,23 @@ export const LoginPage = ({
     setError('');
     setIsLoading(true);
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch('http://localhost:8000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
+      
+      let data;
+      try {
+        data = await res.json();
+      } catch (jsonError) {
+        throw new Error('Invalid response from server');
+      }
+
       if (res.status === 401) throw new Error('Invalid email or password.');
-      if (!res.ok) throw new Error(data.message || 'Login failed.');
+      if (!res.ok) throw new Error(data?.message || 'Login failed.');
+      if (!data?.token) throw new Error('No authentication token received.');
+      
       onLoginSuccess(data.token);
     } catch (err: any) {
       setError(err.message);

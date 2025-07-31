@@ -21,12 +21,12 @@ class NotificationAgent extends BaseAgent {
   }
 
   setupMessageHandlers() {
-    MessageBus.subscribe('notification.send', this.sendNotification.bind(this));
-    MessageBus.subscribe('notification.schedule', this.scheduleNotification.bind(this));
-    MessageBus.subscribe('notification.batch', this.sendBatchNotifications.bind(this));
-    MessageBus.subscribe('alert.escalate', this.escalateAlert.bind(this));
-    MessageBus.subscribe('preferences.update', this.updatePreferences.bind(this));
-    MessageBus.subscribe(`${this.agentId}.health`, this.healthCheck.bind(this));
+    MessageBus.on('notification.send', this.sendNotification.bind(this));
+    MessageBus.on('notification.schedule', this.scheduleNotification.bind(this));
+    MessageBus.on('notification.batch', this.sendBatchNotifications.bind(this));
+    MessageBus.on('alert.escalate', this.escalateAlert.bind(this));
+    MessageBus.on('preferences.update', this.updatePreferences.bind(this));
+    MessageBus.on(`${this.agentId}.health`, this.healthCheck.bind(this));
   }
 
   initializeNotificationEngine() {
@@ -415,6 +415,64 @@ class NotificationAgent extends BaseAgent {
     }
   }
 
+  async sendBatchNotifications(message) {
+    try {
+      const { notifications, batchOptions = {} } = message.payload;
+      
+      if (!notifications || !Array.isArray(notifications)) {
+        throw new Error('Invalid notifications array provided');
+      }
+
+      const batchResult = {
+        batch_id: this.generateNotificationId(),
+        total_notifications: notifications.length,
+        successful: 0,
+        failed: 0,
+        results: []
+      };
+
+      // Process notifications in batches
+      const batchSize = batchOptions.batch_size || 10;
+      const delay = batchOptions.delay_ms || 100;
+
+      for (let i = 0; i < notifications.length; i += batchSize) {
+        const batch = notifications.slice(i, i + batchSize);
+        
+        const batchPromises = batch.map(async (notification) => {
+          try {
+            const result = await this.processNotification(notification);
+            batchResult.successful++;
+            return { success: true, notification_id: result.id, result };
+          } catch (error) {
+            batchResult.failed++;
+            return { success: false, error: error.message, notification: notification };
+          }
+        });
+
+        const batchResults = await Promise.allSettled(batchPromises);
+        batchResult.results.push(...batchResults.map(r => r.value || r.reason));
+
+        // Add delay between batches if specified
+        if (delay > 0 && i + batchSize < notifications.length) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+
+      MessageBus.publish(`notification.batch.result.${message.id}`, {
+        status: 'completed',
+        batch_result: batchResult,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('[NotificationAgent] Error sending batch notifications:', error);
+      MessageBus.publish(`notification.batch.error.${message.id}`, {
+        status: 'error',
+        error: error.message
+      });
+    }
+  }
+
   async escalateAlert(message) {
     try {
       const { originalNotification, escalationLevel, reason } = message.payload;
@@ -558,6 +616,76 @@ class NotificationAgent extends BaseAgent {
     // Check if notification has been acknowledged
     // This would integrate with user acknowledgment system
     return false; // Simplified for now
+  }
+
+  async updatePreferences(message) {
+    try {
+      const { userId, preferences } = message.payload;
+      
+      if (!userId || !preferences) {
+        throw new Error('User ID and preferences are required');
+      }
+
+      // Validate preferences structure
+      const validatedPreferences = this.validatePreferences(preferences);
+      
+      // Update user preferences
+      this.userPreferences.set(userId, {
+        ...this.getUserPreferences(userId),
+        ...validatedPreferences,
+        updated_at: new Date().toISOString()
+      });
+
+      MessageBus.publish(`preferences.updated.${message.id}`, {
+        status: 'completed',
+        user_id: userId,
+        updated_preferences: validatedPreferences,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('[NotificationAgent] Error updating preferences:', error);
+      MessageBus.publish(`preferences.update.error.${message.id}`, {
+        status: 'error',
+        error: error.message
+      });
+    }
+  }
+
+  validatePreferences(preferences) {
+    const validChannels = Array.from(this.channels.keys());
+    const validated = {};
+
+    // Validate disabled channels
+    if (preferences.disabled_channels) {
+      validated.disabled_channels = preferences.disabled_channels.filter(channel => 
+        validChannels.includes(channel)
+      );
+    }
+
+    // Validate preferred channels
+    if (preferences.preferred_channels) {
+      validated.preferred_channels = preferences.preferred_channels.filter(channel => 
+        validChannels.includes(channel)
+      );
+    }
+
+    // Validate quiet hours
+    if (preferences.quiet_hours) {
+      if (preferences.quiet_hours.start && preferences.quiet_hours.end) {
+        validated.quiet_hours = {
+          start: preferences.quiet_hours.start,
+          end: preferences.quiet_hours.end
+        };
+      }
+    }
+
+    // Validate timezone
+    if (preferences.timezone) {
+      validated.timezone = preferences.timezone;
+    }
+
+    return validated;
   }
 
   generateNotificationId() {

@@ -21,12 +21,12 @@ class SecurityAuditAgent extends BaseAgent {
   }
 
   setupMessageHandlers() {
-    MessageBus.subscribe('security.audit', this.performSecurityAudit.bind(this));
-    MessageBus.subscribe('security.scan', this.performVulnerabilityScan.bind(this));
-    MessageBus.subscribe('security.monitor', this.monitorSecurityEvents.bind(this));
-    MessageBus.subscribe('access.control', this.validateAccessControl.bind(this));
-    MessageBus.subscribe('incident.detect', this.detectSecurityIncident.bind(this));
-    MessageBus.subscribe(`${this.agentId}.health`, this.healthCheck.bind(this));
+    MessageBus.on('security.audit', this.performSecurityAudit.bind(this));
+    MessageBus.on('security.scan', this.performVulnerabilityScan.bind(this));
+    MessageBus.on('security.monitor', this.monitorSecurityEvents.bind(this));
+    MessageBus.on('access.control', this.validateAccessControl.bind(this));
+    MessageBus.on('incident.detect', this.detectSecurityIncident.bind(this));
+    MessageBus.on(`${this.agentId}.health`, this.healthCheck.bind(this));
   }
 
   initializeSecurityEngine() {
@@ -352,6 +352,225 @@ class SecurityAuditAgent extends BaseAgent {
         error: error.message
       });
     }
+  }
+
+  async monitorSecurityEvents(message) {
+    try {
+      const { eventType, eventData, monitoringOptions = {} } = message.payload;
+      
+      const monitoringResult = await this.performSecurityMonitoring(
+        eventType,
+        eventData,
+        monitoringOptions
+      );
+
+      // Store security events for analysis
+      this.securityEvents.push({
+        type: eventType,
+        data: eventData,
+        analysis: monitoringResult,
+        timestamp: new Date().toISOString()
+      });
+
+      // Limit event history size
+      if (this.securityEvents.length > 1000) {
+        this.securityEvents = this.securityEvents.slice(-500);
+      }
+
+      MessageBus.publish(`security.monitoring.result.${message.id}`, {
+        status: 'completed',
+        monitoring_result: monitoringResult,
+        event_type: eventType,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('[SecurityAuditAgent] Error monitoring security events:', error);
+      MessageBus.publish(`security.monitoring.error.${message.id}`, {
+        status: 'error',
+        error: error.message
+      });
+    }
+  }
+
+  async performSecurityMonitoring(eventType, eventData, options) {
+    const monitoring = {
+      event_type: eventType,
+      risk_level: 'low',
+      alerts_triggered: [],
+      patterns_detected: [],
+      recommendations: []
+    };
+
+    // Monitor based on event type
+    switch (eventType) {
+      case 'login_attempt':
+        monitoring.risk_level = this.assessLoginRisk(eventData);
+        break;
+      case 'data_access':
+        monitoring.risk_level = this.assessDataAccessRisk(eventData);
+        break;
+      case 'system_change':
+        monitoring.risk_level = this.assessSystemChangeRisk(eventData);
+        break;
+      case 'network_activity':
+        monitoring.risk_level = this.assessNetworkRisk(eventData);
+        break;
+    }
+
+    // Check for suspicious patterns
+    const suspiciousPatterns = this.detectSuspiciousPatterns(eventType, eventData);
+    if (suspiciousPatterns.length > 0) {
+      monitoring.patterns_detected = suspiciousPatterns;
+      monitoring.risk_level = 'high';
+    }
+
+    // Generate recommendations
+    monitoring.recommendations = this.generateSecurityRecommendations(monitoring);
+
+    return monitoring;
+  }
+
+  assessLoginRisk(eventData) {
+    if (eventData.failed_attempts > 5) return 'high';
+    if (eventData.unusual_location) return 'medium';
+    if (eventData.unusual_time) return 'medium';
+    return 'low';
+  }
+
+  assessDataAccessRisk(eventData) {
+    if (eventData.sensitive_data && !eventData.authorized) return 'critical';
+    if (eventData.bulk_access) return 'medium';
+    return 'low';
+  }
+
+  assessSystemChangeRisk(eventData) {
+    if (eventData.critical_system) return 'high';
+    if (eventData.unauthorized_change) return 'critical';
+    return 'low';
+  }
+
+  assessNetworkRisk(eventData) {
+    if (eventData.external_connection && eventData.suspicious_ip) return 'high';
+    if (eventData.unusual_traffic_pattern) return 'medium';
+    return 'low';
+  }
+
+  detectSuspiciousPatterns(eventType, eventData) {
+    const patterns = [];
+    
+    // Check for rapid repeated attempts
+    if (eventData.frequency && eventData.frequency > 10) {
+      patterns.push('rapid_repeated_attempts');
+    }
+
+    // Check for privilege escalation
+    if (eventData.privilege_change && eventData.privilege_change === 'elevated') {
+      patterns.push('privilege_escalation');
+    }
+
+    // Check for data exfiltration signs
+    if (eventData.data_volume && eventData.data_volume > 1000000) {
+      patterns.push('potential_data_exfiltration');
+    }
+
+    return patterns;
+  }
+
+  async validateAccessControl(message) {
+    try {
+      const { userId, resource, action, context = {} } = message.payload;
+      
+      const accessValidation = await this.performAccessControlValidation(
+        userId,
+        resource,
+        action,
+        context
+      );
+
+      MessageBus.publish(`access.control.result.${message.id}`, {
+        status: 'completed',
+        validation: accessValidation,
+        user_id: userId,
+        resource,
+        action,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('[SecurityAuditAgent] Error validating access control:', error);
+      MessageBus.publish(`access.control.error.${message.id}`, {
+        status: 'error',
+        error: error.message
+      });
+    }
+  }
+
+  async performAccessControlValidation(userId, resource, action, context) {
+    const validation = {
+      user_id: userId,
+      resource,
+      action,
+      access_granted: false,
+      reason: 'Access denied by default',
+      risk_assessment: 'low',
+      additional_checks_required: []
+    };
+
+    // Simulate access control logic
+    // In production, this would integrate with actual RBAC/ABAC systems
+    
+    // Basic permission check
+    if (this.hasBasicPermission(userId, resource, action)) {
+      validation.access_granted = true;
+      validation.reason = 'Basic permissions granted';
+    }
+
+    // Context-based checks
+    if (context.ip_address && this.isSuspiciousIP(context.ip_address)) {
+      validation.access_granted = false;
+      validation.reason = 'Access denied: Suspicious IP address';
+      validation.risk_assessment = 'high';
+      validation.additional_checks_required.push('ip_verification');
+    }
+
+    // Time-based access control
+    if (context.time && this.isOutsideBusinessHours(context.time)) {
+      validation.additional_checks_required.push('manager_approval');
+      validation.risk_assessment = 'medium';
+    }
+
+    // Sensitive resource checks
+    if (this.isSensitiveResource(resource)) {
+      validation.additional_checks_required.push('mfa_verification');
+      if (validation.risk_assessment === 'low') {
+        validation.risk_assessment = 'medium';
+      }
+    }
+
+    return validation;
+  }
+
+  hasBasicPermission(userId, resource, action) {
+    // Simplified permission check
+    // In production, would query actual permissions database
+    return userId && resource && action;
+  }
+
+  isSensitiveResource(resource) {
+    const sensitiveResources = [
+      'user_data',
+      'financial_records',
+      'security_settings',
+      'admin_panel',
+      'system_configuration'
+    ];
+    return sensitiveResources.some(sensitive => resource.includes(sensitive));
+  }
+
+  isOutsideBusinessHours(time) {
+    const hour = new Date(time).getHours();
+    return hour < 8 || hour > 18; // Outside 8 AM - 6 PM
   }
 
   async analyzeSecurityEvent(eventData, context) {

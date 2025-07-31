@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const CoreAgent = require('../agi/consciousness/CoreAgent');
-const coreAgent = new CoreAgent();
+const EnhancedCoreAgent = require('../agi/consciousness/EnhancedCoreAgent');
+const coreAgent = new EnhancedCoreAgent();
 
 // Inject live Socket.IO instance
 let io;

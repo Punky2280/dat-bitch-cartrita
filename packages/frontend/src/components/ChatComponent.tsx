@@ -117,7 +117,7 @@ export const ChatComponent = ({ token }: ChatComponentProps) => {
     try {
       console.log('[ChatComponent] 🔍 Loading chat history with token:', token ? 'present' : 'missing');
       setIsLoading(true);
-      const response = await fetch('/api/chat/history', {
+      const response = await fetch('http://localhost:8000/api/chat/history', {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -165,18 +165,26 @@ export const ChatComponent = ({ token }: ChatComponentProps) => {
     loadChatHistory();
 
     const connectSocket = () => {
+      // Prevent multiple simultaneous connections
+      if (socketRef.current && socketRef.current.connected) {
+        console.log('[ChatComponent] ⚠️ Socket already connected, skipping...');
+        return;
+      }
+      
       if (socketRef.current) {
         socketRef.current.disconnect();
       }
 
       console.log('[ChatComponent] 🔗 Connecting to socket with token');
-      // Corrected socket.io configuration
+      // Corrected socket.io configuration with better stability
       const socket = io('http://localhost:8000', {
         auth: { token },
-        transports: ['websocket', 'polling'],
-        timeout: 10000,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
+        transports: ['polling', 'websocket'], // Try polling first, then websocket
+        timeout: 20000,
+        reconnectionAttempts: 3,
+        reconnectionDelay: 2000,
+        reconnectionDelayMax: 5000,
+        forceNew: true, // Force new connection to prevent stale connections
       });
 
       socketRef.current = socket;
@@ -369,7 +377,7 @@ export const ChatComponent = ({ token }: ChatComponentProps) => {
       return;
     }
     try {
-      const response = await fetch('/api/chat/history', {
+      const response = await fetch('http://localhost:8000/api/chat/history', {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,

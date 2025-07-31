@@ -4,6 +4,10 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { WorkflowsPage } from '@/pages/WorkflowsPage';
 import { KnowledgeHubPage } from '@/pages/KnowledgeHubPage';
 import { ApiKeyVaultPage } from '@/pages/ApiKeyVaultPage';
+import AboutPage from '@/pages/AboutPage';
+import LicensePage from '@/pages/LicensePage';
+import UserManualPage from '@/pages/UserManualPage';
+import LiveChatButton from '@/components/LiveChatButton';
 
 interface DashboardPageProps {
   token: string;
@@ -16,7 +20,7 @@ interface User {
   email: string;
 }
 
-type DashboardView = 'chat' | 'settings' | 'workflows' | 'knowledge' | 'vault';
+type DashboardView = 'chat' | 'settings' | 'workflows' | 'knowledge' | 'vault' | 'about' | 'license' | 'manual';
 
 export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
   const [user, setUser] = useState<User | null>(null);
@@ -26,11 +30,42 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
+        // Validate token format
+        if (!token || typeof token !== 'string') {
+          throw new Error('Invalid token format');
+        }
+
+        const tokenParts = token.split('.');
+        if (tokenParts.length !== 3) {
+          throw new Error('Token does not have 3 parts');
+        }
+
+        // Safely decode and parse the payload
+        const base64Payload = tokenParts[1];
+        let decodedPayload;
+        
+        try {
+          decodedPayload = atob(base64Payload);
+        } catch (decodeError) {
+          throw new Error('Failed to decode token payload');
+        }
+
+        let payload;
+        try {
+          payload = JSON.parse(decodedPayload);
+        } catch (parseError) {
+          throw new Error('Failed to parse token payload as JSON');
+        }
+
+        // Validate payload structure
+        if (!payload || typeof payload !== 'object') {
+          throw new Error('Invalid payload structure');
+        }
+
         setUser({
-          id: payload.userId,
-          name: payload.name,
-          email: payload.email,
+          id: payload.userId || payload.sub || payload.id,
+          name: payload.name || payload.username || 'User',
+          email: payload.email || 'No email provided',
         });
       } catch (error) {
         console.error('Error parsing token:', error);
@@ -76,6 +111,21 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
     return <ApiKeyVaultPage token={token} onBack={() => setCurrentView('chat')} />;
   }
 
+  // Show about page
+  if (currentView === 'about') {
+    return <AboutPage onBack={() => setCurrentView('chat')} />;
+  }
+
+  // Show license page
+  if (currentView === 'license') {
+    return <LicensePage onBack={() => setCurrentView('chat')} />;
+  }
+
+  // Show user manual page
+  if (currentView === 'manual') {
+    return <UserManualPage onBack={() => setCurrentView('chat')} />;
+  }
+
   // Show main dashboard
   return (
     <div className="min-h-screen bg-animated text-white">
@@ -90,6 +140,15 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
           </div>
 
           <div className="flex items-center space-x-4">
+            {/* Live Chat Button */}
+            <LiveChatButton 
+              token={token} 
+              className="transform hover:scale-105"
+              onActivate={(mode) => {
+                console.log(`Live chat activated in ${mode} mode`);
+              }}
+            />
+
             <button
               onClick={() => setCurrentView('workflows')}
               className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50 flex items-center space-x-2"
@@ -285,6 +344,41 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
           </div>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-600/50 mt-12">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex justify-center items-center space-x-6">
+            <button
+              onClick={() => setCurrentView('about')}
+              className="text-gray-400 hover:text-white transition-colors text-sm flex items-center space-x-1"
+            >
+              <span>ℹ️</span>
+              <span>About Me</span>
+            </button>
+            
+            <button
+              onClick={() => setCurrentView('manual')}
+              className="text-gray-400 hover:text-white transition-colors text-sm flex items-center space-x-1"
+            >
+              <span>📖</span>
+              <span>User Manual</span>
+            </button>
+            
+            <button
+              onClick={() => setCurrentView('license')}
+              className="text-gray-400 hover:text-white transition-colors text-sm flex items-center space-x-1"
+            >
+              <span>⚖️</span>
+              <span>License</span>
+            </button>
+            
+            <div className="text-gray-500 text-xs">
+              © 2025 Dat Bitch Cartrita • Iteration 21
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
