@@ -19,17 +19,25 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
   const streamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
-  // 🔍 Preflight ambient volume check
+  // 🔍 Preflight ambient volume check with lower threshold
   async function isAudioValid(blob: Blob): Promise<boolean> {
-    const ctx = new AudioContext();
-    const arrayBuffer = await blob.arrayBuffer();
-    const buffer = await ctx.decodeAudioData(arrayBuffer);
+    try {
+      const ctx = new AudioContext();
+      const arrayBuffer = await blob.arrayBuffer();
+      const buffer = await ctx.decodeAudioData(arrayBuffer);
 
-    const data = buffer.getChannelData(0);
-    const avg = data.reduce((acc, val) => acc + Math.abs(val), 0) / data.length;
+      const data = buffer.getChannelData(0);
+      const avg = data.reduce((acc, val) => acc + Math.abs(val), 0) / data.length;
+      const max = Math.max(...data.map(Math.abs));
 
-    console.log('[VoiceToText] Avg volume:', avg);
-    return avg > 0.005; // Sensitivity threshold — tweak if needed
+      console.log('[VoiceToText] Audio analysis - Avg volume:', avg.toFixed(6), 'Max volume:', max.toFixed(6));
+      
+      // More lenient threshold - if there's any significant audio activity
+      return avg > 0.001 || max > 0.01;
+    } catch (error) {
+      console.error('[VoiceToText] Audio validation error:', error);
+      return true; // If we can't validate, assume it's valid
+    }
   }
 
   const startRecording = async () => {
@@ -38,22 +46,50 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
     try {
       console.log('[VoiceToText] Starting recording');
 
+      // Check if getUserMedia is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('getUserMedia is not supported in this browser');
+      }
+
+      // Request permissions explicitly with more permissive settings
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 16000,
+          noiseSuppression: false, // Disable noise suppression to capture more audio
+          autoGainControl: true,
+          sampleRate: 44100, // Higher sample rate for better quality
         },
+      });
+
+      console.log('[VoiceToText] Microphone access granted');
+      console.log('[VoiceToText] Audio tracks:', stream.getAudioTracks().length);
+      
+      // Check if audio tracks are active
+      const audioTracks = stream.getAudioTracks();
+      if (audioTracks.length === 0) {
+        throw new Error('No audio tracks available');
+      }
+      
+      audioTracks.forEach((track, index) => {
+        console.log(`[VoiceToText] Track ${index}:`, track.label, 'enabled:', track.enabled, 'readyState:', track.readyState);
       });
 
       streamRef.current = stream;
       audioChunksRef.current = [];
       setIsRecording(true);
 
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm',
-      });
+      // Use more compatible MIME type
+      let mimeType = 'audio/webm';
+      if (!MediaRecorder.isTypeSupported('audio/webm')) {
+        mimeType = 'audio/mp4';
+        if (!MediaRecorder.isTypeSupported('audio/mp4')) {
+          mimeType = ''; // Use default
+        }
+      }
+      
+      console.log('[VoiceToText] Using MIME type:', mimeType || 'default');
 
+      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = event => {
@@ -79,9 +115,10 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
           const isValid = await isAudioValid(audioBlob);
           if (!isValid) {
             console.warn(
-              '[VoiceToText] Skipping transcription — audio is silent'
+              '[VoiceToText] Skipping transcription — audio appears silent'
             );
-            alert('No speech detected in your recording. Please try again.');
+            console.warn('[VoiceToText] Try speaking louder or closer to the microphone');
+            alert('No speech detected in your recording. Please speak louder and closer to the microphone, then try again.');
             return;
           }
 
@@ -138,8 +175,16 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
       console.error('[VoiceToText] Failed to start recording:', error);
       setIsRecording(false);
 
-      if (error instanceof Error && error.name === 'NotAllowedError') {
-        alert('Microphone permission is required for voice input.');
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') {
+          alert('Microphone permission was denied. Please allow microphone access in your browser settings and try again.');
+        } else if (error.name === 'NotFoundError') {
+          alert('No microphone found. Please connect a microphone and try again.');
+        } else if (error.name === 'NotReadableError') {
+          alert('Microphone is already in use by another application. Please close other applications using the microphone and try again.');
+        } else {
+          alert(`Failed to start voice recording: ${error.message}`);
+        }
       } else {
         alert('Failed to start voice recording. Please try again.');
       }

@@ -8,6 +8,7 @@ import AboutPage from '@/pages/AboutPage';
 import LicensePage from '@/pages/LicensePage';
 import UserManualPage from '@/pages/UserManualPage';
 import LiveChatButton from '@/components/LiveChatButton';
+import { PermissionTester } from '@/components/PermissionTester';
 
 interface DashboardPageProps {
   token: string;
@@ -379,6 +380,9 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
           </div>
         </div>
       </footer>
+
+      {/* Permission Tester for debugging */}
+      <PermissionTester />
     </div>
   );
 };

@@ -61,27 +61,38 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
       setChatState(prev => ({ ...prev, isProcessing: true }));
 
       if (mode === 'voice' || mode === 'multimodal') {
-        // Request microphone permission
-        const audioConstraints = {
+        // Check if getUserMedia is available
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error('Media devices not supported in this browser');
+        }
+
+        console.log(`[LiveChatButton] Requesting ${mode} permissions...`);
+        
+        // Request microphone permission with better audio settings
+        const constraints: MediaStreamConstraints = {
           audio: {
             echoCancellation: true,
-            noiseSuppression: true,
-            sampleRate: 16000
+            noiseSuppression: false, // Less aggressive noise suppression
+            autoGainControl: true,
+            sampleRate: 44100
           }
         };
 
-        const videoConstraints = mode === 'multimodal' ? {
-          video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            frameRate: { ideal: 15 }
-          }
-        } : {};
+        // Add video constraints for multimodal
+        if (mode === 'multimodal') {
+          constraints.video = {
+            width: { ideal: 1280, min: 640 },
+            height: { ideal: 720, min: 480 },
+            frameRate: { ideal: 15, min: 10 }
+          };
+        }
 
-        const mediaStream = await navigator.mediaDevices.getUserMedia({
-          ...audioConstraints,
-          ...videoConstraints
-        });
+        console.log('[LiveChatButton] Media constraints:', constraints);
+        const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        
+        console.log('[LiveChatButton] Media access granted');
+        console.log('[LiveChatButton] Audio tracks:', mediaStream.getAudioTracks().length);
+        console.log('[LiveChatButton] Video tracks:', mediaStream.getVideoTracks().length);
 
         setStream(mediaStream);
 
@@ -132,7 +143,20 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
     } catch (error) {
       console.error('[LiveChatButton] Failed to start live chat:', error);
       setChatState(prev => ({ ...prev, isProcessing: false }));
-      alert('Failed to start live chat. Please check your permissions.');
+      
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') {
+          alert('Camera/microphone permission was denied. Please allow access in your browser settings and try again.');
+        } else if (error.name === 'NotFoundError') {
+          alert('No camera or microphone found. Please connect the required devices and try again.');
+        } else if (error.name === 'NotReadableError') {
+          alert('Camera or microphone is already in use by another application. Please close other applications and try again.');
+        } else {
+          alert(`Failed to start live chat: ${error.message}`);
+        }
+      } else {
+        alert('Failed to start live chat. Please check your permissions and try again.');
+      }
     }
   };
 
