@@ -4,11 +4,11 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { WorkflowsPage } from '@/pages/WorkflowsPage';
 import { KnowledgeHubPage } from '@/pages/KnowledgeHubPage';
 import { ApiKeyVaultPage } from '@/pages/ApiKeyVaultPage';
+import PersonalLifeOSPage from '@/pages/PersonalLifeOSPage';
 import AboutPage from '@/pages/AboutPage';
 import LicensePage from '@/pages/LicensePage';
 import UserManualPage from '@/pages/UserManualPage';
 import LiveChatButton from '@/components/LiveChatButton';
-import { PermissionTester } from '@/components/PermissionTester';
 
 interface DashboardPageProps {
   token: string;
@@ -21,7 +21,7 @@ interface User {
   email: string;
 }
 
-type DashboardView = 'chat' | 'settings' | 'workflows' | 'knowledge' | 'vault' | 'about' | 'license' | 'manual';
+type DashboardView = 'chat' | 'settings' | 'workflows' | 'knowledge' | 'vault' | 'lifeos' | 'about' | 'license' | 'manual';
 
 export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
   const [user, setUser] = useState<User | null>(null);
@@ -112,6 +112,11 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
     return <ApiKeyVaultPage token={token} onBack={() => setCurrentView('chat')} />;
   }
 
+  // Show Personal Life OS page
+  if (currentView === 'lifeos') {
+    return <PersonalLifeOSPage token={token} onBack={() => setCurrentView('chat')} />;
+  }
+
   // Show about page
   if (currentView === 'about') {
     return <AboutPage onBack={() => setCurrentView('chat')} />;
@@ -175,6 +180,15 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
             >
               <span>🔐</span>
               <span className="hidden sm:inline">Vault</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentView('lifeos')}
+              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50 flex items-center space-x-2"
+              title="Personal Life OS"
+            >
+              <span>🏠</span>
+              <span className="hidden sm:inline">Life OS</span>
             </button>
 
             <button
@@ -251,6 +265,13 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
                 >
                   <span>🔐</span>
                   <span>API Key Vault</span>
+                </button>
+                <button
+                  onClick={() => setCurrentView('lifeos')}
+                  className="w-full text-left p-3 rounded-lg hover:bg-gray-800/50 transition-colors flex items-center space-x-3"
+                >
+                  <span>🏠</span>
+                  <span>Personal Life OS</span>
                 </button>
                 <button
                   onClick={() => setCurrentView('settings')}
@@ -381,8 +402,6 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
         </div>
       </footer>
 
-      {/* Permission Tester for debugging */}
-      <PermissionTester />
     </div>
   );
 };

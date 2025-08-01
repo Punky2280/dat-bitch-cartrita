@@ -29,14 +29,17 @@ export const LanguageSelector: React.FC = () => {
             available.push(lang);
           }
         } catch (error) {
-          // Language not available
+          console.debug(`Language ${lang} not available:`, error);
         }
       }
 
       setAvailableLanguages(available.length > 0 ? available : ['en']);
     };
 
-    checkLanguageAvailability();
+    checkLanguageAvailability().catch(error => {
+      console.error('Error checking language availability:', error);
+      setAvailableLanguages(['en']); // Fallback to English
+    });
   }, []);
 
   const allLanguages: Language[] = [

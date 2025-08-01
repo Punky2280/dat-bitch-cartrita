@@ -35,6 +35,11 @@ const voiceChatRoutes = require('./src/routes/voiceChat');
 const visionRoutes = require('./src/routes/vision');
 const settingsRoutes = require('./src/routes/settings');
 const mcpRoutes = require('./src/routes/mcp');
+const calendarRoutes = require('./src/routes/calendar');
+const emailRoutes = require('./src/routes/email');
+const contactRoutes = require('./src/routes/contact');
+const notificationRoutes = require('./src/routes/notifications');
+const privacyRoutes = require('./src/routes/privacy');
 const { router: agentRoutes, injectIO } = require('./src/routes/agent'); // ✅ Updated import
 
 // Initialize Cartrita Iteration 21 services
@@ -45,12 +50,21 @@ const EnhancedCoreAgent = require('./src/agi/consciousness/EnhancedCoreAgent');
 const initializeAgents = require('./src/agi/agentInitializer');
 const SensoryProcessingService = require('./src/system/SensoryProcessingService');
 const MessageBus = require('./src/system/EnhancedMessageBus');
+const NotificationEngine = require('./src/services/NotificationEngine');
+const PrivacyControlService = require('./src/services/PrivacyControlService');
 
 const app = express();
 const server = http.createServer(app);
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-const allowedOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
+const allowedOrigins = [
+  'http://localhost:5173', 
+  'http://127.0.0.1:5173',
+  'http://localhost:5174', 
+  'http://127.0.0.1:5174',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+];
 const corsOptions = {
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -110,9 +124,19 @@ app.use('/api/voice-chat', voiceChatRoutes);
 app.use('/api/vision', visionRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/mcp', mcpRoutes);
+app.use('/api/calendar', calendarRoutes);
+app.use('/api/email', emailRoutes);
+app.use('/api/contacts', contactRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/privacy', privacyRoutes);
 console.log('[Index] ✅ MCP routes registered at /api/mcp');
 console.log('[Index] ✅ Voice chat routes registered at /api/voice-chat');
 console.log('[Index] ✅ Vision routes registered at /api/vision');
+console.log('[Index] ✅ Calendar routes registered at /api/calendar');
+console.log('[Index] ✅ Email routes registered at /api/email');
+console.log('[Index] ✅ Contact routes registered at /api/contacts');
+console.log('[Index] ✅ Notification routes registered at /api/notifications');
+console.log('[Index] ✅ Privacy routes registered at /api/privacy');
 
 app.use('/agent', agentRoutes); // ✅ Now emits responses via WebSocket
 
@@ -212,6 +236,15 @@ server.listen(PORT, async () => {
   // Initialize Cartrita Iteration 21 services
   try {
     await ServiceInitializer.initializeServices();
+    
+    // Initialize NotificationEngine
+    await NotificationEngine.initialize();
+    console.log('🔔 Notification Engine initialized');
+    
+    // Initialize PrivacyControlService
+    await PrivacyControlService.initialize();
+    console.log('🔒 Privacy Control Service initialized');
+    
     console.log('🎉 Cartrita Iteration 21 is fully operational!');
   } catch (error) {
     console.error('❌ Failed to initialize Cartrita services:', error);
@@ -222,12 +255,16 @@ server.listen(PORT, async () => {
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('🛑 Received SIGTERM, shutting down gracefully...');
+  NotificationEngine.cleanup();
+  PrivacyControlService.cleanup();
   await ServiceInitializer.cleanup();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
   console.log('🛑 Received SIGINT, shutting down gracefully...');
+  NotificationEngine.cleanup();
+  PrivacyControlService.cleanup();
   await ServiceInitializer.cleanup();
   process.exit(0);
 });

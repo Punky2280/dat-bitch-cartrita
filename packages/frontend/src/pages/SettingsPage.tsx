@@ -85,7 +85,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
       try {
         // Fetch both user profile and settings in parallel
         const [userResponse, settingsResponse] = await Promise.all([
-          fetch('/api/user/me', {
+          fetch('http://localhost:8000/api/user/me', {
             headers: { Authorization: `Bearer ${token}` },
           }),
           fetch('http://localhost:8000/api/settings', {
@@ -113,20 +113,71 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
 
         setUser(userData);
         setProfileForm({ name: userData.name, email: userData.email });
+        // Set personality settings with fallbacks
         setPersonalityForm({
-          sarcasm: settingsData.sarcasm,
-          verbosity: settingsData.verbosity,
-          humor: settingsData.humor,
+          sarcasm: settingsData.sarcasm ?? 5,
+          verbosity: settingsData.verbosity || 'normal',
+          humor: settingsData.humor || 'playful',
         });
+        
+        // Set audio settings with fallbacks
         setAudioForm({
-          voice_responses: settingsData.voice_responses,
-          ambient_listening: settingsData.ambient_listening,
-          sound_effects: settingsData.sound_effects,
-          camera_enabled: settingsData.camera_enabled || false,
+          voice_responses: settingsData.voice_responses ?? false,
+          ambient_listening: settingsData.ambient_listening ?? false,
+          sound_effects: settingsData.sound_effects ?? true,
+          camera_enabled: settingsData.camera_enabled ?? false,
         });
       } catch (err: any) {
         console.error('Error during settings page data fetch:', err); // Log the full error
-        setError(err.message);
+        
+        // Use default settings as fallback when backend fails
+        console.warn('Backend unavailable, using default settings');
+        
+        const defaultSettings = {
+          sarcasm: 5,
+          verbosity: 'normal' as const,
+          humor: 'playful' as const,
+          voice_responses: false,
+          ambient_listening: false,
+          sound_effects: true,
+          camera_enabled: false
+        };
+        
+        // Set default user data if user fetch failed
+        if (!user) {
+          setUser({
+            id: 1,
+            name: 'User',
+            email: 'user@example.com',
+            created_at: new Date().toISOString()
+          });
+          setProfileForm({ name: 'User', email: 'user@example.com' });
+        }
+        
+        // Set default settings
+        setPersonalityForm({
+          sarcasm: defaultSettings.sarcasm,
+          verbosity: defaultSettings.verbosity,
+          humor: defaultSettings.humor
+        });
+        
+        setAudioForm({
+          voice_responses: defaultSettings.voice_responses,
+          ambient_listening: defaultSettings.ambient_listening,
+          sound_effects: defaultSettings.sound_effects,
+          camera_enabled: defaultSettings.camera_enabled
+        });
+        
+        // Handle specific error cases with better messages
+        if (err.message.includes('Failed to fetch')) {
+          setError('⚠️ Backend temporarily unavailable. Using default settings. Please check that the backend is running on port 8000.');
+        } else if (err.message.includes('403') || err.message.includes('Forbidden')) {
+          setError('🔐 Authentication failed. Please try logging out and logging back in.');
+        } else if (err.message.includes('500')) {
+          setError('🚨 Server error detected. Using default settings. Check backend logs for details.');
+        } else {
+          setError(`⚡ Settings loading failed: ${err.message}. Using defaults.`);
+        }
       } finally {
         setLoading(false);
       }
@@ -145,7 +196,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     setError('');
 
     try {
-      const response = await fetch('/api/user/me', {
+      const response = await fetch('http://localhost:8000/api/user/me', {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -187,7 +238,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     }
 
     try {
-      const response = await fetch('/api/user/me/password', {
+      const response = await fetch('http://localhost:8000/api/user/me/password', {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,

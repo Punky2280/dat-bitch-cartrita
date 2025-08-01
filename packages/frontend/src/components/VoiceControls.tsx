@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { 
   MicrophoneIcon, 
   StopIcon, 
   SpeakerWaveIcon,
-  EyeIcon,
-  PlayIcon,
-  PauseIcon
+  EyeIcon
 } from '@heroicons/react/24/outline';
 
 interface VoiceControlsProps {

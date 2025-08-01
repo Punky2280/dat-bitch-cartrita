@@ -16,6 +16,15 @@ i18n
       requestOptions: {
         cache: 'no-cache',
       },
+      // Add error handling for failed requests
+      parse: (data: string) => {
+        try {
+          return JSON.parse(data);
+        } catch (error) {
+          console.error('i18n: Failed to parse translation data:', error);
+          return {};
+        }
+      },
     },
     interpolation: {
       escapeValue: false,
@@ -36,6 +45,14 @@ i18n
     keySeparator: '.',
     // Custom namespace separator
     nsSeparator: ':',
+    // Add error handling
+    missingKeyHandler: (lng, _ns, key) => {
+      console.debug(`i18n: Missing translation key "${key}" for language "${lng}"`);
+    },
+  })
+  .catch(error => {
+    console.error('i18n initialization failed:', error);
+    // Continue with default English
   });
 
 export default i18n;

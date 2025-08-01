@@ -4,9 +4,7 @@ import {
   StopIcon, 
   ChatBubbleLeftRightIcon,
   SparklesIcon,
-  VideoCameraIcon,
-  EyeIcon,
-  SpeakerWaveIcon
+  VideoCameraIcon
 } from '@heroicons/react/24/outline';
 
 interface LiveChatButtonProps {

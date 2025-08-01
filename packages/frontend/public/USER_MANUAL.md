@@ -1,19 +1,26 @@
-# Cartrita Platform User Manual
+# Cartrita Personal Life OS - User Manual
 
 ## Table of Contents
 1. [Getting Started](#getting-started)
-2. [Dashboard Overview](#dashboard-overview)
-3. [AI Knowledge Hub & Memory Palace](#ai-knowledge-hub--memory-palace)
-4. [Secure API Key Vault](#secure-api-key-vault)
-5. [Chat Interface](#chat-interface)
-6. [Settings & Personalization](#settings--personalization)
-7. [Troubleshooting](#troubleshooting)
+2. [Personal Life OS Overview](#personal-life-os-overview)
+3. [Calendar Management](#calendar-management)
+4. [Email Processing](#email-processing)
+5. [Contact Hub](#contact-hub)
+6. [Smart Notifications](#smart-notifications)
+7. [Privacy Controls](#privacy-controls)
+8. [Voice Features & Permissions](#voice-features--permissions)
+9. [Dashboard Overview](#dashboard-overview)
+10. [AI Knowledge Hub & Memory Palace](#ai-knowledge-hub--memory-palace)
+11. [Secure API Key Vault](#secure-api-key-vault)
+12. [Chat Interface](#chat-interface)
+13. [Settings & Personalization](#settings--personalization)
+14. [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Getting Started
 
-Welcome to Cartrita, your comprehensive AI-powered development and knowledge management platform. This modern web application combines cutting-edge artificial intelligence with secure data management to create a seamless experience for developers, researchers, and knowledge workers.
+Welcome to Cartrita Personal Life OS, your comprehensive AI-powered productivity and life management platform. This modern web application has evolved from a simple AI assistant into a complete Personal Life Operating System that intelligently manages your calendar, email, contacts, and notifications while maintaining the highest privacy standards.
 
 ### Initial Setup and Authentication
 
@@ -24,6 +31,582 @@ To create your account, click "Register here" and provide your full name, email 
 The login process is streamlined and secure. Enter your credentials, and the system will authenticate you against our PostgreSQL database with TimescaleDB extensions for optimal performance. Your password is never stored in plain text - only cryptographically secure hashes are maintained in our database.
 
 After successful authentication, you'll be automatically redirected to the main dashboard where you can begin exploring Cartrita's powerful features. The platform's responsive design ensures optimal viewing on desktop computers, tablets, and mobile devices.
+
+---
+
+## Initial Setup & Installation
+
+### System Requirements
+
+**Browser Requirements:**
+- Google Chrome 90+ (recommended for optimal performance)
+- Mozilla Firefox 88+
+- Microsoft Edge 90+
+- Safari 14+ (limited voice feature support)
+
+**System Requirements:**
+- Modern computer with microphone and camera (optional)
+- Stable internet connection (minimum 5 Mbps for voice features)
+- 4GB RAM minimum, 8GB recommended
+- Hardware acceleration enabled for optimal performance
+
+**Developer Setup:**
+If you're setting up Cartrita from source code, ensure you have:
+- Node.js 18+ and npm 8+
+- Docker and Docker Compose
+- PostgreSQL (via Docker)
+- OpenAI API key (for AI features)
+- Deepgram API key (for voice transcription)
+
+### Environment Configuration
+
+1. **Backend Configuration** (packages/backend/.env):
+   ```
+   OPENAI_API_KEY=your_openai_key_here
+   DEEPGRAM_API_KEY=your_deepgram_key_here
+   JWT_SECRET=your_secure_jwt_secret
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_NAME=cartrita
+   DB_USER=postgres
+   DB_PASSWORD=your_db_password
+   ```
+
+2. **Frontend Configuration** (packages/frontend/.env):
+   ```
+   VITE_API_BASE_URL=http://localhost:8000
+   VITE_WEBSOCKET_URL=ws://localhost:8000
+   ```
+
+3. **Database Setup:**
+   ```bash
+   docker-compose up -d postgres
+   cd packages/backend
+   npm run migrate  # Run database migrations
+   ```
+
+4. **Starting Services:**
+   ```bash
+   # Terminal 1 - Backend
+   cd packages/backend && npm run dev
+   
+   # Terminal 2 - Frontend  
+   cd packages/frontend && npm run dev
+   ```
+
+---
+
+## Personal Life OS Overview
+
+Cartrita's Personal Life OS represents a revolutionary approach to productivity and life management. It combines AI intelligence with seamless integration to your most important digital services, creating a unified operating system for your personal and professional life.
+
+### 🌟 **What Makes Personal Life OS Special**
+
+**Intelligent Integration**: Unlike simple calendar or email apps, Cartrita creates connections between your different life areas. It understands that your meeting tomorrow might relate to the email from last week and the contact you met last month.
+
+**Privacy-First Design**: Every feature is built with GDPR compliance and user consent at its core. You maintain complete control over your data, with full transparency about what's stored, how it's used, and the ability to export or delete everything at any time.
+
+**AI-Powered Insights**: The system doesn't just store your data—it learns from patterns to provide intelligent suggestions, proactive reminders, and automated workflows that enhance your productivity.
+
+### 📊 **Personal Life OS Components**
+
+#### 📅 **Smart Calendar Management**
+- **Multi-Calendar Sync**: Seamlessly integrates with Google Calendar
+- **Intelligent Conflict Detection**: AI identifies scheduling conflicts before they happen
+- **Meeting Preparation**: Automatic reminders with context about attendees and topics
+- **Time Analytics**: Insights into how you spend your time and productivity patterns
+
+#### 📧 **Intelligent Email Processing**  
+- **Multi-Provider Support**: Works with Gmail and Outlook accounts
+- **AI Categorization**: Automatically sorts emails by importance, category, and sentiment
+- **Smart Summaries**: Get the key points from long email threads
+- **Follow-Up Tracking**: Never lose track of important conversations
+
+#### 👥 **Unified Contact Hub**
+- **Relationship Intelligence**: Tracks interaction history and relationship strength
+- **Duplicate Management**: Automatically finds and merges duplicate contacts
+- **Birthday & Anniversary Reminders**: Never forget important personal dates
+- **Interaction Scoring**: Prioritizes contacts based on relationship importance
+
+#### 🔔 **Proactive Notification Engine**
+- **Context-Aware Alerts**: Notifications that understand your schedule and priorities
+- **Smart Timing**: Respects your quiet hours and optimal notification times
+- **Daily Briefings**: Morning summaries and evening reviews of your day
+- **Custom Preferences**: Granular control over what, when, and how you're notified
+
+#### 🔒 **Privacy Control Center**
+- **Consent Management**: Granular control over data usage permissions
+- **Data Retention**: Customize how long different types of data are kept
+- **Export Rights**: Download your complete data archive anytime
+- **Deletion Rights**: Complete data removal with verification
+- **Audit Trails**: See exactly who accessed your data and when
+
+### 🚀 **Getting Started with Personal Life OS**
+
+1. **Account Setup**: Create your Cartrita account with secure authentication
+2. **Service Integration**: Connect your Google and/or Microsoft accounts
+3. **Preference Configuration**: Set up notification preferences and privacy settings
+4. **Data Sync**: Allow the system to sync your existing calendar, email, and contacts
+5. **AI Learning**: The system begins learning your patterns and preferences
+6. **Enhanced Productivity**: Start receiving intelligent insights and automation
+
+### 🎯 **Key Benefits**
+
+- **Time Savings**: Reduce time spent managing different apps and services
+- **Never Miss Important Items**: Proactive reminders ensure nothing falls through cracks
+- **Better Relationships**: Stay connected with people who matter most
+- **Privacy Confidence**: Know exactly how your data is being used and protected
+- **Intelligent Insights**: Understand your patterns and optimize your productivity
+- **Seamless Experience**: One interface for all your personal productivity needs
+
+---
+
+## Calendar Management
+
+### Setting Up Calendar Integration
+
+**1. Google Calendar Connection**
+
+To connect your Google Calendar to Cartrita Personal Life OS:
+
+1. **Navigate to Settings**: Click the settings icon in the dashboard
+2. **Select Integrations**: Choose "External Services" or "API Keys"  
+3. **Add Google Integration**: Click "Add New Integration" and select "Google"
+4. **OAuth Authorization**: You'll be redirected to Google's secure authorization page
+5. **Grant Permissions**: Allow Cartrita to access your calendar data
+6. **Verification**: Return to Cartrita and verify the connection is successful
+
+**2. Initial Calendar Sync**
+
+Once connected, Cartrita will automatically:
+- Sync your existing calendar events
+- Set up real-time synchronization for new events
+- Configure default notification preferences
+- Begin analyzing your scheduling patterns
+
+### Using Calendar Features
+
+**Viewing Your Schedule**
+
+Ask Cartrita about your schedule using natural language:
+- *"What meetings do I have today?"*
+- *"Am I free tomorrow afternoon?"*
+- *"When is my next meeting with Sarah?"*
+- *"Show me my schedule for this week"*
+
+**Creating Events**
+
+Create calendar events through conversation:
+- *"Schedule a team meeting for Friday at 2 PM"*
+- *"Block my calendar for focus time tomorrow morning"*
+- *"Set up a coffee chat with John next week"*
+
+**Smart Scheduling**
+
+Cartrita's AI helps optimize your schedule:
+- **Conflict Detection**: Warns about double-booked time slots
+- **Travel Time**: Considers location and travel time between meetings
+- **Preparation Time**: Suggests buffer time for meeting preparation
+- **Energy Management**: Learns your optimal times for different types of meetings
+
+**Meeting Insights**
+
+Get intelligent analysis of your meetings:
+- **Attendee Context**: Background on meeting participants from your contacts
+- **Topic Preparation**: Related emails and previous conversations
+- **Follow-up Tracking**: Automatic reminders for post-meeting actions
+- **Time Analysis**: Insights into meeting frequency and duration patterns
+
+---
+
+## Email Processing
+
+### Email Integration Setup
+
+**1. Gmail Integration**
+
+Connect your Gmail account to enable intelligent email processing:
+
+1. **Access Settings**: Navigate to the integrations section
+2. **Select Gmail**: Choose Gmail from available email providers
+3. **Secure Authentication**: Complete OAuth flow with Google
+4. **Permission Grants**: Allow access to read, send, and organize emails
+5. **Sync Configuration**: Choose folders and sync frequency
+
+**2. Outlook Integration**
+
+For Microsoft Outlook users:
+
+1. **Microsoft Account**: Connect through Azure Active Directory
+2. **Permission Setup**: Grant necessary email and calendar permissions
+3. **Multi-Account Support**: Add multiple Outlook accounts if needed
+
+### Intelligent Email Features
+
+**AI-Powered Categorization**
+
+Cartrita automatically organizes your emails:
+- **Work vs Personal**: Distinguishes professional and personal correspondence
+- **Priority Levels**: Identifies urgent, important, and routine emails
+- **Topic Categories**: Groups emails by project, customer, or subject matter
+- **Sender Importance**: Learns which contacts require immediate attention
+
+**Smart Email Summaries**
+
+Get quick insights without reading every email:
+- **Daily Digest**: Morning summary of overnight emails
+- **Thread Summaries**: Key points from long email conversations
+- **Action Items**: Extracted tasks and follow-up requirements
+- **Deadline Alerts**: Important dates and deadlines mentioned in emails
+
+**Follow-Up Management**
+
+Never lose track of important conversations:
+- **Response Tracking**: Monitors emails awaiting your reply
+- **Follow-Up Reminders**: Proactive notifications for pending responses
+- **Conversation Context**: Historical context for email threads
+- **Relationship Insights**: Communication patterns with specific contacts
+
+**Email Composition Assistance**
+
+AI helps you write better emails:
+- *"Draft a follow-up email to yesterday's client meeting"*
+- *"Compose a professional decline for the conference invitation"*
+- *"Write a brief update email to the team about project progress"*
+
+### Email Analytics
+
+Understanding your communication patterns:
+- **Volume Trends**: Daily, weekly, and monthly email statistics
+- **Response Times**: Your average response time to important emails
+- **Top Contacts**: Most frequent email correspondents
+- **Peak Hours**: When you send and receive the most emails
+- **Productivity Insights**: Correlation between email volume and productivity
+
+---
+
+## Contact Hub
+
+### Contact Management Features
+
+**Unified Contact Database**
+
+Cartrita creates a comprehensive view of all your relationships:
+- **Multi-Source Sync**: Combines contacts from Google, Outlook, and manual entries
+- **Duplicate Detection**: Automatically identifies and merges duplicate contacts
+- **Rich Profiles**: Enhanced contact information with interaction history
+- **Relationship Mapping**: Understands connections between different contacts
+
+**Intelligent Contact Insights**
+
+Get meaningful insights about your relationships:
+- **Interaction Frequency**: How often you communicate with each contact
+- **Relationship Strength**: Scored based on communication patterns and recency
+- **Contact Importance**: Priority ranking based on your professional and personal networks
+- **Communication Preferences**: Learned preferences for how each contact likes to be reached
+
+### Using Contact Features
+
+**Finding Contacts**
+
+Natural language contact searches:
+- *"Find John from the marketing team"*
+- *"Show me contacts I haven't talked to in 2 months"*
+- *"Who are my most important business contacts?"*
+- *"Find everyone associated with the Johnson project"*
+
+**Relationship Tracking**
+
+Log and track your interactions:
+- **Meeting Records**: Automatically log calendar meetings
+- **Call History**: Manual or integrated phone call logging
+- **Email Interactions**: Automatic tracking of email exchanges
+- **Note Taking**: Add personal notes about conversations and relationships
+
+**Birthday and Anniversary Management**
+
+Never forget important personal dates:
+- **Birthday Alerts**: Proactive reminders before birthdays
+- **Anniversary Tracking**: Work anniversaries, hiring dates, etc.
+- **Relationship Milestones**: First meeting dates, project collaborations
+- **Automated Outreach**: Suggestions for birthday and celebration messages
+
+**Professional Network Analysis**
+
+Understand your professional relationships:
+- **Industry Connections**: Contacts grouped by industry or role
+- **Project Teams**: Relationships formed through specific projects
+- **Referral Networks**: Contacts who've provided or received referrals
+- **Influence Mapping**: Key connectors in your professional network
+
+### Contact Privacy and Security
+
+**Data Protection**
+
+All contact data is secured with enterprise-grade protection:
+- **Encryption**: All contact data encrypted at rest and in transit
+- **Access Control**: Granular permissions for data access
+- **Sync Security**: Secure OAuth connections to external services
+- **Audit Trails**: Complete logging of contact data access
+
+**Privacy Controls**
+
+Maintain control over contact information:
+- **Selective Sync**: Choose which contact fields to import
+- **Data Retention**: Configure how long to keep contact interaction history
+- **Export Options**: Download complete contact database anytime
+- **Deletion Rights**: Remove specific contacts or all contact data
+
+---
+
+## Smart Notifications
+
+### Notification System Overview
+
+Cartrita's notification engine goes beyond simple reminders to provide contextually aware, intelligent alerts that enhance rather than interrupt your productivity.
+
+**Context-Aware Intelligence**
+
+The system understands:
+- **Your Schedule**: Notifications are timed around your availability
+- **Priority Levels**: Important items get immediate attention, routine items are batched
+- **Relationship Context**: Notifications include relevant background information
+- **Work Patterns**: Learns your optimal times for different types of alerts
+
+### Notification Types
+
+**Calendar Reminders**
+- **Meeting Alerts**: Customizable advance warnings (5-60 minutes)
+- **Preparation Reminders**: Time to review materials or travel to location  
+- **Conflict Warnings**: Alerts when scheduling conflicts arise
+- **Deadline Notifications**: Project and task due date reminders
+
+**Email Notifications**  
+- **Urgent Email Alerts**: Immediate notification for high-priority messages
+- **VIP Contact Messages**: Special alerts for important contacts
+- **Follow-Up Reminders**: Notifications for emails requiring responses
+- **Digest Summaries**: Batched updates for routine email activity
+
+**Contact Reminders**
+- **Birthday Alerts**: Advance notice for birthdays and anniversaries
+- **Follow-Up Prompts**: Reminders to reconnect with important contacts
+- **Relationship Maintenance**: Suggestions for staying in touch
+- **Meeting Prep**: Context about meeting attendees from your contact database
+
+**System Notifications**
+- **Sync Status**: Updates on data synchronization with external services
+- **Privacy Alerts**: Notifications about data access or privacy settings changes
+- **Security Updates**: Important security-related notifications
+- **Feature Updates**: Information about new Personal Life OS capabilities
+
+### Notification Preferences
+
+**Delivery Methods**
+- **In-App Notifications**: Real-time alerts within the Cartrita interface
+- **Browser Notifications**: Desktop notifications even when Cartrita isn't active
+- **Email Summaries**: Daily or weekly digest emails (future feature)
+- **Mobile Push**: Push notifications to mobile devices (future feature)
+
+**Timing Controls**
+- **Quiet Hours**: Set do-not-disturb periods (default: 10 PM - 8 AM)
+- **Work Hours**: Different notification rules for business vs. personal time
+- **Weekend Settings**: Reduced notification frequency for weekends
+- **Vacation Mode**: Pause non-critical notifications during time off
+
+**Priority Filtering**
+- **High Priority Only**: Only critical notifications during focus time
+- **Smart Batching**: Group similar notifications to reduce interruptions
+- **Context Sensitivity**: Suppress notifications during meetings or focus blocks
+- **Adaptive Learning**: System learns your preference patterns over time
+
+### Managing Your Notifications
+
+**Customization Interface**
+
+Access notification settings through:
+1. **Settings Panel**: Click the gear icon in the main dashboard
+2. **Notification Center**: View and manage all recent notifications  
+3. **Quick Settings**: Rapid toggles for common notification preferences
+4. **Voice Commands**: *"Turn off meeting reminders for today"* or *"Enable birthday alerts"*
+
+**Smart Defaults**
+
+Cartrita comes pre-configured with intelligent defaults:
+- **Calendar Reminders**: 15 minutes before meetings
+- **Email Alerts**: Only for VIP contacts and urgent messages
+- **Birthday Reminders**: 1 day advance notice
+- **Follow-Up Prompts**: 3 days after last contact interaction
+
+**Notification Analytics**
+
+Understand how notifications impact your productivity:
+- **Response Rates**: How often you act on different types of notifications
+- **Timing Effectiveness**: Which notification times work best for you
+- **Interruption Analysis**: Impact of notifications on focus and productivity
+- **Optimization Suggestions**: AI recommendations for improving your notification setup
+
+---
+
+## Privacy Controls
+
+### Privacy-First Architecture
+
+Cartrita Personal Life OS is built with privacy as a fundamental design principle, not an afterthought. Every feature includes comprehensive privacy controls that put you in complete control of your personal data.
+
+**GDPR Compliance**
+
+Full compliance with European privacy regulations:
+- **Explicit Consent**: Clear consent requests for each type of data processing
+- **Purpose Limitation**: Data is only used for the specific purposes you've approved
+- **Data Minimization**: Only necessary data is collected and stored
+- **Transparency**: Complete visibility into what data is stored and how it's used
+
+### Privacy Dashboard
+
+Your comprehensive privacy control center provides:
+
+**Data Overview**
+- **Storage Summary**: What personal data is currently stored
+- **Usage Statistics**: How your data is being processed
+- **Integration Status**: Which external services have access to your data
+- **Recent Activity**: Real-time log of data access and modifications
+
+**Consent Management**
+- **Granular Controls**: Separate consent for calendar, email, contacts, and analytics
+- **Service-Specific Permissions**: Different consent levels for different features
+- **Consent History**: Complete audit trail of all consent decisions
+- **Easy Revocation**: One-click consent withdrawal with immediate effect
+
+### Data Rights and Controls
+
+**Right to Access**
+- **Data Export**: Download complete archive of all your data
+- **Structured Formats**: Data provided in standard JSON format
+- **Comprehensive Coverage**: Includes all personal data, metadata, and interaction logs
+- **Automatic Generation**: Export files generated on-demand or scheduled
+
+**Right to Rectification**
+- **Data Correction**: Update or correct any stored personal information
+- **Bulk Updates**: Modify multiple records simultaneously
+- **Sync Coordination**: Changes propagated to connected external services
+- **Version History**: Track changes to personal data over time
+
+**Right to Erasure (Right to be Forgotten)**
+- **Complete Deletion**: Remove all personal data from Cartrita systems
+- **Selective Deletion**: Delete specific categories of data (e.g., only email data)
+- **Verification Process**: Email verification required for irreversible deletions
+- **Confirmation Guarantees**: Written confirmation of successful data deletion
+
+**Right to Data Portability**
+- **Standard Formats**: Export data in commonly used, machine-readable formats
+- **Service Migration**: Easy transfer of data to other platforms
+- **Complete Archives**: Full historical data including interaction patterns
+- **Automated Export**: Schedule regular data exports for backup purposes
+
+### Data Retention and Lifecycle
+
+**Intelligent Retention Policies**
+
+Cartrita automatically manages data lifecycle:
+- **Calendar Events**: 7 years default (configurable 1-10 years)
+- **Email Messages**: 7 years default (configurable 1-10 years)
+- **Contact Information**: Indefinite (user-controlled deletion)
+- **Interaction Logs**: 3 years default (configurable 1-5 years)
+- **System Logs**: 90 days (fixed for security purposes)
+
+**Retention Customization**
+- **Per-Category Settings**: Different retention periods for different data types
+- **Automatic Cleanup**: Scheduled deletion of expired data
+- **Retention Warnings**: Advance notice before data is automatically deleted
+- **Selective Preservation**: Option to preserve important data beyond standard retention
+
+**Data Anonymization**
+
+For data that must be retained for system functionality:
+- **Personal Identifier Removal**: Names, emails, and phone numbers anonymized
+- **Pattern Preservation**: Statistical patterns maintained for AI improvement
+- **Irreversible Process**: Anonymized data cannot be re-linked to individuals
+- **Transparency Reports**: Regular reports on anonymization activities
+
+### Security and Encryption
+
+**Data Protection**
+- **Encryption at Rest**: AES-256 encryption for all stored data
+- **Encryption in Transit**: TLS 1.3 for all data transfers
+- **Key Management**: Enterprise-grade key rotation and management
+- **Zero-Knowledge Architecture**: Certain sensitive data never decrypted on servers
+
+**Access Control**
+- **Multi-Factor Authentication**: Optional 2FA for enhanced account security  
+- **Session Management**: Automatic logout after inactivity periods
+- **IP Restrictions**: Optional IP-based access controls
+- **Device Management**: Monitor and control device access to your account
+
+**Audit and Monitoring**
+- **Access Logging**: Complete log of all data access and modifications
+- **Security Monitoring**: Real-time monitoring for suspicious activity
+- **Breach Notification**: Immediate notification of any security incidents
+- **Regular Security Audits**: Quarterly third-party security assessments
+
+### Privacy Education and Support
+
+**Understanding Your Rights**
+
+Cartrita provides comprehensive resources:
+- **Privacy Guide**: Plain-language explanation of your privacy rights
+- **Data Dictionary**: Clear definitions of what data is collected and why
+- **Process Transparency**: Step-by-step explanation of data processing activities
+- **Regular Updates**: Notifications about privacy policy changes
+
+**Support and Assistance**
+- **Privacy Officer**: Dedicated contact for privacy-related questions
+- **Response Guarantee**: All privacy requests answered within 30 days
+- **Escalation Process**: Clear process for privacy-related complaints
+- **Third-Party Advocacy**: Information about privacy advocacy organizations
+
+---
+
+## Voice Features & Permissions
+
+Cartrita's advanced voice capabilities provide a natural, hands-free interaction experience with your AI assistant. The system supports real-time voice transcription, text-to-speech responses, and wake word detection.
+
+### Setting Up Voice Features
+
+**1. Browser Permissions**
+When you first use voice features, your browser will request microphone and camera permissions. Click "Allow" to enable these features:
+- **Microphone**: Required for voice input and wake word detection
+- **Camera**: Optional, enables visual analysis in multi-modal mode
+
+**2. Voice Input Methods**
+- **Voice-to-Text Button**: Click the microphone icon in the chat interface to record voice messages
+- **Live Chat Button**: Access the floating multi-modal chat button for continuous voice interaction
+- **Wake Word Detection**: Say "Cartrita!" to activate voice mode when Live Chat is active
+
+**3. Voice Settings Configuration**
+Navigate to Settings → Audio Settings to configure:
+- **Voice Responses**: Enable/disable AI text-to-speech responses
+- **Ambient Listening**: Continuous background audio monitoring
+- **Sound Effects**: System notification sounds
+- **Camera Integration**: Enable visual analysis capabilities
+
+**4. Wake Word Activation**
+When Live Chat is active in voice or multi-modal mode:
+1. Say "Cartrita!" clearly (wake word detection)
+2. Wait for the acknowledgment sound/response
+3. Speak your question or command
+4. Cartrita will respond with both text and voice
+
+**5. Troubleshooting Voice Issues**
+- **No permission prompt**: Ensure you're using HTTPS or localhost
+- **Audio detected as silent**: Check microphone settings and speak closer to the device
+- **Wake word not working**: Ensure ambient listening is enabled in settings
+- **Poor transcription quality**: Use Chrome browser for best results
+
+**6. Privacy & Security**
+- Voice data is processed securely through Deepgram API
+- No voice recordings are permanently stored
+- All audio processing respects your privacy settings
+- Ambient mode can be disabled at any time
 
 ---
 

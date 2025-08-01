@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MicrophoneIcon, StopIcon } from '@heroicons/react/24/outline';
+import { checkMediaSupport, getOptimalAudioConstraints, getSupportedMimeType, logMediaDeviceInfo } from '@/utils/mediaUtils';
+import { AudioVisualizer } from './AudioVisualizer';
+import { MediaPermissionHandler, MediaPermissionState } from './MediaPermissionHandler';
 
 interface VoiceToTextButtonProps {
   onTranscript: (text: string) => void;
@@ -14,6 +17,11 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
 }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [permissions, setPermissions] = useState<MediaPermissionState>({
+    microphone: 'unknown',
+    camera: 'unknown'
+  });
+  const [showPermissionUI, setShowPermissionUI] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -28,7 +36,15 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
 
       const data = buffer.getChannelData(0);
       const avg = data.reduce((acc, val) => acc + Math.abs(val), 0) / data.length;
-      const max = Math.max(...data.map(Math.abs));
+      
+      // Find max value efficiently without spread operator
+      let max = 0;
+      for (let i = 0; i < data.length; i++) {
+        const absVal = Math.abs(data[i]);
+        if (absVal > max) {
+          max = absVal;
+        }
+      }
 
       console.log('[VoiceToText] Audio analysis - Avg volume:', avg.toFixed(6), 'Max volume:', max.toFixed(6));
       
@@ -46,19 +62,22 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
     try {
       console.log('[VoiceToText] Starting recording');
 
-      // Check if getUserMedia is available
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('getUserMedia is not supported in this browser');
+      // Check media support
+      const support = checkMediaSupport();
+      if (!support.isSupported) {
+        console.error('[VoiceToText] Media support issues:', support.issues);
+        throw new Error(`Media not supported: ${support.issues.join(', ')}`);
       }
 
-      // Request permissions explicitly with more permissive settings
+      // Log available devices for debugging
+      await logMediaDeviceInfo();
+
+      // Request permissions with optimal settings
+      const audioConstraints = getOptimalAudioConstraints();
+      console.log('[VoiceToText] Audio constraints:', audioConstraints);
+      
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: false, // Disable noise suppression to capture more audio
-          autoGainControl: true,
-          sampleRate: 44100, // Higher sample rate for better quality
-        },
+        audio: audioConstraints,
       });
 
       console.log('[VoiceToText] Microphone access granted');
@@ -78,15 +97,8 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
       audioChunksRef.current = [];
       setIsRecording(true);
 
-      // Use more compatible MIME type
-      let mimeType = 'audio/webm';
-      if (!MediaRecorder.isTypeSupported('audio/webm')) {
-        mimeType = 'audio/mp4';
-        if (!MediaRecorder.isTypeSupported('audio/mp4')) {
-          mimeType = ''; // Use default
-        }
-      }
-      
+      // Use optimal MIME type
+      const mimeType = getSupportedMimeType();
       console.log('[VoiceToText] Using MIME type:', mimeType || 'default');
 
       const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
@@ -214,7 +226,21 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
     if (isRecording) {
       stopRecording();
     } else {
+      // Check permissions before starting recording
+      if (permissions.microphone !== 'granted') {
+        setShowPermissionUI(true);
+        return;
+      }
       startRecording();
+    }
+  };
+
+  const handlePermissionChange = (newPermissions: MediaPermissionState) => {
+    setPermissions(newPermissions);
+    
+    // Auto-hide permission UI if microphone access is granted
+    if (newPermissions.microphone === 'granted' && showPermissionUI) {
+      setShowPermissionUI(false);
     }
   };
 
@@ -269,6 +295,33 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
 
       {isRecording && (
         <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+      )}
+
+      {/* Audio Visualizer - shown when recording */}
+      {isRecording && (
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4">
+          <AudioVisualizer
+            isRecording={isRecording}
+            audioStream={streamRef.current}
+            width={200}
+            height={40}
+            barColor="#ef4444"
+            backgroundColor="rgba(0, 0, 0, 0.8)"
+            sensitivity={1.2}
+          />
+        </div>
+      )}
+
+      {/* Permission Handler - shown when permissions are needed */}
+      {showPermissionUI && (
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 w-80">
+          <MediaPermissionHandler
+            onPermissionChange={handlePermissionChange}
+            requiredPermissions={['microphone']}
+            showUI={true}
+            autoRequest={false}
+          />
+        </div>
       )}
     </div>
   );
