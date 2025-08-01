@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useThemedStyles } from '../context/ThemeContext';
 
 interface ApiKeyVaultPageProps {
   token: string;
@@ -49,7 +50,98 @@ interface SecurityEvent {
   ip_address: string;
 }
 
+// Enhanced provider presets with Google Cloud API configurations
+const ENHANCED_PROVIDER_PRESETS = {
+  'openai': {
+    name: 'OpenAI',
+    icon: '🤖',
+    keyFormat: /^sk-[A-Za-z0-9]{32,}$/,
+    keyExample: 'sk-1234567890abcdef...',
+    description: 'AI language models and embeddings',
+    required_fields: ['api_key'],
+    validation: {
+      api_key: {
+        pattern: '^sk-[A-Za-z0-9]{32,}$',
+        message: 'OpenAI API key must start with "sk-" followed by 32+ alphanumeric characters'
+      }
+    }
+  },
+  'anthropic': {
+    name: 'Anthropic (Claude)',
+    icon: '🧠',
+    keyFormat: /^sk-ant-[A-Za-z0-9\-_]{32,}$/,
+    keyExample: 'sk-ant-api03-1234567890abcdef...',
+    description: 'Claude AI assistant API',
+    required_fields: ['api_key'],
+    validation: {
+      api_key: {
+        pattern: '^sk-ant-[A-Za-z0-9\\-_]{32,}$',
+        message: 'Anthropic API key must start with "sk-ant-" followed by 32+ characters'
+      }
+    }
+  },
+  'google-cloud': {
+    name: 'Google Cloud APIs',
+    icon: '☁️',
+    keyFormat: /^[A-Za-z0-9\-_]{39}$/,
+    keyExample: 'AIzaSyDp-cMne4eJ-EtV68iNlypHdssyZ76cFb4',
+    description: 'All Google Cloud APIs including Gmail, Calendar, Contacts, Docs, Sheets, BigQuery, and more',
+    required_fields: ['api_key'],
+    supported_apis: [
+      'Gmail API',
+      'Google Calendar API',
+      'Google Contacts API (People API)',
+      'Google Docs API',
+      'Google Sheets API',
+      'BigQuery API',
+      'Google Cloud Storage API',
+      'Google Maps API',
+      'Google Drive API',
+      'Cloud Monitoring API',
+      'Cloud Logging API',
+      'Service Management API',
+      'Service Usage API',
+      'Analytics Hub API'
+    ],
+    validation: {
+      api_key: {
+        pattern: '^[A-Za-z0-9\\-_]{39}$',
+        message: 'Google Cloud API key must be exactly 39 characters (letters, numbers, hyphens, underscores)'
+      }
+    }
+  },
+  'deepgram': {
+    name: 'Deepgram',
+    icon: '🎤',
+    keyFormat: /^[A-Za-z0-9]{32,}$/,
+    keyExample: '1234567890abcdef...',
+    description: 'Speech-to-text API',
+    required_fields: ['api_key'],
+    validation: {
+      api_key: {
+        pattern: '^[A-Za-z0-9]{32,}$',
+        message: 'Deepgram API key must be 32+ alphanumeric characters'
+      }
+    }
+  },
+  'elevenlabs': {
+    name: 'ElevenLabs',
+    icon: '🗣️',
+    keyFormat: /^[A-Za-z0-9]{32,}$/,
+    keyExample: '1234567890abcdef...',
+    description: 'Text-to-speech API',
+    required_fields: ['api_key'],
+    validation: {
+      api_key: {
+        pattern: '^[A-Za-z0-9]{32,}$',
+        message: 'ElevenLabs API key must be 32+ alphanumeric characters'
+      }
+    }
+  }
+};
+
 export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({ token, onBack }) => {
+  const themedStyles = useThemedStyles();
   const [activeView, setActiveView] = useState<'dashboard' | 'keys' | 'add' | 'security' | 'analytics'>('dashboard');
   const [providers, setProviders] = useState<ApiProvider[]>([]);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
@@ -66,7 +158,42 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({ token, onBack 
     rotation_interval_days: ''
   });
   
+  // Validation state
+  const [validationMessage, setValidationMessage] = useState('');
+  const [isValidating, setIsValidating] = useState(false);
+  
   const [testResults, setTestResults] = useState<{ [keyId: number]: any }>({});
+
+  // Helper functions for validation and provider info
+  const getProviderInfo = (providerId: string) => {
+    const selectedProvider = providers.find(p => p.id.toString() === providerId);
+    if (!selectedProvider) return null;
+    
+    const providerName = selectedProvider.name.toLowerCase();
+    const preset = ENHANCED_PROVIDER_PRESETS[providerName as keyof typeof ENHANCED_PROVIDER_PRESETS] || 
+                   ENHANCED_PROVIDER_PRESETS[providerName.replace(/\s+/g, '-') as keyof typeof ENHANCED_PROVIDER_PRESETS];
+    
+    if (preset) {
+      let info = preset.description;
+      if (preset.supported_apis) {
+        info += `. Supports: ${preset.supported_apis.slice(0, 3).join(', ')}${preset.supported_apis.length > 3 ? ` and ${preset.supported_apis.length - 3} more` : ''}.`;
+      }
+      return info;
+    }
+    
+    return selectedProvider.description;
+  };
+
+  const getProviderPlaceholder = (providerId: string) => {
+    const selectedProvider = providers.find(p => p.id.toString() === providerId);
+    if (!selectedProvider) return 'Enter your API key...';
+    
+    const providerName = selectedProvider.name.toLowerCase();
+    const preset = ENHANCED_PROVIDER_PRESETS[providerName as keyof typeof ENHANCED_PROVIDER_PRESETS] || 
+                   ENHANCED_PROVIDER_PRESETS[providerName.replace(/\s+/g, '-') as keyof typeof ENHANCED_PROVIDER_PRESETS];
+    
+    return preset ? preset.keyExample : 'Enter your API key...';
+  };
 
   useEffect(() => {
     loadData();
@@ -216,19 +343,19 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({ token, onBack 
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-animated text-white">
       {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-700 p-6">
+      <header className="glass-card border-b border-gray-600/50 p-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
               onClick={onBack}
-              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-700"
+              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50"
             >
               ← Back
             </button>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold text-gradient">
                 🔐 Secure API Key Vault
               </h1>
               <p className="text-gray-400 mt-1">
@@ -239,7 +366,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({ token, onBack 
           <div className="flex items-center space-x-4">
             <button
               onClick={() => setActiveView('add')}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-semibold transition-colors flex items-center space-x-2"
+              className="px-4 py-2 bg-gradient-green rounded-lg font-semibold transition-all duration-300 hover:scale-105 flex items-center space-x-2"
             >
               <span>➕</span>
               <span>Add API Key</span>
@@ -514,14 +641,41 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({ token, onBack 
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">API Key</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">API Key *</label>
                   <input
                     type="password"
                     value={newKey.api_key}
-                    onChange={(e) => setNewKey({ ...newKey, api_key: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-green-500"
-                    placeholder="Enter your API key..."
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setNewKey({ ...newKey, api_key: value });
+                      
+                      // Real-time validation
+                      if (value && newKey.provider_id) {
+                        const validation = validateApiKey(newKey.provider_id, value);
+                        setValidationMessage(validation.isValid ? '' : validation.message || '');
+                      } else {
+                        setValidationMessage('');
+                      }
+                    }}
+                    className={`w-full px-4 py-3 glass-card border rounded-lg text-white placeholder-gray-400 focus:outline-none transition-colors ${
+                      validationMessage ? 'border-red-500 focus:border-red-400' : 'border-gray-600/50 focus:border-blue-500'
+                    }`}
+                    placeholder={newKey.provider_id ? getProviderPlaceholder(newKey.provider_id) : "Enter your API key..."}
                   />
+                  {validationMessage && (
+                    <p className="mt-2 text-sm text-red-400 flex items-center space-x-1">
+                      <span>⚠️</span>
+                      <span>{validationMessage}</span>
+                    </p>
+                  )}
+                  {newKey.provider_id && getProviderInfo(newKey.provider_id) && (
+                    <div className="mt-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                      <p className="text-sm text-blue-300 flex items-start space-x-2">
+                        <span className="text-blue-400 mt-0.5">📝</span>
+                        <span>{getProviderInfo(newKey.provider_id)}</span>
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

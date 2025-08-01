@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
+import * as THREE from 'three';
+import { useThemedStyles } from '../context/ThemeContext';
  
 interface KnowledgeHubPageProps {
   token: string;
@@ -53,6 +55,7 @@ interface SearchResult {
 }
 
 export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBack }) => {
+  const themedStyles = useThemedStyles();
   const [activeView, setActiveView] = useState<'overview' | 'graph' | 'search' | 'entries' | 'create'>('overview');
   const [entries, setEntries] = useState<KnowledgeEntry[]>([]);
   const [clusters, setClusters] = useState<KnowledgeCluster[]>([]);
@@ -245,19 +248,19 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-animated text-white">
       {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-700 p-6">
+      <header className="glass-card border-b border-gray-600/50 p-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
               onClick={onBack}
-              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-700"
+              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50"
             >
               ← Back
             </button>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold text-gradient">
                 🧠 AI Knowledge Hub
               </h1>
               <p className="text-gray-400 mt-1">
@@ -268,7 +271,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
           <div className="flex items-center space-x-4">
             <button
               onClick={() => setActiveView('create')}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold transition-colors flex items-center space-x-2"
+              className="px-4 py-2 bg-gradient-purple rounded-lg font-semibold transition-all duration-300 hover:scale-105 flex items-center space-x-2"
             >
               <span>➕</span>
               <span>Add Knowledge</span>
@@ -441,32 +444,36 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
                     console.log('Node clicked:', node);
                   }}
                   nodeThreeObject={(node: any) => {
-                    const sprite = new (window as any).THREE.Sprite(
-                      new (window as any).THREE.SpriteMaterial({
-                        map: new (window as any).THREE.CanvasTexture(
-                          (() => {
-                            const canvas = document.createElement('canvas');
-                            const context = canvas.getContext('2d')!;
-                            canvas.width = 256;
-                            canvas.height = 256;
-                            
-                            context.fillStyle = node.color;
-                            context.beginPath();
-                            context.arc(128, 128, 100, 0, 2 * Math.PI);
-                            context.fill();
-                            
-                            context.fillStyle = 'white';
-                            context.font = '32px Arial';
-                            context.textAlign = 'center';
-                            context.fillText(node.type === 'cluster' ? '🧩' : '📄', 128, 140);
-                            
-                            return canvas;
-                          })()
-                        )
-                      })
-                    );
-                    sprite.scale.set(node.val, node.val, 1);
-                    return sprite;
+                    try {
+                      const canvas = document.createElement('canvas');
+                      const context = canvas.getContext('2d');
+                      if (!context) return new THREE.Mesh();
+                      
+                      canvas.width = 256;
+                      canvas.height = 256;
+                      
+                      context.fillStyle = node.color || '#3B82F6';
+                      context.beginPath();
+                      context.arc(128, 128, 100, 0, 2 * Math.PI);
+                      context.fill();
+                      
+                      context.fillStyle = 'white';
+                      context.font = '32px Arial';
+                      context.textAlign = 'center';
+                      context.fillText(node.type === 'cluster' ? '🧩' : '📄', 128, 140);
+                      
+                      const texture = new THREE.CanvasTexture(canvas);
+                      const material = new THREE.SpriteMaterial({ map: texture });
+                      const sprite = new THREE.Sprite(material);
+                      sprite.scale.set(node.val || 1, node.val || 1, 1);
+                      return sprite;
+                    } catch (error) {
+                      console.error('Error creating node sprite:', error);
+                      // Fallback to simple geometry
+                      const geometry = new THREE.SphereGeometry(node.val || 1);
+                      const material = new THREE.MeshBasicMaterial({ color: node.color || '#3B82F6' });
+                      return new THREE.Mesh(geometry, material);
+                    }
                   }}
                 />
               )}

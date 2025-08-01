@@ -79,6 +79,16 @@ const ContactHub: React.FC = () => {
     description: '',
     date: new Date().toISOString().split('T')[0]
   });
+  
+  // New contact form state
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newContact, setNewContact] = useState({
+    first_name: '',
+    last_name: '',
+    email_addresses: [{ email: '', type: 'personal', primary: true }],
+    phone_numbers: [{ number: '', type: 'mobile', primary: true }],
+    notes: ''
+  });
 
   useEffect(() => {
     fetchContactStats();
@@ -212,6 +222,45 @@ const ContactHub: React.FC = () => {
     }
   };
 
+  const createContact = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/contacts', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...newContact,
+          display_name: `${newContact.first_name} ${newContact.last_name}`.trim()
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          await fetchContacts();
+          setNewContact({
+            first_name: '',
+            last_name: '',
+            email_addresses: [{ email: '', type: 'personal', primary: true }],
+            phone_numbers: [{ number: '', type: 'mobile', primary: true }],
+            notes: ''
+          });
+          setShowCreateForm(false);
+        } else {
+          alert('Failed to create contact: ' + result.error);
+        }
+      } else {
+        alert('Failed to create contact. Please try again.');
+      }
+    } catch (error) {
+      console.error('Failed to create contact:', error);
+      alert('Failed to create contact. Please check your connection.');
+    }
+  };
+
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString();
@@ -283,7 +332,7 @@ const ContactHub: React.FC = () => {
             <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
             {syncing ? 'Syncing...' : 'Sync Contacts'}
           </Button>
-          <Button>
+          <Button onClick={() => setShowCreateForm(true)}>
             <Plus className="w-4 h-4 mr-2" />
             New Contact
           </Button>
@@ -647,6 +696,95 @@ const ContactHub: React.FC = () => {
               </Button>
               <Button onClick={addInteraction} disabled={!newInteraction.description}>
                 Add Interaction
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Contact Dialog */}
+      <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
+        <DialogContent className="glass-card border-gray-600/50 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white">Create New Contact</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">First Name</label>
+                <Input
+                  value={newContact.first_name}
+                  onChange={(e) => setNewContact({ ...newContact, first_name: e.target.value })}
+                  placeholder="John"
+                  className="glass-card border-gray-600/50 text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Last Name</label>
+                <Input
+                  value={newContact.last_name}
+                  onChange={(e) => setNewContact({ ...newContact, last_name: e.target.value })}
+                  placeholder="Doe"
+                  className="glass-card border-gray-600/50 text-white"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+              <Input
+                type="email"
+                value={newContact.email_addresses[0]?.email || ''}
+                onChange={(e) => setNewContact({ 
+                  ...newContact, 
+                  email_addresses: [{ 
+                    ...newContact.email_addresses[0],
+                    email: e.target.value 
+                  }] 
+                })}
+                placeholder="john.doe@example.com"
+                className="glass-card border-gray-600/50 text-white"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Phone</label>
+              <Input
+                type="tel"
+                value={newContact.phone_numbers[0]?.number || ''}
+                onChange={(e) => setNewContact({ 
+                  ...newContact, 
+                  phone_numbers: [{ 
+                    ...newContact.phone_numbers[0],
+                    number: e.target.value 
+                  }] 
+                })}
+                placeholder="+1 (555) 123-4567"
+                className="glass-card border-gray-600/50 text-white"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Notes</label>
+              <Textarea
+                value={newContact.notes}
+                onChange={(e) => setNewContact({ ...newContact, notes: e.target.value })}
+                placeholder="Additional notes..."
+                rows={3}
+                className="glass-card border-gray-600/50 text-white"
+              />
+            </div>
+            
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button variant="outline" onClick={() => setShowCreateForm(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={createContact} 
+                disabled={!newContact.first_name && !newContact.last_name}
+                className="bg-gradient-green"
+              >
+                Create Contact
               </Button>
             </div>
           </div>

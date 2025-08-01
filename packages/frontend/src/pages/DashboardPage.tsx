@@ -27,6 +27,14 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<DashboardView>('chat');
+  const [systemStatus, setSystemStatus] = useState({
+    ai_core: { status: 'checking', message: 'Checking...' },
+    websocket: { status: 'checking', message: 'Checking...' },
+    database: { status: 'checking', message: 'Checking...' },
+    email_service: { status: 'checking', message: 'Checking...' },
+    calendar_service: { status: 'checking', message: 'Checking...' },
+    contacts_service: { status: 'checking', message: 'Checking...' }
+  });
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -76,7 +84,87 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
       }
     };
 
+    const checkSystemStatus = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const statusChecks = [
+        { key: 'email_service', endpoint: '/api/email/status' },
+        { key: 'calendar_service', endpoint: '/api/calendar/status' },
+        { key: 'contacts_service', endpoint: '/api/contacts/status' }
+      ];
+
+      // Check each service
+      for (const check of statusChecks) {
+        try {
+          const response = await fetch(check.endpoint, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            setSystemStatus(prev => ({
+              ...prev,
+              [check.key]: {
+                status: 'online',
+                message: data.status?.service ? `${data.status.service} Active` : 'Online'
+              }
+            }));
+          } else {
+            setSystemStatus(prev => ({
+              ...prev,
+              [check.key]: {
+                status: 'offline',
+                message: 'Service Unavailable'
+              }
+            }));
+          }
+        } catch (error) {
+          setSystemStatus(prev => ({
+            ...prev,
+            [check.key]: {
+              status: 'error',
+              message: 'Connection Error'
+            }
+          }));
+        }
+      }
+
+      // Check WebSocket connection
+      setSystemStatus(prev => ({
+        ...prev,
+        websocket: {
+          status: 'online', // We'll assume it's online if we're here
+          message: 'Connected'
+        }
+      }));
+
+      // Check AI Core (mock for now)
+      setSystemStatus(prev => ({
+        ...prev,
+        ai_core: {
+          status: 'online',
+          message: 'Active'
+        }
+      }));
+
+      // Check Database (mock for now)
+      setSystemStatus(prev => ({
+        ...prev,
+        database: {
+          status: 'online',
+          message: 'Connected'
+        }
+      }));
+    };
+
     fetchUserData();
+    checkSystemStatus();
+    
+    // Set up periodic status checks
+    const statusInterval = setInterval(checkSystemStatus, 30000); // Check every 30 seconds
+    
+    return () => clearInterval(statusInterval);
   }, [token, onLogout]);
 
   if (loading) {
@@ -298,27 +386,47 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
                 <span>System Status</span>
               </h3>
               <div className="space-y-3 text-sm">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400">AI Core</span>
-                  <span className="text-green-400 flex items-center space-x-1">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span>Active</span>
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400">WebSocket</span>
-                  <span className="text-green-400 flex items-center space-x-1">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span>Connected</span>
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Database</span>
-                  <span className="text-green-400 flex items-center space-x-1">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span>Online</span>
-                  </span>
-                </div>
+                {Object.entries(systemStatus).map(([key, status]) => {
+                  const getStatusColor = (status: string) => {
+                    switch (status) {
+                      case 'online': return 'text-green-400';
+                      case 'offline': return 'text-red-400';
+                      case 'error': return 'text-yellow-400';
+                      default: return 'text-gray-400';
+                    }
+                  };
+                  
+                  const getBgColor = (status: string) => {
+                    switch (status) {
+                      case 'online': return 'bg-green-500';
+                      case 'offline': return 'bg-red-500';
+                      case 'error': return 'bg-yellow-500';
+                      default: return 'bg-gray-500';
+                    }
+                  };
+                  
+                  const getDisplayName = (key: string) => {
+                    switch (key) {
+                      case 'ai_core': return 'AI Core';
+                      case 'websocket': return 'WebSocket';
+                      case 'database': return 'Database';
+                      case 'email_service': return 'Email Service';
+                      case 'calendar_service': return 'Calendar Service';
+                      case 'contacts_service': return 'Contacts Service';
+                      default: return key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    }
+                  };
+                  
+                  return (
+                    <div key={key} className="flex justify-between items-center">
+                      <span className="text-gray-400">{getDisplayName(key)}</span>
+                      <span className={`${getStatusColor(status.status)} flex items-center space-x-1`}>
+                        <div className={`w-2 h-2 ${getBgColor(status.status)} rounded-full ${status.status === 'checking' ? 'animate-pulse' : ''}`}></div>
+                        <span>{status.message}</span>
+                      </span>
+                    </div>
+                  );
+                })}
                 <div className="flex justify-between items-center">
                   <span className="text-gray-400">Sub-Agents</span>
                   <span className="text-blue-400">4 Active</span>
