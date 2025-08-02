@@ -149,7 +149,9 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
           border: `1px solid ${isActive ? barColor : '#333'}`,
           borderRadius: '8px',
           background: backgroundColor,
-          transition: 'border-color 0.3s ease'
+          transition: 'border-color 0.3s ease',
+          boxShadow: isActive ? `0 0 20px ${barColor}40` : 'none',
+          opacity: isActive ? 1 : 0.6
         }}
       />
       {isActive && (
@@ -175,18 +177,10 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
           Recording Audio...
         </div>
       )}
-      <style jsx>{`
+      <style>{`
         @keyframes pulse {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.5; transform: scale(1.1); }
-        }
-        
-        .audio-visualizer.active {
-          box-shadow: 0 0 20px ${barColor}40;
-        }
-        
-        .audio-visualizer.inactive {
-          opacity: 0.6;
         }
       `}</style>
     </div>

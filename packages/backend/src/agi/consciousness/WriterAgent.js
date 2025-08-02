@@ -19,7 +19,10 @@ class WriterAgent extends BaseAgent {
     console.log('[WriterAgent] Listening for writing tasks...');
     
     // Register task handlers for MCP
-    this.registerTaskHandler('write', this.execute.bind(this));
+    this.registerTaskHandler({
+      taskType: 'write',
+      handler: this.execute.bind(this)
+    });
   }
 
   /**

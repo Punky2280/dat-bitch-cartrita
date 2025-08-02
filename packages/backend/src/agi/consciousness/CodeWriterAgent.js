@@ -27,11 +27,23 @@ class CodeWriterAgent extends BaseAgent {
   async onInitialize() {
     console.log('[CodeWriterAgent] Listening for coding tasks...');
     
-    // Register task handlers for different coding tasks
-    this.registerTaskHandler('coding', this.handleCodingTask.bind(this));
-    this.registerTaskHandler('debugging', this.handleDebuggingTask.bind(this));
-    this.registerTaskHandler('code_review', this.handleCodeReviewTask.bind(this));
-    this.registerTaskHandler('architecture', this.handleArchitectureTask.bind(this));
+    // Register task handlers for different coding tasks (MCP v2.0 format)
+    this.registerTaskHandler({
+      taskType: 'coding',
+      handler: this.handleCodingTask.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'debugging',
+      handler: this.handleDebuggingTask.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'code_review',
+      handler: this.handleCodeReviewTask.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'architecture',
+      handler: this.handleArchitectureTask.bind(this)
+    });
   }
 
   /**

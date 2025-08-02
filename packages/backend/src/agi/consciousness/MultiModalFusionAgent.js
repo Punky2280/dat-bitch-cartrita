@@ -50,12 +50,30 @@ class MultiModalFusionAgent extends BaseAgent {
   }
 
   async onInitialize() {
-    this.registerTaskHandler('fuse_sensory_data', this.fuseSensoryData.bind(this));
-    this.registerTaskHandler('generate_contextual_response', this.generateContextualResponse.bind(this));
-    this.registerTaskHandler('analyze_user_state', this.analyzeUserState.bind(this));
-    this.registerTaskHandler('adapt_personality', this.adaptPersonality.bind(this));
-    this.registerTaskHandler('synthesize_interaction', this.synthesizeInteraction.bind(this));
-    this.registerTaskHandler('get_fusion_insights', this.getFusionInsights.bind(this));
+    this.registerTaskHandler({
+      taskType: 'fuse_sensory_data',
+      handler: this.fuseSensoryData.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'generate_contextual_response',
+      handler: this.generateContextualResponse.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'analyze_user_state',
+      handler: this.analyzeUserState.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'adapt_personality',
+      handler: this.adaptPersonality.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'synthesize_interaction',
+      handler: this.synthesizeInteraction.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'get_fusion_insights',
+      handler: this.getFusionInsights.bind(this)
+    });
     
     this.setupCrossServiceListeners();
     console.log('[MultiModalFusionAgent] Multi-modal fusion capabilities activated');

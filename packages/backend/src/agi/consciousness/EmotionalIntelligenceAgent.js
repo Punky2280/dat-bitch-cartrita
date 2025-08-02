@@ -34,7 +34,10 @@ Always validate emotions while offering gentle guidance when appropriate.`;
     console.log('[EmotionalIntelligenceAgent] Emotional support system initialized.');
     
     // Register task handlers for MCP
-    this.registerTaskHandler('emotional_support', this.execute.bind(this));
+    this.registerTaskHandler({
+      taskType: 'emotional_support',
+      handler: this.execute.bind(this)
+    });
   }
 
   async execute(prompt, language, userId, payload) {

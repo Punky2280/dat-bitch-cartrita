@@ -10,7 +10,10 @@ class ArtistAgent extends BaseAgent {
     console.log('[ArtistAgent] Listening for art tasks...');
     
     // Register task handlers for MCP
-    this.registerTaskHandler('art', this.execute.bind(this));
+    this.registerTaskHandler({
+      taskType: 'art',
+      handler: this.execute.bind(this)
+    });
   }
 
   /**

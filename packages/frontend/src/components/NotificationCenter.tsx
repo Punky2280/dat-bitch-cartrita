@@ -19,12 +19,9 @@ import {
   Smartphone,
   Monitor,
   AlertTriangle,
-  Info,
   Gift,
   Briefcase,
-  RefreshCw,
-  Filter,
-  Archive
+  RefreshCw
 } from 'lucide-react';
 
 interface Notification {

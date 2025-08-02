@@ -289,7 +289,7 @@ router.post('/search', authenticateToken, async (req, res) => {
     // Log search results
     for (let i = 0; i < searchResult.rows.length; i++) {
       await pool.query(
-        `INSERT INTO memory_session_results (session_id, entry_id, relevance_score, rank_position)
+        `INSERT INTO memory_session_results (session_id, entry_id, similarity_score, rank_position)
          VALUES ($1, $2, $3, $4)`,
         [sessionId, searchResult.rows[i].id, searchResult.rows[i].similarity, i + 1]
       );
@@ -325,7 +325,7 @@ router.get('/clusters', authenticateToken, async (req, res) => {
                JSON_BUILD_OBJECT(
                  'id', ke.id,
                  'title', ke.title,
-                 'relevance_score', kce.relevance_score
+                 'similarity_score', kce.similarity_score
                )
              ) FILTER (WHERE ke.id IS NOT NULL) as entries
       FROM knowledge_clusters kc
@@ -475,7 +475,7 @@ async function autoClusterEntry(userId, entryId, embedding) {
     // If we find a similar cluster (distance < 0.3), add the entry to it
     if (clusterResult.rows.length > 0 && clusterResult.rows[0].distance < 0.3) {
       await pool.query(
-        `INSERT INTO knowledge_cluster_entries (cluster_id, entry_id, relevance_score)
+        `INSERT INTO knowledge_cluster_entries (cluster_id, entry_id, similarity_score)
          VALUES ($1, $2, $3) ON CONFLICT (cluster_id, entry_id) DO NOTHING`,
         [clusterResult.rows[0].id, entryId, 1.0 - clusterResult.rows[0].distance]
       );

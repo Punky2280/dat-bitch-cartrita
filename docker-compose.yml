@@ -1,6 +1,8 @@
 services:
   db:
-    image: timescale/timescaledb:latest-pg16
+    # --- FIX: Build our custom image instead of pulling one ---
+    build:
+      context: ./postgres-custom
     container_name: cartrita_db
     restart: unless-stopped
     environment:
@@ -17,14 +19,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    # --- FIX: Attach this service to our custom network ---
     networks:
       - cartrita-net
 
   backend:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: packages/backend/Dockerfile # Correct path to backend Dockerfile
     container_name: cartrita_backend
     restart: unless-stopped
     env_file:
@@ -34,11 +35,9 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    # --- FIX: Attach this service to our custom network ---
     networks:
       - cartrita-net
 
-# --- FIX: Define the custom network ---
 networks:
   cartrita-net:
     driver: bridge

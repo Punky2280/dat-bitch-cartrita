@@ -19,7 +19,10 @@ You do not engage in conversation; you only provide the report.`;
     console.log('[ResearcherAgent] Listening for research tasks...');
     
     // Register task handlers for MCP
-    this.registerTaskHandler('research', this.execute.bind(this));
+    this.registerTaskHandler({
+      taskType: 'research',
+      handler: this.execute.bind(this)
+    });
   }
 
   async execute(prompt, language, userId, payload) {

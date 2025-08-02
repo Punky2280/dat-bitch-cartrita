@@ -33,7 +33,10 @@ Always provide structured, clear guidance that users can immediately implement.`
     console.log('[TaskManagementAgent] Productivity and task management system initialized.');
     
     // Register task handlers for MCP
-    this.registerTaskHandler('task_management', this.execute.bind(this));
+    this.registerTaskHandler({
+      taskType: 'task_management',
+      handler: this.execute.bind(this)
+    });
   }
 
   async execute(prompt, language, userId, payload) {

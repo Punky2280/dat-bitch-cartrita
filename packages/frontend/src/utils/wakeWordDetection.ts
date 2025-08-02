@@ -4,12 +4,12 @@
  */
 
 export interface WakeWordOptions {
-  sensitivity?: number;        // 0-1, higher = more sensitive
-  bufferDuration?: number;     // seconds of audio to analyze
-  analysisInterval?: number;   // ms between analyses
-  wakeWords?: string[];        // Words to detect
-  minConfidence?: number;      // Minimum confidence threshold
-  debounceMs?: number;         // Min time between detections
+  sensitivity?: number; // 0-1, higher = more sensitive
+  bufferDuration?: number; // seconds of audio to analyze
+  analysisInterval?: number; // ms between analyses
+  wakeWords?: string[]; // Words to detect
+  minConfidence?: number; // Minimum confidence threshold
+  debounceMs?: number; // Min time between detections
 }
 
 export interface WakeWordResult {
@@ -28,11 +28,10 @@ export class WakeWordDetector {
   private analysisTimer: number | null = null;
   private isListening: boolean = false;
   private lastDetectionTime: number = 0;
-  
+
   private options: Required<WakeWordOptions>;
   private callback: WakeWordCallback;
-  private stream: MediaStream | null = null;
-  
+
   // Audio analysis
   private audioContext: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
@@ -46,24 +45,22 @@ export class WakeWordDetector {
       analysisInterval: options.analysisInterval ?? 1000,
       wakeWords: options.wakeWords ?? ['cartrita', 'hey cartrita', 'cartrita!'],
       minConfidence: options.minConfidence ?? 0.6,
-      debounceMs: options.debounceMs ?? 2000
+      debounceMs: options.debounceMs ?? 2000,
     };
   }
 
   async start(audioStream: MediaStream): Promise<boolean> {
     try {
       console.log('[WakeWordDetector] Starting wake word detection...');
-      
-      this.stream = audioStream;
+
       this.setupAudioAnalysis(audioStream);
       this.setupRecording(audioStream);
-      
+
       this.isListening = true;
       this.startAnalysisLoop();
 
       console.log('[WakeWordDetector] Wake word detection started');
       return true;
-
     } catch (error) {
       console.error('[WakeWordDetector] Failed to start:', error);
       this.cleanup();
@@ -79,7 +76,8 @@ export class WakeWordDetector {
 
   private setupAudioAnalysis(stream: MediaStream): void {
     try {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      this.audioContext = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
       this.analyser = this.audioContext.createAnalyser();
       const source = this.audioContext.createMediaStreamSource(stream);
 
@@ -97,16 +95,16 @@ export class WakeWordDetector {
     try {
       const options = {
         mimeType: 'audio/webm;codecs=opus',
-        audioBitsPerSecond: 16000
+        audioBitsPerSecond: 16000,
       };
 
       this.mediaRecorder = new MediaRecorder(stream, options);
       this.audioChunks = [];
 
-      this.mediaRecorder.ondataavailable = (event) => {
+      this.mediaRecorder.ondataavailable = event => {
         if (event.data.size > 0) {
           this.audioChunks.push(event.data);
-          
+
           // Keep only recent chunks (based on buffer duration)
           const maxChunks = Math.ceil(this.options.bufferDuration);
           if (this.audioChunks.length > maxChunks) {
@@ -138,7 +136,7 @@ export class WakeWordDetector {
     try {
       // Get current audio level
       const audioLevel = this.getCurrentAudioLevel();
-      
+
       // Check if there's enough audio activity to analyze
       if (audioLevel < 0.02) {
         this.sendResult({
@@ -146,18 +144,17 @@ export class WakeWordDetector {
           word: null,
           confidence: 0,
           timestamp: Date.now(),
-          audioLevel
+          audioLevel,
         });
         return;
       }
 
       // Create audio blob from recent chunks
       const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-      
+
       // Analyze for wake words
       const result = await this.detectWakeWord(audioBlob, audioLevel);
       this.sendResult(result);
-
     } catch (error) {
       console.error('[WakeWordDetector] Analysis error:', error);
     }
@@ -167,25 +164,28 @@ export class WakeWordDetector {
     if (!this.analyser || !this.dataArray) return 0;
 
     this.analyser.getByteFrequencyData(this.dataArray);
-    
+
     // Calculate RMS
     let sum = 0;
     for (let i = 0; i < this.dataArray.length; i++) {
       sum += this.dataArray[i] * this.dataArray[i];
     }
-    
+
     return Math.sqrt(sum / this.dataArray.length) / 255;
   }
 
-  private async detectWakeWord(audioBlob: Blob, audioLevel: number): Promise<WakeWordResult> {
+  private async detectWakeWord(
+    _audioBlob: Blob,
+    audioLevel: number
+  ): Promise<WakeWordResult> {
     try {
       // For now, we'll use a simplified detection method
       // In a real implementation, you'd want to use actual speech recognition
       // or a dedicated wake word detection library
-      
+
       const confidence = this.calculateWakeWordConfidence(audioLevel);
       const detected = confidence >= this.options.minConfidence;
-      
+
       // Check debounce
       const now = Date.now();
       if (detected && now - this.lastDetectionTime < this.options.debounceMs) {
@@ -194,13 +194,16 @@ export class WakeWordDetector {
           word: null,
           confidence,
           timestamp: now,
-          audioLevel
+          audioLevel,
         };
       }
 
       if (detected) {
         this.lastDetectionTime = now;
-        console.log('[WakeWordDetector] Wake word detected!', { confidence, audioLevel });
+        console.log('[WakeWordDetector] Wake word detected!', {
+          confidence,
+          audioLevel,
+        });
       }
 
       return {
@@ -208,9 +211,8 @@ export class WakeWordDetector {
         word: detected ? this.options.wakeWords[0] : null,
         confidence,
         timestamp: now,
-        audioLevel
+        audioLevel,
       };
-
     } catch (error) {
       console.error('[WakeWordDetector] Detection error:', error);
       return {
@@ -218,23 +220,29 @@ export class WakeWordDetector {
         word: null,
         confidence: 0,
         timestamp: Date.now(),
-        audioLevel
+        audioLevel,
       };
     }
   }
 
   private calculateWakeWordConfidence(audioLevel: number): number {
-    // Simplified confidence calculation
-    // In reality, this would involve speech recognition and pattern matching
-    
+    // Improved confidence calculation
+    // This is still simplified - in production you'd use actual ML models or speech APIs
+
     // Base confidence on audio level and sensitivity
-    const baseConfidence = Math.min(1, audioLevel * 10 * this.options.sensitivity);
-    
-    // Add some randomization to simulate actual detection variability
-    const variance = 0.2;
-    const randomFactor = 1 + (Math.random() - 0.5) * variance;
-    
-    return Math.max(0, Math.min(1, baseConfidence * randomFactor));
+    const baseConfidence = Math.min(
+      1,
+      audioLevel * 8 * this.options.sensitivity
+    );
+
+    // Apply sigmoid function for more realistic confidence distribution
+    const sigmoid = (x: number) => 1 / (1 + Math.exp(-10 * (x - 0.5)));
+    const sigmoidConfidence = sigmoid(baseConfidence);
+
+    // Add small amount of noise to simulate variability
+    const noise = (Math.random() - 0.5) * 0.1;
+
+    return Math.max(0, Math.min(1, sigmoidConfidence + noise));
   }
 
   private sendResult(result: WakeWordResult): void {
@@ -252,19 +260,30 @@ export class WakeWordDetector {
     }
 
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
-      this.mediaRecorder.stop();
+      try {
+        this.mediaRecorder.stop();
+      } catch (error) {
+        console.warn(
+          '[WakeWordDetector] Error stopping media recorder:',
+          error
+        );
+      }
     }
     this.mediaRecorder = null;
 
     if (this.audioContext && this.audioContext.state !== 'closed') {
-      this.audioContext.close();
+      try {
+        this.audioContext.close();
+      } catch (error) {
+        console.warn('[WakeWordDetector] Error closing audio context:', error);
+      }
     }
     this.audioContext = null;
     this.analyser = null;
     this.dataArray = null;
 
     this.audioChunks = [];
-    this.stream = null;
+    this.isListening = false;
   }
 
   // Public getters
@@ -301,16 +320,17 @@ export class SpeechRecognitionWakeWordDetector {
       analysisInterval: options.analysisInterval ?? 1000,
       wakeWords: options.wakeWords ?? ['cartrita', 'hey cartrita'],
       minConfidence: options.minConfidence ?? 0.6,
-      debounceMs: options.debounceMs ?? 2000
+      debounceMs: options.debounceMs ?? 2000,
     };
   }
 
   async start(): Promise<boolean> {
     try {
       // Check if Web Speech API is available
-      const SpeechRecognition = (window as any).SpeechRecognition || 
-                                (window as any).webkitSpeechRecognition;
-      
+      const SpeechRecognition =
+        (window as any).SpeechRecognition ||
+        (window as any).webkitSpeechRecognition;
+
       if (!SpeechRecognition) {
         console.warn('[SpeechWakeWordDetector] Web Speech API not available');
         return false;
@@ -326,9 +346,9 @@ export class SpeechRecognitionWakeWordDetector {
         for (let i = event.resultIndex; i < results.length; i++) {
           const transcript = results[i][0].transcript.toLowerCase().trim();
           const confidence = results[i][0].confidence || 0.5;
-          
+
           // Check for wake words
-          const detectedWord = this.options.wakeWords.find(word => 
+          const detectedWord = this.options.wakeWords.find(word =>
             transcript.includes(word.toLowerCase())
           );
 
@@ -336,13 +356,13 @@ export class SpeechRecognitionWakeWordDetector {
             const now = Date.now();
             if (now - this.lastDetectionTime >= this.options.debounceMs) {
               this.lastDetectionTime = now;
-              
+
               this.callback({
                 detected: true,
                 word: detectedWord,
                 confidence,
                 timestamp: now,
-                audioLevel: 0.5 // Not available from Speech API
+                audioLevel: 0.5, // Not available from Speech API
               });
             }
           }
@@ -350,15 +370,19 @@ export class SpeechRecognitionWakeWordDetector {
       };
 
       this.recognition.onerror = (event: any) => {
-        console.error('[SpeechWakeWordDetector] Recognition error:', event.error);
+        console.error(
+          '[SpeechWakeWordDetector] Recognition error:',
+          event.error
+        );
       };
 
       this.recognition.start();
       this.isListening = true;
-      
-      console.log('[SpeechWakeWordDetector] Speech recognition wake word detection started');
-      return true;
 
+      console.log(
+        '[SpeechWakeWordDetector] Speech recognition wake word detection started'
+      );
+      return true;
     } catch (error) {
       console.error('[SpeechWakeWordDetector] Failed to start:', error);
       return false;
@@ -383,19 +407,34 @@ export class SpeechRecognitionWakeWordDetector {
  * Factory function to create the best available wake word detector
  */
 export function createWakeWordDetector(
-  callback: WakeWordCallback, 
+  callback: WakeWordCallback,
   options: WakeWordOptions = {}
 ): WakeWordDetector | SpeechRecognitionWakeWordDetector {
-  
-  // Try Speech Recognition first (more accurate for wake words)
-  const SpeechRecognition = (window as any).SpeechRecognition || 
-                            (window as any).webkitSpeechRecognition;
-  
-  if (SpeechRecognition && options.sensitivity && options.sensitivity > 0.8) {
-    console.log('[WakeWordDetector] Using Speech Recognition detector');
+  // Check for Web Speech API support
+  const SpeechRecognition =
+    (window as any).SpeechRecognition ||
+    (window as any).webkitSpeechRecognition;
+
+  // Use Speech Recognition for higher sensitivity settings (more accurate)
+  if (SpeechRecognition && (options.sensitivity ?? 0.7) > 0.8) {
+    console.log(
+      '[WakeWordDetector] Using Speech Recognition detector (high sensitivity)'
+    );
     return new SpeechRecognitionWakeWordDetector(callback, options);
-  } else {
+  }
+  // Fallback to audio analysis detector
+  else {
     console.log('[WakeWordDetector] Using audio analysis detector');
     return new WakeWordDetector(callback, options);
   }
+}
+
+/**
+ * Check if advanced wake word detection (Speech Recognition) is available
+ */
+export function isAdvancedWakeWordDetectionAvailable(): boolean {
+  const SpeechRecognition =
+    (window as any).SpeechRecognition ||
+    (window as any).webkitSpeechRecognition;
+  return !!SpeechRecognition;
 }

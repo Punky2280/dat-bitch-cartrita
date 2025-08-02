@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const EnhancedCoreAgent = require('../agi/consciousness/EnhancedCoreAgent');
-const coreAgent = new EnhancedCoreAgent();
+// Import the unified core agent
+const coreAgent = require('../agi/consciousness/CoreAgent');
 
 // Inject live Socket.IO instance
 let io;
@@ -14,11 +14,16 @@ router.post('/message', async (req, res) => {
   const lang = 'en';
 
   try {
+    // Ensure agent is initialized
+    if (!coreAgent.initialized) {
+      await coreAgent.initialize();
+    }
     const agentRes = await coreAgent.generateResponse(message, lang, user);
 
+    // If a socket server is available, try to push the message directly
     if (io) {
       const sockets = await io.of('/').fetchSockets();
-      const userSocket = sockets.find(s => s.user?.userId === user); // ✅ Match on userId
+      const userSocket = sockets.find(s => s.user?.userId === user);
 
       if (userSocket) {
         userSocket.emit('chat message', {
@@ -29,6 +34,7 @@ router.post('/message', async (req, res) => {
       }
     }
 
+    // Always return the HTTP response
     res.json({
       reply: agentRes.text,
       status: 'ok',

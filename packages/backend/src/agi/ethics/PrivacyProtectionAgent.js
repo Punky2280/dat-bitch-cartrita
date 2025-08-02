@@ -19,13 +19,34 @@ class PrivacyProtectionAgent extends BaseAgent {
   }
 
   async onInitialize() {
-    this.registerTaskHandler('monitor_privacy', this.monitorPrivacy.bind(this));
-    this.registerTaskHandler('check_gdpr_compliance', this.checkGDPRCompliance.bind(this));
-    this.registerTaskHandler('anonymize_data', this.anonymizeData.bind(this));
-    this.registerTaskHandler('manage_consent', this.manageConsent.bind(this));
-    this.registerTaskHandler('enforce_privacy_policy', this.enforcePrivacyPolicy.bind(this));
-    this.registerTaskHandler('detect_privacy_violation', this.detectPrivacyViolation.bind(this));
-    this.registerTaskHandler('generate_privacy_report', this.generatePrivacyReport.bind(this));
+    this.registerTaskHandler({
+      taskType: 'monitor_privacy',
+      handler: this.monitorPrivacy.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'check_gdpr_compliance',
+      handler: this.checkGDPRCompliance.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'anonymize_data',
+      handler: this.anonymizeData.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'manage_consent',
+      handler: this.manageConsent.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'enforce_privacy_policy',
+      handler: this.enforcePrivacyPolicy.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'detect_privacy_violation',
+      handler: this.detectPrivacyViolation.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'generate_privacy_report',
+      handler: this.generatePrivacyReport.bind(this)
+    });
     
     console.log('[PrivacyProtectionAgent] Privacy monitoring and compliance handlers registered');
   }

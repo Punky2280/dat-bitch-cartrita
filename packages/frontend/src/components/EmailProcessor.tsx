@@ -9,14 +9,12 @@ import {
   RefreshCw,
   Search,
   Archive,
-  Trash2,
   Star,
   Reply,
   Forward,
   Filter,
   AlertCircle,
   CheckCircle,
-  Clock,
   Paperclip
 } from 'lucide-react';
 
@@ -313,7 +311,7 @@ const EmailProcessor: React.FC = () => {
                   placeholder="Search emails..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
                 <Button onClick={handleSearch} variant="outline">
                   <Search className="w-4 h-4" />

@@ -19,13 +19,34 @@ class LearningAdapterAgent extends BaseAgent {
   }
 
   async onInitialize() {
-    this.registerTaskHandler('monitor_performance', this.monitorPerformance.bind(this));
-    this.registerTaskHandler('adapt_system', this.adaptSystem.bind(this));
-    this.registerTaskHandler('optimize_performance', this.optimizePerformance.bind(this));
-    this.registerTaskHandler('analyze_learning_curve', this.analyzeLearningCurve.bind(this));
-    this.registerTaskHandler('tune_parameters', this.tuneParameters.bind(this));
-    this.registerTaskHandler('integrate_feedback', this.integrateFeedback.bind(this));
-    this.registerTaskHandler('generate_adaptation_report', this.generateAdaptationReport.bind(this));
+    this.registerTaskHandler({
+      taskType: 'monitor_performance',
+      handler: this.monitorPerformance.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'adapt_system',
+      handler: this.adaptSystem.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'optimize_performance',
+      handler: this.optimizePerformance.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'analyze_learning_curve',
+      handler: this.analyzeLearningCurve.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'tune_parameters',
+      handler: this.tuneParameters.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'integrate_feedback',
+      handler: this.integrateFeedback.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'generate_adaptation_report',
+      handler: this.generateAdaptationReport.bind(this)
+    });
     
     console.log('[LearningAdapterAgent] Performance optimization and adaptation handlers registered');
   }

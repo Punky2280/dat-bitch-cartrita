@@ -135,8 +135,8 @@ export const MediaPermissionHandler: React.FC<MediaPermissionHandlerProps> = ({
       console.error('[MediaPermissions] Permission request failed:', error);
       
       let errorMessage = 'Permission request failed';
-      let micState = permissions.microphone === 'requesting' ? 'denied' : permissions.microphone;
-      let camState = permissions.camera === 'requesting' ? 'denied' : permissions.camera;
+      const micState = permissions.microphone === 'requesting' ? 'denied' : permissions.microphone;
+      const camState = permissions.camera === 'requesting' ? 'denied' : permissions.camera;
 
       if (error.name === 'NotAllowedError') {
         errorMessage = 'Permission was denied. Please allow access and try again.';

@@ -18,13 +18,34 @@ class BiasDetectionAgent extends BaseAgent {
   }
 
   async onInitialize() {
-    this.registerTaskHandler('detect_bias', this.detectBias.bind(this));
-    this.registerTaskHandler('assess_fairness', this.assessFairness.bind(this));
-    this.registerTaskHandler('measure_demographic_parity', this.measureDemographicParity.bind(this));
-    this.registerTaskHandler('test_equalized_odds', this.testEqualizedOdds.bind(this));
-    this.registerTaskHandler('analyze_disparate_impact', this.analyzeDisparateImpact.bind(this));
-    this.registerTaskHandler('suggest_bias_mitigation', this.suggestBiasMitigation.bind(this));
-    this.registerTaskHandler('generate_fairness_report', this.generateFairnessReport.bind(this));
+    this.registerTaskHandler({
+      taskType: 'detect_bias',
+      handler: this.detectBias.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'assess_fairness',
+      handler: this.assessFairness.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'measure_demographic_parity',
+      handler: this.measureDemographicParity.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'test_equalized_odds',
+      handler: this.testEqualizedOdds.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'analyze_disparate_impact',
+      handler: this.analyzeDisparateImpact.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'suggest_bias_mitigation',
+      handler: this.suggestBiasMitigation.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'generate_fairness_report',
+      handler: this.generateFairnessReport.bind(this)
+    });
     
     console.log('[BiasDetectionAgent] Bias detection and fairness assessment handlers registered');
   }

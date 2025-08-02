@@ -6,21 +6,16 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
   Shield,
-  Eye,
   Download,
   Trash2,
   AlertTriangle,
   CheckCircle,
-  Clock,
   Database,
-  Key,
   FileText,
   Activity,
-  Lock,
-  Unlock,
   RefreshCw,
   Settings,
   Users,
@@ -82,6 +77,7 @@ const PrivacyControls: React.FC = () => {
   const [exportType, setExportType] = useState('full');
   const [deletionType, setDeletionType] = useState('partial_data');
   const [selectedDataTypes, setSelectedDataTypes] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState('consent');
 
   useEffect(() => {
     fetchPrivacyDashboard();
@@ -311,7 +307,7 @@ const PrivacyControls: React.FC = () => {
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="consent" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>
           <TabsTrigger value="consent">Consent Management</TabsTrigger>
           <TabsTrigger value="data">Data Usage</TabsTrigger>

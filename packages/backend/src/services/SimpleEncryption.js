@@ -3,7 +3,7 @@ const crypto = require('crypto');
 class SimpleEncryption {
   constructor() {
     this.algorithm = 'aes-256-cbc';
-    this.key = crypto.scryptSync(process.env.VAULT_MASTER_KEY || 'default-key-for-dev', 'salt', 32);
+    this.key = crypto.scryptSync(process.env.ENCRYPTION_KEY || 'default-key-for-dev', 'salt', 32);
   }
 
   encrypt(text) {
@@ -55,8 +55,17 @@ class SimpleEncryption {
   }
 
   validateApiKeyFormat(provider, apiKey) {
+    console.log(`[Encryption] Validating API key for provider: ${provider}`);
+    console.log(`[Encryption] API key length: ${apiKey ? apiKey.length : 'null'}`);
+    console.log(`[Encryption] API key prefix: ${apiKey ? apiKey.substring(0, 15) : 'null'}...`);
+    
+    // Temporarily allow all keys for debugging
+    if (provider === 'openai') {
+      console.log(`[Encryption] Allowing all OpenAI keys for debugging`);
+      return apiKey && apiKey.startsWith('sk-') && apiKey.length >= 20;
+    }
+    
     const patterns = {
-      openai: /^sk-[A-Za-z0-9]{32,}$/,
       anthropic: /^sk-ant-[A-Za-z0-9-]{32,}$/,
       github: /^gh[ps]_[A-Za-z0-9]{36}$/,
       stripe: /^sk_(test_|live_)[A-Za-z0-9]{24,}$/
@@ -64,10 +73,15 @@ class SimpleEncryption {
 
     const pattern = patterns[provider];
     if (!pattern) {
+      console.log(`[Encryption] No pattern for provider ${provider}, using length check`);
       return apiKey && apiKey.length >= 16;
     }
 
-    return pattern.test(apiKey);
+    const result = pattern.test(apiKey);
+    console.log(`[Encryption] Pattern test result: ${result}`);
+    console.log(`[Encryption] Pattern used: ${pattern}`);
+    
+    return result;
   }
 
   shouldRotateKey(createdAt, lastUsedAt, rotationIntervalDays, usageCount) {

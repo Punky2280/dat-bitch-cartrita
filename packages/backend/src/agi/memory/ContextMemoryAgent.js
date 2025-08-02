@@ -20,14 +20,38 @@ class ContextMemoryAgent extends BaseAgent {
   }
 
   async onInitialize() {
-    this.registerTaskHandler('store_context', this.storeContext.bind(this));
-    this.registerTaskHandler('retrieve_context', this.retrieveContext.bind(this));
-    this.registerTaskHandler('compress_memory', this.compressMemory.bind(this));
-    this.registerTaskHandler('prioritize_memories', this.prioritizeMemories.bind(this));
-    this.registerTaskHandler('synthesize_context', this.synthesizeContext.bind(this));
-    this.registerTaskHandler('manage_episodic_memory', this.manageEpisodicMemory.bind(this));
-    this.registerTaskHandler('search_memory', this.searchMemory.bind(this));
-    this.registerTaskHandler('generate_memory_report', this.generateMemoryReport.bind(this));
+    this.registerTaskHandler({
+      taskType: 'store_context',
+      handler: this.storeContext.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'retrieve_context',
+      handler: this.retrieveContext.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'compress_memory',
+      handler: this.compressMemory.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'prioritize_memories',
+      handler: this.prioritizeMemories.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'synthesize_context',
+      handler: this.synthesizeContext.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'manage_episodic_memory',
+      handler: this.manageEpisodicMemory.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'search_memory',
+      handler: this.searchMemory.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'generate_memory_report',
+      handler: this.generateMemoryReport.bind(this)
+    });
     
     console.log('[ContextMemoryAgent] Long-term context retention and memory management handlers registered');
   }
@@ -77,7 +101,7 @@ class ContextMemoryAgent extends BaseAgent {
         context_type: context_type,
         data: context_data,
         importance_score: Math.max(importance_score, contextAnalysis.importance),
-        relevance_score: contextAnalysis.relevance,
+        similarity_score: contextAnalysis.relevance,
         created_at: new Date().toISOString(),
         last_accessed: new Date().toISOString(),
         access_count: 1,
@@ -106,7 +130,7 @@ class ContextMemoryAgent extends BaseAgent {
         context_stored: true,
         context_id: contextId,
         importance_score: contextEntry.importance_score,
-        relevance_score: contextEntry.relevance_score,
+        similarity_score: contextEntry.similarity_score,
         storage_location: 'long_term_memory',
         memory_size: this.contextStore.size,
         estimated_retrieval_time: this.estimateRetrievalTime(contextEntry)
@@ -273,7 +297,7 @@ class ContextMemoryAgent extends BaseAgent {
 
   calculateRetrievalConfidence(results) {
     if (results.length === 0) return 0;
-    const scores = results.map(r => r.relevance_score || 0);
+    const scores = results.map(r => r.similarity_score || 0);
     const average = scores.reduce((sum, score) => sum + score, 0) / scores.length;
     const variance = scores.reduce((sum, score) => sum + Math.pow(score - average, 2), 0) / scores.length;
     return Math.max(0, average - Math.sqrt(variance));

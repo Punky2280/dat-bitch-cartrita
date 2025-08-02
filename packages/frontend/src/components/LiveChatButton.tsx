@@ -353,7 +353,7 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
   };
 
   const getButtonClass = () => {
-    let baseClass = `relative p-4 rounded-full transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-offset-2 ${className}`;
+    const baseClass = `relative p-4 rounded-full transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-offset-2 ${className}`;
     
     if (chatState.isActive) {
       if (chatState.wakeWordDetected) {

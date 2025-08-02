@@ -15,7 +15,10 @@ class SchedulerAgent extends BaseAgent {
     console.log('[SchedulerAgent] Listening for schedule tasks...');
     
     // Register task handlers for MCP
-    this.registerTaskHandler('schedule', this.execute.bind(this));
+    this.registerTaskHandler({
+      taskType: 'schedule',
+      handler: this.execute.bind(this)
+    });
   }
 
   async getGoogleAuth(userId) {

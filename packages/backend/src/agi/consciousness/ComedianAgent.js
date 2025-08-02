@@ -34,12 +34,24 @@ You ONLY deliver jokes - no advice, no explanations, just pure comedy gold.`;
   async onInitialize() {
     console.log('[ComedianAgent] Comedy central is online and ready to deliver laughs.');
     
-    // Register task handlers for MCP
-    this.registerTaskHandler('joke', this.execute.bind(this));
+    // Register task handlers for MCP v2.0 format
+    this.registerTaskHandler({
+      taskType: 'joke',
+      handler: this.execute.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'humor',
+      handler: this.execute.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'comedy',
+      handler: this.execute.bind(this)
+    });
   }
 
   async execute(prompt, language, userId, payload) {
     const result = await this.generateJoke(prompt);
+    // Return just the text string as expected by BaseAgent task handler
     return result.text || result;
   }
 
@@ -78,17 +90,13 @@ You ONLY deliver jokes - no advice, no explanations, just pure comedy gold.`;
         contextPrompt += `\n\nRecent topics I've joked about: ${recentJokes}. Try to be original.`;
       }
 
-      const completion = await this.openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4o',
-        messages: [
-          { role: 'system', content: this.systemPrompt },
-          { role: 'user', content: contextPrompt },
-        ],
+      const joke = await this.createCompletion([
+        { role: 'system', content: this.systemPrompt },
+        { role: 'user', content: contextPrompt },
+      ], {
         temperature: 0.9, // Higher temperature for more creative jokes
         max_tokens: 200,
       });
-
-      const joke = completion.choices[0].message.content;
 
       // Track joke statistics
       this.trackJoke(prompt, joke, userId);
@@ -97,7 +105,6 @@ You ONLY deliver jokes - no advice, no explanations, just pure comedy gold.`;
         text: joke,
         speaker: 'cartrita',
         model: 'comedian-agent',
-        tokens_used: completion.usage.total_tokens,
         metadata: {
           jokeNumber: this.jokeCount,
           category: this.categorizeJoke(prompt),

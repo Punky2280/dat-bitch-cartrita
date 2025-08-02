@@ -20,14 +20,38 @@ class KnowledgeGraphAgent extends BaseAgent {
   }
 
   async onInitialize() {
-    this.registerTaskHandler('add_knowledge', this.addKnowledge.bind(this));
-    this.registerTaskHandler('query_knowledge', this.queryKnowledge.bind(this));
-    this.registerTaskHandler('extract_entities', this.extractEntities.bind(this));
-    this.registerTaskHandler('map_relationships', this.mapRelationships.bind(this));
-    this.registerTaskHandler('infer_knowledge', this.inferKnowledge.bind(this));
-    this.registerTaskHandler('update_ontology', this.updateOntology.bind(this));
-    this.registerTaskHandler('search_semantic', this.searchSemantic.bind(this));
-    this.registerTaskHandler('generate_insights', this.generateInsights.bind(this));
+    this.registerTaskHandler({
+      taskType: 'add_knowledge',
+      handler: this.addKnowledge.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'query_knowledge',
+      handler: this.queryKnowledge.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'extract_entities',
+      handler: this.extractEntities.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'map_relationships',
+      handler: this.mapRelationships.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'infer_knowledge',
+      handler: this.inferKnowledge.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'update_ontology',
+      handler: this.updateOntology.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'search_semantic',
+      handler: this.searchSemantic.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'generate_insights',
+      handler: this.generateInsights.bind(this)
+    });
     
     console.log('[KnowledgeGraphAgent] Semantic knowledge management handlers registered');
   }

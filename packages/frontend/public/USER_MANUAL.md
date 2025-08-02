@@ -1,26 +1,43 @@
-# Cartrita Personal Life OS - User Manual
+# Cartrita Comprehensive Sensory AI System - User Manual
+## Iteration 21 - Advanced Multi-Modal Intelligence
 
 ## Table of Contents
 1. [Getting Started](#getting-started)
-2. [Personal Life OS Overview](#personal-life-os-overview)
-3. [Calendar Management](#calendar-management)
-4. [Email Processing](#email-processing)
-5. [Contact Hub](#contact-hub)
-6. [Smart Notifications](#smart-notifications)
-7. [Privacy Controls](#privacy-controls)
-8. [Voice Features & Permissions](#voice-features--permissions)
-9. [Dashboard Overview](#dashboard-overview)
-10. [AI Knowledge Hub & Memory Palace](#ai-knowledge-hub--memory-palace)
-11. [Secure API Key Vault](#secure-api-key-vault)
-12. [Chat Interface](#chat-interface)
-13. [Settings & Personalization](#settings--personalization)
+2. [Core AI System Overview](#core-ai-system-overview)
+3. [Advanced Voice System](#advanced-voice-system)
+4. [Multi-Modal Interface](#multi-modal-interface)
+5. [Personal Life OS Features](#personal-life-os-features)
+6. [AI Knowledge Hub & Semantic Search](#ai-knowledge-hub--semantic-search)
+7. [25-Agent Architecture](#25-agent-architecture)  
+8. [Voice Features & Wake Word Detection](#voice-features--wake-word-detection)
+9. [Dashboard & System Status](#dashboard--system-status)
+10. [Secure API Key Vault](#secure-api-key-vault)
+11. [Chat Interface & Real-Time Communication](#chat-interface--real-time-communication)
+12. [Settings & Personalization](#settings--personalization)
+13. [Privacy Controls](#privacy-controls)
 14. [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Getting Started
 
-Welcome to Cartrita Personal Life OS, your comprehensive AI-powered productivity and life management platform. This modern web application has evolved from a simple AI assistant into a complete Personal Life Operating System that intelligently manages your calendar, email, contacts, and notifications while maintaining the highest privacy standards.
+Welcome to **Cartrita Iteration 21** - the world's most advanced Comprehensive Sensory AI System. Cartrita has evolved far beyond a simple AI assistant into a sophisticated **multi-modal intelligence platform** that combines:
+
+### 🎯 **Core Capabilities**
+- **25-Agent Architecture** - Specialized AI agents for every task
+- **Advanced Voice System** - Natural conversation with wake word detection  
+- **Multi-Modal Interface** - Text, voice, and visual interaction
+- **Personal Life OS** - Complete productivity and life management
+- **Semantic Knowledge Hub** - AI-powered information management
+- **Real-Time Communication** - Instant responses via WebSocket technology
+
+### 🚀 **What Makes Cartrita Iteration 21 Special**
+
+**Multi-Agent Intelligence**: Unlike traditional AI assistants, Cartrita orchestrates 25 specialized agents including CodeWriter, Researcher, Artist, EmotionalIntelligence, and SecurityAudit agents, each optimized for specific tasks.
+
+**Sensory AI Capabilities**: Cartrita can see (visual analysis), hear (voice interaction), understand (semantic processing), and respond (text-to-speech) creating the most natural AI interaction experience available.
+
+**Urban Personality**: Cartrita embodies a unique urban, sassy personality - she's direct, street-smart, and cuts through nonsense while always having your back.
 
 ### Initial Setup and Authentication
 
@@ -34,7 +51,185 @@ After successful authentication, you'll be automatically redirected to the main 
 
 ---
 
-## Initial Setup & Installation
+## Core AI System Overview
+
+Cartrita Iteration 21 represents a paradigm shift in AI system architecture, moving from single-model interactions to a sophisticated **25-agent orchestration system** powered by the **Multi-Agent Communication Protocol (MCP)**.
+
+### 🧠 **25-Agent Architecture**
+
+**Agent Categories**:
+- **Consciousness Agents (11)**: CodeWriter, Scheduler, Artist, Writer, Researcher, Comedian, EmotionalIntelligence, TaskManagement, Analytics, Design, Personalization
+- **Ethics & Safety (5)**: ConstitutionalAI, ExistentialCheckIn, SecurityAudit, PrivacyProtection, BiasDetection  
+- **Memory & Learning (5)**: ConversationStore, UserProfile, KnowledgeGraph, LearningAdapter, ContextMemory
+- **Communication & Integration (4)**: MCPCoordinator, APIGateway, Translation, Notification
+
+**How It Works**:
+1. **Intent Analysis**: Core agent analyzes your request and determines required capabilities
+2. **Agent Selection**: MCP coordinator selects optimal agents for the task
+3. **Parallel Processing**: Multiple agents work simultaneously on different aspects
+4. **Response Synthesis**: Results are combined into coherent, personality-driven responses
+
+### 🎭 **Cartrita's Urban Personality**
+
+**Core Traits**:
+- **Direct & Sassy**: Cuts through nonsense with sharp wit
+- **Street Smart**: Urban wisdom and practical solutions
+- **Protective**: Always has your back and prioritizes your needs
+- **Authentic**: No corporate speak - real talk, real solutions
+
+**Example Interactions**:
+- *"Okay, let's cut through the noise. What you're really asking is..."*
+- *"Look, the data is what it is. Here's the real deal..."*
+- *"I got you. Let me break this down in a way that actually makes sense."*
+
+---
+
+## Advanced Voice System
+
+Cartrita's voice capabilities create the most natural AI conversation experience available, combining **Deepgram speech-to-text**, **OpenAI text-to-speech**, and **ambient listening** technologies.
+
+### 🎤 **Voice Features Overview**
+
+**Wake Word Detection**: Say "Cartrita!" to activate voice mode
+**Real-Time Transcription**: Deepgram provides industry-leading accuracy
+**Feminine Urban TTS**: OpenAI's advanced voice synthesis with personality
+**Ambient Listening**: Continuous environmental audio monitoring
+**Multi-Modal Fusion**: Voice combined with visual and text interaction
+
+### 🔧 **Setting Up Voice Features**
+
+#### **1. Browser Permissions**
+
+**Required Permissions**:
+- **Microphone**: Essential for voice input and wake word detection
+- **Camera**: Optional for visual analysis features
+- **Notifications**: For audio alerts and confirmations
+
+**Setup Steps**:
+1. Click voice button or access Live Chat
+2. Grant microphone permission when prompted
+3. Test audio input with voice-to-text button
+4. Configure ambient listening in Settings → Audio
+
+#### **2. Voice Interaction Methods**
+
+**Voice-to-Text Button**: 
+- Click microphone icon in chat interface
+- Speak your message clearly
+- Release to send for transcription
+- Cartrita responds with text and optional voice
+
+**Live Chat Mode**:
+- Click floating Live Chat button
+- Choose "Voice Mode" or "Multi-Modal Mode"
+- Continuous conversation with wake word activation
+- Natural back-and-forth dialogue
+
+**Wake Word Activation**:
+- Ensure Live Chat is active
+- Say "Cartrita!" clearly
+- Wait for acknowledgment sound/response
+- Speak your question or request
+- Receive both text and voice response
+
+#### **3. Voice Settings Configuration**
+
+**Audio Settings Panel**:
+- **Voice Responses**: Enable/disable AI speech output
+- **Ambient Listening**: Continuous background monitoring
+- **Wake Word Sensitivity**: Adjust detection threshold
+- **Sound Effects**: System notification sounds
+- **Camera Integration**: Enable visual analysis
+
+**Optimization Settings**:
+- **Microphone Selection**: Choose input device
+- **Noise Suppression**: Reduce background noise
+- **Volume Levels**: Adjust input/output volumes
+- **Response Speed**: Balance quality vs. speed
+
+### 🎙️ **Advanced Voice Capabilities**
+
+#### **Conversation Context**
+
+**Memory Across Sessions**: Cartrita remembers your conversation history
+**Topic Continuity**: Maintains context throughout extended discussions  
+**Personal Preferences**: Learns your communication style and preferences
+**Multi-Turn Dialogue**: Natural back-and-forth conversation flow
+
+#### **Environmental Awareness**
+
+**Ambient Sound Classification**: Understands background audio context
+**Noise Adaptation**: Adjusts processing based on environment
+**Privacy Mode**: Temporarily disable ambient listening
+**Activity Detection**: Recognizes when you're available for interaction
+
+#### **Voice Command Examples**
+
+**Information Queries**:
+- *"Cartrita, what's on my calendar today?"*
+- *"Search my knowledge base for React performance tips"*
+- *"What emails do I need to respond to?"*
+
+**Task Requests**:
+- *"Schedule a meeting with the team for tomorrow at 2 PM"*
+- *"Add this to my knowledge base: Docker containers should use multi-stage builds"*
+- *"Set a reminder to follow up with Sarah next week"*
+
+**Creative Assistance**:
+- *"Help me brainstorm ideas for the marketing campaign"*
+- *"Write a professional email declining the conference invitation"*
+- *"Explain machine learning algorithms in simple terms"*
+
+---
+
+## Multi-Modal Interface
+
+Cartrita's multi-modal capabilities combine **text**, **voice**, and **visual** inputs for the most comprehensive AI interaction experience available.
+
+### 👁️ **Visual Analysis Features**
+
+**OpenAI Vision Integration**: Advanced image and scene understanding
+**Real-Time Camera Feed**: Live visual context for conversations
+**Object Recognition**: Identify and describe items in your environment
+**Text Extraction**: OCR capabilities for documents and screenshots
+**Facial Expression Analysis**: Understand emotional context (privacy-respected)
+
+### 🔄 **Multi-Modal Interaction Modes**
+
+#### **Text Mode** (Default)
+- Traditional chat interface
+- Keyboard input with rich formatting
+- Instant responses with markdown support
+- Knowledge Hub integration
+
+#### **Voice Mode**
+- Hands-free conversation
+- Wake word activation
+- Ambient listening
+- Audio responses with personality
+
+#### **Multi-Modal Mode** 
+- Simultaneous text, voice, and visual input
+- Camera feed analysis
+- Environmental context awareness
+- Complete sensory AI experience
+
+### 🌟 **Live Chat Interface**
+
+**Floating Chat Button**: Always accessible regardless of current page
+**Mode Selection**: Quick switching between interaction modes
+**Status Indicators**: Real-time connection and processing status
+**Privacy Controls**: Instant disable for camera/microphone
+
+**Usage Examples**:
+- Show Cartrita a diagram and ask her to explain it
+- Point camera at code on screen for debugging help
+- Describe visual problems while Cartrita can see context
+- Combine voice questions with visual information
+
+---
+
+## Personal Life OS Features
 
 ### System Requirements
 
@@ -630,9 +825,217 @@ All navigation elements are keyboard accessible and screen reader compatible, en
 
 ---
 
-## AI Knowledge Hub & Memory Palace
+## AI Knowledge Hub & Semantic Search
 
-The AI Knowledge Hub represents one of Cartrita's most innovative features, combining traditional knowledge management with cutting-edge artificial intelligence to create a truly intelligent information system. This feature transforms how you store, organize, and retrieve information by using semantic understanding rather than simple keyword matching.
+The **AI Knowledge Hub** is Cartrita's revolutionary semantic information management system that transforms how you store, organize, and retrieve knowledge. Unlike traditional databases that rely on keyword matching, the Knowledge Hub uses **OpenAI vector embeddings** and **semantic understanding** to create an intelligent, interconnected web of your information.
+
+### 🧠 **How the Knowledge Hub Works**
+
+**Vector Embeddings Technology**: Every piece of information you store is converted into high-dimensional mathematical vectors that capture semantic meaning. This allows the system to understand relationships between concepts, not just exact word matches.
+
+**Semantic Search**: When you search for "JavaScript debugging techniques," the system will find entries about error handling, console methods, breakpoints, and testing strategies - even if those exact terms don't appear in your content.
+
+**3D Network Visualization**: Your knowledge appears as an interactive 3D graph where nodes represent information and connections show semantic relationships. This visual approach reveals patterns and connections you might never discover in traditional list-based systems.
+
+### 📚 **Creating Knowledge Entries - Step by Step**
+
+#### **Method 1: Direct Entry Creation**
+
+1. **Navigate to Knowledge Hub**: Click "Knowledge Hub" in the main dashboard
+2. **Click "Add New Entry"**: Look for the prominent "+" or "Add Entry" button
+3. **Fill Required Fields**:
+   - **Title**: Clear, descriptive title (e.g., "React Hooks Best Practices")
+   - **Content**: Detailed information, code snippets, explanations
+   - **Category**: Select from predefined categories or create custom ones
+   - **Content Type**: Choose from: Reference, Best Practice, Tutorial, Insight, Project Documentation
+   - **Tags**: Add relevant keywords for organization
+   - **Importance Score**: 0.0-1.0 scale (higher = more important in search results)
+
+4. **Advanced Options**:
+   - **Source**: Where you learned this information
+   - **Related Links**: External URLs for reference
+   - **Last Updated**: Automatically tracked
+   - **Access Count**: System tracks how often you reference this entry
+
+#### **Method 2: Conversational Knowledge Capture**
+
+Talk to Cartrita naturally in the chat interface:
+
+**Examples**:
+- *"Remember that the best way to optimize React performance is using React.memo and useMemo for expensive calculations"*
+- *"Save this information: PostgreSQL JSONB queries are faster than regular JSON columns because they're indexed"*  
+- *"Add to my knowledge base: When debugging Node.js memory leaks, use --inspect and Chrome DevTools heap snapshots"*
+
+Cartrita will automatically:
+- Extract the key information
+- Suggest appropriate titles and categories
+- Generate relevant tags
+- Set importance scores based on context
+
+#### **Method 3: Knowledge Extraction from Chat**
+
+During conversations, Cartrita can identify valuable information and suggest saving it:
+- After explaining a complex concept, she might say: *"This seems like something worth adding to your Knowledge Hub. Should I save this information about Docker containerization best practices?"*
+- You can then confirm and she'll create a properly formatted knowledge entry
+
+### 🔍 **Advanced Search Techniques**
+
+#### **Semantic Search Examples**
+
+Instead of exact keyword matching, use natural language:
+
+**Traditional Search**: "React useState"
+**Semantic Search**: "How to manage local component state in React"
+*(Returns entries about useState, useReducer, state management patterns, component lifecycle)*
+
+**Traditional Search**: "SQL JOIN"  
+**Semantic Search**: "Combining data from multiple database tables"
+*(Returns entries about JOINs, subqueries, database relationships, normalization)*
+
+#### **Search Filters and Modifiers**
+
+**By Category**: Filter results to specific knowledge domains
+- Development, Design, Business, Personal, Research
+
+**By Content Type**: Focus on specific types of information
+- Best Practices, Tutorials, Quick References, Project Documentation
+
+**By Importance**: Prioritize critical vs. general knowledge
+- High (0.7-1.0), Medium (0.4-0.6), Low (0.0-0.3)
+
+**By Date Range**: Find recent vs. historical information
+- Last week, month, year, or custom date ranges
+
+**By Access Frequency**: Find your most/least referenced knowledge
+- Frequently accessed, rarely accessed, never accessed
+
+### 🌐 **3D Visualization Navigation**
+
+#### **Understanding the 3D Graph**
+
+**Nodes (Spheres)**: Each represents a knowledge entry
+- **Size**: Indicates importance score (larger = more important)
+- **Color**: Represents category (development = blue, design = green, etc.)
+- **Connections**: Lines show semantic relationships
+
+**Navigation Controls**:
+- **Mouse Drag**: Rotate the 3D space
+- **Scroll**: Zoom in/out
+- **Click Node**: View entry details
+- **Double-Click**: Open entry for editing
+- **Right-Click**: Context menu with quick actions
+
+#### **Discovering Connections**
+
+The 3D visualization reveals unexpected relationships:
+- **Clusters**: Related topics naturally group together
+- **Bridges**: Entries that connect different knowledge domains
+- **Outliers**: Isolated knowledge that might need more context
+- **Dense Areas**: Your areas of expertise with many interconnected entries
+
+### 🏷️ **Smart Organization Features**
+
+#### **Auto-Clustering**
+
+The system automatically organizes your knowledge into clusters:
+- **Web Development**: React, Node.js, APIs, databases
+- **Design Systems**: UI/UX, typography, color theory, accessibility  
+- **DevOps**: Docker, CI/CD, monitoring, deployment
+- **Data Science**: Python, machine learning, statistics, visualization
+
+#### **Dynamic Tagging**
+
+AI-suggested tags based on content analysis:
+- **Technical Tags**: Programming languages, frameworks, tools
+- **Conceptual Tags**: Patterns, principles, methodologies
+- **Contextual Tags**: Project names, client work, personal learning
+
+#### **Importance Scoring**
+
+The system learns which knowledge is most valuable:
+- **Access Patterns**: Frequently referenced entries get higher scores
+- **Recency**: Recently updated information stays relevant
+- **Connection Density**: Well-connected knowledge becomes more important
+- **Manual Override**: You can always adjust importance manually
+
+### 💡 **Advanced Usage Patterns**
+
+#### **Learning Path Creation**
+
+Organize knowledge for systematic learning:
+1. Create entries for foundational concepts (high importance)
+2. Add intermediate topics that build on foundations
+3. Include advanced applications and edge cases
+4. Use the 3D view to visualize learning progressions
+
+#### **Project Knowledge Management**
+
+Organize information by projects:
+- **Project Overview**: Goals, requirements, stakeholders
+- **Technical Decisions**: Architecture choices, tool selection
+- **Lessons Learned**: What worked, what didn't, why
+- **Resource Links**: Documentation, tutorials, examples
+
+#### **Personal Wiki Development**
+
+Build your comprehensive knowledge base:
+- **Daily Learning**: Add new things you discover
+- **Experience Documentation**: Record solutions to problems
+- **Reference Collections**: Gather useful resources and examples
+- **Methodology Notes**: Document your personal best practices
+
+### 🔧 **Knowledge Hub API Integration**
+
+For power users, programmatic access enables automation:
+
+**Search API**: Perform semantic searches from external tools
+**Entry Creation**: Automatically capture knowledge from other applications  
+**Export Functions**: Backup your knowledge base or integrate with other systems
+**Analytics**: Track your learning patterns and knowledge growth
+
+### 📊 **Knowledge Analytics**
+
+Understanding your knowledge patterns:
+- **Growth Trends**: How your knowledge base expands over time
+- **Topic Distribution**: Which areas you focus on most
+- **Access Patterns**: Which knowledge you reference frequently
+- **Connection Analysis**: How well-connected your knowledge domains are
+- **Learning Velocity**: Rate of new knowledge acquisition
+
+### 🎯 **Best Practices for Knowledge Management**
+
+#### **Effective Entry Creation**
+
+**Be Specific**: Instead of "JavaScript Tips," use "JavaScript Array Methods for Data Transformation"
+**Include Context**: Explain when/why to use this knowledge  
+**Add Examples**: Code snippets, use cases, real-world applications
+**Link Concepts**: Reference related entries to build connections
+**Update Regularly**: Keep information current and accurate
+
+#### **Optimal Organization**
+
+**Consistent Categorization**: Develop and stick to a category system
+**Meaningful Tags**: Use tags that help you find information later
+**Appropriate Importance**: Reserve high scores for truly critical knowledge
+**Regular Maintenance**: Periodically review and clean up outdated entries
+
+#### **Maximizing Search Effectiveness**
+
+**Natural Language**: Search like you're asking a question
+**Multiple Approaches**: Try different phrasings if first search doesn't work
+**Use Filters**: Narrow results with category and date filters
+**Follow Connections**: Explore related entries in search results
+**Learn from Results**: Pay attention to what searches work best for your content
+
+### 🚀 **Knowledge Hub Power User Tips**
+
+**Batch Import**: Copy-paste large amounts of text and let AI extract key points
+**Conversation Mining**: Review old chat logs for knowledge worth preserving  
+**External Integration**: Use the API to capture knowledge from documentation tools
+**Collaborative Features**: Export knowledge for sharing with team members
+**Backup Strategy**: Regular exports ensure your knowledge is never lost
+
+The Knowledge Hub transforms from a simple storage system into an intelligent research assistant that helps you discover insights, make connections, and build on your existing knowledge in ways that traditional note-taking systems simply cannot match.
 
 ### Understanding Semantic Search and Vector Embeddings
 

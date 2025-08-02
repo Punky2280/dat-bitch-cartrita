@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useThemedStyles } from '../context/ThemeContext';
+import { validateApiKey } from '../utils/apiKeyValidation';
 
 interface ApiKeyVaultPageProps {
   token: string;

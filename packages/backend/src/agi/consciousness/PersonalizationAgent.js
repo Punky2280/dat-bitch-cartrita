@@ -16,12 +16,30 @@ class PersonalizationAgent extends BaseAgent {
   }
 
   async onInitialize() {
-    this.registerTaskHandler('learn_preferences', this.learnPreferences.bind(this));
-    this.registerTaskHandler('adapt_content', this.adaptContent.bind(this));
-    this.registerTaskHandler('customize_interface', this.customizeInterface.bind(this));
-    this.registerTaskHandler('analyze_behavior', this.analyzeBehavior.bind(this));
-    this.registerTaskHandler('generate_recommendations', this.generateRecommendations.bind(this));
-    this.registerTaskHandler('get_personalization', this.getPersonalization.bind(this));
+    this.registerTaskHandler({
+      taskType: 'learn_preferences',
+      handler: this.learnPreferences.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'adapt_content',
+      handler: this.adaptContent.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'customize_interface',
+      handler: this.customizeInterface.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'analyze_behavior',
+      handler: this.analyzeBehavior.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'generate_recommendations',
+      handler: this.generateRecommendations.bind(this)
+    });
+    this.registerTaskHandler({
+      taskType: 'get_personalization',
+      handler: this.getPersonalization.bind(this)
+    });
     
     console.log('[PersonalizationAgent] Specialized handlers registered');
   }

@@ -28,12 +28,14 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<DashboardView>('chat');
   const [systemStatus, setSystemStatus] = useState({
-    ai_core: { status: 'checking', message: 'Checking...' },
-    websocket: { status: 'checking', message: 'Checking...' },
-    database: { status: 'checking', message: 'Checking...' },
-    email_service: { status: 'checking', message: 'Checking...' },
-    calendar_service: { status: 'checking', message: 'Checking...' },
-    contacts_service: { status: 'checking', message: 'Checking...' }
+    ai_core: { status: 'checking', message: 'Checking AI Core...' },
+    websocket: { status: 'checking', message: 'Checking WebSocket...' },
+    database: { status: 'checking', message: 'Checking Database...' },
+    voice_service: { status: 'checking', message: 'Checking Voice Services...' },
+    visual_service: { status: 'checking', message: 'Checking Visual Analysis...' },
+    email_service: { status: 'checking', message: 'Checking Email Service...' },
+    calendar_service: { status: 'checking', message: 'Checking Calendar Service...' },
+    contacts_service: { status: 'checking', message: 'Checking Contacts Service...' }
   });
 
   useEffect(() => {
@@ -88,13 +90,68 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
       const token = localStorage.getItem('token');
       if (!token) return;
 
+      // Use the comprehensive health endpoint (public endpoint)
+      try {
+        const healthResponse = await fetch('/api/health');
+        
+        if (healthResponse.ok) {
+          const healthData = await healthResponse.json();
+          
+          // Update system status based on health data
+          setSystemStatus(prev => ({
+            ...prev,
+            ai_core: {
+              status: healthData.services?.openai?.status === 'healthy' ? 'online' : 'offline',
+              message: healthData.services?.openai?.status === 'healthy' ? 'AI Core Active' : 'AI Core Unavailable'
+            },
+            database: {
+              status: healthData.overall === 'healthy' ? 'online' : 'offline',
+              message: healthData.overall === 'healthy' ? 'Database Connected' : 'Database Error'
+            },
+            websocket: {
+              status: 'online', // Assume online if we can make this request
+              message: 'Socket Connected'
+            }
+          }));
+
+          // Update voice services
+          if (healthData.services?.deepgram) {
+            setSystemStatus(prev => ({
+              ...prev,
+              voice_service: {
+                status: healthData.services.deepgram.status === 'healthy' ? 'online' : 'offline',
+                message: healthData.services.deepgram.status === 'healthy' ? 'Voice Services Active' : 'Voice Services Offline'
+              }
+            }));
+          }
+
+          // Update visual analysis if available
+          if (healthData.services?.visualAnalysis) {
+            setSystemStatus(prev => ({
+              ...prev,
+              visual_service: {
+                status: healthData.services.visualAnalysis.status === 'healthy' ? 'online' : 'offline',
+                message: healthData.services.visualAnalysis.status === 'healthy' ? 'Visual Analysis Active' : 'Visual Analysis Offline'
+              }
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch health status:', error);
+        // Set all services to error state
+        setSystemStatus(prev => Object.keys(prev).reduce((acc, key) => ({
+          ...acc,
+          [key]: { status: 'error', message: 'Health Check Failed' }
+        }), {}));
+      }
+
+      // Check individual service endpoints
       const statusChecks = [
         { key: 'email_service', endpoint: '/api/email/status' },
         { key: 'calendar_service', endpoint: '/api/calendar/status' },
         { key: 'contacts_service', endpoint: '/api/contacts/status' }
       ];
 
-      // Check each service
       for (const check of statusChecks) {
         try {
           const response = await fetch(check.endpoint, {
@@ -107,14 +164,14 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
               ...prev,
               [check.key]: {
                 status: 'online',
-                message: data.status?.service ? `${data.status.service} Active` : 'Online'
+                message: data.status?.service ? `${data.status.service} Active` : 'Service Online'
               }
             }));
           } else {
             setSystemStatus(prev => ({
               ...prev,
               [check.key]: {
-                status: 'offline',
+                status: 'offline', 
                 message: 'Service Unavailable'
               }
             }));
@@ -129,33 +186,6 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
           }));
         }
       }
-
-      // Check WebSocket connection
-      setSystemStatus(prev => ({
-        ...prev,
-        websocket: {
-          status: 'online', // We'll assume it's online if we're here
-          message: 'Connected'
-        }
-      }));
-
-      // Check AI Core (mock for now)
-      setSystemStatus(prev => ({
-        ...prev,
-        ai_core: {
-          status: 'online',
-          message: 'Active'
-        }
-      }));
-
-      // Check Database (mock for now)
-      setSystemStatus(prev => ({
-        ...prev,
-        database: {
-          status: 'online',
-          message: 'Connected'
-        }
-      }));
     };
 
     fetchUserData();

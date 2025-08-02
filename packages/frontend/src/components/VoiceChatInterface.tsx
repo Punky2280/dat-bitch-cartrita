@@ -1,18 +1,19 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { 
-  MicrophoneIcon, 
-  StopIcon, 
+import {
+  MicrophoneIcon,
+  StopIcon,
   SpeakerWaveIcon,
   EyeIcon,
   EyeSlashIcon,
   AdjustmentsHorizontalIcon,
-  SparklesIcon
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
-import { AudioVisualizer } from './AudioVisualizer';
-import { VisualAnalysisPanel } from './VisualAnalysisPanel';
-import { MediaPermissionHandler, MediaPermissionState } from './MediaPermissionHandler';
-import { VoiceActivityDetector, VADResult } from '@/utils/voiceActivityDetection';
-import { createWakeWordDetector, WakeWordResult } from '@/utils/wakeWordDetection';
+import {
+  createWakeWordDetector,
+  WakeWordDetector,
+  SpeechRecognitionWakeWordDetector,
+  WakeWordResult,
+} from '../utils/wakeWordDetection';
 
 interface VoiceChatState {
   isListening: boolean;
@@ -22,10 +23,6 @@ interface VoiceChatState {
   ambientMode: boolean;
   visualMode: boolean;
   sessionActive: boolean;
-  wakeWordDetected: boolean;
-  vadActive: boolean;
-  currentVolume: number;
-  permissions: MediaPermissionState;
 }
 
 interface VoiceChatProps {
@@ -35,10 +32,10 @@ interface VoiceChatProps {
   userId?: string;
 }
 
-export const VoiceChatInterface: React.FC<VoiceChatProps> = ({ 
-  onTranscript, 
+export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
+  onTranscript,
   onResponse,
-  token
+  token,
 }) => {
   // State management
   const [chatState, setChatState] = useState<VoiceChatState>({
@@ -48,14 +45,17 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
     voiceActivated: false,
     ambientMode: false,
     visualMode: false,
-    sessionActive: false
+    sessionActive: false,
   });
 
+  const [, setCurrentTranscript] = useState<string>('');
   const [interimTranscript, setInterimTranscript] = useState<string>('');
+  const [, setLastResponse] = useState<string>('');
   const [conversationHistory, setConversationHistory] = useState<any[]>([]);
   const [ambientSounds] = useState<string[]>([]);
   const [emotionalState, setEmotionalState] = useState<string>('friendly');
   const [wakeWordDetected, setWakeWordDetected] = useState<boolean>(false);
+  const [wakeWordConfidence, setWakeWordConfidence] = useState<number>(0);
 
   // Refs for media handling
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -65,6 +65,9 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const wakeWordDetectorRef = useRef<
+    WakeWordDetector | SpeechRecognitionWakeWordDetector | null
+  >(null);
 
   // Real-time audio analysis
   const setupAudioAnalysis = useCallback(async () => {
@@ -73,94 +76,134 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
 
       audioContextRef.current = new AudioContext();
       analyserRef.current = audioContextRef.current.createAnalyser();
-      
-      const source = audioContextRef.current.createMediaStreamSource(streamRef.current);
+
+      const source = audioContextRef.current.createMediaStreamSource(
+        streamRef.current
+      );
       source.connect(analyserRef.current);
-      
+
       analyserRef.current.fftSize = 256;
       const bufferLength = analyserRef.current.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
 
       const analyzeAudio = () => {
         if (!analyserRef.current || !chatState.sessionActive) return;
-        
+
         analyserRef.current.getByteFrequencyData(dataArray);
-        
-        // Calculate volume level
-        const average = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength;
-        const volumeLevel = average / 255;
-        
-        // Detect speech patterns
-        if (volumeLevel > 0.1 && !chatState.isProcessing) {
-          // Speech detected - could trigger wake word detection
-          if (!chatState.voiceActivated && volumeLevel > 0.3) {
-            checkForWakeWord();
-          }
-        }
-        
+
+        // Audio level monitoring for wake word detection is handled by the detector itself
+        // The wake word detector has its own audio analysis and will trigger the callback
+        // Future enhancement: could use volume level for additional UI feedback
+        // const average = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength;
+        // const volumeLevel = average / 255;
+
         requestAnimationFrame(analyzeAudio);
       };
-      
+
       analyzeAudio();
     } catch (error) {
       console.error('[VoiceChat] Error setting up audio analysis:', error);
     }
-  }, [chatState.sessionActive, chatState.voiceActivated, chatState.isProcessing]);
+  }, [
+    chatState.sessionActive,
+    chatState.voiceActivated,
+    chatState.isProcessing,
+  ]);
 
-  // Wake word detection
-  const checkForWakeWord = useCallback(async () => {
-    if (chatState.voiceActivated || !audioChunksRef.current.length) return;
-    
-    try {
-      // Create a short audio clip for wake word detection
-      const audioBlob = new Blob(audioChunksRef.current.slice(-2), { type: 'audio/webm' });
-      
-      if (audioBlob.size < 1000) return; // Too small to analyze
-      
-      const formData = new FormData();
-      formData.append('audio', audioBlob, 'wake-check.webm');
-      
-      const response = await fetch('http://localhost:8000/api/voice-to-text/transcribe', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        
-        if (result.wakeWord && result.wakeWord.detected) {
-          console.log('[VoiceChat] Wake word detected:', result.wakeWord.wakeWord);
-          setWakeWordDetected(true);
-          activateVoiceMode(result.wakeWord.cleanTranscript);
-        }
+  // Wake word detection callback
+  const handleWakeWordResult = useCallback(
+    (result: WakeWordResult) => {
+      console.log('[VoiceChat] Wake word result:', result);
+
+      setWakeWordConfidence(result.confidence);
+
+      if (result.detected && !chatState.voiceActivated) {
+        console.log(
+          '[VoiceChat] Wake word detected:',
+          result.word,
+          'confidence:',
+          result.confidence
+        );
+        setWakeWordDetected(true);
+        activateVoiceMode();
       }
-    } catch (error) {
-      console.error('[VoiceChat] Wake word detection error:', error);
+    },
+    [chatState.voiceActivated]
+  );
+
+  // Initialize wake word detector
+  const initializeWakeWordDetector = useCallback(
+    async (stream: MediaStream) => {
+      try {
+        console.log('[VoiceChat] Initializing wake word detector...');
+
+        const detector = createWakeWordDetector(handleWakeWordResult, {
+          sensitivity: 0.7,
+          bufferDuration: 3,
+          analysisInterval: 1000,
+          wakeWords: ['cartrita', 'hey cartrita', 'cartrita!'],
+          minConfidence: 0.6,
+          debounceMs: 2000,
+        });
+
+        wakeWordDetectorRef.current = detector;
+
+        let success = false;
+        if (detector instanceof WakeWordDetector) {
+          success = await detector.start(stream);
+        } else {
+          success = await detector.start();
+        }
+
+        if (success) {
+          console.log('[VoiceChat] Wake word detector started successfully');
+        } else {
+          console.warn('[VoiceChat] Wake word detector failed to start');
+        }
+
+        return success;
+      } catch (error) {
+        console.error(
+          '[VoiceChat] Error initializing wake word detector:',
+          error
+        );
+        return false;
+      }
+    },
+    [handleWakeWordResult]
+  );
+
+  // Stop wake word detector
+  const stopWakeWordDetector = useCallback(() => {
+    if (wakeWordDetectorRef.current) {
+      console.log('[VoiceChat] Stopping wake word detector...');
+      wakeWordDetectorRef.current.stop();
+      wakeWordDetectorRef.current = null;
     }
-  }, [chatState.voiceActivated, token]);
+  }, []);
 
   // Activate voice mode
   const activateVoiceMode = useCallback(async (initialCommand?: string) => {
     try {
       console.log('[VoiceChat] Activating voice mode');
-      
-      setChatState(prev => ({ ...prev, voiceActivated: true, isListening: true }));
+
+      setChatState(prev => ({
+        ...prev,
+        voiceActivated: true,
+        isListening: true,
+      }));
       setWakeWordDetected(true);
-      
+
       // Send acknowledgment
       const acknowledgment = "Hey! I'm here, what's up?";
       await playTTSResponse(acknowledgment, 'friendly');
-      
+
       // Process initial command if provided
       if (initialCommand && initialCommand.trim()) {
         setTimeout(() => {
           processVoiceInput(initialCommand);
         }, 1500);
       }
-      
     } catch (error) {
       console.error('[VoiceChat] Error activating voice mode:', error);
     }
@@ -175,7 +218,7 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
       }
 
       console.log('[VoiceChat] Starting comprehensive voice session');
-      
+
       // Get media permissions
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -183,46 +226,51 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
           noiseSuppression: true,
           sampleRate: 16000,
         },
-        video: chatState.visualMode ? {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          frameRate: { ideal: 15 }
-        } : false
+        video: chatState.visualMode
+          ? {
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+              frameRate: { ideal: 15 },
+            }
+          : false,
       });
 
       streamRef.current = stream;
-      
+
       // Set up video if enabled
       if (chatState.visualMode && videoRef.current) {
         videoRef.current.srcObject = stream;
       }
-      
+
       // Set up audio recording
       audioChunksRef.current = [];
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm',
       });
-      
+
       mediaRecorderRef.current = mediaRecorder;
-      
+
       mediaRecorder.ondataavailable = event => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
-          
+
           // Keep only recent chunks for wake word detection
           if (audioChunksRef.current.length > 10) {
             audioChunksRef.current = audioChunksRef.current.slice(-10);
           }
         }
       };
-      
+
       mediaRecorder.start(500); // Collect data every 500ms
-      
+
       // Set up audio analysis
       await setupAudioAnalysis();
-      
+
+      // Initialize wake word detector
+      await initializeWakeWordDetector(stream);
+
       // Start backend voice session
-      const sessionResponse = await fetch('http://localhost:8000/api/voice-chat/start-session', {
+      const sessionResponse = await fetch('/api/voice-chat/start-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -233,68 +281,84 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
             wakeWords: ['cartrita', 'hey cartrita', 'cartrita!'],
             ambientMode: chatState.ambientMode,
             visualMode: chatState.visualMode,
-            sensitivity: 0.3
-          }
-        })
+            sensitivity: 0.3,
+          },
+        }),
       });
-      
+
       if (sessionResponse.ok) {
-        setChatState(prev => ({ 
-          ...prev, 
-          sessionActive: true, 
-          isListening: true 
+        setChatState(prev => ({
+          ...prev,
+          sessionActive: true,
+          isListening: true,
         }));
-        
+
         // Start visual analysis if enabled
         if (chatState.visualMode) {
           startVisualAnalysis();
         }
-        
+
         // Start ambient monitoring if enabled
         if (chatState.ambientMode) {
           startAmbientMonitoring();
         }
-        
+
         // Play greeting
-        await playTTSResponse("Hey! I'm all set up and ready to chat! Just say my name when you want to talk!", 'friendly');
+        await playTTSResponse(
+          "Hey! I'm all set up and ready to chat! Just say my name when you want to talk!",
+          'friendly'
+        );
       }
-      
     } catch (error) {
       console.error('[VoiceChat] Failed to start session:', error);
-      alert('Failed to start voice chat. Please check your microphone permissions.');
+      alert(
+        'Failed to start voice chat. Please check your microphone permissions.'
+      );
     }
-  }, [chatState.sessionActive, chatState.visualMode, chatState.ambientMode, token, setupAudioAnalysis]);
+  }, [
+    chatState.sessionActive,
+    chatState.visualMode,
+    chatState.ambientMode,
+    token,
+    setupAudioAnalysis,
+  ]);
 
   // Stop session
   const stopVoiceSession = useCallback(async () => {
     try {
       console.log('[VoiceChat] Stopping voice session');
-      
+
       // Stop media recorder
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state !== 'inactive'
+      ) {
         mediaRecorderRef.current.stop();
       }
-      
+
+      // Stop wake word detector
+      stopWakeWordDetector();
+
       // Stop media stream
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
       }
-      
+
       // Stop audio context
       if (audioContextRef.current) {
         audioContextRef.current.close();
         audioContextRef.current = null;
       }
-      
+
       // Stop backend session
-      await fetch('http://localhost:8000/api/voice-chat/stop-session', {
+      await fetch('/api/voice-chat/stop-session', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
-        }
+        },
       });
-      
+
       setChatState({
         isListening: false,
         isProcessing: false,
@@ -302,65 +366,73 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
         voiceActivated: false,
         ambientMode: false,
         visualMode: false,
-        sessionActive: false
+        sessionActive: false,
       });
-      
+
       setWakeWordDetected(false);
+      setWakeWordConfidence(0);
+      setCurrentTranscript('');
       setInterimTranscript('');
-      
     } catch (error) {
       console.error('[VoiceChat] Error stopping session:', error);
     }
   }, [token]);
 
   // Process voice input
-  const processVoiceInput = useCallback(async (transcript: string) => {
-    try {
-      setChatState(prev => ({ ...prev, isProcessing: true }));
-      
-      // Add to conversation history
-      const userMessage = {
-        timestamp: new Date(),
-        type: 'user',
-        content: transcript,
-        mode: 'voice'
-      };
-      
-      setConversationHistory(prev => [...prev, userMessage]);
-      
-      if (onTranscript) {
-        onTranscript(transcript);
+  const processVoiceInput = useCallback(
+    async (transcript: string) => {
+      try {
+        setChatState(prev => ({ ...prev, isProcessing: true }));
+        setCurrentTranscript(transcript);
+
+        // Add to conversation history
+        const userMessage = {
+          timestamp: new Date(),
+          type: 'user',
+          content: transcript,
+          mode: 'voice',
+        };
+
+        setConversationHistory(prev => [...prev, userMessage]);
+
+        if (onTranscript) {
+          onTranscript(transcript);
+        }
+
+        // Get response from backend (this would integrate with your agent system)
+        const response = await generateVoiceResponse(transcript);
+
+        // Add response to history
+        const assistantMessage = {
+          timestamp: new Date(),
+          type: 'assistant',
+          content: response.text,
+          emotion: response.emotion,
+          mode: 'voice',
+        };
+
+        setConversationHistory(prev => [...prev, assistantMessage]);
+        setLastResponse(response.text);
+        setEmotionalState(response.emotion);
+
+        // Play TTS response
+        await playTTSResponse(response.text, response.emotion);
+
+        if (onResponse) {
+          onResponse(response);
+        }
+      } catch (error) {
+        console.error('[VoiceChat] Error processing voice input:', error);
+        await playTTSResponse(
+          'Sorry, I had trouble with that. Can you try again?',
+          'calm'
+        );
+      } finally {
+        setChatState(prev => ({ ...prev, isProcessing: false }));
       }
-      
-      // Get response from backend (this would integrate with your agent system)
-      const response = await generateVoiceResponse(transcript);
-      
-      // Add response to history
-      const assistantMessage = {
-        timestamp: new Date(),
-        type: 'assistant',
-        content: response.text,
-        emotion: response.emotion,
-        mode: 'voice'
-      };
-      
-      setConversationHistory(prev => [...prev, assistantMessage]);
-      setEmotionalState(response.emotion);
-      
-      // Play TTS response
-      await playTTSResponse(response.text, response.emotion);
-      
-      if (onResponse) {
-        onResponse(response);
-      }
-      
-    } catch (error) {
-      console.error('[VoiceChat] Error processing voice input:', error);
-      await playTTSResponse("Sorry, I had trouble with that. Can you try again?", 'calm');
-    } finally {
-      setChatState(prev => ({ ...prev, isProcessing: false }));
-    }
-  }, [onTranscript, onResponse]);
+    },
+    [onTranscript, onResponse]
+  );
 
   // Generate voice response
   const generateVoiceResponse = useCallback(async (input: string) => {
@@ -369,149 +441,161 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
     const responses = {
       greeting: {
         patterns: ['hello', 'hi', 'hey', 'good morning', 'good afternoon'],
-        response: "Hey there! So good to hear your voice! What's going on today?",
-        emotion: 'friendly'
+        response:
+          "Hey there! So good to hear your voice! What's going on today?",
+        emotion: 'friendly',
       },
       compliment: {
         patterns: ['beautiful', 'amazing', 'great', 'awesome', 'incredible'],
         response: "Aww, you're so sweet! Thank you, that totally made my day!",
-        emotion: 'excited'
+        emotion: 'excited',
       },
       question: {
         patterns: ['what', 'how', 'why', 'when', 'where', 'can you'],
-        response: "That's a great question! I love talking about stuff like this. Let me think...",
-        emotion: 'curious'
+        response:
+          "That's a great question! I love talking about stuff like this. Let me think...",
+        emotion: 'curious',
       },
       help: {
         patterns: ['help', 'assist', 'support'],
-        response: "Of course I can help! I'm here for whatever you need. What can I do for you?",
-        emotion: 'encouraging'
-      }
+        response:
+          "Of course I can help! I'm here for whatever you need. What can I do for you?",
+        emotion: 'encouraging',
+      },
     };
-    
+
     const lowerInput = input.toLowerCase();
-    
+
     for (const [category, config] of Object.entries(responses)) {
       if (config.patterns.some(pattern => lowerInput.includes(pattern))) {
         return {
           text: config.response,
           emotion: config.emotion,
-          category: category
+          category: category,
         };
       }
     }
-    
+
     // Default response
     return {
       text: "That's really interesting! I love hearing your thoughts. Tell me more about that!",
       emotion: 'friendly',
-      category: 'default'
+      category: 'default',
     };
   }, []);
 
   // Play TTS response
-  const playTTSResponse = useCallback(async (text: string, emotion: string = 'friendly') => {
-    try {
-      setChatState(prev => ({ ...prev, isSpeaking: true }));
-      
-      const response = await fetch('http://localhost:8000/api/voice-chat/speak', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          text: text,
-          emotion: emotion,
-          voice: 'nova',
-          speed: 1.0
-        })
-      });
-      
-      if (response.ok) {
-        const audioBuffer = await response.arrayBuffer();
-        const audioContext = new AudioContext();
-        const audioData = await audioContext.decodeAudioData(audioBuffer);
-        const source = audioContext.createBufferSource();
-        
-        source.buffer = audioData;
-        source.connect(audioContext.destination);
-        
-        source.onended = () => {
-          setChatState(prev => ({ ...prev, isSpeaking: false }));
-        };
-        
-        source.start();
+  const playTTSResponse = useCallback(
+    async (text: string, emotion: string = 'friendly') => {
+      try {
+        setChatState(prev => ({ ...prev, isSpeaking: true }));
+
+        const response = await fetch('/api/voice-chat/speak', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            text: text,
+            emotion: emotion,
+            voice: 'nova',
+            speed: 1.0,
+          }),
+        });
+
+        if (response.ok) {
+          const audioBuffer = await response.arrayBuffer();
+          const audioContext = new AudioContext();
+          const audioData = await audioContext.decodeAudioData(audioBuffer);
+          const source = audioContext.createBufferSource();
+
+          source.buffer = audioData;
+          source.connect(audioContext.destination);
+
+          source.onended = () => {
+            setChatState(prev => ({ ...prev, isSpeaking: false }));
+          };
+
+          source.start();
+        }
+      } catch (error) {
+        console.error('[VoiceChat] Error playing TTS response:', error);
+        setChatState(prev => ({ ...prev, isSpeaking: false }));
       }
-      
-    } catch (error) {
-      console.error('[VoiceChat] Error playing TTS response:', error);
-      setChatState(prev => ({ ...prev, isSpeaking: false }));
-    }
-  }, [token]);
+    },
+    [token]
+  );
 
   // Visual analysis
   const startVisualAnalysis = useCallback(async () => {
     if (!videoRef.current || !canvasRef.current) return;
-    
+
     const analyzeFrame = async () => {
       if (!chatState.visualMode || !chatState.sessionActive) return;
-      
+
       const canvas = canvasRef.current!;
       const context = canvas.getContext('2d')!;
       const video = videoRef.current!;
-      
+
       if (video.readyState >= 2) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0);
-        
+
         // Convert to blob and send for analysis
-        canvas.toBlob(async (blob) => {
-          if (!blob) return;
-          
-          const formData = new FormData();
-          formData.append('image', blob, 'frame.jpg');
-          
-          try {
-            const response = await fetch('http://localhost:8000/api/vision/analyze', {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-              body: formData
-            });
-            
-            if (response.ok) {
-              const analysis = await response.json();
-              // Process visual analysis results
-              processVisualAnalysis(analysis);
+        canvas.toBlob(
+          async blob => {
+            if (!blob) return;
+
+            const formData = new FormData();
+            formData.append('image', blob, 'frame.jpg');
+
+            try {
+              const response = await fetch('/api/vision/analyze', {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+                body: formData,
+              });
+
+              if (response.ok) {
+                const analysis = await response.json();
+                // Process visual analysis results
+                processVisualAnalysis(analysis);
+              }
+            } catch (error) {
+              console.error('[VoiceChat] Visual analysis error:', error);
             }
-          } catch (error) {
-            console.error('[VoiceChat] Visual analysis error:', error);
-          }
-        }, 'image/jpeg', 0.8);
+          },
+          'image/jpeg',
+          0.8
+        );
       }
-      
+
       // Analyze every 5 seconds
       setTimeout(analyzeFrame, 5000);
     };
-    
+
     setTimeout(analyzeFrame, 2000); // Start after 2 seconds
   }, [chatState.visualMode, chatState.sessionActive, token]);
 
   // Process visual analysis
-  const processVisualAnalysis = useCallback((analysis: any) => {
-    if (analysis.cartrita_comments && analysis.cartrita_comments.length > 0) {
-      // Occasionally comment on what she sees (10% chance)
-      if (Math.random() < 0.1) {
-        const comment = analysis.cartrita_comments[0];
-        setTimeout(() => {
-          playTTSResponse(comment, 'casual');
-        }, 1000);
+  const processVisualAnalysis = useCallback(
+    (analysis: any) => {
+      if (analysis.cartrita_comments && analysis.cartrita_comments.length > 0) {
+        // Occasionally comment on what she sees (10% chance)
+        if (Math.random() < 0.1) {
+          const comment = analysis.cartrita_comments[0];
+          setTimeout(() => {
+            playTTSResponse(comment, 'casual');
+          }, 1000);
+        }
       }
-    }
-  }, [playTTSResponse]);
+    },
+    [playTTSResponse]
+  );
 
   // Ambient monitoring
   const startAmbientMonitoring = useCallback(() => {
@@ -555,7 +639,7 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
             Cartrita Voice Chat
           </h2>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           {/* Visual Mode Toggle */}
           <button
@@ -567,9 +651,13 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
             }`}
             title="Toggle Visual Mode"
           >
-            {chatState.visualMode ? <EyeIcon className="h-5 w-5" /> : <EyeSlashIcon className="h-5 w-5" />}
+            {chatState.visualMode ? (
+              <EyeIcon className="h-5 w-5" />
+            ) : (
+              <EyeSlashIcon className="h-5 w-5" />
+            )}
           </button>
-          
+
           {/* Ambient Mode Toggle */}
           <button
             onClick={toggleAmbientMode}
@@ -588,22 +676,39 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
       {/* Status Display */}
       <div className="mb-6">
         <div className="flex items-center space-x-4 text-sm">
-          <div className={`flex items-center space-x-2 ${
-            chatState.sessionActive ? 'text-green-600' : 'text-gray-500'
-          }`}>
-            <div className={`w-2 h-2 rounded-full ${
-              chatState.sessionActive ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
-            }`} />
+          <div
+            className={`flex items-center space-x-2 ${
+              chatState.sessionActive ? 'text-green-600' : 'text-gray-500'
+            }`}
+          >
+            <div
+              className={`w-2 h-2 rounded-full ${
+                chatState.sessionActive
+                  ? 'bg-green-500 animate-pulse'
+                  : 'bg-gray-400'
+              }`}
+            />
             <span>{chatState.sessionActive ? 'Active' : 'Inactive'}</span>
           </div>
-          
+
           {wakeWordDetected && (
             <div className="flex items-center space-x-2 text-purple-600">
               <SparklesIcon className="h-4 w-4" />
               <span>Voice Activated</span>
             </div>
           )}
-          
+
+          {chatState.sessionActive &&
+            !chatState.voiceActivated &&
+            wakeWordConfidence > 0 && (
+              <div className="flex items-center space-x-2 text-orange-600">
+                <div
+                  className={`w-2 h-2 rounded-full ${wakeWordConfidence > 0.3 ? 'bg-orange-500 animate-pulse' : 'bg-orange-300'}`}
+                />
+                <span>Listening ({Math.round(wakeWordConfidence * 100)}%)</span>
+              </div>
+            )}
+
           {chatState.isSpeaking && (
             <div className="flex items-center space-x-2 text-blue-600">
               <SpeakerWaveIcon className="h-4 w-4 animate-pulse" />
@@ -633,7 +738,9 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
           <div className="text-center text-gray-500 dark:text-gray-400 py-8">
             <SparklesIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p>Start chatting with Cartrita!</p>
-            <p className="text-sm mt-1">Say "Cartrita!" to activate voice mode</p>
+            <p className="text-sm mt-1">
+              Say &quot;Cartrita!&quot; to activate voice mode
+            </p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -653,14 +760,16 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
                 >
                   <p>{message.content}</p>
                   {message.emotion && (
-                    <p className="text-xs opacity-75 mt-1">({message.emotion})</p>
+                    <p className="text-xs opacity-75 mt-1">
+                      ({message.emotion})
+                    </p>
                   )}
                 </div>
               </div>
             ))}
           </div>
         )}
-        
+
         {/* Interim Transcript */}
         {interimTranscript && (
           <div className="flex justify-end mt-2">
@@ -705,12 +814,12 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
           ) : (
             <MicrophoneIcon className="h-8 w-8" />
           )}
-          
+
           {/* Voice Activated Indicator */}
           {chatState.voiceActivated && (
             <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-400 rounded-full animate-pulse" />
           )}
-          
+
           {/* Listening Indicator */}
           {chatState.isListening && !chatState.voiceActivated && (
             <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full animate-pulse" />
@@ -722,7 +831,7 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
       {chatState.sessionActive && !chatState.voiceActivated && (
         <div className="mt-4 text-center">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            💡 Say <strong>"Cartrita!"</strong> to activate voice mode
+            💡 Say <strong>&quot;Cartrita!&quot;</strong> to activate voice mode
           </p>
         </div>
       )}
@@ -749,7 +858,10 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
       {/* Current Emotional State */}
       <div className="mt-4 text-center">
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          Current mood: <span className="font-medium text-purple-600 dark:text-purple-400">{emotionalState}</span>
+          Current mood:{' '}
+          <span className="font-medium text-purple-600 dark:text-purple-400">
+            {emotionalState}
+          </span>
         </p>
       </div>
     </div>

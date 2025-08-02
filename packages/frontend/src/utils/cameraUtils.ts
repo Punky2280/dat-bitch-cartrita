@@ -81,7 +81,7 @@ export async function requestCameraPermission(): Promise<CameraPermissionResult>
 }
 
 /**
- * Capture a frame from video stream
+ * Capture a frame from video stream (synchronous version, no blob)
  */
 export function captureFrame(
   videoElement: HTMLVideoElement,
@@ -113,17 +113,12 @@ export function captureFrame(
     const mimeType = `image/${format}`;
     const imageData = canvas.toDataURL(mimeType, quality);
 
-    // Also convert to blob for API uploads
-    return new Promise<FrameCaptureResult>((resolve) => {
-      canvas.toBlob((blob) => {
-        resolve({
-          success: true,
-          imageData,
-          blob: blob || undefined,
-          timestamp: Date.now()
-        });
-      }, mimeType, quality);
-    });
+    return {
+      success: true,
+      imageData,
+      blob: undefined, // Use captureFrameAsync for blob
+      timestamp: Date.now()
+    };
 
   } catch (error: any) {
     console.error('[CameraUtils] Frame capture failed:', error);
@@ -136,18 +131,14 @@ export function captureFrame(
 }
 
 /**
- * Capture frame synchronously (returns Promise for blob version)
+ * Capture frame asynchronously with blob (for API uploads)
  */
 export async function captureFrameAsync(
   videoElement: HTMLVideoElement,
   options: CameraFrameOptions = {}
 ): Promise<FrameCaptureResult> {
   return new Promise((resolve) => {
-    const result = captureFrame(videoElement, options);
-    if (result instanceof Promise) {
-      result.then(resolve);
-    } else {
-      // Convert sync result to async for blob generation
+    try {
       const {
         width = videoElement.videoWidth,
         height = videoElement.videoHeight,
@@ -182,6 +173,12 @@ export async function captureFrameAsync(
           timestamp: Date.now()
         });
       }, mimeType, quality);
+    } catch (error: any) {
+      resolve({
+        success: false,
+        error: error.message,
+        timestamp: Date.now()
+      });
     }
   });
 }
@@ -267,9 +264,9 @@ export async function getCameraDevices(): Promise<MediaDeviceInfo[]> {
 export function isCameraSupported(): boolean {
   return !!(
     navigator.mediaDevices &&
-    navigator.mediaDevices.getUserMedia &&
-    window.HTMLCanvasElement &&
-    HTMLCanvasElement.prototype.toDataURL &&
-    HTMLCanvasElement.prototype.toBlob
+    typeof navigator.mediaDevices.getUserMedia === 'function' &&
+    typeof HTMLCanvasElement !== 'undefined' &&
+    typeof HTMLCanvasElement.prototype.toDataURL === 'function' &&
+    typeof HTMLCanvasElement.prototype.toBlob === 'function'
   );
 }
