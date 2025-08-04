@@ -1,330 +1,126 @@
-const OpenAI = require('openai');
-const EventEmitter = require('events');
+/* global process, console */
+import OpenAI from 'openai';
 
-class TextToSpeechService extends EventEmitter {
+class TextToSpeechService {
   constructor() {
-    super();
-    this.openai = null;
+    this.client = null;
+    this.initialized = false;
+    
+    console.log('🗣️ TextToSpeechService initialized');
     this.initializeClient();
   }
 
   initializeClient() {
     if (!process.env.OPENAI_API_KEY) {
-      console.error('[TextToSpeechService] OpenAI API key not configured');
+      console.warn('[TextToSpeechService] OpenAI API key not configured - service will be limited');
       return;
     }
 
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    });
-    
-    console.log('[TextToSpeechService] OpenAI client initialized');
+    try {
+      this.client = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY
+      });
+      
+      this.initialized = true;
+      console.log('[TextToSpeechService] ✅ Client initialized');
+    } catch (error) {
+      console.error('[TextToSpeechService] ❌ Failed to initialize client:', error);
+    }
   }
 
-  /**
-   * Generate speech from text with feminine urban voice characteristics
-   */
-  async generateSpeech(text, options = {}) {
-    try {
-      if (!this.openai) {
-        throw new Error('OpenAI client not initialized');
-      }
-
-      if (!text || text.trim().length === 0) {
-        throw new Error('No text provided for speech generation');
-      }
-
-      // Preprocess text for urban feminine voice characteristics
-      const processedText = this.preprocessTextForUrbanVoice(text);
-
-      const defaultOptions = {
-        model: 'tts-1-hd', // Higher quality model
-        voice: 'nova', // Feminine voice that works well for urban characteristics
-        response_format: 'mp3',
-        speed: 1.0,
-        ...options
+  async synthesizeSpeech(text, options = {}) {
+    if (!this.client) {
+      return {
+        success: false,
+        error: 'OpenAI client not initialized'
       };
+    }
 
-      console.log('[TextToSpeechService] Generating speech:', {
-        text: processedText.substring(0, 100) + '...',
-        voice: defaultOptions.voice,
-        model: defaultOptions.model
+    try {
+      const {
+        model = 'tts-1',
+        voice = 'nova',
+        speed = 1.0,
+        response_format = 'mp3'
+      } = options;
+
+      const response = await this.client.audio.speech.create({
+        model,
+        voice,
+        input: text,
+        speed,
+        response_format
       });
 
-      const mp3 = await this.openai.audio.speech.create({
-        model: defaultOptions.model,
-        voice: defaultOptions.voice,
-        input: processedText,
-        response_format: defaultOptions.response_format,
-        speed: defaultOptions.speed
-      });
+      // Convert response to buffer
+      const buffer = Buffer.from(await response.arrayBuffer());
 
-      const buffer = Buffer.from(await mp3.arrayBuffer());
-      
-      console.log('[TextToSpeechService] Speech generated successfully:', {
+      return {
+        success: true,
+        audio: buffer,
+        format: response_format,
         size: buffer.length,
-        format: defaultOptions.response_format
-      });
-
-      return {
-        audioBuffer: buffer,
-        format: defaultOptions.response_format,
-        text: processedText,
-        voice: defaultOptions.voice,
-        duration: this.estimateAudioDuration(processedText, defaultOptions.speed)
+        text: text
       };
 
     } catch (error) {
-      console.error('[TextToSpeechService] Speech generation error:', error);
-      throw new Error(`Speech generation failed: ${error.message}`);
-    }
-  }
-
-  /**
-   * Generate streaming speech (for real-time conversation)
-   */
-  async generateStreamingSpeech(text, options = {}) {
-    try {
-      const defaultOptions = {
-        model: 'tts-1', // Faster model for streaming
-        voice: 'nova',
-        response_format: 'mp3',
-        speed: 1.1, // Slightly faster for conversational feel
-        ...options
-      };
-
-      const processedText = this.preprocessTextForUrbanVoice(text);
-
-      console.log('[TextToSpeechService] Generating streaming speech');
-
-      const mp3 = await this.openai.audio.speech.create({
-        model: defaultOptions.model,
-        voice: defaultOptions.voice,
-        input: processedText,
-        response_format: defaultOptions.response_format,
-        speed: defaultOptions.speed
-      });
-
-      // Return the stream directly for real-time playback
+      console.error('[TextToSpeechService] ❌ Speech synthesis failed:', error);
       return {
-        audioStream: mp3.body,
-        format: defaultOptions.response_format,
-        text: processedText,
-        voice: defaultOptions.voice
+        success: false,
+        error: error.message
       };
-
-    } catch (error) {
-      console.error('[TextToSpeechService] Streaming speech generation error:', error);
-      throw error;
     }
   }
 
-  /**
-   * Preprocess text to add urban feminine voice characteristics
-   */
-  preprocessTextForUrbanVoice(text) {
-    let processed = text;
+  async synthesizeWithPersonality(text, personality = 'friendly', options = {}) {
+    // Apply personality-based modifications to voice parameters
+    const personalitySettings = {
+      friendly: { voice: 'nova', speed: 1.0 },
+      professional: { voice: 'echo', speed: 0.9 },
+      energetic: { voice: 'fable', speed: 1.1 },
+      calm: { voice: 'shimmer', speed: 0.8 },
+      authoritative: { voice: 'onyx', speed: 0.9 }
+    };
 
-    // Add natural speech patterns and emphasis
-    processed = processed
-      // Add emphasis to important words
-      .replace(/\b(absolutely|definitely|totally|really|super|amazing|incredible)\b/gi, '$1!')
-      
-      // Make questions more conversational
-      .replace(/\?/g, '?!')
-      
-      // Add natural pauses for better flow
-      .replace(/\. /g, '... ')
-      .replace(/\, /g, ', ')
-      
-      // Urban speech patterns (keep it professional but friendly)
-      .replace(/\boh my god\b/gi, 'oh my gosh')
-      .replace(/\bokay\b/gi, 'okay')
-      .replace(/\byeah\b/gi, 'yeah!')
-      
-      // Pronunciation adjustments for better flow
-      .replace(/\bgoing to\b/gi, 'gonna')
-      .replace(/\bwant to\b/gi, 'wanna')
-      .replace(/\bhave to\b/gi, 'gotta')
-      .replace(/\bkind of\b/gi, 'kinda');
-
-    // Add personality markers
-    const conversationalStarters = [
-      'Hey', 'Yo', 'Alright', 'So', 'Listen', 'Look', 'Girl', 'Honey'
-    ];
+    const settings = personalitySettings[personality] || personalitySettings.friendly;
     
-    const conversationalEnders = [
-      'you know?', 'for real', 'no cap', 'period', 'facts'
-    ];
-
-    // Randomly add conversational elements (10% chance)
-    if (Math.random() < 0.1 && !processed.toLowerCase().startsWith('hey')) {
-      const starter = conversationalStarters[Math.floor(Math.random() * conversationalStarters.length)];
-      processed = `${starter}, ${processed.toLowerCase()}`;
-    }
-
-    // Clean up excessive punctuation
-    processed = processed
-      .replace(/\.{4,}/g, '...')
-      .replace(/!{3,}/g, '!!')
-      .replace(/\?{3,}/g, '??');
-
-    return processed;
-  }
-
-  /**
-   * Generate speech with emotion/tone
-   */
-  async generateEmotionalSpeech(text, emotion = 'friendly', options = {}) {
-    const emotionalOptions = this.getEmotionalOptions(emotion);
-    const enhancedText = this.addEmotionalContext(text, emotion);
-    
-    return this.generateSpeech(enhancedText, {
-      ...emotionalOptions,
+    return await this.synthesizeSpeech(text, {
+      ...settings,
       ...options
     });
   }
 
-  /**
-   * Get voice options based on emotion
-   */
-  getEmotionalOptions(emotion) {
-    const emotionMap = {
-      'friendly': { voice: 'nova', speed: 1.0 },
-      'excited': { voice: 'nova', speed: 1.2 },
-      'calm': { voice: 'nova', speed: 0.9 },
-      'confident': { voice: 'nova', speed: 1.1 },
-      'playful': { voice: 'nova', speed: 1.15 },
-      'serious': { voice: 'nova', speed: 0.95 },
-      'encouraging': { voice: 'nova', speed: 1.05 }
-    };
-
-    return emotionMap[emotion] || emotionMap['friendly'];
-  }
-
-  /**
-   * Add emotional context to text
-   */
-  addEmotionalContext(text, emotion) {
-    const emotionalPrefixes = {
-      'excited': ['OMG', 'Yo!', 'No way!', 'That\'s amazing!'],
-      'encouraging': ['You got this!', 'I believe in you!', 'Keep going!'],
-      'playful': ['Hehe', 'Girl!', 'So cute!'],
-      'confident': ['Listen up', 'I know this', 'Trust me'],
-      'calm': ['Take a breath', 'It\'s all good', 'No worries']
-    };
-
-    if (emotionalPrefixes[emotion] && Math.random() < 0.3) {
-      const prefix = emotionalPrefixes[emotion][Math.floor(Math.random() * emotionalPrefixes[emotion].length)];
-      return `${prefix}... ${text}`;
-    }
-
-    return text;
-  }
-
-  /**
-   * Estimate audio duration based on text length and speed
-   */
-  estimateAudioDuration(text, speed = 1.0) {
-    // Average speaking rate: ~150 words per minute
-    const wordsPerMinute = 150 * speed;
-    const wordCount = text.split(/\s+/).length;
-    const durationMinutes = wordCount / wordsPerMinute;
-    return Math.ceil(durationMinutes * 60); // Return in seconds
-  }
-
-  /**
-   * Generate greeting message with personality
-   */
-  async generateGreeting(context = '') {
-    const greetings = [
-      "Hey there! What's good?",
-      "Yo! How can I help you today?",
-      "Hey girl! What can I do for you?",
-      "What's up! I'm here and ready to help!",
-      "Hey! How are we feeling today?",
-      "Yo yo! What's on your mind?",
-      "Hey beautiful! What can I help you with?",
-      "What's poppin'! Ready to get things done?",
-      "Hey there! I'm all ears - what do you need?",
-      "Yooo! Let's make something happen today!"
+  async getAvailableVoices() {
+    return [
+      { id: 'alloy', name: 'Alloy', gender: 'neutral' },
+      { id: 'echo', name: 'Echo', gender: 'male' },
+      { id: 'fable', name: 'Fable', gender: 'female' },
+      { id: 'nova', name: 'Nova', gender: 'female' },
+      { id: 'onyx', name: 'Onyx', gender: 'male' },
+      { id: 'shimmer', name: 'Shimmer', gender: 'female' }
     ];
-
-    const greeting = greetings[Math.floor(Math.random() * greetings.length)];
-    const fullGreeting = context ? `${greeting} ${context}` : greeting;
-    
-    return this.generateEmotionalSpeech(fullGreeting, 'friendly');
   }
 
-  /**
-   * Generate conversation response with personality
-   */
-  async generateConversationalResponse(response, emotion = 'friendly') {
-    // Add conversational filler and personality
-    const conversationalResponse = this.makeConversational(response);
-    return this.generateEmotionalSpeech(conversationalResponse, emotion);
-  }
-
-  /**
-   * Make response more conversational
-   */
-  makeConversational(text) {
-    const fillers = ['So', 'Well', 'You know', 'I mean', 'Like', 'Basically'];
-    const affirmations = ['Right?', 'You feel me?', 'Make sense?', 'You know what I mean?'];
-    
-    let conversational = text;
-    
-    // Add occasional filler at the beginning (20% chance)
-    if (Math.random() < 0.2) {
-      const filler = fillers[Math.floor(Math.random() * fillers.length)];
-      conversational = `${filler}, ${conversational.toLowerCase()}`;
+  validateText(text) {
+    if (!text || typeof text !== 'string') {
+      return { valid: false, error: 'Text must be a non-empty string' };
     }
-    
-    // Add occasional affirmation at the end (15% chance)
-    if (Math.random() < 0.15) {
-      const affirmation = affirmations[Math.floor(Math.random() * affirmations.length)];
-      conversational = `${conversational} ${affirmation}`;
+
+    if (text.length > 4096) {
+      return { valid: false, error: 'Text must be 4096 characters or less' };
     }
-    
-    return conversational;
+
+    return { valid: true };
   }
 
-  /**
-   * Get service status
-   */
   getStatus() {
     return {
-      clientInitialized: !!this.openai,
-      apiKeyConfigured: !!process.env.OPENAI_API_KEY,
-      availableVoices: ['nova', 'alloy', 'echo', 'fable', 'onyx', 'shimmer'],
-      defaultVoice: 'nova'
+      service: 'TextToSpeechService',
+      initialized: this.initialized,
+      hasClient: !!this.client,
+      timestamp: new Date().toISOString()
     };
-  }
-
-  /**
-   * Test TTS service
-   */
-  async testService() {
-    try {
-      const testText = "Hey! This is a test of Cartrita's voice system. How does it sound?";
-      const result = await this.generateSpeech(testText);
-      
-      return {
-        success: true,
-        message: 'TTS test successful',
-        audioSize: result.audioBuffer.length,
-        estimatedDuration: result.duration
-      };
-    } catch (error) {
-      console.error('[TextToSpeechService] Test failed:', error);
-      return {
-        success: false,
-        message: error.message,
-        error: error
-      };
-    }
   }
 }
 
-// Export singleton instance
-module.exports = new TextToSpeechService();
+export default new TextToSpeechService();

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
 import * as THREE from 'three';
 import { useThemedStyles } from '../context/ThemeContext';
- 
+
 interface KnowledgeHubPageProps {
   token: string;
   onBack: () => void;
@@ -54,19 +54,27 @@ interface SearchResult {
   cluster_names: string[];
 }
 
-export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBack }) => {
+export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
+  token,
+  onBack,
+}) => {
   const themedStyles = useThemedStyles();
-  const [activeView, setActiveView] = useState<'overview' | 'graph' | 'search' | 'entries' | 'create'>('overview');
+  const [activeView, setActiveView] = useState<
+    'overview' | 'graph' | 'search' | 'entries' | 'create'
+  >('overview');
   const [entries, setEntries] = useState<KnowledgeEntry[]>([]);
   const [clusters, setClusters] = useState<KnowledgeCluster[]>([]);
-  const [graphData, setGraphData] = useState<{ nodes: GraphNode[]; links: GraphLink[] } | null>(null);
+  const [graphData, setGraphData] = useState<{
+    nodes: GraphNode[];
+    links: GraphLink[];
+  } | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  
+
   // Create entry state
   const [newEntry, setNewEntry] = useState({
     title: '',
@@ -74,13 +82,13 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
     content_type: 'text',
     category: 'general',
     tags: [] as string[],
-    importance_score: 0.5
+    importance_score: 0.5,
   });
-  
+
   // Filters
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [contentTypeFilter, setContentTypeFilter] = useState('all');
-  
+
   const fgRef = useRef<any>();
 
   useEffect(() => {
@@ -92,20 +100,20 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
     try {
       const [entriesRes, clustersRes, graphRes] = await Promise.all([
         fetch('/api/knowledge/entries', {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         }),
         fetch('/api/knowledge/clusters', {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         }),
         fetch('/api/knowledge/graph', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
+          headers: { Authorization: `Bearer ${token}` },
+        }),
       ]);
 
       const [entriesData, clustersData, graphData] = await Promise.all([
         entriesRes.json(),
         clustersRes.json(),
-        graphRes.json()
+        graphRes.json(),
       ]);
 
       if (entriesData.success) setEntries(entriesData.entries);
@@ -130,19 +138,19 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
         val: entry.importance_score * 10 + 5,
         color: getContentTypeColor(entry.content_type),
         group: entry.category,
-        type: 'entry'
+        type: 'entry',
       });
     });
 
     // Add cluster nodes
-    clusters.forEach((cluster) => {
+    clusters.forEach(cluster => {
       nodes.push({
         id: `cluster_${cluster.id}`,
         name: cluster.name,
         val: cluster.size * 2 + 10,
         color: cluster.color,
         group: 'cluster',
-        type: 'cluster'
+        type: 'cluster',
       });
     });
 
@@ -151,7 +159,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
       links.push({
         source: `entry_${edge.source_entry_id}`,
         target: `entry_${edge.target_entry_id}`,
-        value: edge.strength * 5
+        value: edge.strength * 5,
       });
     });
 
@@ -164,7 +172,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
       code: '#10B981',
       image: '#F59E0B',
       document: '#8B5CF6',
-      link: '#EF4444'
+      link: '#EF4444',
     };
     return colors[contentType] || '#6B7280';
   };
@@ -177,14 +185,14 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
       const response = await fetch('/api/knowledge/search', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           query: searchQuery,
           limit: 20,
-          threshold: 0.6
-        })
+          threshold: 0.6,
+        }),
       });
 
       const data = await response.json();
@@ -203,10 +211,10 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
       const response = await fetch('/api/knowledge/entries', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newEntry)
+        body: JSON.stringify(newEntry),
       });
 
       const data = await response.json();
@@ -217,7 +225,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
           content_type: 'text',
           category: 'general',
           tags: [],
-          importance_score: 0.5
+          importance_score: 0.5,
         });
         setActiveView('entries');
         loadData();
@@ -228,8 +236,10 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
   };
 
   const filteredEntries = entries.filter(entry => {
-    const categoryMatch = categoryFilter === 'all' || entry.category === categoryFilter;
-    const typeMatch = contentTypeFilter === 'all' || entry.content_type === contentTypeFilter;
+    const categoryMatch =
+      categoryFilter === 'all' || entry.category === categoryFilter;
+    const typeMatch =
+      contentTypeFilter === 'all' || entry.content_type === contentTypeFilter;
     return categoryMatch && typeMatch;
   });
 
@@ -264,7 +274,8 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
                 🧠 AI Knowledge Hub
               </h1>
               <p className="text-gray-400 mt-1">
-                Your personal Memory Palace - Discover, connect, and explore knowledge
+                Your personal Memory Palace - Discover, connect, and explore
+                knowledge
               </p>
             </div>
           </div>
@@ -289,8 +300,8 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
               { id: 'graph', name: '3D Knowledge Graph', icon: '🕸️' },
               { id: 'search', name: 'Semantic Search', icon: '🔍' },
               { id: 'entries', name: 'All Entries', icon: '📚' },
-              { id: 'create', name: 'Create Entry', icon: '✏️' }
-            ].map((tab) => (
+              { id: 'create', name: 'Create Entry', icon: '✏️' },
+            ].map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveView(tab.id as any)}
@@ -346,7 +357,17 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
                   <div>
                     <p className="text-orange-100">Avg. Importance</p>
                     <p className="text-2xl font-bold">
-                      {entries.length > 0 ? (entries.reduce((sum, e) => sum + e.importance_score, 0) / entries.length * 100).toFixed(0) : 0}%
+                      {entries.length > 0
+                        ? (
+                            (entries.reduce(
+                              (sum, e) => sum + e.importance_score,
+                              0
+                            ) /
+                              entries.length) *
+                            100
+                          ).toFixed(0)
+                        : 0}
+                      %
                     </p>
                   </div>
                   <div className="text-3xl">⭐</div>
@@ -363,23 +384,34 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
                   <span>Recent Entries</span>
                 </h2>
                 <div className="space-y-4">
-                  {entries.slice(0, 5).map((entry) => (
-                    <div key={entry.id} className="border border-gray-700 rounded-lg p-4 hover:border-purple-500 transition-colors">
+                  {entries.slice(0, 5).map(entry => (
+                    <div
+                      key={entry.id}
+                      className="border border-gray-700 rounded-lg p-4 hover:border-purple-500 transition-colors"
+                    >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-white">{entry.title}</h3>
-                          <p className="text-gray-400 text-sm mt-1 line-clamp-2">{entry.content}</p>
+                          <h3 className="font-semibold text-white">
+                            {entry.title}
+                          </h3>
+                          <p className="text-gray-400 text-sm mt-1 line-clamp-2">
+                            {entry.content}
+                          </p>
                           <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
                             <span>{entry.content_type}</span>
                             <span>{entry.category}</span>
-                            <span>{new Date(entry.created_at).toLocaleDateString()}</span>
+                            <span>
+                              {new Date(entry.created_at).toLocaleDateString()}
+                            </span>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
                           <div className="w-12 h-2 bg-gray-700 rounded-full overflow-hidden">
-                            <div 
+                            <div
                               className="h-full bg-purple-500"
-                              style={{ width: `${entry.importance_score * 100}%` }}
+                              style={{
+                                width: `${entry.importance_score * 100}%`,
+                              }}
                             />
                           </div>
                         </div>
@@ -396,21 +428,30 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
                   <span>Knowledge Clusters</span>
                 </h2>
                 <div className="space-y-4">
-                  {clusters.slice(0, 5).map((cluster) => (
-                    <div key={cluster.id} className="border border-gray-700 rounded-lg p-4 hover:border-purple-500 transition-colors">
+                  {clusters.slice(0, 5).map(cluster => (
+                    <div
+                      key={cluster.id}
+                      className="border border-gray-700 rounded-lg p-4 hover:border-purple-500 transition-colors"
+                    >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                          <div 
+                          <div
                             className="w-4 h-4 rounded-full"
                             style={{ backgroundColor: cluster.color }}
                           />
                           <div>
-                            <h3 className="font-semibold text-white">{cluster.name}</h3>
-                            <p className="text-gray-400 text-sm">{cluster.description}</p>
+                            <h3 className="font-semibold text-white">
+                              {cluster.name}
+                            </h3>
+                            <p className="text-gray-400 text-sm">
+                              {cluster.description}
+                            </p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-lg font-bold text-purple-400">{cluster.entry_count || 0}</div>
+                          <div className="text-lg font-bold text-purple-400">
+                            {cluster.entry_count || 0}
+                          </div>
                           <div className="text-xs text-gray-500">entries</div>
                         </div>
                       </div>
@@ -426,7 +467,9 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
           <div className="h-screen bg-gray-800 rounded-xl overflow-hidden">
             <div className="p-4 border-b border-gray-700">
               <h2 className="text-xl font-bold">3D Knowledge Graph</h2>
-              <p className="text-gray-400 text-sm">Interactive visualization of your knowledge network</p>
+              <p className="text-gray-400 text-sm">
+                Interactive visualization of your knowledge network
+              </p>
             </div>
             <div className="h-full">
               {graphData && (
@@ -448,22 +491,28 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
                       const canvas = document.createElement('canvas');
                       const context = canvas.getContext('2d');
                       if (!context) return new THREE.Mesh();
-                      
+
                       canvas.width = 256;
                       canvas.height = 256;
-                      
+
                       context.fillStyle = node.color || '#3B82F6';
                       context.beginPath();
                       context.arc(128, 128, 100, 0, 2 * Math.PI);
                       context.fill();
-                      
+
                       context.fillStyle = 'white';
                       context.font = '32px Arial';
                       context.textAlign = 'center';
-                      context.fillText(node.type === 'cluster' ? '🧩' : '📄', 128, 140);
-                      
+                      context.fillText(
+                        node.type === 'cluster' ? '🧩' : '📄',
+                        128,
+                        140
+                      );
+
                       const texture = new THREE.CanvasTexture(canvas);
-                      const material = new THREE.SpriteMaterial({ map: texture });
+                      const material = new THREE.SpriteMaterial({
+                        map: texture,
+                      });
                       const sprite = new THREE.Sprite(material);
                       sprite.scale.set(node.val || 1, node.val || 1, 1);
                       return sprite;
@@ -471,7 +520,9 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
                       console.error('Error creating node sprite:', error);
                       // Fallback to simple geometry
                       const geometry = new THREE.SphereGeometry(node.val || 1);
-                      const material = new THREE.MeshBasicMaterial({ color: node.color || '#3B82F6' });
+                      const material = new THREE.MeshBasicMaterial({
+                        color: node.color || '#3B82F6',
+                      });
                       return new THREE.Mesh(geometry, material);
                     }
                   }}
@@ -490,8 +541,8 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
                   type="text"
                   placeholder="Search your knowledge base..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  onKeyPress={e => e.key === 'Enter' && handleSearch()}
                   className="flex-1 px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
                 />
                 <button
@@ -506,21 +557,33 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
 
             {searchResults.length > 0 && (
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Search Results ({searchResults.length})</h3>
-                {searchResults.map((result) => (
-                  <div key={result.id} className="bg-gray-800 border border-gray-700 rounded-lg p-6 hover:border-purple-500 transition-colors">
+                <h3 className="text-lg font-semibold">
+                  Search Results ({searchResults.length})
+                </h3>
+                {searchResults.map(result => (
+                  <div
+                    key={result.id}
+                    className="bg-gray-800 border border-gray-700 rounded-lg p-6 hover:border-purple-500 transition-colors"
+                  >
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-lg font-semibold text-white">{result.title}</h3>
+                      <h3 className="text-lg font-semibold text-white">
+                        {result.title}
+                      </h3>
                       <div className="flex items-center space-x-2">
                         <div className="px-2 py-1 bg-purple-600 text-white rounded text-xs">
                           {(result.similarity * 100).toFixed(0)}% match
                         </div>
                       </div>
                     </div>
-                    <p className="text-gray-300 mb-3 line-clamp-3">{result.content}</p>
+                    <p className="text-gray-300 mb-3 line-clamp-3">
+                      {result.content}
+                    </p>
                     <div className="flex items-center space-x-2">
                       {result.cluster_names.map((cluster, idx) => (
-                        <span key={idx} className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs">
+                        <span
+                          key={idx}
+                          className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs"
+                        >
                           {cluster}
                         </span>
                       ))}
@@ -540,22 +603,26 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
               <div className="flex space-x-4">
                 <select
                   value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  onChange={e => setCategoryFilter(e.target.value)}
                   className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-purple-500"
                 >
                   <option value="all">All Categories</option>
                   {categories.map(category => (
-                    <option key={category} value={category}>{category}</option>
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
                   ))}
                 </select>
                 <select
                   value={contentTypeFilter}
-                  onChange={(e) => setContentTypeFilter(e.target.value)}
+                  onChange={e => setContentTypeFilter(e.target.value)}
                   className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-purple-500"
                 >
                   <option value="all">All Types</option>
                   {contentTypes.map(type => (
-                    <option key={type} value={type}>{type}</option>
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -563,27 +630,43 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
 
             {/* Entries Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredEntries.map((entry) => (
-                <div key={entry.id} className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-purple-500 transition-colors">
+              {filteredEntries.map(entry => (
+                <div
+                  key={entry.id}
+                  className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-purple-500 transition-colors"
+                >
                   <div className="flex items-start justify-between mb-3">
-                    <h3 className="font-semibold text-white text-lg">{entry.title}</h3>
+                    <h3 className="font-semibold text-white text-lg">
+                      {entry.title}
+                    </h3>
                     <div className="flex items-center space-x-1">
                       <span className="text-yellow-400">⭐</span>
-                      <span className="text-sm text-gray-400">{(entry.importance_score * 100).toFixed(0)}%</span>
+                      <span className="text-sm text-gray-400">
+                        {(entry.importance_score * 100).toFixed(0)}%
+                      </span>
                     </div>
                   </div>
-                  
-                  <p className="text-gray-300 text-sm mb-4 line-clamp-3">{entry.content}</p>
-                  
+
+                  <p className="text-gray-300 text-sm mb-4 line-clamp-3">
+                    {entry.content}
+                  </p>
+
                   <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                    <span className="px-2 py-1 bg-gray-700 rounded">{entry.content_type}</span>
-                    <span className="px-2 py-1 bg-gray-700 rounded">{entry.category}</span>
+                    <span className="px-2 py-1 bg-gray-700 rounded">
+                      {entry.content_type}
+                    </span>
+                    <span className="px-2 py-1 bg-gray-700 rounded">
+                      {entry.category}
+                    </span>
                     <span>{entry.access_count} views</span>
                   </div>
 
                   <div className="flex flex-wrap gap-2 mb-3">
                     {entry.tags.map((tag, idx) => (
-                      <span key={idx} className="px-2 py-1 bg-purple-600 text-purple-100 rounded text-xs">
+                      <span
+                        key={idx}
+                        className="px-2 py-1 bg-purple-600 text-purple-100 rounded text-xs"
+                      >
                         {tag}
                       </span>
                     ))}
@@ -601,25 +684,35 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
         {activeView === 'create' && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-gray-800 rounded-xl p-6">
-              <h2 className="text-xl font-bold mb-6">Create New Knowledge Entry</h2>
-              
+              <h2 className="text-xl font-bold mb-6">
+                Create New Knowledge Entry
+              </h2>
+
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Title</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Title
+                  </label>
                   <input
                     type="text"
                     value={newEntry.title}
-                    onChange={(e) => setNewEntry({ ...newEntry, title: e.target.value })}
+                    onChange={e =>
+                      setNewEntry({ ...newEntry, title: e.target.value })
+                    }
                     className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
                     placeholder="Enter knowledge title..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Content</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Content
+                  </label>
                   <textarea
                     value={newEntry.content}
-                    onChange={(e) => setNewEntry({ ...newEntry, content: e.target.value })}
+                    onChange={e =>
+                      setNewEntry({ ...newEntry, content: e.target.value })
+                    }
                     rows={8}
                     className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
                     placeholder="Enter your knowledge content..."
@@ -628,10 +721,17 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Content Type</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Content Type
+                    </label>
                     <select
                       value={newEntry.content_type}
-                      onChange={(e) => setNewEntry({ ...newEntry, content_type: e.target.value })}
+                      onChange={e =>
+                        setNewEntry({
+                          ...newEntry,
+                          content_type: e.target.value,
+                        })
+                      }
                       className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-purple-500"
                     >
                       <option value="text">Text</option>
@@ -643,10 +743,14 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Category</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Category
+                    </label>
                     <select
                       value={newEntry.category}
-                      onChange={(e) => setNewEntry({ ...newEntry, category: e.target.value })}
+                      onChange={e =>
+                        setNewEntry({ ...newEntry, category: e.target.value })
+                      }
                       className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-purple-500"
                     >
                       <option value="general">General</option>
@@ -661,7 +765,8 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Importance Score: {(newEntry.importance_score * 100).toFixed(0)}%
+                    Importance Score:{' '}
+                    {(newEntry.importance_score * 100).toFixed(0)}%
                   </label>
                   <input
                     type="range"
@@ -669,16 +774,31 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({ token, onBac
                     max="1"
                     step="0.1"
                     value={newEntry.importance_score}
-                    onChange={(e) => setNewEntry({ ...newEntry, importance_score: parseFloat(e.target.value) })}
+                    onChange={e =>
+                      setNewEntry({
+                        ...newEntry,
+                        importance_score: parseFloat(e.target.value),
+                      })
+                    }
                     className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Tags (comma-separated)</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Tags (comma-separated)
+                  </label>
                   <input
                     type="text"
-                    onChange={(e) => setNewEntry({ ...newEntry, tags: e.target.value.split(',').map(t => t.trim()).filter(t => t) })}
+                    onChange={e =>
+                      setNewEntry({
+                        ...newEntry,
+                        tags: e.target.value
+                          .split(',')
+                          .map(t => t.trim())
+                          .filter(t => t),
+                      })
+                    }
                     className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
                     placeholder="ai, machine learning, neural networks..."
                   />

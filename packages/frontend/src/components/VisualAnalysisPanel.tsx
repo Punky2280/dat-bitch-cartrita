@@ -1,17 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  EyeIcon, 
-  EyeSlashIcon, 
+import {
+  EyeIcon,
+  EyeSlashIcon,
   CameraIcon,
   StopIcon,
   SparklesIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
-import { 
-  requestCameraPermission, 
-  FrameCaptureManager, 
+import {
+  requestCameraPermission,
+  FrameCaptureManager,
   FrameCaptureResult,
-  isCameraSupported 
+  isCameraSupported,
 } from '@/utils/cameraUtils';
 
 interface VisualAnalysisPanelProps {
@@ -42,14 +42,14 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
   isActive,
   onAnalysisResult,
   onError,
-  settings = {}
+  settings = {},
 }) => {
   const {
     captureInterval = 3000,
     analysisType = 'comprehensive',
     enableFaceDetection = true,
     enableObjectDetection = true,
-    privacyMode = false
+    privacyMode = false,
   } = settings;
 
   const [analysisState, setAnalysisState] = useState<AnalysisState>({
@@ -58,7 +58,7 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
     error: null,
     lastAnalysis: null,
     analysisCount: 0,
-    isAnalyzing: false
+    isAnalyzing: false,
   });
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -82,7 +82,7 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
     if (!isCameraSupported()) {
       setAnalysisState(prev => ({
         ...prev,
-        error: 'Camera not supported in this browser'
+        error: 'Camera not supported in this browser',
       }));
       onError?.('Camera not supported in this browser');
     }
@@ -91,9 +91,9 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
   const initializeCamera = async () => {
     try {
       console.log('[VisualAnalysis] Initializing camera...');
-      
+
       const permissionResult = await requestCameraPermission();
-      
+
       if (!permissionResult.granted) {
         throw new Error(permissionResult.error || 'Camera permission denied');
       }
@@ -101,7 +101,7 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
       if (videoRef.current && permissionResult.stream) {
         videoRef.current.srcObject = permissionResult.stream;
         streamRef.current = permissionResult.stream;
-        
+
         // Wait for video to be ready
         videoRef.current.onloadedmetadata = () => {
           startVisualCapture();
@@ -110,20 +110,19 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
         setAnalysisState(prev => ({
           ...prev,
           hasPermission: true,
-          error: null
+          error: null,
         }));
       }
-
     } catch (error: any) {
       console.error('[VisualAnalysis] Camera initialization failed:', error);
       const errorMessage = error.message || 'Failed to initialize camera';
-      
+
       setAnalysisState(prev => ({
         ...prev,
         error: errorMessage,
-        hasPermission: false
+        hasPermission: false,
       }));
-      
+
       onError?.(errorMessage);
     }
   };
@@ -142,7 +141,7 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
         width: 640,
         height: 480,
         quality: 0.8,
-        format: 'jpeg'
+        format: 'jpeg',
       }
     );
 
@@ -151,13 +150,16 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
 
     setAnalysisState(prev => ({
       ...prev,
-      isCapturing: true
+      isCapturing: true,
     }));
   };
 
   const handleFrameCapture = async (frameResult: FrameCaptureResult) => {
     if (!frameResult.success || !frameResult.blob) {
-      console.error('[VisualAnalysis] Frame capture failed:', frameResult.error);
+      console.error(
+        '[VisualAnalysis] Frame capture failed:',
+        frameResult.error
+      );
       return;
     }
 
@@ -170,21 +172,20 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
       setAnalysisState(prev => ({ ...prev, isAnalyzing: true }));
 
       const analysis = await analyzeFrame(frameResult.blob);
-      
+
       if (analysis) {
         setAnalysisState(prev => ({
           ...prev,
           lastAnalysis: analysis,
           analysisCount: prev.analysisCount + 1,
-          isAnalyzing: false
+          isAnalyzing: false,
         }));
 
         onAnalysisResult?.(analysis);
-        
+
         // Draw analysis overlay if canvas is available
         drawAnalysisOverlay(analysis);
       }
-
     } catch (error: any) {
       console.error('[VisualAnalysis] Frame analysis failed:', error);
       setAnalysisState(prev => ({ ...prev, isAnalyzing: false }));
@@ -195,19 +196,23 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
     const formData = new FormData();
     formData.append('image', imageBlob, 'frame.jpg');
     formData.append('analysisType', analysisType);
-    formData.append('focusAreas', JSON.stringify({
-      faces: enableFaceDetection,
-      objects: enableObjectDetection,
-      activities: true,
-      emotions: analysisType === 'emotion' || analysisType === 'comprehensive'
-    }));
+    formData.append(
+      'focusAreas',
+      JSON.stringify({
+        faces: enableFaceDetection,
+        objects: enableObjectDetection,
+        activities: true,
+        emotions:
+          analysisType === 'emotion' || analysisType === 'comprehensive',
+      })
+    );
 
     const response = await fetch('http://localhost:8000/api/vision/analyze', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
-      body: formData
+      body: formData,
     });
 
     if (!response.ok) {
@@ -221,7 +226,7 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
   const drawAnalysisOverlay = (analysis: any) => {
     const canvas = canvasRef.current;
     const video = videoRef.current;
-    
+
     if (!canvas || !video || !analysis) return;
 
     const ctx = canvas.getContext('2d');
@@ -242,7 +247,7 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
 
     // Draw analysis status
     ctx.fillText(`Analysis: ${analysis.summary || 'Processing...'}`, 10, 30);
-    
+
     if (analysis.objects && analysis.objects.length > 0) {
       ctx.fillText(`Objects: ${analysis.objects.length}`, 10, 55);
     }
@@ -278,7 +283,7 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
       error: null,
       lastAnalysis: null,
       analysisCount: 0,
-      isAnalyzing: false
+      isAnalyzing: false,
     });
   };
 
@@ -307,21 +312,22 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
               <SparklesIcon className="h-4 w-4 text-yellow-400 animate-pulse" />
             )}
           </div>
-          
+
           <div className="flex items-center space-x-2">
             {analysisState.analysisCount > 0 && (
               <span className="text-xs text-gray-400">
                 {analysisState.analysisCount} frames analyzed
               </span>
             )}
-            
+
             <button
               onClick={toggleCapture}
               disabled={!analysisState.hasPermission}
               className={`
-                p-1 rounded ${analysisState.isCapturing 
-                  ? 'bg-red-500 hover:bg-red-600' 
-                  : 'bg-green-500 hover:bg-green-600'
+                p-1 rounded ${
+                  analysisState.isCapturing
+                    ? 'bg-red-500 hover:bg-red-600'
+                    : 'bg-green-500 hover:bg-green-600'
                 } text-white disabled:opacity-50
               `}
             >
@@ -352,7 +358,7 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
             className="w-full max-w-sm rounded border border-gray-600"
             style={{ transform: 'scaleX(-1)' }} // Mirror for user-facing camera
           />
-          
+
           {/* Analysis overlay canvas */}
           <canvas
             ref={canvasRef}
@@ -375,9 +381,13 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
         {analysisState.lastAnalysis && (
           <div className="text-xs text-gray-300 bg-gray-800/50 p-2 rounded">
             <div className="font-medium mb-1">Latest Analysis:</div>
-            <div>{analysisState.lastAnalysis.summary || 'Scene analysis complete'}</div>
+            <div>
+              {analysisState.lastAnalysis.summary || 'Scene analysis complete'}
+            </div>
             {analysisState.lastAnalysis.mood && (
-              <div className="mt-1">Mood: {analysisState.lastAnalysis.mood}</div>
+              <div className="mt-1">
+                Mood: {analysisState.lastAnalysis.mood}
+              </div>
             )}
           </div>
         )}

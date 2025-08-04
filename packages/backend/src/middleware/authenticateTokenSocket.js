@@ -1,7 +1,8 @@
-const jwt = require('jsonwebtoken');
+/* global process, console */
+import jwt from 'jsonwebtoken';
 
 function authenticateTokenSocket(socket, next) {
-  const token = socket.handshake?.auth?.token;
+  const token = socket.handshake.query.token || socket.handshake.auth.token;
 
   if (!token) {
     console.warn('[Socket Auth] 🚫 No token found in handshake.');
@@ -14,16 +15,12 @@ function authenticateTokenSocket(socket, next) {
       return next(new Error('Authentication error: Invalid token.'));
     }
 
-    // Create consistent user object structure matching the HTTP middleware
-    socket.user = {
-      id: decodedPayload.sub,
-      name: decodedPayload.name,
-      email: decodedPayload.email,
-    };
-    
-    console.log('[Socket Auth] ✅ Socket authenticated as:', socket.user.id);
+    console.log(`[Socket Auth] ✅ User authenticated: ${decodedPayload.username} (ID: ${decodedPayload.user_id})`);
+    socket.userId = decodedPayload.user_id;
+    socket.username = decodedPayload.username;
+    socket.authenticated = true;
     next();
   });
 }
 
-module.exports = authenticateTokenSocket;
+export default authenticateTokenSocket;

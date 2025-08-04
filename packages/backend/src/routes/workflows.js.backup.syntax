@@ -1,0 +1,443 @@
+import express from 'express';
+const router = express.Router();
+import db from '../db';
+import authenticateToken from '../middleware/authenticateToken';
+import WorkflowEngine from '../services/WorkflowEngine';
+
+/**
+ * WORKFLOW MANAGEMENT ROUTES
+ * 
+ * These routes handle workflow creation, execution, and management
+ * within the hierarchical multi-agent system.
+ * 
+ * ENDPOINTS:
+ * - GET /api/workflows - Get user's workflows with filtering
+ * - POST /api/workflows - Create new workflow
+ * - GET /api/workflows/:id - Get specific workflow details
+ * - PUT /api/workflows/:id - Update workflow configuration
+ * - DELETE /api/workflows/:id - Delete workflow
+ * - POST /api/workflows/:id/execute - Execute workflow
+ * - GET /api/workflows/:id/executions - Get workflow execution history
+ * - GET /api/workflows/templates - Get workflow templates
+ */
+
+// Get user's workflows
+router.get('/', authenticateToken, async (req, res) => {
+  try {
+    console.log('[WorkflowRoute] 🚀 GET /workflows endpoint hit');
+    
+    const userId = req.user.id;
+    const { category, is_template, status } = req.query;
+    
+    let query = 'SELECT * FROM workflows WHERE user_id = $1';
+    const params = [userId];
+    
+    if (category) {
+      query += ' AND category = $2';
+      params.push(category);
+    }
+    
+    if (is_template !== undefined) {
+      query += ` AND is_template = $${params.length + 1}`;
+      params.push(is_template === 'true');
+    }
+    
+    if (status) {
+      query += ` AND status = $${params.length + 1}`;
+      params.push(status);
+    }
+    
+    query += ' ORDER BY updated_at DESC';
+    
+    const result = await db.query(query, params);
+    
+    console.log(`[WorkflowRoute] ✅ Found ${result.rows.length} workflows`);
+    
+    res.json({
+      workflows: result.rows,
+      count: result.rows.length,
+      filters_applied: { category, is_template, status },
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('[WorkflowRoute] ❌ Error fetching workflows:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch workflows',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Create new workflow
+router.post('/', authenticateToken, async (req, res) => {
+  try {
+    console.log('[WorkflowRoute] 🔄 POST /workflows endpoint hit');
+    
+    const userId = req.user.id;
+    const { name, description, category, steps, triggers, variables, is_template } = req.body;
+
+    if (!name || !steps || !Array.isArray(steps)) {
+      return res.status(400).json({ 
+        message: 'Name and steps array are required' 
+      });
+    }
+
+    // Validate workflow steps
+    for (const step of steps) {
+      if (!step.id || !step.type || !step.agent) {
+        return res.status(400).json({ 
+          message: 'Each step must have id, type, and agent fields' 
+        });
+      }
+    }
+
+    const result = await db.query(
+      `INSERT INTO workflows 
+       (user_id, name, description, category, steps, triggers, variables, is_template, status, created_at, updated_at) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'draft', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) 
+       RETURNING *`,
+      [userId, name, description, category || 'general', JSON.stringify(steps), 
+       JSON.stringify(triggers || []), JSON.stringify(variables || {}), is_template || false]
+    );
+
+    console.log('[WorkflowRoute] ✅ Workflow created successfully');
+    res.status(201).json({
+      message: 'Workflow created successfully',
+      workflow: result.rows[0],
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('[WorkflowRoute] ❌ Error creating workflow:', error);
+    res.status(500).json({ 
+      message: 'Failed to create workflow',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Get specific workflow details
+router.get('/:id', authenticateToken, async (req, res) => {
+  try {
+    console.log('[WorkflowRoute] 🚀 GET /workflows/:id endpoint hit');
+    
+    const userId = req.user.id;
+    const workflowId = req.params.id;
+
+    const result = await db.query(
+      'SELECT * FROM workflows WHERE id = $1 AND user_id = $2',
+      [workflowId, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Workflow not found' });
+    }
+
+    const workflow = result.rows[0];
+    
+    // Get execution history
+    const executionsResult = await db.query(
+      'SELECT * FROM workflow_executions WHERE workflow_id = $1 ORDER BY created_at DESC LIMIT 10',
+      [workflowId]
+    );
+
+    console.log('[WorkflowRoute] ✅ Workflow details retrieved');
+    res.json({
+      workflow: workflow,
+      recent_executions: executionsResult.rows,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('[WorkflowRoute] ❌ Error fetching workflow details:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch workflow details',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Update workflow configuration
+router.put('/:id', authenticateToken, async (req, res) => {
+  try {
+    console.log('[WorkflowRoute] 🔄 PUT /workflows/:id endpoint hit');
+    
+    const userId = req.user.id;
+    const workflowId = req.params.id;
+    const { name, description, category, steps, triggers, variables, status } = req.body;
+
+    // Check if workflow exists and belongs to user
+    const existingResult = await db.query(
+      'SELECT id FROM workflows WHERE id = $1 AND user_id = $2',
+      [workflowId, userId]
+    );
+
+    if (existingResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Workflow not found' });
+    }
+
+    // Validate steps if provided
+    if (steps && Array.isArray(steps)) {
+      for (const step of steps) {
+        if (!step.id || !step.type || !step.agent) {
+          return res.status(400).json({ 
+            message: 'Each step must have id, type, and agent fields' 
+          });
+        }
+      }
+    }
+
+    const result = await db.query(
+      `UPDATE workflows 
+       SET name = COALESCE($3, name),
+           description = COALESCE($4, description),
+           category = COALESCE($5, category),
+           steps = COALESCE($6, steps),
+           triggers = COALESCE($7, triggers),
+           variables = COALESCE($8, variables),
+           status = COALESCE($9, status),
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1 AND user_id = $2 
+       RETURNING *`,
+      [workflowId, userId, name, description, category, 
+       steps ? JSON.stringify(steps) : null,
+       triggers ? JSON.stringify(triggers) : null,
+       variables ? JSON.stringify(variables) : null,
+       status]
+    );
+
+    console.log('[WorkflowRoute] ✅ Workflow updated successfully');
+    res.json({
+      message: 'Workflow updated successfully',
+      workflow: result.rows[0],
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('[WorkflowRoute] ❌ Error updating workflow:', error);
+    res.status(500).json({ 
+      message: 'Failed to update workflow',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Delete workflow
+router.delete('/:id', authenticateToken, async (req, res) => {
+  try {
+    console.log('[WorkflowRoute] 🗑️ DELETE /workflows/:id endpoint hit');
+    
+    const userId = req.user.id;
+    const workflowId = req.params.id;
+
+    const result = await db.query(
+      'DELETE FROM workflows WHERE id = $1 AND user_id = $2 RETURNING id, name',
+      [workflowId, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Workflow not found' });
+    }
+
+    // Also delete execution history
+    await db.query(
+      'DELETE FROM workflow_executions WHERE workflow_id = $1',
+      [workflowId]
+    );
+
+    console.log('[WorkflowRoute] ✅ Workflow deleted successfully');
+    res.json({
+      message: 'Workflow deleted successfully',
+      deleted_workflow: result.rows[0],
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('[WorkflowRoute] ❌ Error deleting workflow:', error);
+    res.status(500).json({ 
+      message: 'Failed to delete workflow',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Execute workflow
+router.post('/:id/execute', authenticateToken, async (req, res) => {
+  try {
+    console.log('[WorkflowRoute] ⚡ POST /workflows/:id/execute endpoint hit');
+    
+    const userId = req.user.id;
+    const workflowId = req.params.id;
+    const { input_data, execution_context } = req.body;
+
+    // Get workflow details
+    const workflowResult = await db.query(
+      'SELECT * FROM workflows WHERE id = $1 AND user_id = $2 AND status = $3',
+      [workflowId, userId, 'active']
+    );
+
+    if (workflowResult.rows.length === 0) {
+      return res.status(404).json({ 
+        message: 'Active workflow not found' 
+      });
+    }
+
+    const workflow = workflowResult.rows[0];
+
+    // Create execution record
+    const executionResult = await db.query(
+      `INSERT INTO workflow_executions 
+       (workflow_id, user_id, status, input_data, execution_context, started_at) 
+       VALUES ($1, $2, 'running', $3, $4, CURRENT_TIMESTAMP) 
+       RETURNING *`,
+      [workflowId, userId, JSON.stringify(input_data || {}), JSON.stringify(execution_context || {})]
+    );
+
+    const execution = executionResult.rows[0];
+
+    // Execute workflow asynchronously with hierarchical agent support
+    setImmediate(async () => {
+      try {
+        // Import the hierarchical core agent for workflow integration
+        import EnhancedLangChainCoreAgent from '../agi/consciousness/EnhancedLangChainCoreAgent';
+        const coreAgent = new EnhancedLangChainCoreAgent();
+        await coreAgent.initialize();
+        
+        // Create workflow engine with hierarchical agent support
+        const workflowEngine = new WorkflowEngine(coreAgent);
+        
+        // Use StateGraph-compatible execution method
+        const initialState = {
+          user_id: userId,
+          input_data: input_data,
+          execution_context: execution_context,
+          language: 'en'
+        };
+        
+        const result = await workflowEngine.executeWorkflowWithStateGraph(workflow, initialState, execution.id);
+        
+        await db.query(
+          `UPDATE workflow_executions 
+           SET status = $2, output_data = $3, completed_at = CURRENT_TIMESTAMP 
+           WHERE id = $1`,
+          [execution.id, 'completed', JSON.stringify(result)]
+        );
+        
+        console.log(`[WorkflowRoute] ✅ Workflow ${workflowId} execution completed`);
+      } catch (error) {
+        console.error(`[WorkflowRoute] ❌ Workflow ${workflowId} execution failed:`, error);
+        
+        await db.query(
+          `UPDATE workflow_executions 
+           SET status = $2, error_message = $3, completed_at = CURRENT_TIMESTAMP 
+           WHERE id = $1`,
+          [execution.id, 'failed', error.message]
+        );
+      }
+    });
+
+    console.log('[WorkflowRoute] ✅ Workflow execution started');
+    res.json({
+      message: 'Workflow execution started',
+      execution_id: execution.id,
+      workflow_id: workflowId,
+      status: 'running',
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('[WorkflowRoute] ❌ Error executing workflow:', error);
+    res.status(500).json({ 
+      message: 'Failed to execute workflow',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Get workflow execution history
+router.get('/:id/executions', authenticateToken, async (req, res) => {
+  try {
+    console.log('[WorkflowRoute] 🚀 GET /workflows/:id/executions endpoint hit');
+    
+    const userId = req.user.id;
+    const workflowId = req.params.id;
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = parseInt(req.query.offset) || 0;
+
+    // Verify workflow ownership
+    const workflowResult = await db.query(
+      'SELECT id FROM workflows WHERE id = $1 AND user_id = $2',
+      [workflowId, userId]
+    );
+
+    if (workflowResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Workflow not found' });
+    }
+
+    const result = await db.query(
+      `SELECT * FROM workflow_executions 
+       WHERE workflow_id = $1 
+       ORDER BY started_at DESC 
+       LIMIT $2 OFFSET $3`,
+      [workflowId, limit, offset]
+    );
+
+    console.log(`[WorkflowRoute] ✅ Retrieved ${result.rows.length} executions`);
+    res.json({
+      executions: result.rows,
+      workflow_id: workflowId,
+      pagination: {
+        limit: limit,
+        offset: offset,
+        total: result.rows.length
+      },
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('[WorkflowRoute] ❌ Error fetching executions:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch workflow executions',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Get workflow templates
+router.get('/templates', authenticateToken, async (req, res) => {
+  try {
+    console.log('[WorkflowRoute] 🚀 GET /workflows/templates endpoint hit');
+    
+    const { category } = req.query;
+    
+    let query = 'SELECT * FROM workflows WHERE is_template = true';
+    const params = [];
+    
+    if (category) {
+      query += ' AND category = $1';
+      params.push(category);
+    }
+    
+    query += ' ORDER BY name ASC';
+    
+    const result = await db.query(query, params);
+    
+    console.log(`[WorkflowRoute] ✅ Retrieved ${result.rows.length} templates`);
+    res.json({
+      templates: result.rows,
+      count: result.rows.length,
+      category_filter: category,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('[WorkflowRoute] ❌ Error fetching templates:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch workflow templates',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+export default router;

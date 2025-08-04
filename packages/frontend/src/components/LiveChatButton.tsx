@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  MicrophoneIcon, 
-  StopIcon, 
+import {
+  MicrophoneIcon,
+  StopIcon,
   ChatBubbleLeftRightIcon,
   SparklesIcon,
-  VideoCameraIcon
+  VideoCameraIcon,
 } from '@heroicons/react/24/outline';
 
 interface LiveChatButtonProps {
@@ -23,10 +23,10 @@ interface LiveChatState {
   wakeWordDetected: boolean;
 }
 
-export const LiveChatButton: React.FC<LiveChatButtonProps> = ({ 
-  token, 
+export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
+  token,
   onActivate,
-  className = "" 
+  className = '',
 }) => {
   const [chatState, setChatState] = useState<LiveChatState>({
     isActive: false,
@@ -35,11 +35,13 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
     isProcessing: false,
     isSpeaking: false,
     currentTranscript: '',
-    wakeWordDetected: false
+    wakeWordDetected: false,
   });
 
   const [showModeSelector, setShowModeSelector] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
+    null
+  );
   const [stream, setStream] = useState<MediaStream | null>(null);
 
   // Cleanup on unmount
@@ -65,15 +67,15 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
         }
 
         console.log(`[LiveChatButton] Requesting ${mode} permissions...`);
-        
+
         // Request microphone permission with better audio settings
         const constraints: MediaStreamConstraints = {
           audio: {
             echoCancellation: true,
             noiseSuppression: false, // Less aggressive noise suppression
             autoGainControl: true,
-            sampleRate: 44100
-          }
+            sampleRate: 44100,
+          },
         };
 
         // Add video constraints for multimodal
@@ -81,30 +83,37 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
           constraints.video = {
             width: { ideal: 1280, min: 640 },
             height: { ideal: 720, min: 480 },
-            frameRate: { ideal: 15, min: 10 }
+            frameRate: { ideal: 15, min: 10 },
           };
         }
 
         console.log('[LiveChatButton] Media constraints:', constraints);
-        const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-        
+        const mediaStream =
+          await navigator.mediaDevices.getUserMedia(constraints);
+
         console.log('[LiveChatButton] Media access granted');
-        console.log('[LiveChatButton] Audio tracks:', mediaStream.getAudioTracks().length);
-        console.log('[LiveChatButton] Video tracks:', mediaStream.getVideoTracks().length);
+        console.log(
+          '[LiveChatButton] Audio tracks:',
+          mediaStream.getAudioTracks().length
+        );
+        console.log(
+          '[LiveChatButton] Video tracks:',
+          mediaStream.getVideoTracks().length
+        );
 
         setStream(mediaStream);
 
         // Set up media recorder for voice detection
         const recorder = new MediaRecorder(mediaStream, {
-          mimeType: 'audio/webm'
+          mimeType: 'audio/webm',
         });
 
         let audioChunks: Blob[] = [];
 
-        recorder.ondataavailable = (event) => {
+        recorder.ondataavailable = event => {
           if (event.data.size > 0) {
             audioChunks.push(event.data);
-            
+
             // Keep only recent chunks for wake word detection
             if (audioChunks.length > 10) {
               audioChunks = audioChunks.slice(-10);
@@ -126,7 +135,7 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
         isActive: true,
         mode: mode,
         isListening: mode !== 'text',
-        isProcessing: false
+        isProcessing: false,
       }));
 
       if (onActivate) {
@@ -137,23 +146,30 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
 
       // Play activation sound/message
       await playActivationMessage(mode);
-
     } catch (error) {
       console.error('[LiveChatButton] Failed to start live chat:', error);
       setChatState(prev => ({ ...prev, isProcessing: false }));
-      
+
       if (error instanceof Error) {
         if (error.name === 'NotAllowedError') {
-          alert('Camera/microphone permission was denied. Please allow access in your browser settings and try again.');
+          alert(
+            'Camera/microphone permission was denied. Please allow access in your browser settings and try again.'
+          );
         } else if (error.name === 'NotFoundError') {
-          alert('No camera or microphone found. Please connect the required devices and try again.');
+          alert(
+            'No camera or microphone found. Please connect the required devices and try again.'
+          );
         } else if (error.name === 'NotReadableError') {
-          alert('Camera or microphone is already in use by another application. Please close other applications and try again.');
+          alert(
+            'Camera or microphone is already in use by another application. Please close other applications and try again.'
+          );
         } else {
           alert(`Failed to start live chat: ${error.message}`);
         }
       } else {
-        alert('Failed to start live chat. Please check your permissions and try again.');
+        alert(
+          'Failed to start live chat. Please check your permissions and try again.'
+        );
       }
     }
   };
@@ -179,11 +195,10 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
         isProcessing: false,
         isSpeaking: false,
         currentTranscript: '',
-        wakeWordDetected: false
+        wakeWordDetected: false,
       });
 
       await playDeactivationMessage();
-
     } catch (error) {
       console.error('[LiveChatButton] Error stopping live chat:', error);
       setChatState(prev => ({ ...prev, isProcessing: false }));
@@ -195,29 +210,35 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
 
     try {
       const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-      
+
       if (audioBlob.size < 1000) return; // Too small to analyze
 
       const formData = new FormData();
       formData.append('audio', audioBlob, 'wake-check.webm');
 
-      const response = await fetch('http://localhost:8000/api/voice-to-text/transcribe', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
+      const response = await fetch(
+        'http://localhost:8000/api/voice-to-text/transcribe',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
 
       if (response.ok) {
         const result = await response.json();
-        
+
         if (result.wakeWord && result.wakeWord.detected) {
-          console.log('[LiveChatButton] Wake word detected:', result.wakeWord.wakeWord);
-          setChatState(prev => ({ 
-            ...prev, 
+          console.log(
+            '[LiveChatButton] Wake word detected:',
+            result.wakeWord.wakeWord
+          );
+          setChatState(prev => ({
+            ...prev,
             wakeWordDetected: true,
-            currentTranscript: result.wakeWord.cleanTranscript || ''
+            currentTranscript: result.wakeWord.cleanTranscript || '',
           }));
 
           // Activate voice mode and process command
@@ -242,7 +263,6 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
           processVoiceCommand(initialCommand);
         }, 1500);
       }
-
     } catch (error) {
       console.error('[LiveChatButton] Error activating voice mode:', error);
     }
@@ -250,7 +270,11 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
 
   const processVoiceCommand = async (command: string) => {
     try {
-      setChatState(prev => ({ ...prev, isProcessing: true, currentTranscript: command }));
+      setChatState(prev => ({
+        ...prev,
+        isProcessing: true,
+        currentTranscript: command,
+      }));
 
       // Send to your chat API for processing
       const response = await fetch('http://localhost:8000/api/chat', {
@@ -261,28 +285,27 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
         },
         body: JSON.stringify({
           message: command,
-          mode: 'voice'
+          mode: 'voice',
         }),
       });
 
       if (response.ok) {
         const result = await response.json();
-        
+
         // Speak the response
         if (result.response) {
           await speakResponse(result.response);
         }
       }
-
     } catch (error) {
       console.error('[LiveChatButton] Error processing voice command:', error);
-      await speakResponse("Sorry, I had trouble with that. Can you try again?");
+      await speakResponse('Sorry, I had trouble with that. Can you try again?');
     } finally {
-      setChatState(prev => ({ 
-        ...prev, 
-        isProcessing: false, 
+      setChatState(prev => ({
+        ...prev,
+        isProcessing: false,
         wakeWordDetected: false,
-        currentTranscript: ''
+        currentTranscript: '',
       }));
     }
   };
@@ -291,46 +314,51 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
     try {
       setChatState(prev => ({ ...prev, isSpeaking: true }));
 
-      const response = await fetch('http://localhost:8000/api/voice-chat/speak', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          text: text,
-          voice: 'nova',
-          speed: 1.0
-        })
-      });
+      const response = await fetch(
+        'http://localhost:8000/api/voice-chat/speak',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            text: text,
+            voice: 'nova',
+            speed: 1.0,
+          }),
+        }
+      );
 
       if (response.ok) {
         const audioBuffer = await response.arrayBuffer();
         const audioContext = new AudioContext();
         const audioData = await audioContext.decodeAudioData(audioBuffer);
         const source = audioContext.createBufferSource();
-        
+
         source.buffer = audioData;
         source.connect(audioContext.destination);
-        
+
         source.onended = () => {
           setChatState(prev => ({ ...prev, isSpeaking: false }));
         };
-        
+
         source.start();
       }
-
     } catch (error) {
       console.error('[LiveChatButton] Error speaking response:', error);
       setChatState(prev => ({ ...prev, isSpeaking: false }));
     }
   };
 
-  const playActivationMessage = async (mode: 'voice' | 'text' | 'multimodal') => {
+  const playActivationMessage = async (
+    mode: 'voice' | 'text' | 'multimodal'
+  ) => {
     const messages = {
       voice: "Voice chat activated! Say 'Cartrita' to get my attention!",
-      text: "Live text chat is ready!",
-      multimodal: "Multi-modal mode activated! I can see, hear, and chat with you!"
+      text: 'Live text chat is ready!',
+      multimodal:
+        'Multi-modal mode activated! I can see, hear, and chat with you!',
     };
 
     if (mode !== 'text') {
@@ -340,7 +368,7 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
 
   const playDeactivationMessage = async () => {
     if (chatState.mode !== 'text') {
-      await speakResponse("Live chat deactivated. See you later!");
+      await speakResponse('Live chat deactivated. See you later!');
     }
   };
 
@@ -354,7 +382,7 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
 
   const getButtonClass = () => {
     const baseClass = `relative p-4 rounded-full transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-offset-2 ${className}`;
-    
+
     if (chatState.isActive) {
       if (chatState.wakeWordDetected) {
         return `${baseClass} bg-purple-500 hover:bg-purple-600 text-white focus:ring-purple-500 shadow-lg animate-pulse`;
@@ -372,25 +400,33 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
 
   const getButtonIcon = () => {
     if (chatState.isProcessing) {
-      return <div className="animate-spin h-8 w-8 border-2 border-white border-t-transparent rounded-full" />;
+      return (
+        <div className="animate-spin h-8 w-8 border-2 border-white border-t-transparent rounded-full" />
+      );
     }
-    
+
     if (chatState.isActive) {
       return <StopIcon className="h-8 w-8" />;
     }
-    
+
     return <SparklesIcon className="h-8 w-8" />;
   };
 
   const getStatusIndicator = () => {
     if (chatState.wakeWordDetected) {
-      return <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-400 rounded-full animate-pulse" />;
+      return (
+        <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-400 rounded-full animate-pulse" />
+      );
     }
     if (chatState.isSpeaking) {
-      return <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-400 rounded-full animate-pulse" />;
+      return (
+        <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-400 rounded-full animate-pulse" />
+      );
     }
     if (chatState.isListening) {
-      return <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full animate-pulse" />;
+      return (
+        <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full animate-pulse" />
+      );
     }
     return null;
   };
@@ -414,7 +450,7 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
           <div className="text-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Choose Mode
           </div>
-          
+
           <div className="space-y-1">
             <button
               onClick={() => startLiveChat('text')}
@@ -423,7 +459,7 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
               <ChatBubbleLeftRightIcon className="h-4 w-4 text-gray-500" />
               <span>Text Chat</span>
             </button>
-            
+
             <button
               onClick={() => startLiveChat('voice')}
               className="w-full flex items-center space-x-2 px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-left text-sm"
@@ -431,7 +467,7 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
               <MicrophoneIcon className="h-4 w-4 text-blue-500" />
               <span>Voice Chat</span>
             </button>
-            
+
             <button
               onClick={() => startLiveChat('multimodal')}
               className="w-full flex items-center space-x-2 px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-left text-sm"
@@ -446,9 +482,12 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
       {/* Status Display */}
       {chatState.isActive && (
         <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-          {chatState.wakeWordDetected && "Voice Activated"}
-          {chatState.isSpeaking && !chatState.wakeWordDetected && "Speaking"}
-          {chatState.isListening && !chatState.wakeWordDetected && !chatState.isSpeaking && `Listening (${chatState.mode})`}
+          {chatState.wakeWordDetected && 'Voice Activated'}
+          {chatState.isSpeaking && !chatState.wakeWordDetected && 'Speaking'}
+          {chatState.isListening &&
+            !chatState.wakeWordDetected &&
+            !chatState.isSpeaking &&
+            `Listening (${chatState.mode})`}
           {chatState.currentTranscript && (
             <div className="mt-1 italic">{chatState.currentTranscript}</div>
           )}
@@ -456,11 +495,13 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
       )}
 
       {/* Wake Word Instruction */}
-      {chatState.isActive && chatState.mode !== 'text' && !chatState.wakeWordDetected && (
-        <div className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-100 text-xs rounded px-3 py-2 text-center whitespace-nowrap">
-          💡 Say <strong>"Cartrita!"</strong> to activate
-        </div>
-      )}
+      {chatState.isActive &&
+        chatState.mode !== 'text' &&
+        !chatState.wakeWordDetected && (
+          <div className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-100 text-xs rounded px-3 py-2 text-center whitespace-nowrap">
+            💡 Say <strong>"Cartrita!"</strong> to activate
+          </div>
+        )}
     </div>
   );
 };

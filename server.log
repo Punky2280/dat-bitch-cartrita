@@ -1,0 +1,135 @@
+
+> dat-bitch-cartrita-monorepo@1.0.0 start
+> npm run start --workspace=backend
+
+
+> backend@1.0.0 start
+> node .
+
+[Index] 🚀 Starting Cartrita backend...
+[dotenv@17.2.1] injecting env (14) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+✅ Enhanced MessageBus with MCP initialized
+[EnhancedOrchestrator] Core tools initialized
+🚀 Initializing Cartrita backend...
+🔄 Waiting for database connection...
+✅ Database connection established
+🧠 Initializing LangChain Core Agent...
+[EnhancedLangChainCoreAgent] Initializing with advanced capabilities...
+[EnhancedOrchestrator] Initializing with enhanced agent system...
+[EnhancedOrchestrator] MCP agent registration skipped
+[EnhancedOrchestrator] Initialized with 2 tools
+[EnhancedOrchestrator] Available tools: getCurrentDateTime, getSystemStatus
+[EnhancedLangChainCoreAgent] Successfully initialized with enhanced LangChain orchestration
+[EnhancedLangChainCoreAgent] Features enabled:
+  ✅ Proper time/date functionality via getCurrentDateTime tool
+  ✅ Image generation via ArtistAgent MCP integration
+  ✅ Advanced agent routing and tool orchestration
+  ✅ Enhanced personality adaptation
+  ✅ Comprehensive error handling and fallbacks
+✅ LangChain Core Agent initialized
+🤖 Initializing agent systems...
+🔧 Initializing services...
+🎉 All systems initialized successfully!
+✅ Cartrita backend is live on port 8000
+🌍 Environment: development
+🔗 Allowed origins: http://localhost:5173, http://127.0.0.1:5173, http://localhost:3000
+📊 Health check available at: http://localhost:8000/health
+📈 Metrics available at: http://localhost:8000/metrics
+🔧 Agent metrics available at: http://localhost:8000/api/agent/metrics
+🛠️ Agent tools available at: http://localhost:8000/api/agent/tools
+💊 Agent health available at: http://localhost:8000/api/agent/health
+[Socket Auth] ✅ User authenticated: Robert Allen (ID: 4)
+[Socket.IO] User connected: Robert Allen (ID: 50Sn4jFbI5z2chYIAAAB)
+[2025-08-03T02:54:32.881Z] GET /api/health
+[0mGET /api/health [32m200[0m 5.494 ms - 94[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 1.597 ms - 0[0m
+[2025-08-03T02:54:35.886Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 3.086 ms - 245[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 1.276 ms - 0[0m
+[2025-08-03T02:54:46.029Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 2.018 ms - 245[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 1.256 ms - 0[0m
+[2025-08-03T02:54:56.264Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 2.937 ms - 244[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 1.049 ms - 0[0m
+[2025-08-03T02:55:05.860Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.956 ms - 251[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.283 ms - 0[0m
+[2025-08-03T02:55:16.035Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.780 ms - 251[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.775 ms - 0[0m
+[2025-08-03T02:55:26.230Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.764 ms - 251[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 1.009 ms - 0[0m
+[2025-08-03T02:55:36.397Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.691 ms - 245[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 1.066 ms - 0[0m
+[2025-08-03T02:55:46.013Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 2.562 ms - 244[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 1.278 ms - 0[0m
+[2025-08-03T02:55:56.195Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 4.264 ms - 245[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.263 ms - 0[0m
+[2025-08-03T02:56:06.381Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.074 ms - 251[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.594 ms - 0[0m
+[2025-08-03T02:56:15.999Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 2.415 ms - 246[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.945 ms - 0[0m
+[2025-08-03T02:56:26.194Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 2.473 ms - 246[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.527 ms - 0[0m
+[2025-08-03T02:56:36.388Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.267 ms - 251[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.595 ms - 0[0m
+[2025-08-03T02:56:45.958Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.203 ms - 246[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.799 ms - 0[0m
+[2025-08-03T02:56:56.143Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.697 ms - 246[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.725 ms - 0[0m
+[2025-08-03T02:57:06.335Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 2.463 ms - 246[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.321 ms - 0[0m
+[2025-08-03T02:57:15.916Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 2.596 ms - 251[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 1.021 ms - 0[0m
+[2025-08-03T02:57:26.104Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.748 ms - 244[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.779 ms - 0[0m
+[2025-08-03T02:57:36.300Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.273 ms - 251[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.926 ms - 0[0m
+[2025-08-03T02:57:45.886Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 2.369 ms - 246[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.857 ms - 0[0m
+[2025-08-03T02:57:56.077Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.865 ms - 251[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.351 ms - 0[0m
+[2025-08-03T02:58:06.256Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.492 ms - 246[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.686 ms - 0[0m
+[2025-08-03T02:58:15.861Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.998 ms - 246[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.752 ms - 0[0m
+[2025-08-03T02:58:26.045Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 2.883 ms - 246[0m
+💥 Unhandled Rejection at: Promise {
+  <rejected> TypeError: Cannot read properties of undefined (reading 'name')
+      at Socket.<anonymous> (/home/robbie/development/dat-bitch-cartrita/packages/backend/index.js:497:61)
+      at Socket.emit (node:events:518:28)
+      at Socket.emitUntyped (/home/robbie/development/dat-bitch-cartrita/node_modules/socket.io/dist/typed-events.js:69:22)
+      at /home/robbie/development/dat-bitch-cartrita/node_modules/socket.io/dist/socket.js:697:39
+      at process.processTicksAndRejections (node:internal/process/task_queues:85:11)
+} reason: TypeError: Cannot read properties of undefined (reading 'name')
+    at Socket.<anonymous> (/home/robbie/development/dat-bitch-cartrita/packages/backend/index.js:497:61)
+    at Socket.emit (node:events:518:28)
+    at Socket.emitUntyped (/home/robbie/development/dat-bitch-cartrita/node_modules/socket.io/dist/typed-events.js:69:22)
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/socket.io/dist/socket.js:697:39
+    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)
+💥 Critical system error detected, initiating shutdown...
+
+🛑 Received unhandledRejection, initiating graceful shutdown...
+🧹 Cleaning up services...
+🗄️ Closing database connections...
+✅ Graceful shutdown completed

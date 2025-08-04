@@ -1,0 +1,804 @@
+// packages/backend/index.js
+// Enhanced Production Server for Cartrita AI Assistant
+
+console.log('[Index] 🚀 Starting Cartrita backend...');
+import dotenv from 'dotenv';
+dotenv.config();
+
+import express from 'express';
+import http from 'http';
+import { Server  } from 'socket.io';
+import cors from 'cors';
+import { Pool  } from 'pg';
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
+import compression from 'compression';
+import morgan from 'morgan';
+
+// --- AGENT & SERVICE IMPORTS ---
+import EnhancedLangChainCoreAgent from './src/agi/consciousness/EnhancedLangChainCoreAgent';
+// import initializeAgents from './src/agi/agentInitializer';
+// import ServiceInitializer from './src/services/ServiceInitializer';
+// import SensoryProcessingService from './src/system/SensoryProcessingService';
+import authenticateTokenSocket from './src/middleware/authenticateTokenSocket';
+
+// --- ROUTE IMPORTS ---
+import authRoutes from './src/routes/auth';
+// import authMinimalRoutes from './src/routes/auth-minimal'; // Removed - using enhanced auth
+// import chatMinimalRoutes from './src/routes/chat-minimal'; // Removed - using sophisticated agent routes
+// import agentMinimalRoutes from './src/routes/agent-minimal';
+import { router: agentRoutes, injectIO  } from './src/routes/agent';
+// import userRoutes from './src/routes/user';
+// import chatHistoryRoutes from './src/routes/chatHistory';
+// import workflowRoutes from './src/routes/workflows';
+// import knowledgeRoutes from './src/routes/knowledge';
+// import vaultRoutes from './src/routes/vault';
+// import apiKeyRoutes from './src/routes/apiKeys';
+// import monitoringRoutes from './src/routes/monitoring';
+// import voiceToTextRoutes from './src/routes/voiceToText';
+// import voiceChatRoutes from './src/routes/voiceChat';
+// import visionRoutes from './src/routes/vision';
+// import settingsRoutes from './src/routes/settings';
+// import mcpRoutes from './src/routes/mcp';
+// import calendarRoutes from './src/routes/calendar';
+// import emailRoutes from './src/routes/email';
+// import contactRoutes from './src/routes/contact';
+// import notificationRoutes from './src/routes/notifications';
+// import privacyRoutes from './src/routes/privacy';
+// import { router: agentRoutes, injectIO  } from './src/routes/agent';
+
+// --- CONFIGURATION ---
+const PORT = process.env.PORT || 8000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const DATABASE_URL = process.env.DATABASE_URL;
+
+// Check if the DATABASE_URL environment variable is NOT set
+if (!process.env.DATABASE_URL) {
+  // If it's not set, log an error message to the console
+  console.error('❌ DATABASE_URL environment variable is required');
+  
+  // Exit the process with an error code (1 indicates an error)
+  process.exit(1); 
+}
+
+// --- APP & SERVER SETUP ---
+const app = express();
+const server = http.createServer(app);
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+  max: 20, 
+  idleTimeoutMillis: 30000, 
+  connectionTimeoutMillis: 2000
+});
+
+// --- MIDDLEWARE SETUP ---
+
+// Security middleware
+app.use(
+  helmet({
+    contentSecurityPolicy: NODE_ENV === 'production',
+    crossOriginEmbedderPolicy: false
+  })
+);
+
+// Compression middleware
+app.use(compression());
+
+// Logging middleware
+if (NODE_ENV === 'production') {
+  app.use(morgan('combined'));
+} else {
+  app.use(morgan('dev'));
+}
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: NODE_ENV === 'production' ? 100 : 1000, // requests per windowMs
+  message: {
+    error: 'Too many requests from this IP, please try again later.',
+    retryAfter: '15 minutes'
+  }, 
+  standardHeaders: true, 
+  legacyHeaders: false
+});
+app.use('/api/', limiter);
+
+// CORS configuration
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:3000',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
+app.use(
+  cors({
+    origin: allowedOrigins, 
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], 
+    credentials: true, 
+    optionsSuccessStatus: 200
+  })
+);
+
+// Body parsing middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Request validation middleware
+app.use((req, res, next) => {
+  // Log incoming requests in development
+  if (NODE_ENV === 'development') {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  }
+
+  // Validate content-type for POST/PUT requests
+  if (
+    ['POST', 'PUT', 'PATCH'].includes(req.method) &&
+    !req.is('application/json') &&
+    !req.is('multipart/form-data') &&
+    !req.is('application/x-www-form-urlencoded')
+  ) {
+    return res.status(400).json({
+      error: 'Invalid content-type. Expected application/json'
+    });
+  }
+
+  next();
+});
+
+// --- SOCKET.IO SETUP ---
+// import socketConfig from './socket-config';
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins, 
+    methods: ['GET', 'POST'], 
+    credentials: true
+  }
+});
+
+// Inject Socket.IO instance into agent routes for real-time functionality
+injectIO(io);
+
+// --- PERFORMANCE MONITORING ---
+const performanceMetrics = {
+  requests: 0,
+  errors: 0,
+  responseTime: [],
+  socketConnections: 0,
+  messagesProcessed: 0,
+  startTime: Date.now(),
+  agentErrors: 0,
+  agentWarnings: []
+};
+
+app.use((req, res, next) => {
+  const start = Date.now();
+  performanceMetrics.requests++;
+
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    performanceMetrics.responseTime.push(duration);
+
+    // Keep only last 1000 response times
+    if (performanceMetrics.responseTime.length > 1000) {
+      performanceMetrics.responseTime = performanceMetrics.responseTime.slice(-1000);
+    }
+
+    // Track errors
+    if (res.statusCode >= 400) {
+      performanceMetrics.errors++;
+    }
+
+  });
+
+  next();
+});
+
+// --- HEALTH CHECK ROUTES ---
+app.get('/', (req, res) => {
+  res.status(200).json({
+    message: 'Cartrita backend is alive and operational.', 
+    version: '2.1.0',
+    environment: NODE_ENV, 
+    uptime: Math.floor((Date.now() - performanceMetrics.startTime) / 1000)
+  });
+});
+
+app.get('/health', async (req, res) => {
+  try {
+    // Database health check
+    const dbStart = Date.now();
+    await pool.query('SELECT NOW()');
+    const dbLatency = Date.now() - dbStart;
+
+    // Service health check
+    // const serviceHealth = await ServiceInitializer.healthCheck();
+    const serviceHealth = { status: 'ok', services: [] }; // Fallback
+
+    // Calculate average response time
+    const avgResponseTime =
+      performanceMetrics.responseTime.length > 0
+        ? performanceMetrics.responseTime.reduce((a, b) => a + b, 0) /
+          performanceMetrics.responseTime.length
+        : 0;
+
+    const health = {
+      status: performanceMetrics.agentErrors > 0 ? 'degraded' : 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: Math.floor((Date.now() - performanceMetrics.startTime) / 1000),
+      database: {
+        status: 'connected',
+        latency: `${dbLatency}ms`
+      },
+      services: serviceHealth,
+      agents: {
+        errors: performanceMetrics.agentErrors,
+        warnings: performanceMetrics.agentWarnings,
+        status:
+          performanceMetrics.agentErrors > 0 ? 'some_failed' : 'operational'
+      },
+      performance: {
+        totalRequests: performanceMetrics.requests,
+        totalErrors: performanceMetrics.errors,
+        errorRate:
+          performanceMetrics.requests > 0
+            ? (
+                (performanceMetrics.errors / performanceMetrics.requests) *
+                100
+              ).toFixed(2) + '%'
+            : '0%',
+        averageResponseTime: `${Math.round(avgResponseTime)}ms`,
+        activeSocketConnections: performanceMetrics.socketConnections,
+        messagesProcessed: performanceMetrics.messagesProcessed
+      },
+      memory: {
+        used: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
+        total: `${Math.round(process.memoryUsage().heapTotal / 1024 / 1024)}MB`
+      }
+    };
+
+    res.status(performanceMetrics.agentErrors > 0 ? 200 : 200).json(health);
+  } catch(error) {
+    console.error('Health check failed:', error);
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: error.message
+    });
+  }
+});
+
+app.get('/metrics', (req, res) => {
+  const avgResponseTime =
+    performanceMetrics.responseTime.length > 0
+      ? performanceMetrics.responseTime.reduce((a, b) => a + b, 0) /
+        performanceMetrics.responseTime.length
+      : 0;
+
+  res.json({
+    requests_total: performanceMetrics.requests,
+    errors_total: performanceMetrics.errors,
+    response_time_avg_ms: Math.round(avgResponseTime),
+    socket_connections_active: performanceMetrics.socketConnections,
+    messages_processed_total: performanceMetrics.messagesProcessed,
+    uptime_seconds: Math.floor(
+      (Date.now() - performanceMetrics.startTime) / 1000
+    ),
+    memory_usage_mb: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+    agent_errors_total: performanceMetrics.agentErrors,
+    agent_warnings_total: performanceMetrics.agentWarnings.length
+  });
+});
+
+console.log('[Debug] About to start route registration phase...');
+
+// --- API ROUTES ---
+console.log('[Route Registration] Starting route registration...');
+app.use('/api/auth', authRoutes);
+console.log('[Route Registration] ✅ Auth routes registered');
+// app.use('/api/auth', authMinimalRoutes); // Removed - using enhanced auth
+app.use('/api/agent', agentRoutes); // Now includes full MCP functionality
+console.log('[Route Registration] ✅ Agent routes registered');
+
+// Test route to confirm deployment
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'Test route working', timestamp: new Date().toISOString() });
+});
+console.log('[Route Registration] ✅ Test route registered');
+
+// Early test route
+app.get('/api/early-test', (req, res) => {
+  res.json({ message: 'Early test route working', timestamp: new Date().toISOString() });
+});
+console.log('[Route Registration] ✅ Early test route registered');
+
+// Re-enabling chat history routes for debugging
+console.log('[Route Registration] Loading chat history routes...');
+import chatHistoryRoutes from './src/routes/chatHistory';
+console.log('[Route Registration] ✅ Chat history routes loaded');
+// import userRoutes from './src/routes/user';
+// import workflowRoutes from './src/routes/workflows';
+// import knowledgeRoutes from './src/routes/knowledge';
+// import apiKeyRoutes from './src/routes/apiKeys';
+// import monitoringRoutes from './src/routes/monitoring';
+// import voiceToTextRoutes from './src/routes/voiceToText';
+// import voiceChatRoutes from './src/routes/voiceChat';
+// import visionRoutes from './src/routes/vision';
+// import settingsRoutes from './src/routes/settings';
+// import mcpRoutes from './src/routes/mcp';
+// import calendarRoutes from './src/routes/calendar';
+// import emailRoutes from './src/routes/email';
+// import contactRoutes from './src/routes/contact';
+// import notificationRoutes from './src/routes/notifications';
+// import privacyRoutes from './src/routes/privacy';
+
+app.use('/api/chat', chatHistoryRoutes); // Chat history and conversation management
+console.log('[Route Registration] ✅ Chat history routes registered');
+// app.use('/api/user', userRoutes); // User profile and settings management
+// app.use('/api/workflows', workflowRoutes); // Workflow creation and execution
+// app.use('/api/knowledge', knowledgeRoutes); // AI Knowledge Hub with vector search
+// Temporarily commented out to debug route loading issue
+// app.use('/api/vault', require('./src/routes/vault')); // API Key Vault with 24 provider presets
+// app.use('/api/keys', apiKeyRoutes); // Legacy API key management endpoints
+// app.use('/api/monitoring', monitoringRoutes); // System monitoring and health metrics
+// app.use('/api/voice-to-text', voiceToTextRoutes); // Deepgram voice transcription with wake word
+// app.use('/api/voice-chat', voiceChatRoutes); // Live voice interaction with Cartrita personality
+// app.use('/api/vision', visionRoutes); // OpenAI Vision API for scene analysis
+// app.use('/api/settings', settingsRoutes); // System configuration and feature toggles
+// app.use('/api/mcp', mcpRoutes); // Message Control Protocol for agent coordination
+// app.use('/api/calendar', calendarRoutes); // Google Calendar integration for scheduling
+// app.use('/api/email', emailRoutes); // Email processing and management
+// app.use('/api/contacts', contactRoutes); // Contact management and integration
+// app.use('/api/notifications', notificationRoutes); // Real-time notification system
+// app.use('/api/privacy', privacyRoutes); // Privacy controls and data management
+// app.use('/api/agent', agentRoutes); // Now includes metrics at /api/agent/metrics
+
+// Minimal test route for now
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'Cartrita backend is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// --- ERROR HANDLING MIDDLEWARE ---
+app.use((err, req, res, next) => {
+  console.error(`[Error] ${req.method} ${req.path}:`, err);
+  performanceMetrics.errors++;
+
+  if(err.type === 'entity.parse.failed') {
+    return res.status(400).json({
+      error: 'Invalid JSON payload',
+      details: 'Request body contains malformed JSON'
+    });
+  }
+
+  if(err.type === 'entity.too.large') {
+    return res.status(413).json({
+      error: 'Request too large',
+      details: 'Request body exceeds size limit'
+    });
+  }
+
+  // Don't leak error details in production
+  const errorResponse = {
+    error: 'Internal server error',
+    timestamp: new Date().toISOString(),
+    ...(NODE_ENV === 'development' && {
+      details: err.message,
+      stack: err.stack
+    })
+  };
+
+  res.status(500).json(errorResponse);
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    error: 'Endpoint not found',
+    path: req.originalUrl,
+    method: req.method,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// --- SOCKET.IO ENHANCED HANDLING ---
+const coreAgent = new EnhancedLangChainCoreAgent();
+// const sensoryService = new SensoryProcessingService(coreAgent);
+
+// Chat namespace with enhanced error handling
+const chatNamespace = io.of('/');
+chatNamespace.use(authenticateTokenSocket);
+chatNamespace.on('connection', socket => {
+  performanceMetrics.socketConnections++;
+  console.log(
+    `[Socket.IO] User connected: ${socket.username} (ID: ${socket.id})`
+  );
+
+  // Send connection confirmation with server info
+  socket.emit('connected', {
+    id: socket.id, user: socket.username, timestamp: new Date().toISOString(),
+    serverVersion: '2.1.0',
+    features: ['voice', 'vision', 'workflows', 'knowledge'],
+    agentStatus: {
+      errors: performanceMetrics.agentErrors,
+      warnings: performanceMetrics.agentWarnings.length,
+      operational: performanceMetrics.agentErrors === 0
+    }
+  });
+
+  // Enhanced ping/pong for latency monitoring
+  socket.on('ping', startTime => {
+    socket.emit('pong', {
+      clientTimestamp: startTime,
+      serverTimestamp: Date.now(),
+      latency: Date.now() - startTime
+    });
+  });
+
+  // Enhanced message handling
+  socket.on('user_message', async payload => {
+    const messageStart = Date.now();
+    performanceMetrics.messagesProcessed++;
+
+    try {
+      const text = typeof payload === 'string' ? payload : payload.text;
+      const language = payload.language || 'en';
+      const timestamp = payload.timestamp || new Date().toISOString();
+
+      if (!text || typeof text !== 'string' || text.trim().length === 0) {
+        socket.emit('error', {
+          message: 'Invalid message: text is required',
+          code: 'INVALID_MESSAGE'
+        });
+        return;
+      }
+
+      if(text.length > 2000) {
+        socket.emit('error', {
+          message: 'Message too long. Maximum 2000 characters allowed.',
+          code: 'MESSAGE_TOO_LONG'
+        });
+        return;
+      }
+
+      console.log(
+        `[Chat] ${socket.username}: "${text.substring(0, 100)}${text.length > 100 ? '...' : ''}"`
+      );
+
+      const messageTimestamp = new Date().toISOString();
+
+      // Store user message
+      await pool.query(
+        'INSERT INTO conversations (user_id, speaker, text, created_at) VALUES ($1, $2, $3, $4)',
+        [socket.userId, 'user', text, messageTimestamp]
+      );
+      // Emit typing indicator
+      socket.emit('typing', { isTyping: true });
+
+      // Generate response with timeout
+      const responsePromise = coreAgent.generateResponse(
+        text,
+        language,
+        socket.userId
+      );
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Response timeout')), 30000)
+      );
+
+      const response = await Promise.race([responsePromise, timeoutPromise]);
+      const responseTime = Date.now() - messageStart;
+
+      // Validate and sanitize response
+      let finalResponse = response;
+      if(!finalResponse || typeof finalResponse.text !== 'string') {
+        console.error('[Socket] Invalid response format:', finalResponse);
+        finalResponse = {
+          text: 'I apologize, but I encountered a technical issue. Could you please try again?',
+          speaker: 'cartrita',
+          model: 'fallback-error',
+          error: true
+        };
+      }
+
+      // Check if response looks like JSON (shouldn't happen)
+      try {
+        JSON.parse(finalResponse.text);
+        console.warn('[Socket] Response appears to be JSON, using fallback');
+        finalResponse = {
+          text: "I'm here and ready to help! What would you like to know?",
+          speaker: 'cartrita',
+          model: 'fallback-json-detected',
+          original_response: finalResponse.text
+        };
+      } catch(e) {
+        // This is expected - response text should not be valid JSON
+      }      
+
+      await pool.query(
+        'INSERT INTO conversations (user_id, speaker, text, model, response_time_ms, created_at) VALUES ($1, $2, $3, $4, $5, $6)',
+        [
+          socket.userId,
+          'cartrita',
+          finalResponse.text,
+          finalResponse.model || 'cartrita-core',
+          responseTime,
+          new Date().toISOString()
+        ]
+      );
+      console.log(
+        `[Chat] Response to ${socket.username} (${responseTime}ms): "${finalResponse.text.substring(0, 100)}${finalResponse.text.length > 100 ? '...' : ''}"`
+      );
+
+      // Stop typing and send response
+      socket.emit('typing', { isTyping: false });
+      socket.emit('agent_response', {
+        ...finalResponse,
+        timestamp: new Date().toISOString(),
+        responseTime: responseTime
+      });
+    } catch(error) {
+      const responseTime = Date.now() - messageStart;
+      console.error(
+        `[Chat] Error processing message from ${socket.username}:`,
+        error
+      );
+      performanceMetrics.errors++;
+
+      socket.emit('typing', { isTyping: false });
+      socket.emit('error', {
+        message: 'Failed to process your message. Please try again.',
+        code: 'PROCESSING_ERROR',
+        responseTime
+      });
+    }
+
+  });
+
+  // Handle disconnection
+  socket.on('disconnect', reason => {
+    performanceMetrics.socketConnections--;
+    console.log(
+      `[Socket.IO] User disconnected: ${socket.username}, reason: ${reason}`
+    );
+  });
+
+  // Handle socket errors
+  socket.on('error', error => {
+    console.error(`[Socket.IO] Socket error for ${socket.username}:`, error);
+    performanceMetrics.errors++;
+  });
+
+  // Send welcome message after connection is established
+  setTimeout(() => {
+    if(socket.connected) {
+      const welcomeMessage =
+        performanceMetrics.agentErrors > 0
+          ? `Welcome back, ${socket.username}! 🎉 I'm Cartrita, your AI assistant. Note: Some agents are experiencing issues, but I'm still here to help!`
+          : `Welcome back, ${socket.username}! 🎉 I'm Cartrita, your AI assistant. I'm ready to help with anything you need - just ask!`;
+
+      socket.emit('agent_response', {
+        speaker: 'cartrita',
+        text: welcomeMessage,
+        timestamp: new Date().toISOString(),
+        model: 'system-welcome'
+      });
+    }
+  }, 1000);
+});
+
+// Ambient namespace for sensory processing
+const ambientNamespace = io.of('/ambient');
+ambientNamespace.use(authenticateTokenSocket);
+ambientNamespace.on('connection', socket => {
+  console.log(`[Ambient] User connected: ${socket.username}`);
+  sensoryService.handleConnection(socket);
+});
+
+// --- DATABASE CONNECTION MANAGEMENT ---
+async function waitForDatabase(maxRetries = 10) {
+  console.log('🔄 Waiting for database connection...');
+  let retries = maxRetries;
+
+  while(retries > 0) {
+    try {
+      const client = await pool.connect();
+      await client.query('SELECT NOW()');
+      client.release();
+      console.log('✅ Database connection established');
+      return true;
+    } catch(error) {
+      retries--;
+      console.log(
+        `⏳ Database not ready, retrying... (${retries} attempts remaining)`
+      );
+      if(retries === 0) {
+        throw new Error(
+          `Failed to connect to database after ${maxRetries} attempts: ${error.message}`
+        );
+      }
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+  }
+}
+
+
+
+// --- ENHANCED AGENT ERROR HANDLING ---
+function handleAgentError(agentName, error) {
+  console.error(`⚠️ Agent ${agentName} failed to initialize:`, error.message);
+  performanceMetrics.agentErrors++;
+  performanceMetrics.agentWarnings.push({
+    agent: agentName,
+    error: error.message,
+    timestamp: new Date().toISOString()
+  });
+
+  // Keep only last 50 warnings
+  if(performanceMetrics.agentWarnings.length > 50) {
+    performanceMetrics.agentWarnings = performanceMetrics.agentWarnings.slice(-50);
+  }
+}
+
+
+// Override unhandled rejection for agent errors specifically
+const originalUnhandledRejection = process.listeners('unhandledRejection');
+process.removeAllListeners('unhandledRejection');
+
+// --- SERVER STARTUP ---
+async function startServer() {
+  try {
+    console.log('🚀 Initializing Cartrita backend...');
+
+    // Wait for database
+    await waitForDatabase();
+    
+    // Initialize core agent
+    console.log('🧠 Initializing LangChain Core Agent...');
+    const coreAgentInitialized = await coreAgent.initialize();
+    if(!coreAgentInitialized) {
+      throw new Error('Failed to initialize LangChain Core Agent');
+    }
+    console.log('✅ LangChain Core Agent initialized');
+
+    // Initialize other agents and services with error handling
+    console.log('🤖 Initializing agent systems...');
+    try {
+      // await initializeAgents();
+    } catch(agentError) {
+      console.warn(
+        '⚠️ Some agents failed to initialize, but continuing startup...'
+      );
+      handleAgentError('AgentSystem', agentError);
+    }
+
+    console.log('🔧 Initializing services...');
+    try {
+      // await ServiceInitializer.initializeServices();
+    } catch(serviceError) {
+      console.warn(
+        '⚠️ Some services failed to initialize, but continuing startup...'
+      );
+      // handleAgentError('ServiceInitializer', serviceError);
+    }
+
+    const statusMessage =
+      performanceMetrics.agentErrors > 0
+        ? `⚠️ System initialized with ${performanceMetrics.agentErrors} agent errors (degraded mode)`
+        : '🎉 All systems initialized successfully!';
+
+    console.log(statusMessage);
+
+    // Start the server
+    server.listen(PORT, () => {
+      console.log(`✅ Cartrita backend is live on port ${PORT}`);
+      console.log(`🌍 Environment: ${NODE_ENV}`);
+      console.log(`🔗 Allowed origins: ${allowedOrigins.join(', ')}`);
+      console.log(
+        `📊 Health check available at: http://localhost:${PORT}/health`
+      );
+      console.log(`📈 Metrics available at: http://localhost:${PORT}/metrics`);
+      console.log(
+        `🔧 Agent metrics available at: http://localhost:${PORT}/api/agent/metrics`
+      );
+      console.log(
+        `🛠️ Agent tools available at: http://localhost:${PORT}/api/agent/tools`
+      );
+      console.log(
+        `💊 Agent health available at: http://localhost:${PORT}/api/agent/health`
+      );
+
+      if(performanceMetrics.agentErrors > 0) {
+        console.log(
+          `⚠️ Running in degraded mode: ${performanceMetrics.agentErrors} agent(s) failed`
+        );
+        console.log(`🔧 Check /health endpoint for detailed status`);
+      }
+    });
+  } catch(error) {
+    console.error('❌ Critical startup failure:', error);
+    console.error('Stack trace:', error.stack);
+    process.exit(1);
+  }
+}
+
+
+// --- GRACEFUL SHUTDOWN ---
+async function gracefulShutdown(signal) {
+  console.log(`\n🛑 Received ${signal}, initiating graceful shutdown...`);
+
+  try {
+    // Stop accepting new connections
+    server.close(() => {
+      console.log('📡 HTTP server closed');
+    });
+
+    // Close socket connections
+    io.close(() => {
+      console.log('🔌 Socket.IO server closed');
+    });
+
+    // Cleanup services
+    console.log('🧹 Cleaning up services...');
+    try {
+      // await ServiceInitializer.cleanup();
+    } catch(cleanupError) {
+      console.warn(
+        '⚠️ Some services failed to cleanup properly:',
+        cleanupError.message
+      );
+    }
+
+    // Close database connections
+    console.log('🗄️ Closing database connections...');
+    await pool.end();
+    console.log('✅ Graceful shutdown completed');
+    process.exit(0);
+  } catch(error) {
+    console.error('❌ Error during shutdown:', error);
+    process.exit(1);
+  }
+}
+
+
+// Handle shutdown signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Enhanced unhandled rejection handler
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
+
+  // Check if it's an agent-related error
+  if (reason && reason.stack && reason.stack.includes('Agent')) {
+    const agentName = reason.stack.match(/(\w+Agent)/)?.[1] || 'UnknownAgent';
+    handleAgentError(agentName, reason);
+    console.log('⚠️ Agent error handled, server continuing...');
+    return; // Don't shutdown for agent errors
+  }
+
+  // For other critical errors, still shutdown
+  console.error('💥 Critical system error detected, initiating shutdown...');
+  gracefulShutdown('unhandledRejection');
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', error => {
+  console.error('💥 Uncaught Exception:', error);
+
+  // Check if it's an agent-related error
+  if (error && error.stack && error.stack.includes('Agent')) {
+    const agentName = error.stack.match(/(\w+Agent)/)?.[1] || 'UnknownAgent';
+    handleAgentError(agentName, error);
+    console.log('⚠️ Agent exception handled, server continuing...');
+    return; // Don't shutdown for agent errors
+  }
+
+  gracefulShutdown('uncaughtException');
+});
+
+// Start the server
+startServer();

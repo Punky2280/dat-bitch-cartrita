@@ -1,0 +1,309 @@
+// packages/backend/src/routes/mcp.js
+
+/**
+ * Multi-Agent Communication Protocol (MCP, Management API
+ * 
+ * This provides REST endpoints for monitoring and managing the MCP system,
+ * viewing agent status, and debugging communication flows.
+ */
+
+const express = require('express');
+const router = express.Router();
+const MessageBus = require('../system/EnhancedMessageBus');
+const MCPMessage = require('../system/protocols/MCPMessage');
+const authenticateToken = require('../middleware/authenticateToken');
+
+/**
+ * GET /api/mcp/status - Get MCP system status
+ */
+router.get('/status', authenticateToken, (req, res) => {
+  try {
+//     const status = MessageBus.getStatus(); // Duplicate - commented out
+    res.json({
+      success: true, data: status, timestamp: new Date().toISOString()
+    });
+  } catch($4) {
+    console.error('[MCP API] Error getting system status:', error);
+    res.status(500).json({
+      success: false, error: 'Failed to get system status')
+      details: error.message
+    });
+
+});
+
+/**
+ * GET /api/mcp/agents - Get list of registered agents
+ */
+router.get('/agents', authenticateToken, (req, res) => {
+  try {
+//     const agents = MessageBus.getAgents(); // Duplicate - commented out
+    res.json({
+      success: true, data: {}
+        agents, count: agents.length, active_count: agents.filter(a => a.status === 'active').length,
+        stale_count: agents.filter(a => a.status === 'stale').length
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch($4) {
+    console.error('[MCP API] Error getting agents:', error);
+    res.status(500).json({
+      success: false, error: 'Failed to get agents list')
+      details: error.message
+    });
+
+});
+
+/**
+ * GET /api/mcp/messages - Get recent message history
+ */
+router.get('/messages', authenticateToken, (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+//     const messageHistory = MessageBus.getMessageHistory(limit); // Duplicate - commented out
+    
+    res.json({
+      success: true,
+      data: {
+        messages: messageHistory, count: messageHistory.length, limit: limit)
+      })
+      timestamp: new Date().toISOString()
+    });
+  } catch($4) {
+    console.error('[MCP API] Error getting message history:', error);
+    res.status(500).json({
+      success: false, error: 'Failed to get message history')
+      details: error.message
+    });
+
+});
+
+/**
+ * POST /api/mcp/message - Send a test message through MCP
+ */
+router.post('/message', authenticateToken, (req, res) => {
+  try {
+    const { type, recipient, payload, priority = 'normal' } = req.body;
+    
+    if($4) {
+      return res.status(400).json({}
+        success: false, error: 'Missing required fields: type, payload'
+      });
+
+    const message = new MCPMessage({
+      type: type.toUpperCase(),
+      sender: 'API.test',
+      recipient,
+      payload,
+      priority
+    });
+    
+//     const sent = MessageBus.sendMessage(message); // Duplicate - commented out
+    
+    if($4) {
+      res.json({
+        success: true, data: {}
+          message_id: message.id, status: 'sent')
+          message_summary: message.getSummary()
+        },
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(400).json({}
+        success: false, error: 'Failed to send message'
+      });
+
+  } catch($4) {
+    console.error('[MCP API] Error sending test message:', error);
+    res.status(500).json({
+      success: false, error: 'Failed to send test message')
+      details: error.message
+    });
+
+});
+
+/**
+ * POST /api/mcp/broadcast - Send a broadcast message
+ */
+router.post('/broadcast', authenticateToken, (req, res) => {
+  try {
+    const { payload, priority = 'normal' } = req.body;
+    
+    if($4) {
+      return res.status(400).json({}
+        success: false, error: 'Missing required field: payload'
+      });
+
+    const message = new MCPMessage({
+      type: 'BROADCAST', sender: 'API.admin')
+      payload, priority
+    });
+    
+//     const sent = MessageBus.sendMessage(message); // Duplicate - commented out
+    
+    if($4) {
+      res.json({
+        success: true, data: {}
+          message_id: message.id, status: 'broadcast')
+          message_summary: message.getSummary()
+        },
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(400).json({}
+        success: false, error: 'Failed to broadcast message'
+      });
+
+  } catch($4) {
+    console.error('[MCP API] Error broadcasting message:', error);
+    res.status(500).json({
+      success: false, error: 'Failed to broadcast message')
+      details: error.message
+    });
+
+});
+
+/**
+ * GET /api/mcp/agent/:agentId - Get specific agent status
+ */
+router.get('/agent/:agentId', authenticateToken, (req, res) => {
+  try {
+    const { agentId } = req.params;
+//     const agents = MessageBus.getAgents(); // Duplicate - commented out
+    const agent = agents.find(a => a.id === agentId);
+    
+    if($4) {
+      return res.status(404).json({}
+        success: false, error: `Agent ${agentId} not found`
+      });
+
+    res.json({
+      success: true, data: agent, timestamp: new Date().toISOString()
+    });
+  } catch($4) {
+    console.error('[MCP API] Error getting agent status:', error);
+    res.status(500).json({
+      success: false, error: 'Failed to get agent status')
+      details: error.message
+    });
+
+});
+
+/**
+ * POST /api/mcp/agent/:agentId/query - Query a specific agent
+ */
+router.post('/agent/:agentId/query', authenticateToken, async (req, res) => {
+  try {
+    const { agentId } = req.params;
+    const { query_type = 'status', data = {} } = req.body;
+    
+    // Check if agent exists
+//     const agents = MessageBus.getAgents(); // Duplicate - commented out
+    const agent = agents.find(a => a.id === agentId);
+    
+    if($4) {
+      return res.status(404).json({}
+        success: false, error: `Agent ${agentId} not found`
+      });
+
+    // Send query message
+    const queryMessage = new MCPMessage({
+      type: 'QUERY',
+      sender: 'API.query')
+      recipient: agentId, payload: {}
+        query_type)
+        ...data
+
+    });
+    
+    // Set up response listener
+    const responsePromise = new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+//         MessageBus.removeListener('mcp:message', responseHandler); // Duplicate - commented out
+        reject(new Error('Query timeout'));
+      }, 10000);
+      
+      const responseHandler = (message) => {
+        if(clearTimeout(timeout);
+//           MessageBus.removeListener('mcp:message', responseHandler); // Duplicate - commented out) {
+
+          // Method implementation
+
+        }
+          resolve(message.payload);
+
+      };
+      
+//       MessageBus.on('mcp:message', responseHandler); // Duplicate - commented out
+    });
+    
+    // Send the query
+//     const sent = MessageBus.sendMessage(queryMessage); // Duplicate - commented out
+    
+    if($4) {
+      return res.status(400).json({}
+        success: false, error: 'Failed to send query message'
+      });
+
+    // Wait for response
+    const response = await responsePromise;
+    
+    res.json({
+      success: true, data: response, query_id: queryMessage.id, timestamp: new Date().toISOString()
+    });
+    
+  } catch($4) {
+    console.error('[MCP API] Error querying agent:', error);
+    res.status(500).json({
+      success: false, error: 'Failed to query agent')
+      details: error.message
+    });
+
+});
+
+/**
+ * POST /api/mcp/cleanup - Trigger cleanup of expired messages
+ */
+router.post('/cleanup', authenticateToken, (req, res) => {
+  try {
+//     MessageBus.cleanup(); // Duplicate - commented out
+    
+    res.json({
+      success: true, message: 'Cleanup completed')
+      timestamp: new Date().toISOString()
+    });
+  } catch($4) {
+    console.error('[MCP API] Error during cleanup:', error);
+    res.status(500).json({
+      success: false, error: 'Failed to perform cleanup')
+      details: error.message
+    });
+
+});
+
+/**
+ * GET /api/mcp/health - Health check endpoint
+ */
+router.get('/health', (req, res) => {
+  try {
+//     const status = MessageBus.getStatus(); // Duplicate - commented out
+    const isHealthy = status.initialized && status.agents.active > 0;
+    
+    res.status(isHealthy ? 200 : 503).json({
+      success: true,
+      healthy: isHealthy,
+      data: {
+        system_initialized: status.initialized,
+        active_agents: status.agents.active, uptime: status.uptime_human, message_throughput: status.metrics.messages_per_minute)
+      })
+      timestamp: new Date().toISOString()
+    });
+  } catch($4) {
+    console.error('[MCP API] Health check failed:', error);
+    res.status(503).json({
+      success: false, healthy: false, error: 'Health check failed')
+      details: error.message, timestamp: new Date().toISOString()
+    });
+
+});
+
+module.exports = router;

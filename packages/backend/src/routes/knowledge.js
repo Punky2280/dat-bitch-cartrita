@@ -1,497 +1,674 @@
-const express = require('express');
-const OpenAI = require('openai');
-const authenticateToken = require('../middleware/authenticateToken');
-const pool = require('../db'); // Use shared database connection
+/* global process, console */
+import express from 'express';
+import multer from 'multer';
+import OpenAI from 'openai';
+import fs from 'fs';
+import authenticateToken from '../middleware/authenticateToken.js';
+import db from '../db.js';
 
 const router = express.Router();
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// Get all knowledge entries for a user
-router.get('/entries', authenticateToken, async (req, res) => {
-  try {
-    const { category, content_type, limit = 50, offset = 0, search } = req.query;
-    const userId = req.user.id;
-
-    let query = `
-      SELECT ke.*, 
-             array_agg(DISTINCT kce.cluster_id) as cluster_ids,
-             array_agg(DISTINCT kc.name) as cluster_names
-      FROM knowledge_entries ke
-      LEFT JOIN knowledge_cluster_entries kce ON ke.id = kce.entry_id
-      LEFT JOIN knowledge_clusters kc ON kce.cluster_id = kc.id
-      WHERE ke.user_id = $1
-    `;
-    
-    const params = [userId];
-    let paramCount = 1;
-
-    if (category) {
-      paramCount++;
-      query += ` AND ke.category = $${paramCount}`;
-      params.push(category);
-    }
-
-    if (content_type) {
-      paramCount++;
-      query += ` AND ke.content_type = $${paramCount}`;
-      params.push(content_type);
-    }
-
-    if (search) {
-      paramCount++;
-      query += ` AND (ke.title ILIKE $${paramCount} OR ke.content ILIKE $${paramCount})`;
-      params.push(`%${search}%`);
-    }
-
-    query += `
-      GROUP BY ke.id
-      ORDER BY ke.importance_score DESC, ke.created_at DESC
-      LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
-    `;
-    params.push(limit, offset);
-
-    const result = await pool.query(query, params);
-    
-    res.json({
-      success: true,
-      entries: result.rows,
-      total: result.rows.length
+// Initialize OpenAI client conditionally
+let openai = null;
+try {
+  if (process.env.OPENAI_API_KEY) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
     });
-  } catch (error) {
-    console.error('Error fetching knowledge entries:', error);
-    res.status(500).json({ success: false, error: error.message });
+  } else {
+    console.warn('[Knowledge] OPENAI_API_KEY not provided - some features will be limited');
+  }
+} catch (error) {
+  console.warn('[Knowledge] Failed to initialize OpenAI client:', error.message);
+}
+
+// Configure multer for file uploads
+const upload = multer({
+  dest: 'uploads/',
+  fileFilter: (req, file, cb) => {
+    // Allow common document types
+    const allowedTypes = [
+      'text/plain',
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/markdown'
+    ];
+    cb(null, allowedTypes.includes(file.mimetype));
+  },
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
   }
 });
 
-// Create a new knowledge entry
-router.post('/entries', authenticateToken, async (req, res) => {
+/**
+ * @swagger
+ * /api/knowledge/search:
+ *   get:
+ *     summary: Vector search through knowledge base
+ *     tags: [Knowledge]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Search query
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Maximum number of results
+ *       - in: query
+ *         name: threshold
+ *         schema:
+ *           type: number
+ *           default: 0.7
+ *         description: Similarity threshold (0-1)
+ *     responses:
+ *       200:
+ *         description: Search results
+ *       400:
+ *         description: Invalid request
+ *       500:
+ *         description: Server error
+ */
+router.get('/search', authenticateToken, async (req, res) => {
   try {
-    const {
-      title,
-      content,
-      content_type = 'text',
-      source_type = 'manual',
-      source_reference,
-      tags = [],
-      category = 'general',
-      importance_score = 0.5
-    } = req.body;
-    
+    const { q: query, limit = 10, threshold = 0.7 } = req.query;
     const userId = req.user.id;
 
-    // Generate embedding for the content
-    const embeddingResponse = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: `${title} ${content}`,
-    });
-    
-    const embedding = embeddingResponse.data[0].embedding;
+    console.log(`[Knowledge] 🔍 Vector search for user ${userId}:`, query);
 
-    const query = `
-      INSERT INTO knowledge_entries 
-      (user_id, title, content, content_type, source_type, source_reference, 
-       embedding, tags, category, importance_score)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-      RETURNING *
-    `;
-
-    const result = await pool.query(query, [
-      userId, title, content, content_type, source_type, source_reference,
-      `[${embedding.join(',')}]`, tags, category, importance_score
-    ]);
-
-    // Log the creation in evolution tracking
-    await pool.query(
-      `INSERT INTO knowledge_evolution (entry_id, change_type, new_content, change_summary)
-       VALUES ($1, 'created', $2, $3)`,
-      [result.rows[0].id, content, `Created new ${content_type} entry: ${title}`]
-    );
-
-    // Auto-cluster the new entry
-    await autoClusterEntry(userId, result.rows[0].id, embedding);
-
-    res.json({
-      success: true,
-      entry: result.rows[0]
-    });
-  } catch (error) {
-    console.error('Error creating knowledge entry:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Update a knowledge entry
-router.put('/entries/:id', authenticateToken, async (req, res) => {
-  try {
-    const entryId = req.params.id;
-    const userId = req.user.id;
-    const { title, content, tags, category, importance_score } = req.body;
-
-    // Get current entry for evolution tracking
-    const currentEntry = await pool.query(
-      'SELECT * FROM knowledge_entries WHERE id = $1 AND user_id = $2',
-      [entryId, userId]
-    );
-
-    if (currentEntry.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Entry not found' });
-    }
-
-    // Generate new embedding if content changed
-    let updateFields = [];
-    let params = [];
-    let paramCount = 0;
-
-    if (title !== undefined) {
-      paramCount++;
-      updateFields.push(`title = $${paramCount}`);
-      params.push(title);
-    }
-
-    if (content !== undefined) {
-      paramCount++;
-      updateFields.push(`content = $${paramCount}`);
-      params.push(content);
-
-      // Generate new embedding
-      const embeddingResponse = await openai.embeddings.create({
-        model: 'text-embedding-3-small',
-        input: `${title || currentEntry.rows[0].title} ${content}`,
+    if (!query) {
+      return res.status(400).json({
+        success: false,
+        error: 'Search query is required'
       });
-      
-      paramCount++;
-      updateFields.push(`embedding = $${paramCount}`);
-      params.push(`[${embeddingResponse.data[0].embedding.join(',')}]`);
     }
-
-    if (tags !== undefined) {
-      paramCount++;
-      updateFields.push(`tags = $${paramCount}`);
-      params.push(tags);
-    }
-
-    if (category !== undefined) {
-      paramCount++;
-      updateFields.push(`category = $${paramCount}`);
-      params.push(category);
-    }
-
-    if (importance_score !== undefined) {
-      paramCount++;
-      updateFields.push(`importance_score = $${paramCount}`);
-      params.push(importance_score);
-    }
-
-    paramCount++;
-    updateFields.push(`updated_at = NOW()`);
-
-    const query = `
-      UPDATE knowledge_entries 
-      SET ${updateFields.join(', ')}
-      WHERE id = $${paramCount + 1} AND user_id = $${paramCount + 2}
-      RETURNING *
-    `;
-    params.push(entryId, userId);
-
-    const result = await pool.query(query, params);
-
-    // Log the update in evolution tracking
-    await pool.query(
-      `INSERT INTO knowledge_evolution (entry_id, change_type, previous_content, new_content, change_summary)
-       VALUES ($1, 'updated', $2, $3, $4)`,
-      [entryId, currentEntry.rows[0].content, content || currentEntry.rows[0].content, 'Entry updated']
-    );
-
-    res.json({
-      success: true,
-      entry: result.rows[0]
-    });
-  } catch (error) {
-    console.error('Error updating knowledge entry:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Delete a knowledge entry
-router.delete('/entries/:id', authenticateToken, async (req, res) => {
-  try {
-    const entryId = req.params.id;
-    const userId = req.user.id;
-
-    const result = await pool.query(
-      'DELETE FROM knowledge_entries WHERE id = $1 AND user_id = $2 RETURNING *',
-      [entryId, userId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Entry not found' });
-    }
-
-    res.json({
-      success: true,
-      message: 'Entry deleted successfully'
-    });
-  } catch (error) {
-    console.error('Error deleting knowledge entry:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Semantic search for knowledge entries
-router.post('/search', authenticateToken, async (req, res) => {
-  try {
-    const { query, limit = 10, threshold = 0.7 } = req.body;
-    const userId = req.user.id;
 
     // Generate embedding for the search query
     const embeddingResponse = await openai.embeddings.create({
       model: 'text-embedding-3-small',
-      input: query,
+      input: query
     });
     
     const queryEmbedding = embeddingResponse.data[0].embedding;
 
-    // Create a memory session
-    const sessionResult = await pool.query(
-      `INSERT INTO memory_sessions (user_id, session_type, query, query_embedding)
-       VALUES ($1, 'search', $2, $3) RETURNING id`,
-      [userId, query, `[${queryEmbedding.join(',')}]`]
-    );
-    
-    const sessionId = sessionResult.rows[0].id;
-
     // Perform vector similarity search
     const searchQuery = `
-      SELECT ke.*, 
-             (ke.embedding <=> $1::vector) as distance,
-             (1 - (ke.embedding <=> $1::vector)) as similarity,
-             array_agg(DISTINCT kc.name) as cluster_names
+      SELECT 
+        ke.id,
+        ke.title,
+        ke.content,
+        ke.content_type,
+        ke.source_type,
+        ke.tags,
+        ke.category,
+        ke.importance_score,
+        ke.created_at,
+        ke.updated_at,
+        (1 - (ke.embedding <=> $1::vector)) as similarity_score
       FROM knowledge_entries ke
-      LEFT JOIN knowledge_cluster_entries kce ON ke.id = kce.entry_id
-      LEFT JOIN knowledge_clusters kc ON kce.cluster_id = kc.id
       WHERE ke.user_id = $2 
         AND (1 - (ke.embedding <=> $1::vector)) > $3
-      GROUP BY ke.id, ke.embedding
-      ORDER BY similarity DESC
+      ORDER BY similarity_score DESC
       LIMIT $4
     `;
 
-    const searchResult = await pool.query(searchQuery, [
+    const result = await db.query(searchQuery, [
       `[${queryEmbedding.join(',')}]`,
       userId,
       threshold,
       limit
     ]);
 
-    // Log search results
-    for (let i = 0; i < searchResult.rows.length; i++) {
-      await pool.query(
-        `INSERT INTO memory_session_results (session_id, entry_id, similarity_score, rank_position)
-         VALUES ($1, $2, $3, $4)`,
-        [sessionId, searchResult.rows[i].id, searchResult.rows[i].similarity, i + 1]
-      );
+    console.log(`[Knowledge] ✅ Found ${result.rows.length} results`);
+
+    res.json({
+      success: true,
+      results: result.rows,
+      query: query,
+      total: result.rows.length
+    });
+
+  } catch (error) {
+    console.error('[Knowledge] ❌ Search error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to perform knowledge search'
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/knowledge/upload:
+ *   post:
+ *     summary: Upload documents to knowledge base
+ *     tags: [Knowledge]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *               title:
+ *                 type: string
+ *               category:
+ *                 type: string
+ *               tags:
+ *                 type: string
+ *                 description: Comma-separated tags
+ *     responses:
+ *       200:
+ *         description: Document uploaded successfully
+ *       400:
+ *         description: Invalid file or missing data
+ *       500:
+ *         description: Server error
+ */
+router.post('/upload', authenticateToken, upload.single('file'), async (req, res) => {
+  try {
+    const { title, category = 'general', tags = '' } = req.body;
+    const userId = req.user.id;
+    const file = req.file;
+
+    console.log(`[Knowledge] 📄 Upload request for user ${userId}:`, { title, category, filename: file?.originalname });
+
+    if (!file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No file uploaded'
+      });
     }
 
-    // Update session results count
-    await pool.query(
-      'UPDATE memory_sessions SET results_count = $1 WHERE id = $2',
-      [searchResult.rows.length, sessionId]
-    );
+    if (!title) {
+      return res.status(400).json({
+        success: false,
+        error: 'Document title is required'
+      });
+    }
+
+    // Read file content (simplified - in production, use proper file parsers)
+    let content;
+    
+    try {
+      content = fs.readFileSync(file.path, 'utf8');
+    } catch (readError) {
+      console.error('[Knowledge] ❌ File read error:', readError);
+      return res.status(400).json({
+        success: false,
+        error: 'Unable to read uploaded file'
+      });
+    }
+
+    // Generate embedding for the content
+    const embeddingResponse = await openai.embeddings.create({
+      model: 'text-embedding-3-small',
+      input: `${title} ${content}`
+    });
+    
+    const embedding = embeddingResponse.data[0].embedding;
+
+    // Process tags
+    const tagArray = tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+
+    // Insert into database
+    const insertQuery = `
+      INSERT INTO knowledge_entries 
+      (user_id, title, content, content_type, source_type, source_reference, 
+       embedding, tags, category, importance_score, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+      RETURNING id, title, content_type, category, tags, created_at
+    `;
+
+    const result = await db.query(insertQuery, [
+      userId,
+      title,
+      content,
+      file.mimetype,
+      'upload',
+      file.originalname,
+      `[${embedding.join(',')}]`,
+      tagArray,
+      category,
+      0.5 // Default importance score
+    ]);
+
+    // Clean up uploaded file
+    fs.unlinkSync(file.path);
+
+    console.log(`[Knowledge] ✅ Document uploaded with ID: ${result.rows[0].id}`);
 
     res.json({
       success: true,
-      results: searchResult.rows,
-      session_id: sessionId,
-      query: query
+      document: result.rows[0],
+      message: 'Document uploaded and indexed successfully'
     });
+
   } catch (error) {
-    console.error('Error performing semantic search:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('[Knowledge] ❌ Upload error:', error);
+    
+    // Clean up file if it exists
+    if (req.file) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (cleanupError) {
+        console.error('[Knowledge] ⚠️ File cleanup error:', cleanupError);
+      }
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to upload and process document'
+    });
   }
 });
 
-// Get knowledge clusters
-router.get('/clusters', authenticateToken, async (req, res) => {
+/**
+ * @swagger
+ * /api/knowledge/collections:
+ *   get:
+ *     summary: List knowledge collections (categories)
+ *     tags: [Knowledge]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of collections with counts
+ *       500:
+ *         description: Server error
+ */
+router.get('/collections', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
+
+    console.log(`[Knowledge] 📚 Fetching collections for user ${userId}`);
 
     const query = `
-      SELECT kc.*, 
-             COUNT(kce.entry_id) as entry_count,
-             array_agg(
-               JSON_BUILD_OBJECT(
-                 'id', ke.id,
-                 'title', ke.title,
-                 'similarity_score', kce.similarity_score
-               )
-             ) FILTER (WHERE ke.id IS NOT NULL) as entries
-      FROM knowledge_clusters kc
-      LEFT JOIN knowledge_cluster_entries kce ON kc.id = kce.cluster_id
-      LEFT JOIN knowledge_entries ke ON kce.entry_id = ke.id
-      WHERE kc.user_id = $1
-      GROUP BY kc.id
-      ORDER BY entry_count DESC, kc.name
+      SELECT 
+        category,
+        COUNT(*) as document_count,
+        MIN(created_at) as first_created,
+        MAX(updated_at) as last_updated
+      FROM knowledge_entries 
+      WHERE user_id = $1 
+      GROUP BY category
+      ORDER BY document_count DESC, category ASC
     `;
 
-    const result = await pool.query(query, [userId]);
-    
+    const result = await db.query(query, [userId]);
+
+    console.log(`[Knowledge] ✅ Found ${result.rows.length} collections`);
+
     res.json({
       success: true,
-      clusters: result.rows
+      collections: result.rows.map(row => ({
+        name: row.category,
+        document_count: parseInt(row.document_count),
+        first_created: row.first_created,
+        last_updated: row.last_updated
+      }))
     });
+
   } catch (error) {
-    console.error('Error fetching knowledge clusters:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('[Knowledge] ❌ Collections error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch knowledge collections'
+    });
   }
 });
 
-// Get knowledge graph data for visualization
-router.get('/graph', authenticateToken, async (req, res) => {
+/**
+ * @swagger
+ * /api/knowledge/documents:
+ *   get:
+ *     summary: List documents with metadata
+ *     tags: [Knowledge]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filter by category
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: Maximum number of documents
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: Number of documents to skip
+ *     responses:
+ *       200:
+ *         description: List of documents
+ *       500:
+ *         description: Server error
+ */
+router.get('/documents', authenticateToken, async (req, res) => {
   try {
+    const { category, limit = 50, offset = 0 } = req.query;
     const userId = req.user.id;
-    const { cluster_id, limit = 100 } = req.query;
 
-    // Get nodes (knowledge entries)
-    let nodesQuery = `
-      SELECT ke.id, ke.title, ke.content_type, ke.category, ke.importance_score,
-             ke.tags, ke.created_at,
-             COALESCE(array_agg(DISTINCT kc.name) FILTER (WHERE kc.name IS NOT NULL), '{}') as clusters,
-             COALESCE(array_agg(DISTINCT kc.color) FILTER (WHERE kc.color IS NOT NULL), '{}') as cluster_colors
-      FROM knowledge_entries ke
-      LEFT JOIN knowledge_cluster_entries kce ON ke.id = kce.entry_id
-      LEFT JOIN knowledge_clusters kc ON kce.cluster_id = kc.id
-      WHERE ke.user_id = $1
+    console.log(`[Knowledge] 📋 Fetching documents for user ${userId}:`, { category, limit, offset });
+
+    let query = `
+      SELECT 
+        id,
+        title,
+        content_type,
+        source_type,
+        source_reference,
+        tags,
+        category,
+        importance_score,
+        created_at,
+        updated_at,
+        LENGTH(content) as content_length
+      FROM knowledge_entries 
+      WHERE user_id = $1
     `;
-    
+
     const params = [userId];
     let paramCount = 1;
 
-    if (cluster_id) {
+    if (category) {
       paramCount++;
-      nodesQuery += ` AND kc.id = $${paramCount}`;
-      params.push(cluster_id);
+      query += ` AND category = $${paramCount}`;
+      params.push(category);
     }
 
-    nodesQuery += `
-      GROUP BY ke.id
-      ORDER BY ke.importance_score DESC
-      LIMIT $${paramCount + 1}
+    query += `
+      ORDER BY importance_score DESC, updated_at DESC
+      LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
     `;
-    params.push(limit);
+    params.push(limit, offset);
 
-    const nodesResult = await pool.query(nodesQuery, params);
+    const result = await db.query(query, params);
 
-    // Get edges (relationships)
-    const nodeIds = nodesResult.rows.map(row => row.id);
-    let edgesResult = { rows: [] };
-    
-    if (nodeIds.length > 0) {
-      const edgesQuery = `
-        SELECT kr.*, 
-               ke1.title as source_title,
-               ke2.title as target_title
-        FROM knowledge_relationships kr
-        JOIN knowledge_entries ke1 ON kr.source_entry_id = ke1.id
-        JOIN knowledge_entries ke2 ON kr.target_entry_id = ke2.id
-        WHERE kr.source_entry_id = ANY($1) AND kr.target_entry_id = ANY($1)
-        ORDER BY kr.strength DESC
-      `;
-      
-      edgesResult = await pool.query(edgesQuery, [nodeIds]);
+    // Get total count for pagination
+    let countQuery = `
+      SELECT COUNT(*) as total 
+      FROM knowledge_entries 
+      WHERE user_id = $1
+    `;
+    const countParams = [userId];
+
+    if (category) {
+      countQuery += ` AND category = $2`;
+      countParams.push(category);
     }
+
+    const countResult = await db.query(countQuery, countParams);
+    const total = parseInt(countResult.rows[0].total);
+
+    console.log(`[Knowledge] ✅ Found ${result.rows.length} documents (${total} total)`);
 
     res.json({
       success: true,
-      graph: {
-        nodes: nodesResult.rows,
-        edges: edgesResult.rows
+      documents: result.rows.map(doc => ({
+        ...doc,
+        content_length: parseInt(doc.content_length)
+      })),
+      pagination: {
+        total,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        has_more: (parseInt(offset) + parseInt(limit)) < total
       }
     });
+
   } catch (error) {
-    console.error('Error fetching knowledge graph:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('[Knowledge] ❌ Documents list error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch documents'
+    });
   }
 });
 
-// Create relationship between knowledge entries
-router.post('/relationships', authenticateToken, async (req, res) => {
+/**
+ * @swagger
+ * /api/knowledge/documents/{id}:
+ *   delete:
+ *     summary: Delete a document
+ *     tags: [Knowledge]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Document ID
+ *     responses:
+ *       200:
+ *         description: Document deleted successfully
+ *       404:
+ *         description: Document not found
+ *       500:
+ *         description: Server error
+ */
+router.delete('/documents/:id', authenticateToken, async (req, res) => {
   try {
-    const { source_entry_id, target_entry_id, relationship_type, strength = 0.5, context } = req.body;
+    const documentId = req.params.id;
     const userId = req.user.id;
 
-    // Verify both entries belong to the user
-    const entriesCheck = await pool.query(
-      'SELECT COUNT(*) as count FROM knowledge_entries WHERE id IN ($1, $2) AND user_id = $3',
-      [source_entry_id, target_entry_id, userId]
-    );
+    console.log(`[Knowledge] 🗑️ Deleting document ${documentId} for user ${userId}`);
 
-    if (entriesCheck.rows[0].count !== '2') {
-      return res.status(403).json({ success: false, error: 'Invalid entry IDs' });
+    // First check if document exists and belongs to user
+    const checkQuery = `
+      SELECT id, title FROM knowledge_entries 
+      WHERE id = $1 AND user_id = $2
+    `;
+    const checkResult = await db.query(checkQuery, [documentId, userId]);
+
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Document not found or access denied'
+      });
     }
 
-    const query = `
-      INSERT INTO knowledge_relationships 
-      (source_entry_id, target_entry_id, relationship_type, strength, context, created_by)
-      VALUES ($1, $2, $3, $4, $5, 'user')
-      ON CONFLICT (source_entry_id, target_entry_id, relationship_type)
-      DO UPDATE SET strength = $4, context = $5, created_at = NOW()
-      RETURNING *
-    `;
+    const documentTitle = checkResult.rows[0].title;
 
-    const result = await pool.query(query, [
-      source_entry_id, target_entry_id, relationship_type, strength, context
-    ]);
+    // Delete the document
+    const deleteQuery = `
+      DELETE FROM knowledge_entries 
+      WHERE id = $1 AND user_id = $2
+      RETURNING id
+    `;
+    const deleteResult = await db.query(deleteQuery, [documentId, userId]);
+
+    if (deleteResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Document not found'
+      });
+    }
+
+    console.log(`[Knowledge] ✅ Deleted document "${documentTitle}" (ID: ${documentId})`);
 
     res.json({
       success: true,
-      relationship: result.rows[0]
+      message: 'Document deleted successfully',
+      deleted_document: {
+        id: parseInt(documentId),
+        title: documentTitle
+      }
     });
+
   } catch (error) {
-    console.error('Error creating knowledge relationship:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('[Knowledge] ❌ Delete error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete document'
+    });
   }
 });
 
-// Auto-clustering function
-async function autoClusterEntry(userId, entryId, embedding) {
+/**
+ * @swagger
+ * /api/knowledge/documents/{id}:
+ *   get:
+ *     summary: Get a specific document
+ *     tags: [Knowledge]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Document ID
+ *     responses:
+ *       200:
+ *         description: Document details
+ *       404:
+ *         description: Document not found
+ *       500:
+ *         description: Server error
+ */
+router.get('/documents/:id', authenticateToken, async (req, res) => {
   try {
-    // Find the most similar cluster
-    const clusterQuery = `
-      SELECT kc.id, kc.name, (kc.cluster_embedding <=> $1::vector) as distance
-      FROM knowledge_clusters kc
-      WHERE kc.user_id = $2 AND kc.cluster_embedding IS NOT NULL
-      ORDER BY distance
-      LIMIT 1
+    const documentId = req.params.id;
+    const userId = req.user.id;
+
+    console.log(`[Knowledge] 📄 Fetching document ${documentId} for user ${userId}`);
+
+    const query = `
+      SELECT 
+        id,
+        title,
+        content,
+        content_type,
+        source_type,
+        source_reference,
+        tags,
+        category,
+        importance_score,
+        created_at,
+        updated_at
+      FROM knowledge_entries 
+      WHERE id = $1 AND user_id = $2
     `;
 
-    const clusterResult = await pool.query(clusterQuery, [
-      `[${embedding.join(',')}]`,
-      userId
-    ]);
+    const result = await db.query(query, [documentId, userId]);
 
-    // If we find a similar cluster (distance < 0.3), add the entry to it
-    if (clusterResult.rows.length > 0 && clusterResult.rows[0].distance < 0.3) {
-      await pool.query(
-        `INSERT INTO knowledge_cluster_entries (cluster_id, entry_id, similarity_score)
-         VALUES ($1, $2, $3) ON CONFLICT (cluster_id, entry_id) DO NOTHING`,
-        [clusterResult.rows[0].id, entryId, 1.0 - clusterResult.rows[0].distance]
-      );
-
-      // Update cluster size
-      await pool.query(
-        `UPDATE knowledge_clusters 
-         SET size = (SELECT COUNT(*) FROM knowledge_cluster_entries WHERE cluster_id = $1),
-             last_updated = NOW()
-         WHERE id = $1`,
-        [clusterResult.rows[0].id]
-      );
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Document not found or access denied'
+      });
     }
-  } catch (error) {
-    console.error('Error in auto-clustering:', error);
-  }
-}
 
-module.exports = router;
+    console.log(`[Knowledge] ✅ Found document "${result.rows[0].title}"`);
+
+    res.json({
+      success: true,
+      document: result.rows[0]
+    });
+
+  } catch (error) {
+    console.error('[Knowledge] ❌ Get document error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch document'
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/knowledge/stats:
+ *   get:
+ *     summary: Get knowledge base statistics
+ *     tags: [Knowledge]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Knowledge base statistics
+ *       500:
+ *         description: Server error
+ */
+router.get('/stats', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    console.log(`[Knowledge] 📊 Fetching stats for user ${userId}`);
+
+    const statsQuery = `
+      SELECT 
+        COUNT(*) as total_documents,
+        COUNT(DISTINCT category) as total_categories,
+        AVG(importance_score) as avg_importance,
+        SUM(LENGTH(content)) as total_content_size,
+        MIN(created_at) as first_document,
+        MAX(updated_at) as last_updated
+      FROM knowledge_entries 
+      WHERE user_id = $1
+    `;
+
+    const result = await db.query(statsQuery, [userId]);
+    const stats = result.rows[0];
+
+    // Get top categories
+    const topCategoriesQuery = `
+      SELECT category, COUNT(*) as count
+      FROM knowledge_entries 
+      WHERE user_id = $1
+      GROUP BY category
+      ORDER BY count DESC
+      LIMIT 5
+    `;
+
+    const categoriesResult = await db.query(topCategoriesQuery, [userId]);
+
+    console.log(`[Knowledge] ✅ Stats: ${stats.total_documents} documents in ${stats.total_categories} categories`);
+
+    res.json({
+      success: true,
+      stats: {
+        total_documents: parseInt(stats.total_documents),
+        total_categories: parseInt(stats.total_categories),
+        avg_importance_score: parseFloat(stats.avg_importance) || 0,
+        total_content_size: parseInt(stats.total_content_size) || 0,
+        first_document: stats.first_document,
+        last_updated: stats.last_updated,
+        top_categories: categoriesResult.rows.map(row => ({
+          category: row.category,
+          count: parseInt(row.count)
+        }))
+      }
+    });
+
+  } catch (error) {
+    console.error('[Knowledge] ❌ Stats error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch knowledge base statistics'
+    });
+  }
+});
+
+export default router;

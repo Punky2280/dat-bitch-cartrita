@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { 
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
   Calendar,
   RefreshCw,
   Plus,
@@ -13,7 +13,7 @@ import {
   MapPin,
   Users,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
 } from 'lucide-react';
 
 interface CalendarEvent {
@@ -47,10 +47,10 @@ const CalendarManager: React.FC = () => {
       const token = localStorage.getItem('token');
       const response = await fetch('/api/calendar/status', {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setStatus(data);
@@ -66,10 +66,10 @@ const CalendarManager: React.FC = () => {
       const token = localStorage.getItem('token');
       const response = await fetch('/api/calendar/events?limit=50', {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setEvents(data.events || []);
@@ -90,14 +90,14 @@ const CalendarManager: React.FC = () => {
       const response = await fetch('/api/calendar/sync', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          calendar_ids: ['primary']
-        })
+          calendar_ids: ['primary'],
+        }),
       });
-      
+
       if (response.ok) {
         await fetchEvents();
         await fetchCalendarStatus();
@@ -119,8 +119,10 @@ const CalendarManager: React.FC = () => {
   const formatDuration = (start: string, end: string) => {
     const startDate = new Date(start);
     const endDate = new Date(end);
-    const duration = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
-    
+    const duration = Math.round(
+      (endDate.getTime() - startDate.getTime()) / (1000 * 60)
+    );
+
     if (duration < 60) {
       return `${duration}m`;
     } else {
@@ -132,17 +134,22 @@ const CalendarManager: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
-      case 'confirmed': return 'bg-green-100 text-green-800';
-      case 'tentative': return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'confirmed':
+        return 'bg-green-100 text-green-800';
+      case 'tentative':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const filteredEvents = events.filter(event =>
-    event.title.toLowerCase().includes(filter.toLowerCase()) ||
-    event.description?.toLowerCase().includes(filter.toLowerCase()) ||
-    event.location?.toLowerCase().includes(filter.toLowerCase())
+  const filteredEvents = events.filter(
+    event =>
+      event.title.toLowerCase().includes(filter.toLowerCase()) ||
+      event.description?.toLowerCase().includes(filter.toLowerCase()) ||
+      event.location?.toLowerCase().includes(filter.toLowerCase())
   );
 
   return (
@@ -151,15 +158,15 @@ const CalendarManager: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Calendar Manager</h2>
-          <p className="text-gray-600">Manage your calendar events and sync with Google Calendar</p>
+          <p className="text-gray-600">
+            Manage your calendar events and sync with Google Calendar
+          </p>
         </div>
         <div className="flex space-x-2">
-          <Button 
-            onClick={syncCalendar} 
-            disabled={syncing}
-            variant="outline"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+          <Button onClick={syncCalendar} disabled={syncing} variant="outline">
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`}
+            />
             {syncing ? 'Syncing...' : 'Sync Calendar'}
           </Button>
           <Button>
@@ -181,17 +188,25 @@ const CalendarManager: React.FC = () => {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex items-center space-x-2">
-                {status.status?.google_calendar ? 
-                  <CheckCircle className="w-4 h-4 text-green-500" /> :
+                {status.status?.google_calendar ? (
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                ) : (
                   <AlertCircle className="w-4 h-4 text-red-500" />
-                }
+                )}
                 <span className="text-sm font-medium">
-                  Google Calendar: {status.status?.google_calendar ? 'Connected' : 'Not Connected'}
+                  Google Calendar:{' '}
+                  {status.status?.google_calendar
+                    ? 'Connected'
+                    : 'Not Connected'}
                 </span>
               </div>
               <div className="text-sm">
                 <span className="text-gray-600">Last Sync: </span>
-                <span>{status.status?.last_sync ? formatDate(status.status.last_sync) : 'Never'}</span>
+                <span>
+                  {status.status?.last_sync
+                    ? formatDate(status.status.last_sync)
+                    : 'Never'}
+                </span>
               </div>
               <div className="text-sm">
                 <span className="text-gray-600">Total Events: </span>
@@ -207,7 +222,7 @@ const CalendarManager: React.FC = () => {
         <Input
           placeholder="Search events..."
           value={filter}
-          onChange={(e) => setFilter(e.target.value)}
+          onChange={e => setFilter(e.target.value)}
           className="max-w-md"
         />
       </div>
@@ -229,28 +244,38 @@ const CalendarManager: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredEvents.map((event) => (
-                <div key={event.id} className="border rounded-lg p-4 hover:bg-gray-50">
+              {filteredEvents.map(event => (
+                <div
+                  key={event.id}
+                  className="border rounded-lg p-4 hover:bg-gray-50"
+                >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
-                        <h3 className="font-medium text-gray-900">{event.title}</h3>
+                        <h3 className="font-medium text-gray-900">
+                          {event.title}
+                        </h3>
                         <Badge className={getStatusColor(event.status)}>
                           {event.status}
                         </Badge>
                       </div>
-                      
+
                       {event.description && (
-                        <p className="text-sm text-gray-600 mb-2">{event.description}</p>
+                        <p className="text-sm text-gray-600 mb-2">
+                          {event.description}
+                        </p>
                       )}
-                      
+
                       <div className="flex items-center space-x-4 text-sm text-gray-500">
                         <div className="flex items-center">
                           <Clock className="w-4 h-4 mr-1" />
                           {formatDate(event.start_time)}
                         </div>
                         <div className="flex items-center">
-                          <span>Duration: {formatDuration(event.start_time, event.end_time)}</span>
+                          <span>
+                            Duration:{' '}
+                            {formatDuration(event.start_time, event.end_time)}
+                          </span>
                         </div>
                         {event.location && (
                           <div className="flex items-center">
@@ -266,7 +291,7 @@ const CalendarManager: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2 ml-4">
                       <Button variant="ghost" size="sm">
                         <Edit className="w-4 h-4" />

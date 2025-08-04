@@ -17,7 +17,7 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
   height = 60,
   barColor = '#00ff88',
   backgroundColor = 'rgba(0, 0, 0, 0.2)',
-  sensitivity = 1.0
+  sensitivity = 1.0,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const analyzerRef = useRef<AnalyserNode | null>(null);
@@ -42,7 +42,8 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
 
     try {
       // Create audio context and analyzer
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioContext = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
       const analyzer = audioContext.createAnalyser();
       const source = audioContext.createMediaStreamSource(audioStream);
 
@@ -57,7 +58,10 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
       // Start visualization
       visualize();
     } catch (error) {
-      console.error('[AudioVisualizer] Failed to initialize audio analysis:', error);
+      console.error(
+        '[AudioVisualizer] Failed to initialize audio analysis:',
+        error
+      );
     }
   };
 
@@ -95,10 +99,18 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
       for (let i = 0; i < barCount; i++) {
         // Sample frequency data (we have more data points than bars)
         const dataIndex = Math.floor((i * bufferLength) / barCount);
-        const barHeight = Math.max(2, (dataArray[dataIndex] / 255) * maxBarHeight * sensitivity);
+        const barHeight = Math.max(
+          2,
+          (dataArray[dataIndex] / 255) * maxBarHeight * sensitivity
+        );
 
         // Create gradient for each bar
-        const gradient = ctx.createLinearGradient(0, canvas.height, 0, canvas.height - barHeight);
+        const gradient = ctx.createLinearGradient(
+          0,
+          canvas.height,
+          0,
+          canvas.height - barHeight
+        );
         gradient.addColorStop(0, barColor);
         gradient.addColorStop(1, barColor + '60'); // More transparent at top
 
@@ -114,7 +126,9 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
       // Add pulse effect for active recording
       if (isRecording) {
         const pulseAlpha = 0.1 + 0.1 * Math.sin(Date.now() * 0.005);
-        ctx.fillStyle = `${barColor}${Math.floor(pulseAlpha * 255).toString(16).padStart(2, '0')}`;
+        ctx.fillStyle = `${barColor}${Math.floor(pulseAlpha * 255)
+          .toString(16)
+          .padStart(2, '0')}`;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
@@ -151,19 +165,22 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
           background: backgroundColor,
           transition: 'border-color 0.3s ease',
           boxShadow: isActive ? `0 0 20px ${barColor}40` : 'none',
-          opacity: isActive ? 1 : 0.6
+          opacity: isActive ? 1 : 0.6,
         }}
       />
       {isActive && (
-        <div className="recording-indicator" style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginTop: '8px',
-          fontSize: '12px',
-          color: barColor,
-          fontWeight: 'bold'
-        }}>
+        <div
+          className="recording-indicator"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginTop: '8px',
+            fontSize: '12px',
+            color: barColor,
+            fontWeight: 'bold',
+          }}
+        >
           <div
             style={{
               width: '8px',
@@ -171,7 +188,7 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
               backgroundColor: barColor,
               borderRadius: '50%',
               marginRight: '6px',
-              animation: 'pulse 1.5s infinite'
+              animation: 'pulse 1.5s infinite',
             }}
           />
           Recording Audio...

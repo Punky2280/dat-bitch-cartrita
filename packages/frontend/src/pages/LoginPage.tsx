@@ -21,7 +21,7 @@ export const LoginPage = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      
+
       let data;
       try {
         data = await res.json();
@@ -32,7 +32,7 @@ export const LoginPage = ({
       if (res.status === 401) throw new Error('Invalid email or password.');
       if (!res.ok) throw new Error(data?.message || 'Login failed.');
       if (!data?.token) throw new Error('No authentication token received.');
-      
+
       onLoginSuccess(data.token);
     } catch (err: any) {
       setError(err.message);

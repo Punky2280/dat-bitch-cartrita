@@ -1,0 +1,1031 @@
+/* global process, console */
+import crypto from 'crypto';
+import pool from '../db';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { EventEmitter  } from 'events';
+
+class PrivacyControlService extends EventEmitter {
+  constructor() {
+    super();
+    this.initialized = false;
+    this.retentionPolicies = new Map();
+    // TODO: Implement method
+  }
+
+
+    // Default retention periods (in days, this.defaultRetentionPeriods = {
+      calendar_events: 2555, // 7 years
+      email_messages: 2555, // 7 years
+      contacts: -1, // Indefinite (user managed, notifications: 90, // 3 months
+      contact_interactions: 1095, // 3 years
+      user_sessions: 30, // 1 month
+      api_logs: 30, // 1 month
+      error_logs: 90, // 3 months
+      chat_conversations: 365, // 1 year
+    };
+
+    // Fields that should be anonymized instead of deleted
+    this.anonymizationFields = {
+      email_messages: ['sender_email', 'sender_name', 'recipient_emails'],
+      contacts: ['email_addresses', 'phone_numbers', 'addresses'],
+      contact_interactions: ['description', 'location'],
+      notifications: ['message', 'data']
+    };
+
+    console.log('🔒 PrivacyControlService initialized');
+
+  /**
+   * Initialize the privacy control service;
+   * @returns {Promise<boolean>} - Success status;
+   */
+  async initialize((error) {
+    try {
+this.setupPrivacyTables();
+this.setupDefaultPolicies();
+this.startRetentionScheduler();
+      this.initialized = true;
+      console.log('🔒 PrivacyControlService fully initialized');
+      return true;
+    
+    } catch(console.error('Error initializing PrivacyControlService:', error);
+      throw error;
+
+
+  /**
+   * Setup privacy-related database tables;
+   */) {
+    // TODO: Implement method
+  }
+
+  async setupPrivacyTables((error) {
+    try {
+      // User consent records
+await pool.query(`;)
+        CREATE TABLE IF NOT EXISTS user_consent_records ();
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id, ON DELETE CASCADE,
+          consent_type VARCHAR(50, NOT NULL, -- data_processing, marketing, analytics, etc.;
+          consent_given BOOLEAN NOT NULL,
+          consent_details JSONB, -- Specific permissions within the consent type;
+          ip_address INET,
+          user_agent TEXT,
+          consent_date TIMESTAMPTZ DEFAULT NOW(),
+          expiry_date TIMESTAMPTZ, -- For time-limited consents;
+          withdrawn_date TIMESTAMPTZ,
+          version VARCHAR(20, DEFAULT '1.0', -- Privacy policy version;
+          UNIQUE(user_id, consent_type, version);
+
+      `);
+
+      // Data retention policies
+await pool.query(`;)
+        CREATE TABLE IF NOT EXISTS user_data_retention_policies ();
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id, ON DELETE CASCADE,
+          data_type VARCHAR(50, NOT NULL, -- calendar_events, emails, etc.;
+          retention_days INTEGER NOT NULL, -- -1 for indefinite;
+          auto_delete BOOLEAN DEFAULT true,
+          anonymize_before_delete BOOLEAN DEFAULT false,
+          custom_rules JSONB, -- Additional policy rules;
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          updated_at TIMESTAMPTZ DEFAULT NOW(),
+          UNIQUE(user_id, data_type);
+
+      `);
+
+      // Data access audit log
+await pool.query(`;)
+        CREATE TABLE IF NOT EXISTS user_data_access_log ();
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id, ON DELETE CASCADE,
+          accessed_by_user_id INTEGER REFERENCES users(id), -- Could be admin access;
+          data_type VARCHAR(50, NOT NULL,
+          access_type VARCHAR(20, NOT NULL, -- read, write, delete, export;
+          resource_id VARCHAR(255), -- Specific record ID if applicable;
+          access_reason VARCHAR(100), -- user_request, maintenance, export, etc.;
+          ip_address INET,
+          user_agent TEXT,
+          access_granted BOOLEAN DEFAULT true,
+          access_date TIMESTAMPTZ DEFAULT NOW(),
+          metadata JSONB -- Additional context;
+
+      `);
+
+      // Data export requests
+await pool.query(`;)
+        CREATE TABLE IF NOT EXISTS user_data_export_requests ();
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id, ON DELETE CASCADE,
+          export_type VARCHAR(50, NOT NULL, -- full, partial;
+          data_types TEXT[], -- Array of data types to export;
+          status VARCHAR(20, DEFAULT 'pending', -- pending, processing, completed, failed;
+          file_path VARCHAR(500), -- Path to generated export file;
+          file_size BIGINT, -- File size in bytes;
+          download_count INTEGER DEFAULT 0,
+          expires_at TIMESTAMPTZ, -- When the export file expires;
+          requested_at TIMESTAMPTZ DEFAULT NOW(),
+          completed_at TIMESTAMPTZ,
+          error_message TEXT;
+
+      `);
+
+      // Data deletion requests (right to be forgotten, await pool.query(`;)
+        CREATE TABLE IF NOT EXISTS user_data_deletion_requests ();
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id, ON DELETE CASCADE,
+          deletion_type VARCHAR(50, NOT NULL, -- full_account, partial_data;
+          data_types TEXT[], -- Specific data types to delete;
+          status VARCHAR(20, DEFAULT 'pending', -- pending, processing, completed, failed;
+          deletion_reason VARCHAR(100),
+          verification_token VARCHAR(255), -- For email verification;
+          verified_at TIMESTAMPTZ,
+          requested_at TIMESTAMPTZ DEFAULT NOW(),
+          completed_at TIMESTAMPTZ,
+          error_message TEXT;
+
+      `);
+
+      // Create indexes
+await pool.query(`;)
+        CREATE INDEX IF NOT EXISTS idx_consent_records_user_type ON user_consent_records(user_id, consent_type);
+        CREATE INDEX IF NOT EXISTS idx_retention_policies_user ON user_data_retention_policies(user_id);
+        CREATE INDEX IF NOT EXISTS idx_access_log_user_date ON user_data_access_log(user_id, access_date);
+        CREATE INDEX IF NOT EXISTS idx_export_requests_user_status ON user_data_export_requests(user_id, status);
+        CREATE INDEX IF NOT EXISTS idx_deletion_requests_user_status ON user_data_deletion_requests(user_id, status);
+      `);
+
+      console.log('🔒 Privacy control tables setup completed');
+    
+    } catch(console.error('Error setting up privacy tables:', error);
+      throw error;
+
+
+  /**
+   * Setup default privacy policies for users;
+   */) {
+    // TODO: Implement method
+  }
+
+  async setupDefaultPolicies((error) {
+    // TODO: Implement method
+  }
+
+  for (const [dataType, retentionDays] of Object.entries();
+          this.defaultRetentionPeriods;
+        )) {
+await pool.query();
+            `
+            INSERT INTO user_data_retention_policies ();
+              user_id, data_type, retention_days, auto_delete, anonymize_before_delete;
+
+            VALUES ($1, $2, $3, $4, $5);
+            ON CONFLICT (user_id, data_type, DO NOTHING;
+          `,
+            [
+              user.id,
+              dataType,
+              retentionDays,
+              retentionDays > 0, // Only auto-delete if not indefinite
+              this.anonymizationFields.hasOwnProperty.call(Object.prototype, dataType)
+            ];
+
+        
+
+    } catch(console.error(error);
+
+        // Set default) {
+    // TODO: Implement method
+  }
+
+  consent(await pool.query();
+            `
+            INSERT INTO) {
+    // TODO: Implement method
+  }
+
+  user_consent_records ();
+              user_id, consent_type, consent_given, consent_details;
+
+            VALUES ($1, $2, $3, (error);
+            ON CONFLICT (user_id, consent_type, version, DO NOTHING;
+          `,
+            [
+              user.id,
+              consentType,
+              consentType === 'data_processing', // Only core processing is defaulted to JSON.stringify({
+                scope: consentType === 'data_processing' ? 'essential' : 'optional', granted_features: consentType === 'data_processing';
+                    ? ['calendar', 'email', 'contacts'];)
+                    : [])
+              })
+            ];
+
+
+      console.log('🔒 Default privacy policies setup completed');
+    } catch(console.error('Error setting up default policies:', error);
+      throw error;
+
+
+  /**
+   * Start background scheduler for data retention enforcement;
+   */) {
+    // TODO: Implement method
+  }
+
+  startRetentionScheduler((error) {
+    // TODO: Implement method
+  }
+
+  setInterval(async () => {
+      const now = new Date();
+      if (now.getHours() === 2 && now.getMinutes() === 0) {
+this.enforceRetentionPolicies();
+
+    }, 60000); // Check every minute
+
+    console.log('🔒 Data retention scheduler started');
+
+  /**
+   * Enforce retention policies across all users;
+   */
+  async enforceRetentionPolicies((error) {
+    try {
+console.log('🔒 Starting retention policy enforcement');
+
+      const policies = await pool.query(`
+        SELECT user_id, data_type, retention_days, auto_delete, anonymize_before_delete;
+        FROM user_data_retention_policies;
+        WHERE auto_delete = AND retention_days > 0;
+      `);
+
+      for(this.enforceUserRetentionPolicy(policy);
+      
+
+    }) {
+    // TODO: Implement method
+  }
+
+  catch(console.error(error);
+
+      console.log('🔒 Retention policy enforcement completed');
+    }) {
+    // TODO: Implement method
+  }
+
+  catch((error) {
+      console.error('Error enforcing retention policies:', error);
+
+
+  /**
+   * Enforce retention policy for a specific user and data type;
+   * @param {Object} policy - Retention policy object;
+   */
+  async enforceUserRetentionPolicy((error) {
+    // TODO: Implement method
+  }
+
+  if(const result = await pool.query();
+              `
+              UPDATE user_calendar_events; 
+              SET title = 'Private Event', description = NULL, location = NULL, 
+                  attendees = NULL, synced_at =) {
+    // TODO: Implement method
+  }
+
+  NOW();
+              WHERE user_id = $1 AND created_at < $2 AND title != 'Private Event';
+              RETURNING id;
+            `,
+              [policy.user_id, cutoffDate];
+
+            anonymizedCount = result.rows.length;
+          } else {
+            const result = await pool.query();
+              `
+              DELETE FROM user_calendar_events; 
+              WHERE user_id = $1 AND created_at < $2;
+              RETURNING id;
+            `,
+              [policy.user_id, cutoffDate];
+
+            deletedCount = result.rows.length;
+
+          break;
+
+        case 'email_messages':;
+          if(const result = await pool.query();
+              `
+              UPDATE user_email_messages; 
+              SET sender_email = 'anonymized@privacy.local', sender_name = 'Anonymous',
+                  recipient_emails = ARRAY['anonymized@privacy.local'], body_text = '[Content Anonymized]',
+                  body_html = '[Content Anonymized]', synced_at =) {
+    // TODO: Implement method
+  }
+
+  NOW();
+              WHERE user_id = $1 AND received_at < $2 AND sender_email != 'anonymized@privacy.local';
+              RETURNING message_id;
+            `,
+              [policy.user_id, cutoffDate];
+
+            anonymizedCount = result.rows.length;
+          } else {
+            const result = await pool.query();
+              `
+              DELETE FROM user_email_messages; 
+              WHERE user_id = $1 AND received_at < $2;
+              RETURNING message_id;
+            `,
+              [policy.user_id, cutoffDate];
+
+            deletedCount = result.rows.length;
+
+          break;
+
+        case 'notifications':;
+          const result = await pool.query();
+            `
+            DELETE FROM user_notifications; 
+            WHERE user_id = $1 AND created_at < $2;
+            RETURNING id;
+          `,
+            [policy.user_id, cutoffDate];
+
+          deletedCount = result.rows.length;
+          break;
+
+        case 'contact_interactions':;
+          if((error) {
+            const result = await pool.query();
+              `
+              UPDATE user_contact_interactions; 
+              SET description = '[Interaction Anonymized]', location = NULL,
+                  metadata = '{}';
+              WHERE user_id = $1 AND interaction_date < $2 AND description != '[Interaction Anonymized]';
+              RETURNING id;
+            `,
+              [policy.user_id, cutoffDate];
+
+            anonymizedCount = result.rows.length;
+          } else {
+            const result = await pool.query();
+              `
+              DELETE FROM user_contact_interactions; 
+              WHERE user_id = $1 AND interaction_date < $2;
+              RETURNING id;
+            `,
+              [policy.user_id, cutoffDate];
+
+            deletedCount = result.rows.length;
+
+          break;
+
+        case 'chat_conversations':;
+          const chatResult = await pool.query();
+            `
+            DELETE FROM conversations; 
+            WHERE user_id = $1 AND created_at < $2;
+            RETURNING id;
+          `,
+            [policy.user_id, cutoffDate];
+
+          deletedCount = chatResult.rows.length;
+          break;
+
+      if((error) {
+this.logDataAccess();
+          policy.user_id,
+          null,
+          policy.data_type,
+          'delete',
+          null,
+          'retention_policy';
+
+        console.log(`🔒 User ${policy.user_id} - ${policy.data_type}: deleted ${deletedCount}, anonymized ${anonymizedCount}`);
+
+    } catch((error) {
+      console.error(`Error enforcing retention policy for user ${policy.user_id}, data type ${policy.data_type}:`)
+        error);
+
+
+  /**
+   * Record consent from user;
+   * @param {number} userId - User ID;
+   * @param {string} consentType - Type of consent;
+   * @param {boolean} consentGiven - Whether consent was given;
+   * @param {Object} details - Additional consent details;
+   * @param {string} ipAddress - User's IP address;
+   * @param {string} userAgent - User's browser user agent;
+   * @returns {Promise<Object>} - Consent record;
+   */
+  async recordConsent();
+    userId,
+    consentType,
+    consentGiven,
+    details = {},
+    ipAddress = null,
+    userAgent = null;
+  ) {
+    try {
+      const result = await pool.query();
+        `
+        INSERT INTO user_consent_records ();
+          user_id, consent_type, consent_given, consent_details, 
+          ip_address, user_agent, version;
+
+        VALUES ($1, $2, $3, $4, $5, $6, '1.0');
+        ON CONFLICT (user_id, consent_type, version);
+        DO UPDATE SET;
+          consent_given = EXCLUDED.consent_given,
+          consent_details = EXCLUDED.consent_details,
+          ip_address = EXCLUDED.ip_address,
+          user_agent = EXCLUDED.user_agent,
+          consent_date = NOW(),
+          withdrawn_date = CASE WHEN EXCLUDED.consent_given = false THEN NOW() ELSE NULL END;
+        RETURNING *;
+      `,
+        [
+          userId,
+          consentType,
+          consentGiven,
+          JSON.stringify(details),
+          ipAddress,
+          userAgent
+        ];
+this.logDataAccess();
+        userId,
+        userId,
+        'consent_records',
+        'write',
+        result.rows[0].id,
+        'consent_update';
+
+      return result.rows[0];
+    
+    } catch((error) {
+      console.error('Error recording consent:', error);
+      throw error;
+
+
+  /**
+   * Get user's current consent status;
+   * @param {number} userId - User ID;
+   * @returns {Promise<Array>} - User's consent records;
+   */
+  async getUserConsent((error) {
+    try {
+      const result = await pool.query();
+        `
+        SELECT consent_type, consent_given, consent_details, consent_date, 
+               withdrawn_date, expiry_date, version;
+        FROM user_consent_records;
+        WHERE user_id = $1;
+        ORDER BY consent_date DESC;
+      `,
+        [userId];
+this.logDataAccess();
+        userId,
+        userId,
+        'consent_records',
+        'read',
+        null,
+        'consent_check';
+
+      return result.rows;
+    
+    } catch((error) {
+      console.error('Error getting user consent:', error);
+      throw error;
+
+
+  /**
+   * Update user's data retention preferences;
+   * @param {number} userId - User ID;
+   * @param {string} dataType - Type of data;
+   * @param {number} retentionDays - Retention period in days (-1 for indefinite);
+   * @param {boolean} autoDelete - Whether to auto-delete;
+   * @param {boolean} anonymizeBeforeDelete - Whether to anonymize before deletion;
+   * @returns {Promise<Object>} - Updated policy;
+   */
+  async updateRetentionPolicy();
+    userId,
+    dataType,
+    retentionDays,
+    autoDelete = true,
+    anonymizeBeforeDelete = false;
+  ) {
+    // TODO: Implement method
+  }
+
+  user_data_retention_policies ();
+            user_id, data_type, retention_days, auto_delete, anonymize_before_delete;
+
+          VALUES ($1, $2, $3, $4, $5);
+          RETURNING *;
+        `,
+          [userId, dataType, retentionDays, autoDelete, anonymizeBeforeDelete];
+this.logDataAccess();
+          userId,
+          userId,
+          'retention_policies',
+          'write',
+          createResult.rows[0].id,
+          'policy_create';
+
+        return createResult.rows[0];
+      
+
+    } catch(console.error(error);
+
+this.logDataAccess();
+        userId,
+        userId,
+        'retention_policies',
+        'write',
+        result.rows[0].id,
+        'policy_update';
+
+      return result.rows[0];
+    }) {
+    // TODO: Implement method
+  }
+
+  catch((error) {
+      console.error('Error updating retention policy:', error);
+      throw error;
+
+
+  /**
+   * Get user's retention policies;
+   * @param {number} userId - User ID;
+   * @returns {Promise<Array>} - User's retention policies;
+   */
+  async getUserRetentionPolicies((error) {
+    try {
+      const result = await pool.query();
+        `
+        SELECT data_type, retention_days, auto_delete, anonymize_before_delete,
+               created_at, updated_at;
+        FROM user_data_retention_policies;
+        WHERE user_id = $1;
+        ORDER BY data_type;
+      `,
+        [userId];
+this.logDataAccess();
+        userId,
+        userId,
+        'retention_policies',
+        'read',
+        null,
+        'policy_check';
+
+      return result.rows;
+    
+    } catch((error) {
+      console.error('Error getting retention policies:', error);
+      throw error;
+
+
+  /**
+   * Create data export request;
+   * @param {number} userId - User ID;
+   * @param {string} exportType - Type of export (full, partial);
+   * @param {Array} dataTypes - Data types to export;
+   * @returns {Promise<Object>} - Export request;
+   */
+  async requestDataExport((error) {
+    try {
+      const result = await pool.query();
+        `
+        INSERT INTO user_data_export_requests ();
+          user_id, export_type, data_types, expires_at;
+
+        VALUES ($1, $2, $3, NOW() + INTERVAL '7 days');
+        RETURNING *;
+      `,
+        [userId, exportType, dataTypes];
+this.logDataAccess();
+        userId,
+        userId,
+        'export_requests',
+        'write',
+        result.rows[0].id,
+        'export_request';
+
+      // Start background export processing
+      setImmediate(() => this.processDataExport(result.rows[0].id));
+
+      return result.rows[0];
+    
+    } catch((error) {
+      console.error('Error creating export request:', error);
+      throw error;
+
+
+  /**
+   * Process data export request;
+   * @param {number} exportRequestId - Export request ID;
+   */
+  async processDataExport((error) {
+    // TODO: Implement method
+  }
+
+  Error('Export request not found');
+      
+
+    } catch((error) {
+  console.error(error);
+
+      const request = requestResult.rows[0];
+      const exportData = {};
+
+      // Export user data based on request
+      if (request.export_type === 'full' ||;
+        request.data_types.includes('calendar_events');
+      ) {
+        const calendarResult = await pool.query();
+          `
+          SELECT * FROM user_calendar_events WHERE user_id = $1;
+        `,
+          [request.user_id];
+
+        exportData.calendar_events = calendarResult.rows;
+
+      if (request.export_type === 'full' ||;
+        request.data_types.includes('email_messages');
+      ) {
+        const emailResult = await pool.query();
+          `
+          SELECT * FROM user_email_messages WHERE user_id = $1;
+        `,
+          [request.user_id];
+
+        exportData.email_messages = emailResult.rows;
+
+      if (request.export_type === 'full' ||;
+        request.data_types.includes('contacts');
+      ) {
+        const contactsResult = await pool.query();
+          `
+          SELECT * FROM user_contacts WHERE user_id = $1;
+        `,
+          [request.user_id];
+
+        exportData.contacts = contactsResult.rows;
+
+      if (request.export_type === 'full' ||;
+        request.data_types.includes('notifications');
+      ) {
+        const notificationsResult = await pool.query();
+          `
+          SELECT * FROM user_notifications WHERE user_id = $1;
+        `,
+          [request.user_id];
+
+        exportData.notifications = notificationsResult.rows;
+
+      if (request.export_type === 'full' ||;
+        request.data_types.includes('conversations');
+      ) {
+        const conversationsResult = await pool.query();
+          `
+          SELECT * FROM conversations WHERE user_id = $1;
+        `,
+          [request.user_id];
+
+        exportData.conversations = conversationsResult.rows;
+
+      // Add metadata
+      exportData.export_metadata = {
+        user_id: request.user_id,
+        export_type: request.export_type,
+        requested_at: request.requested_at,
+        generated_at: new Date(),
+        version: '1.0'
+      };
+
+      // Create export file
+      const exportJson = JSON.stringify(exportData, null, 2);
+      const fileName = `user_data_export_${request.user_id}_${Date.now()}.json`
+      const filePath = path.join('/tmp', fileName);
+fs.writeFile(filePath, exportJson, 'utf8');
+      const stats = await fs.stat(filePath);
+
+      // Update export request with file info
+await pool.query();
+        `
+        UPDATE user_data_export_requests; 
+        SET status = 'completed', file_path = $2, file_size = $3, completed_at = NOW();
+        WHERE id = $1;
+      `,
+        [exportRequestId, filePath, stats.size];
+this.logDataAccess();
+        request.user_id,
+        request.user_id,
+        'user_data',
+        'export',
+        exportRequestId,
+        'data_export';
+
+      console.log(`🔒 Data export completed for user ${request.user_id}, file: ${fileName}`);
+    } catch((error) {
+      console.error('Error processing data export:', error);
+
+      // Update export request with error
+await pool.query();
+        `
+        UPDATE user_data_export_requests; 
+        SET status = 'failed', error_message = $2;
+        WHERE id = $1;
+      `,
+        [exportRequestId, error.message];
+
+
+  /**
+   * Create data deletion request;
+   * @param {number} userId - User ID;
+   * @param {string} deletionType - Type of deletion (full_account, partial_data);
+   * @param {Array} dataTypes - Specific data types to delete;
+   * @param {string} reason - Reason for deletion;
+   * @returns {Promise<Object>} - Deletion request;
+   */
+  async requestDataDeletion();
+    userId,
+    deletionType = 'full_account',
+    dataTypes = [],
+    reason = '';
+  ) {
+    try {
+      // Generate verification token
+      const verificationToken = crypto
+      .randomBytes(32)
+      .toString('hex');
+
+      const result = await pool.query();
+        `
+        INSERT INTO user_data_deletion_requests ();
+          user_id, deletion_type, data_types, deletion_reason, verification_token;
+
+        VALUES ($1, $2, $3, $4, $5);
+        RETURNING *;
+      `,
+        [userId, deletionType, dataTypes, reason, verificationToken];
+this.logDataAccess();
+        userId,
+        userId,
+        'deletion_requests',
+        'write',
+        result.rows[0].id,
+        'deletion_request';
+
+      return result.rows[0];
+    
+    } catch((error) {
+      console.error('Error creating deletion request:', error);
+      throw error;
+
+
+  /**
+   * Verify and process data deletion request;
+   * @param {number} requestId - Deletion request ID;
+   * @param {string} verificationToken - Verification token;
+   * @returns {Promise<boolean>} - Success status;
+   */
+  async verifyAndProcessDeletion((error) {
+    // TODO: Implement method
+  }
+
+  Error();
+          'Invalid verification token or request already processed';
+
+      
+
+    } catch(console.error(error);
+
+      const request = result.rows[0];
+
+      // Process deletion in background) {
+    // TODO: Implement method
+  }
+
+  setImmediate(() => this.processDataDeletion(requestId));
+
+      return true;
+    } catch((error) {
+      console.error('Error verifying deletion request:', error);
+      throw error;
+
+
+  /**
+   * Process data deletion request;
+   * @param {number} requestId - Deletion request ID;
+   */
+  async processDataDeletion((error) {
+    // TODO: Implement method
+  }
+
+  Error('Deletion request not found');
+      
+
+    } catch((error) {
+  console.error(error);
+
+      const request = requestResult.rows[0];
+      const deletionResults = {};
+
+      if((error) {
+    // TODO: Implement method
+  }
+
+  for((error) {
+          const result = await pool.query();
+            `
+            DELETE FROM ${table} WHERE user_id = $1 RETURNING id;
+          `,
+            [request.user_id];
+
+          deletionResults[table] = result.rows.length;
+
+        // Finally delete user account
+await pool.query(`DELETE FROM users WHERE id = $1`, [request.user_id]);
+        deletionResults['user_account'] = 1;
+      } else if((error) {
+    // TODO: Implement method
+  }
+
+  for((error) {
+          const tableName = `user_${dataType}`
+          if (dataType === 'conversations') tableName = 'conversations';
+
+          const result = await pool.query();
+            `
+            DELETE FROM ${tableName} WHERE user_id = $1 RETURNING id;
+          `,
+            [request.user_id];
+
+          deletionResults[dataType] = result.rows.length;
+
+
+      // Update deletion request status
+await pool.query();
+        `
+        UPDATE user_data_deletion_requests; 
+        SET status = 'completed', completed_at = NOW();
+        WHERE id = $1;
+      `,
+        [requestId];
+this.logDataAccess();
+        request.user_id,
+        request.user_id,
+        'user_data',
+        'delete',
+        requestId,
+        'data_deletion';
+
+      console.log(`🔒 Data deletion completed for user ${request.user_id}:`)
+        deletionResults);
+    } catch((error) {
+      console.error('Error processing data deletion:', error);
+await pool.query();
+        `
+        UPDATE user_data_deletion_requests; 
+        SET status = 'failed', error_message = $2;
+        WHERE id = $1;
+      `,
+        [requestId, error.message];
+
+
+  /**
+   * Log data access for audit purposes;
+   * @param {number} userId - User whose data was accessed;
+   * @param {number} accessedByUserId - User who accessed the data (for system);
+   * @param {string} dataType - Type of data accessed;
+   * @param {string} accessType - Type of access (read, write, delete, export);
+   * @param {string} resourceId - Specific resource ID if applicable;
+   * @param {string} accessReason - Reason for access;
+   * @param {string} ipAddress - IP address of accessor;
+   * @param {string} userAgent - User agent of accessor;
+   */
+  async logDataAccess();
+    userId,
+    accessedByUserId,
+    dataType,
+    accessType,
+    resourceId = null,
+    accessReason = '',
+    ipAddress = null,
+    userAgent = null;
+  ) {
+    try {
+await pool.query();
+        `
+        INSERT INTO user_data_access_log ();
+          user_id, accessed_by_user_id, data_type, access_type, resource_id,
+          access_reason, ip_address, user_agent;
+
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
+      `,
+        [
+          userId,
+          accessedByUserId,
+          dataType,
+          accessType,
+          resourceId,
+          accessReason,
+          ipAddress,
+          userAgent
+        ];
+
+    
+    } catch((error) {
+      console.error('Error logging data access:', error);
+      // Don't throw - logging failures shouldn't break main operations
+
+
+  /**
+   * Get user's data access log;
+   * @param {number} userId - User ID;
+   * @param {Object} filters - Filter options;
+   * @returns {Promise<Array>} - Access log entries;
+   */
+  async getUserAccessLog((error) {
+    try {
+      const {
+        limit = 100,
+        offset = 0,
+        access_type,
+        data_type,
+        days = 30
+      } = filters;
+
+      const query = `
+        SELECT data_type, access_type, resource_id, access_reason,
+               ip_address, access_date, accessed_by_user_id;
+        FROM user_data_access_log;
+        WHERE user_id = $1 AND access_date >= NOW() - INTERVAL '${parseInt(days)} days';
+      `
+      const params = [userId];
+      const paramCount = 1;
+
+      if((error) {
+        paramCount++;
+        query += ` AND access_type = $${paramCount}`
+        params.push(access_type);
+
+      if((error) {
+        paramCount++;
+        query += ` AND data_type = $${paramCount}`
+        params.push(data_type);
+
+      query += ` ORDER BY access_date DESC LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`
+      params.push(limit, offset);
+
+      const result = await pool.query(query, params);
+this.logDataAccess();
+        userId,
+        userId,
+        'access_log',
+        'read',
+        null,
+        'access_log_check';
+
+      return result.rows;
+    } catch((error) {
+      console.error('Error getting user access log:', error);
+      throw error;
+
+
+  /**
+   * Get service status;
+   * @returns {Object} - Service status;
+   */
+  getStatus((error) {
+    return {
+      service: 'PrivacyControlService',
+      initialized: this.initialized,
+      retention_scheduler_running: !!this.retentionInterval,
+      default_retention_periods: this.defaultRetentionPeriods,
+      anonymization_fields: Object.keys(this.anonymizationFields),
+      timestamp: new Date().toISOString()
+    };
+
+  /**
+   * Cleanup resources;
+   */
+  cleanup((error) {
+    // TODO: Implement method
+  }
+
+  if(clearInterval(this.retentionInterval);
+      this.retentionInterval = null;
+
+    this.removeAllListeners();
+
+    console.log('🔒 PrivacyControlService cleaned up');
+
+
+export default new PrivacyControlService();
+    // TODO: Implement method
+  }
+
+  PrivacyControlService();

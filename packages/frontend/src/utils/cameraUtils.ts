@@ -29,22 +29,22 @@ export interface FrameCaptureResult {
 export async function requestCameraPermission(): Promise<CameraPermissionResult> {
   try {
     console.log('[CameraUtils] Requesting camera permission...');
-    
+
     const constraints: MediaStreamConstraints = {
       video: {
         width: { ideal: 1280, max: 1920 },
         height: { ideal: 720, max: 1080 },
         frameRate: { ideal: 30, max: 60 },
-        facingMode: 'user' // Prefer front camera
+        facingMode: 'user', // Prefer front camera
       },
-      audio: false // Only video for visual analysis
+      audio: false, // Only video for visual analysis
     };
 
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    
+
     console.log('[CameraUtils] Camera permission granted');
     console.log('[CameraUtils] Video tracks:', stream.getVideoTracks().length);
-    
+
     // Log camera settings
     const videoTrack = stream.getVideoTracks()[0];
     if (videoTrack) {
@@ -53,20 +53,21 @@ export async function requestCameraPermission(): Promise<CameraPermissionResult>
         width: settings.width,
         height: settings.height,
         frameRate: settings.frameRate,
-        deviceId: settings.deviceId
+        deviceId: settings.deviceId,
       });
     }
 
     return {
       granted: true,
-      stream
+      stream,
     };
   } catch (error: any) {
     console.error('[CameraUtils] Camera permission denied:', error);
-    
+
     let errorMessage = 'Camera access denied';
     if (error.name === 'NotAllowedError') {
-      errorMessage = 'Camera permission was denied. Please allow camera access and try again.';
+      errorMessage =
+        'Camera permission was denied. Please allow camera access and try again.';
     } else if (error.name === 'NotFoundError') {
       errorMessage = 'No camera device found.';
     } else if (error.name === 'NotReadableError') {
@@ -75,7 +76,7 @@ export async function requestCameraPermission(): Promise<CameraPermissionResult>
 
     return {
       granted: false,
-      error: errorMessage
+      error: errorMessage,
     };
   }
 }
@@ -92,13 +93,13 @@ export function captureFrame(
       width = videoElement.videoWidth,
       height = videoElement.videoHeight,
       quality = 0.8,
-      format = 'jpeg'
+      format = 'jpeg',
     } = options;
 
     // Create canvas for frame capture
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    
+
     if (!ctx) {
       throw new Error('Failed to get canvas context');
     }
@@ -117,15 +118,14 @@ export function captureFrame(
       success: true,
       imageData,
       blob: undefined, // Use captureFrameAsync for blob
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
-
   } catch (error: any) {
     console.error('[CameraUtils] Frame capture failed:', error);
     return {
       success: false,
       error: error.message,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
 }
@@ -137,23 +137,23 @@ export async function captureFrameAsync(
   videoElement: HTMLVideoElement,
   options: CameraFrameOptions = {}
 ): Promise<FrameCaptureResult> {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     try {
       const {
         width = videoElement.videoWidth,
         height = videoElement.videoHeight,
         quality = 0.8,
-        format = 'jpeg'
+        format = 'jpeg',
       } = options;
 
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      
+
       if (!ctx) {
         resolve({
           success: false,
           error: 'Failed to get canvas context',
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
         return;
       }
@@ -165,19 +165,23 @@ export async function captureFrameAsync(
       const mimeType = `image/${format}`;
       const imageData = canvas.toDataURL(mimeType, quality);
 
-      canvas.toBlob((blob) => {
-        resolve({
-          success: true,
-          imageData,
-          blob: blob || undefined,
-          timestamp: Date.now()
-        });
-      }, mimeType, quality);
+      canvas.toBlob(
+        blob => {
+          resolve({
+            success: true,
+            imageData,
+            blob: blob || undefined,
+            timestamp: Date.now(),
+          });
+        },
+        mimeType,
+        quality
+      );
     } catch (error: any) {
       resolve({
         success: false,
         error: error.message,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
   });
@@ -209,11 +213,17 @@ export class FrameCaptureManager {
       return;
     }
 
-    console.log(`[FrameCaptureManager] Starting frame capture every ${intervalMs}ms`);
+    console.log(
+      `[FrameCaptureManager] Starting frame capture every ${intervalMs}ms`
+    );
     this.isCapturing = true;
 
     this.intervalId = window.setInterval(async () => {
-      if (!this.isCapturing || this.videoElement.paused || this.videoElement.ended) {
+      if (
+        !this.isCapturing ||
+        this.videoElement.paused ||
+        this.videoElement.ended
+      ) {
         return;
       }
 

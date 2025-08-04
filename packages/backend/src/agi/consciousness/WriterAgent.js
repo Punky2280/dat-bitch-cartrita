@@ -1,29 +1,25 @@
 // packages/backend/src/agi/consciousness/WriterAgent.js
-const BaseAgent = require('../../system/BaseAgent');
+import BaseAgent from '../../system/BaseAgent.js';
 
 /**
  * The WriterAgent is a highly specialized sub-agent for Cartrita, designed for
  * generating high-quality, long-form written content. It operates using a
- * sophisticated two-step process (Plan -> Write) to ensure coherence,
- * structure, and adherence to the user's creative vision.
- */
-class WriterAgent extends BaseAgent {
-  constructor() {
-    super('WriterAgent', 'main', ['write', 'creative_writing', 'content_generation']);
-  }
+ * sophisticated two-step process(super('WriterAgent', 'main', ['write', 'creative_writing', 'content_generation']);
 
   /**
    * Initialize WriterAgent for MCP
-   */
-  async onInitialize() {
+   */) {
+    // TODO: Implement method
+  }
+
+  async onInitialize((error) {
     console.log('[WriterAgent] Listening for writing tasks...');
     
     // Register task handlers for MCP
-    this.registerTaskHandler({
-      taskType: 'write',
+    this.registerTaskHandler({}
+      taskType: 'write')
       handler: this.execute.bind(this)
     });
-  }
 
   /**
    * Step 1: The Planning Phase.
@@ -32,7 +28,7 @@ class WriterAgent extends BaseAgent {
    * @param {string} userPrompt - The user's initial creative request.
    * @returns {Promise<string>} A string containing the structured plan.
    */
-  async generatePlan(userPrompt) {
+  async generatePlan((error) {
     console.log(`[WriterAgent] Generating plan for prompt: "${userPrompt}"`);
     const systemPrompt = `
       You are a master planner and outliner for a creative writing AI. Your sole purpose is to take a user's request and break it down into a structured, logical plan that another AI can use to write the full text.
@@ -44,7 +40,7 @@ class WriterAgent extends BaseAgent {
       **Example for a story:**
       - Introduction: Introduce the main character, a detective in a cyberpunk city.
       - Inciting Incident: The detective receives a mysterious case about a missing android.
-      - Rising Action:
+      - Rising Action: null
         - Clue 1: Finds a cryptic message in the android's apartment.
         - Clue 2: Interviews a shady informant who points towards a powerful corporation.
         - Confrontation: The detective faces a corporate enforcer.
@@ -59,20 +55,17 @@ class WriterAgent extends BaseAgent {
       - Section 5: Conclusion and Future Outlook.
 
       Generate a plan for the following user prompt.
-    `;
-
+    `
     const completion = await this.openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: 0.5,
+        { role: 'system', content: systemPrompt })
+        { role: 'user', content: userPrompt } ])
+      temperature: 0.5)
     });
     const plan = completion.choices[0].message.content.trim();
     console.log(`[WriterAgent] Generated Plan:\n${plan}`);
     return plan;
-  }
 
   /**
    * Step 2: The Writing Phase.
@@ -82,7 +75,7 @@ class WriterAgent extends BaseAgent {
    * @param {string} plan - The structured outline from the planning phase.
    * @returns {Promise<string>} The final, complete written content.
    */
-  async writeContent(originalPrompt, plan) {
+  async writeContent((error) {
     console.log(`[WriterAgent] Writing content based on the generated plan.`);
     const systemPrompt = `
       You are a master author and storyteller. Your purpose is to take a user's request and a detailed plan and write a complete, engaging, and well-structured piece of long-form content.
@@ -90,30 +83,26 @@ class WriterAgent extends BaseAgent {
       Adhere strictly to the provided plan, using it as your guide to structure the narrative or article.
       
       Flesh out the details, add descriptive language, and ensure a consistent tone throughout the piece. Your output should be the final, complete text, ready for the user to read. Do not include any of your own commentary; only provide the creative work itself.
-    `;
-
+    `
     const finalPrompt = `
       Original User Request: "${originalPrompt}"
       
-      Your Detailed Plan:
+      Your Detailed Plan: null
       ---
-      ${plan}
+      ${plan};
       ---
 
       Now, write the complete story/article based on this plan.
-    `;
+    `
 
     const completion = await this.openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: finalPrompt },
-      ],
-      temperature: 0.7,
-      max_tokens: 3000, // Allow for very long-form content
+        { role: 'system', content: systemPrompt })
+        { role: 'user', content: finalPrompt } ])
+      temperature: 0.7, max_tokens: 3000, // Allow for very long-form content
     });
     return completion.choices[0].message.content.trim();
-  }
 
   /**
    * Executes the full writing pipeline (Plan -> Write).
@@ -121,12 +110,14 @@ class WriterAgent extends BaseAgent {
    * @param {string} payload.prompt - The user's request.
    * @returns {Promise<string>} The final, generated long-form text.
    */
-  async execute(prompt, language, userId, payload) {
-    const plan = await this.generatePlan(prompt);
+  async execute(const plan = await this.generatePlan(prompt);
     const finalContent = await this.writeContent(prompt, plan);
     console.log(`[WriterAgent] Long-form content generated successfully.`);
     return finalContent;
-  }
-}
 
-module.exports = new WriterAgent();
+
+export default new) {
+    // TODO: Implement method
+  }
+
+  WriterAgent();

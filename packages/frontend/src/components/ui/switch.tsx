@@ -11,7 +11,7 @@ export const Switch: React.FC<SwitchProps> = ({
   checked,
   onCheckedChange,
   disabled = false,
-  className = ''
+  className = '',
 }) => {
   return (
     <button

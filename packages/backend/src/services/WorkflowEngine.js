@@ -1,20 +1,25 @@
-const OpenAI = require('openai');
-const axios = require('axios');
-const db = require('../db');
+/* global process, console */
+import OpenAI from 'openai';
+import axios from 'axios';
+import db from '../db.js';
 
 /**
- * 🚀 CARTRITA WORKFLOW ENGINE v2.0
- * Advanced AI-powered workflow automation system with optimized sub-agents
+ * 🚀 CARTRITA WORKFLOW ENGINE v2.1 - LangChain StateGraph Compatible
+ * Advanced AI-powered workflow automation system with hierarchical agent integration
  * Supports RAG pipelines, MCP integration, multi-agent orchestration
+ * FULLY COMPATIBLE with EnhancedLangChainCoreAgent hierarchical system
  */
 class WorkflowEngine {
-  constructor() {
+  constructor(coreAgent = null) {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY
     });
     this.executionLogs = [];
     this.workflowContext = new Map(); // Shared context between nodes
     this.subAgents = this.initializeSubAgents();
+    this.coreAgent = coreAgent; // Reference to hierarchical supervisor
+    this.initialized = true;
+    console.log('✅ WorkflowEngine v2.1 initialized with LangChain StateGraph support');
   }
 
   /**
@@ -26,12 +31,12 @@ class WorkflowEngine {
       aiOrchestrator: new AIOrchestrator(this.openai),
       ragProcessor: new RAGProcessor(this.openai),
       mcpConnector: new MCPConnector(),
-      
-      // ⚡ Execution Agents  
+
+      // ⚡ Execution Agents
       httpAgent: new HTTPAgent(),
       dataProcessor: new DataProcessor(),
       logicEngine: new LogicEngine(),
-      
+
       // 🔧 Utility Agents
       validationAgent: new ValidationAgent(),
       transformationAgent: new TransformationAgent(),
@@ -40,7 +45,145 @@ class WorkflowEngine {
   }
 
   /**
-   * Main workflow execution entry point
+   * Execute workflow using LangChain StateGraph integration
+   * This method can be called by the hierarchical supervisor system
+   */
+  async executeWorkflowWithStateGraph(workflow, initialState, executionId) {
+    console.log(`[WorkflowEngine] 🔄 Executing workflow with StateGraph: ${workflow.name}`);
+    
+    try {
+      // Create workflow-specific state
+      const workflowState = {
+        ...initialState,
+        workflow_id: workflow.id,
+        execution_id: executionId,
+        steps_completed: [],
+        current_step: 0,
+        workflow_context: new Map(),
+        agent_handoffs: []
+      };
+
+      // If we have access to the core agent, use its StateGraph capabilities
+      if (this.coreAgent && this.coreAgent.stateGraph) {
+        console.log('[WorkflowEngine] 🎯 Delegating to hierarchical supervisor for agent coordination');
+        
+        // Transform workflow steps into agent delegations
+        const agentDelegations = this.transformWorkflowToAgentDelegations(workflow.steps);
+        
+        for (const delegation of agentDelegations) {
+          const agentResult = await this.delegateToHierarchicalAgent(delegation, workflowState);
+          workflowState.steps_completed.push({
+            step: delegation,
+            result: agentResult,
+            timestamp: new Date().toISOString()
+          });
+          workflowState.current_step++;
+        }
+      } else {
+        // Fallback to direct execution
+        console.log('[WorkflowEngine] ⚠️ No hierarchical supervisor available, using direct execution');
+        const result = await this.executeWorkflow(workflow, initialState.input_data, executionId);
+        workflowState.direct_execution_result = result;
+      }
+
+      console.log(`[WorkflowEngine] ✅ Workflow completed: ${workflow.name}`);
+      return {
+        success: true,
+        workflow_state: workflowState,
+        execution_id: executionId,
+        completed_at: new Date().toISOString()
+      };
+      
+    } catch (error) {
+      console.error(`[WorkflowEngine] ❌ Workflow execution failed:`, error);
+      return {
+        success: false,
+        error: error.message,
+        execution_id: executionId,
+        failed_at: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Transform workflow steps into hierarchical agent delegations
+   */
+  transformWorkflowToAgentDelegations(steps) {
+    const delegations = [];
+    
+    for (const step of steps) {
+      const delegation = {
+        step_id: step.id,
+        agent_type: this.mapStepTypeToAgent(step.type),
+        prompt: step.prompt || step.description,
+        parameters: step.parameters || {},
+        tools_required: step.tools || [],
+        expected_output: step.output_schema
+      };
+      
+      delegations.push(delegation);
+    }
+    
+    return delegations;
+  }
+
+  /**
+   * Map workflow step types to hierarchical agent names
+   */
+  mapStepTypeToAgent(stepType) {
+    const agentMapping = {
+      'ai-gpt4': 'cartrita', // Supervisor handles direct AI requests
+      'ai-claude': 'cartrita',
+      'ai-custom-prompt': 'cartrita',
+      'mcp-coder': 'codewriter',
+      'mcp-writer': 'writer', 
+      'mcp-artist': 'artist',
+      'mcp-comedian': 'comedian',
+      'mcp-scheduler': 'scheduler',
+      'mcp-task-manager': 'taskmanager',
+      'mcp-researcher': 'researcher',
+      'rag-search': 'researcher',
+      'http-request': 'codewriter', // Code writer can handle API calls
+      'data-processing': 'analyst',
+      'security-check': 'security'
+    };
+    
+    return agentMapping[stepType] || 'cartrita'; // Default to supervisor
+  }
+
+  /**
+   * Delegate step execution to hierarchical agent system
+   */
+  async delegateToHierarchicalAgent(delegation, workflowState) {
+    try {
+      console.log(`[WorkflowEngine] 🎯 Delegating to ${delegation.agent_type} agent`);
+      
+      // Use the core agent's generateResponse method which handles StateGraph routing
+      const response = await this.coreAgent.generateResponse(
+        delegation.prompt,
+        workflowState.language || 'en',
+        workflowState.user_id
+      );
+      
+      return {
+        agent: delegation.agent_type,
+        response: response,
+        tools_used: response.tools_used || [],
+        success: !response.error
+      };
+      
+    } catch (error) {
+      console.error(`[WorkflowEngine] ❌ Agent delegation failed:`, error);
+      return {
+        agent: delegation.agent_type,
+        error: error.message,
+        success: false
+      };
+    }
+  }
+
+  /**
+   * Original workflow execution entry point (maintained for compatibility)
    */
   async executeWorkflow(workflow, inputData, executionId) {
     this.executionLogs = [];
@@ -48,10 +191,10 @@ class WorkflowEngine {
     this.workflowContext.set('input', inputData);
     this.executionId = executionId;
 
-    this.log('info', '🚀 Starting workflow execution', { 
+    this.log('info', '🚀 Starting workflow execution', {
       workflowId: workflow.id, 
-      executionId,
-      nodeCount: workflow.workflow_data.nodes?.length || 0 
+      executionId, 
+      nodeCount: workflow.workflow_data.nodes?.length || 0
     });
 
     try {
@@ -60,19 +203,21 @@ class WorkflowEngine {
 
       // Build execution graph
       const executionGraph = this.buildExecutionGraph(nodes, edges);
-      
+
       // Execute nodes in topological order
       const result = await this.executeGraph(executionGraph, inputData);
 
       this.log('success', '✅ Workflow execution completed', { result });
-      
+
       return {
         output: result,
         logs: this.executionLogs,
         context: Object.fromEntries(this.workflowContext)
       };
     } catch (error) {
-      this.log('error', '❌ Workflow execution failed', { error: error.message });
+      this.log('error', '❌ Workflow execution failed', {
+        error: error.message
+      });
       throw error;
     }
   }
@@ -87,7 +232,7 @@ class WorkflowEngine {
     // Initialize nodes
     nodes.forEach(node => {
       graph.set(node.id, {
-        node,
+        node, 
         dependencies: [],
         dependents: []
       });
@@ -98,7 +243,7 @@ class WorkflowEngine {
     edges.forEach(edge => {
       const source = graph.get(edge.source);
       const target = graph.get(edge.target);
-      
+
       source.dependents.push(edge.target);
       target.dependencies.push(edge.source);
       inDegree.set(edge.target, inDegree.get(edge.target) + 1);
@@ -126,14 +271,14 @@ class WorkflowEngine {
     while (queue.length > 0 || executing.size > 0) {
       // Execute ready nodes in parallel
       const readyNodes = queue.splice(0);
-      const promises = readyNodes.map(async (nodeId) => {
+      const promises = readyNodes.map(async nodeId => {
         executing.add(nodeId);
         try {
           const nodeData = graph.get(nodeId);
           const result = await this.executeNode(nodeData.node, results);
           results.set(nodeId, result);
           executing.delete(nodeId);
-          
+
           // Update dependent nodes
           nodeData.dependents.forEach(dependentId => {
             inDegree.set(dependentId, inDegree.get(dependentId) - 1);
@@ -141,7 +286,7 @@ class WorkflowEngine {
               queue.push(dependentId);
             }
           });
-          
+
           return { nodeId, result };
         } catch (error) {
           executing.delete(nodeId);
@@ -149,9 +294,7 @@ class WorkflowEngine {
         }
       });
 
-      if (promises.length > 0) {
-        await Promise.all(promises);
-      }
+      await Promise.all(promises);
 
       // Prevent infinite loop
       if (queue.length === 0 && executing.size === 0) {
@@ -159,14 +302,15 @@ class WorkflowEngine {
       }
     }
 
-    // Return final result (typically from the last node)
+    // Return result (typically from the last node)
     const finalNodes = Array.from(results.keys()).filter(nodeId => {
       const nodeData = graph.get(nodeId);
       return nodeData.dependents.length === 0;
     });
 
-    return finalNodes.length === 1 ? results.get(finalNodes[0]) : 
-           Object.fromEntries(finalNodes.map(id => [id, results.get(id)]));
+    return finalNodes.length === 1
+      ? results.get(finalNodes[0])
+      : Object.fromEntries(finalNodes.map(id => [id, results.get(id)]));
   }
 
   /**
@@ -174,11 +318,13 @@ class WorkflowEngine {
    */
   async executeNode(node, previousResults) {
     const startTime = Date.now();
-    this.log('info', `🔄 Executing node: ${node.data.label || node.type}`, { nodeId: node.id });
+    this.log('info', `🔄 Executing node: ${node.data.label || node.type}`, {
+      nodeId: node.id
+    });
 
     try {
       let result;
-      
+
       switch (node.type) {
         // 🎯 Trigger Nodes
         case 'manual-trigger':
@@ -195,7 +341,11 @@ class WorkflowEngine {
         case 'ai-gpt4':
         case 'ai-claude':
         case 'ai-custom-prompt':
-          result = await this.subAgents.aiOrchestrator.processAI(node, previousResults, this.workflowContext);
+          result = await this.subAgents.aiOrchestrator.processAI(
+            node,
+            previousResults,
+            this.workflowContext
+          );
           break;
 
         // 📚 RAG Nodes
@@ -204,7 +354,11 @@ class WorkflowEngine {
         case 'rag-embeddings':
         case 'rag-vector-store':
         case 'rag-search':
-          result = await this.subAgents.ragProcessor.processRAG(node, previousResults, this.workflowContext);
+          result = await this.subAgents.ragProcessor.processRAG(
+            node,
+            previousResults,
+            this.workflowContext
+          );
           break;
 
         // 🎯 MCP Nodes
@@ -216,7 +370,11 @@ class WorkflowEngine {
         case 'mcp-emotional':
         case 'mcp-scheduler':
         case 'mcp-task-manager':
-          result = await this.subAgents.mcpConnector.executeMCPAgent(node, previousResults, this.workflowContext);
+          result = await this.subAgents.mcpConnector.executeMCPAgent(
+            node,
+            previousResults,
+            this.workflowContext
+          );
           break;
 
         // 🌐 Integration Nodes
@@ -225,7 +383,11 @@ class WorkflowEngine {
         case 'database-query':
         case 'file-operations':
         case 'email-send':
-          result = await this.subAgents.httpAgent.handleIntegration(node, previousResults, this.workflowContext);
+          result = await this.subAgents.httpAgent.handleIntegration(
+            node,
+            previousResults,
+            this.workflowContext
+          );
           break;
 
         // ⚡ Logic Nodes
@@ -234,7 +396,11 @@ class WorkflowEngine {
         case 'logic-loop':
         case 'logic-merge':
         case 'logic-split':
-          result = await this.subAgents.logicEngine.processLogic(node, previousResults, this.workflowContext);
+          result = await this.subAgents.logicEngine.processLogic(
+            node,
+            previousResults,
+            this.workflowContext
+          );
           break;
 
         // 📊 Data Nodes
@@ -243,7 +409,11 @@ class WorkflowEngine {
         case 'data-aggregate':
         case 'data-validate':
         case 'data-extract':
-          result = await this.subAgents.dataProcessor.processData(node, previousResults, this.workflowContext);
+          result = await this.subAgents.dataProcessor.processData(
+            node,
+            previousResults,
+            this.workflowContext
+          );
           break;
 
         default:
@@ -251,20 +421,22 @@ class WorkflowEngine {
       }
 
       const executionTime = Date.now() - startTime;
-      this.log('success', `✅ Node completed: ${node.data.label || node.type}`, { 
-        nodeId: node.id, 
-        executionTime: `${executionTime}ms`,
-        outputSize: JSON.stringify(result).length 
-      });
+      this.log(
+        'success',
+        `✅ Node completed: ${node.data.label || node.type}`,
+        {
+          executionTime: `${executionTime}ms`,
+          outputSize: JSON.stringify(result).length
+        }
+      );
 
       // Store result in context for future nodes
       this.workflowContext.set(`node_${node.id}`, result);
-      
+
       return result;
     } catch (error) {
       const executionTime = Date.now() - startTime;
-      this.log('error', `❌ Node failed: ${node.data.label || node.type}`, { 
-        nodeId: node.id, 
+      this.log('error', `❌ Node failed: ${node.data.label || node.type}`, {
         error: error.message,
         executionTime: `${executionTime}ms`
       });
@@ -275,7 +447,7 @@ class WorkflowEngine {
   /**
    * Enhanced logging with structured data
    */
-  log(level, message, data = {}) {
+  log(level, message, data) {
     const logEntry = {
       timestamp: new Date().toISOString(),
       level,
@@ -283,9 +455,21 @@ class WorkflowEngine {
       executionId: this.executionId,
       ...data
     };
-    
+
     this.executionLogs.push(logEntry);
     console.log(`[WorkflowEngine] ${level.toUpperCase()}: ${message}`, data);
+  }
+
+  /**
+   * Get service status for health checks
+   */
+  getStatus() {
+    return {
+      service: 'WorkflowEngine',
+      initialized: this.initialized,
+      timestamp: new Date().toISOString(),
+      subAgentsCount: Object.keys(this.subAgents).length
+    };
   }
 }
 
@@ -299,11 +483,20 @@ class AIOrchestrator {
   }
 
   async processAI(node, previousResults, context) {
-    const { model = 'gpt-4', prompt, temperature = 0.7, max_tokens = 2000 } = node.data;
-    
+    const {
+      model = 'gpt-4',
+      prompt,
+      temperature = 0.7,
+      max_tokens = 2000
+    } = node.data;
+
     // Intelligent prompt templating with context injection
-    const processedPrompt = this.processPrompt(prompt, previousResults, context);
-    
+    const processedPrompt = this.processPrompt(
+      prompt,
+      previousResults,
+      context
+    );
+
     try {
       const response = await this.openai.chat.completions.create({
         model: model === 'ai-gpt4' ? 'gpt-4' : model,
@@ -323,9 +516,7 @@ class AIOrchestrator {
 
       return {
         content: response.choices[0].message.content,
-        model: model,
-        usage: response.usage,
-        timestamp: new Date().toISOString()
+        usage: response.usage
       };
     } catch (error) {
       throw new Error(`AI processing failed: ${error.message}`);
@@ -333,18 +524,20 @@ class AIOrchestrator {
   }
 
   processPrompt(prompt, previousResults, context) {
-    // Advanced template variable replacement
     let processedPrompt = prompt;
-    
+
     // Replace context variables
     for (const [key, value] of context.entries()) {
       const regex = new RegExp(`{{${key}}}`, 'g');
       processedPrompt = processedPrompt.replace(regex, JSON.stringify(value));
     }
-    
+
     // Replace previous results
-    processedPrompt = processedPrompt.replace(/{{previous}}/g, JSON.stringify(previousResults));
-    
+    processedPrompt = processedPrompt.replace(
+      /{{previous}}/g,
+      JSON.stringify(previousResults)
+    );
+
     return processedPrompt;
   }
 }
@@ -376,8 +569,7 @@ class RAGProcessor {
   }
 
   async loadDocuments(config, previousResults) {
-    // Simulate document loading - in real implementation, this would
-    // integrate with various document loaders (PDF, DOCX, web scraping, etc.)
+    // TODO: Implement proper document loaders (PDF, DOCX, web scraping, etc.)
     const documents = config.sources || [];
     return {
       documents: documents.map(doc => ({
@@ -391,7 +583,7 @@ class RAGProcessor {
   async splitText(config, previousResults) {
     const { chunk_size = 1000, chunk_overlap = 200 } = config;
     const documents = previousResults.documents || [];
-    
+
     const chunks = [];
     documents.forEach(doc => {
       const textChunks = this.chunkText(doc.content, chunk_size, chunk_overlap);
@@ -399,45 +591,43 @@ class RAGProcessor {
         chunks.push({
           id: `${doc.id}_chunk_${index}`,
           content: chunk,
-          metadata: { ...doc.metadata, chunk_index: index }
+          metadata: doc.metadata
         });
       });
     });
-    
+
     return { chunks };
   }
 
   async generateEmbeddings(config, previousResults) {
     const chunks = previousResults.chunks || [];
     const embeddings = [];
-    
+
     for (const chunk of chunks) {
       try {
         const response = await this.openai.embeddings.create({
           model: 'text-embedding-ada-002',
           input: chunk.content
         });
-        
+
         embeddings.push({
-          id: chunk.id,
-          content: chunk.content,
-          embedding: response.data[0].embedding,
-          metadata: chunk.metadata
+          ...chunk,
+          embedding: response.data[0].embedding
         });
       } catch (error) {
         console.error(`Failed to generate embedding for chunk ${chunk.id}:`, error);
       }
     }
-    
+
     return { embeddings };
   }
 
   async storeVectors(config, previousResults, context) {
     const embeddings = previousResults.embeddings || [];
     
-    // Store in workflow context (in production, use proper vector DB)
+    // TODO: In production, use proper vector DB
     context.set('vector_store', embeddings);
-    
+
     return {
       stored_count: embeddings.length,
       vector_store_id: `store_${Date.now()}`
@@ -447,30 +637,30 @@ class RAGProcessor {
   async searchSimilar(config, previousResults, context) {
     const { query, top_k = 5 } = config;
     const vectorStore = context.get('vector_store') || [];
-    
+
     if (!query) {
       throw new Error('Search query is required');
     }
-    
+
     // Generate query embedding
     const queryResponse = await this.openai.embeddings.create({
       model: 'text-embedding-ada-002',
       input: query
     });
-    
+
     const queryEmbedding = queryResponse.data[0].embedding;
-    
+
     // Calculate similarities (cosine similarity)
     const similarities = vectorStore.map(item => ({
       ...item,
       similarity: this.cosineSimilarity(queryEmbedding, item.embedding)
     }));
-    
+
     // Sort by similarity and return top k
     const results = similarities
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, top_k);
-    
+
     return {
       query,
       results: results.map(({ embedding, ...rest }) => rest) // Remove embeddings from response
@@ -480,15 +670,13 @@ class RAGProcessor {
   chunkText(text, chunkSize, overlap) {
     const chunks = [];
     let start = 0;
-    
+
     while (start < text.length) {
       const end = Math.min(start + chunkSize, text.length);
       chunks.push(text.slice(start, end));
       start = end - overlap;
-      
-      if (start >= text.length) break;
     }
-    
+
     return chunks;
   }
 
@@ -508,21 +696,24 @@ class MCPConnector {
   async executeMCPAgent(node, previousResults, context) {
     const agentType = node.type.replace('mcp-', '');
     const { prompt, parameters = {} } = node.data;
-    
+
     try {
       // Make request to MCP agent via internal API
-      const response = await axios.post('http://localhost:8000/api/mcp/execute', {
-        agent: agentType,
-        prompt: prompt || JSON.stringify(previousResults),
-        parameters
-      }, {
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
+      const response = await axios.post(
+        'http://localhost:8000/api/mcp/execute',
+        {
+          agent: agentType,
+          prompt: prompt || JSON.stringify(previousResults),
+          parameters
+        },
+        {
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+
       return {
         agent: agentType,
-        response: response.data,
-        timestamp: new Date().toISOString()
+        response: response.data
       };
     } catch (error) {
       throw new Error(`MCP agent ${agentType} failed: ${error.message}`);
@@ -554,7 +745,7 @@ class HTTPAgent {
 
   async makeHttpRequest(config, previousResults, context) {
     const { method = 'GET', url, headers = {}, body } = config;
-    
+
     try {
       const response = await axios({
         method,
@@ -562,7 +753,7 @@ class HTTPAgent {
         headers,
         data: body || previousResults
       });
-      
+
       return {
         status: response.status,
         data: response.data,
@@ -575,16 +766,15 @@ class HTTPAgent {
 
   async sendWebhookResponse(config, previousResults, context) {
     // Implementation for webhook responses
-    return { 
-      webhook_sent: true, 
-      payload: previousResults,
-      timestamp: new Date().toISOString()
+    return {
+      webhook_sent: true,
+      payload: previousResults
     };
   }
 
   async executeDbQuery(config, previousResults, context) {
     const { query, parameters = [] } = config;
-    
+
     try {
       const { rows } = await db.query(query, parameters);
       return { rows, count: rows.length };
@@ -593,12 +783,12 @@ class HTTPAgent {
     }
   }
 
-  async handleFileOperation(config, previousResults) {
+  async handleFileOperation(config, previousResults, context) {
     // File operations implementation
     return { operation: 'completed', data: previousResults };
   }
 
-  async sendEmail(config, previousResults) {
+  async sendEmail(config, previousResults, context) {
     // Email sending implementation
     return { email_sent: true, recipient: config.to };
   }
@@ -626,12 +816,12 @@ class LogicEngine {
     }
   }
 
-  async evaluateCondition(config, previousResults) {
+  async evaluateCondition(config, previousResults, context) {
     const { condition, true_value, false_value } = config;
-    
+
     // Simple condition evaluation - in production, use more sophisticated engine
     const result = this.evaluateExpression(condition, previousResults);
-    
+
     return result ? true_value : false_value;
   }
 
@@ -646,22 +836,22 @@ class LogicEngine {
     }
   }
 
-  async processSwitch(config, previousResults) {
+  async processSwitch(config, previousResults, context) {
     const { switch_on, cases = {} } = config;
     const value = this.extractValue(switch_on, previousResults);
-    
+
     return cases[value] || cases.default || previousResults;
   }
 
-  async processLoop(config, previousResults) {
+  async processLoop(config, previousResults, context) {
     const { items, operation } = config;
     const results = [];
-    
-    for (const item of items || []) {
-      // Process each item (simplified)
+
+    for (const item of items) {
+      // TODO: Implement proper loop logic
       results.push(item);
     }
-    
+
     return { results, count: results.length };
   }
 
@@ -670,7 +860,7 @@ class LogicEngine {
     return { ...previousResults, merged_at: new Date().toISOString() };
   }
 
-  async splitData(config, previousResults) {
+  async splitData(config, previousResults, context) {
     // Split data into multiple outputs
     return Array.isArray(previousResults) ? previousResults : [previousResults];
   }
@@ -705,41 +895,41 @@ class DataProcessor {
   async transformData(config, data) {
     // Advanced data transformation
     const { mapping } = config;
-    
+
     if (Array.isArray(data)) {
       return data.map(item => this.applyMapping(mapping, item));
     }
-    
+
     return this.applyMapping(mapping, data);
   }
 
   applyMapping(mapping, item) {
     const result = {};
-    
+
     for (const [key, path] of Object.entries(mapping || {})) {
       result[key] = this.extractNestedValue(path, item);
     }
-    
+
     return result;
   }
 
   async filterData(config, data) {
     const { criteria } = config;
-    
+
     if (!Array.isArray(data)) {
       return data;
     }
-    
+
     return data.filter(item => this.evaluateCriteria(criteria, item));
   }
 
   async aggregateData(config, data) {
     const { operation, field } = config;
-    
+
     if (!Array.isArray(data)) {
       return data;
     }
-    
+
     switch (operation) {
       case 'count':
         return { count: data.length };
@@ -755,34 +945,34 @@ class DataProcessor {
 
   async validateData(config, data) {
     const { schema } = config;
-    
+
     // Basic validation - in production, use JSON Schema or similar
     const isValid = this.validateAgainstSchema(data, schema);
-    
+
     return {
       valid: isValid,
-      data: isValid ? data : null,
+      data,
       errors: isValid ? [] : ['Validation failed']
     };
   }
 
   async extractData(config, data) {
     const { fields } = config;
-    
+
     if (Array.isArray(data)) {
       return data.map(item => this.extractFields(fields, item));
     }
-    
+
     return this.extractFields(fields, data);
   }
 
   extractFields(fields, item) {
     const result = {};
-    
+
     fields.forEach(field => {
       result[field] = item[field];
     });
-    
+
     return result;
   }
 
@@ -791,8 +981,8 @@ class DataProcessor {
   }
 
   evaluateCriteria(criteria, item) {
-    // Simple criteria evaluation
-    return true; // Simplified for demo
+    // TODO: Implement proper criteria evaluation
+    return true;
   }
 
   validateAgainstSchema(data, schema) {
@@ -809,7 +999,7 @@ class ValidationAgent {
 }
 
 /**
- * 🔄 Transformation Agent Sub-Agent  
+ * 🔄 Transformation Agent Sub-Agent
  */
 class TransformationAgent {
   // Implementation for complex data transformations
@@ -827,4 +1017,4 @@ class SchedulingAgent {
   }
 }
 
-module.exports = WorkflowEngine;
+export default WorkflowEngine;

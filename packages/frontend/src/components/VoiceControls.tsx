@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { 
-  MicrophoneIcon, 
-  StopIcon, 
+import {
+  MicrophoneIcon,
+  StopIcon,
   SpeakerWaveIcon,
-  EyeIcon
+  EyeIcon,
 } from '@heroicons/react/24/outline';
 
 interface VoiceControlsProps {
@@ -31,7 +31,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   onToggleVisual,
   onToggleAmbient,
   token,
-  className = ''
+  className = '',
 }) => {
   const [voiceState, setVoiceState] = useState<VoiceState>({
     isListening: false,
@@ -40,7 +40,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
     visualEnabled: false,
     ambientEnabled: false,
     sessionActive: false,
-    wakeWordActive: false
+    wakeWordActive: false,
   });
 
   const [status, setStatus] = useState<string>('Ready');
@@ -56,15 +56,15 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           settings: {
             wakeWords: ['cartrita', 'hey cartrita'],
             ambientMode: voiceState.ambientEnabled,
-            visualMode: voiceState.visualEnabled
-          }
-        })
+            visualMode: voiceState.visualEnabled,
+          },
+        }),
       });
 
       if (response.ok) {
@@ -73,7 +73,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
           sessionActive: true,
           isListening: true,
           isProcessing: false,
-          wakeWordActive: true
+          wakeWordActive: true,
         }));
         setStatus('Voice session active - say "Cartrita!" to start');
         onVoiceStart?.();
@@ -96,8 +96,8 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
       await fetch('/api/voice-chat/stop-session', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       setVoiceState({
@@ -107,7 +107,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
         visualEnabled: voiceState.visualEnabled,
         ambientEnabled: voiceState.ambientEnabled,
         sessionActive: false,
-        wakeWordActive: false
+        wakeWordActive: false,
       });
       setStatus('Voice session stopped');
       onVoiceStop?.();
@@ -128,7 +128,9 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   const handleToggleAmbient = () => {
     const newState = !voiceState.ambientEnabled;
     setVoiceState(prev => ({ ...prev, ambientEnabled: newState }));
-    setStatus(newState ? 'Ambient listening enabled' : 'Ambient listening disabled');
+    setStatus(
+      newState ? 'Ambient listening enabled' : 'Ambient listening disabled'
+    );
     onToggleAmbient?.();
   };
 
@@ -148,18 +150,18 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   };
 
   return (
-    <div className={`voice-controls bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg border ${className}`}>
+    <div
+      className={`voice-controls bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg border ${className}`}
+    >
       {/* Status Display */}
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             Voice Controls
           </h3>
-          <div className={`text-sm ${getStatusColor()}`}>
-            {status}
-          </div>
+          <div className={`text-sm ${getStatusColor()}`}>{status}</div>
         </div>
-        
+
         {/* Indicators */}
         <div className="flex items-center space-x-4 text-xs">
           {voiceState.sessionActive && (
@@ -168,14 +170,14 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
               <span>Active</span>
             </div>
           )}
-          
+
           {voiceState.wakeWordActive && (
             <div className="flex items-center space-x-1 text-purple-600">
               <span>🎤</span>
               <span>Wake word ready</span>
             </div>
           )}
-          
+
           {voiceState.isSpeaking && (
             <div className="flex items-center space-x-1 text-blue-600">
               <SpeakerWaveIcon className="w-4 h-4 animate-pulse" />
@@ -189,18 +191,25 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
       <div className="flex items-center justify-center space-x-4 mb-4">
         {/* Main Voice Button */}
         <button
-          onClick={voiceState.sessionActive ? handleStopVoice : handleStartVoice}
+          onClick={
+            voiceState.sessionActive ? handleStopVoice : handleStartVoice
+          }
           disabled={voiceState.isProcessing}
           className={`
             relative p-4 rounded-full transition-all duration-200 text-white
             focus:outline-none focus:ring-4 focus:ring-offset-2
             ${getMainButtonColor()}
-            ${voiceState.isProcessing 
-              ? 'opacity-50 cursor-not-allowed' 
-              : 'transform hover:scale-105 shadow-lg'
+            ${
+              voiceState.isProcessing
+                ? 'opacity-50 cursor-not-allowed'
+                : 'transform hover:scale-105 shadow-lg'
             }
           `}
-          title={voiceState.sessionActive ? 'Stop Voice Session' : 'Start Voice Session'}
+          title={
+            voiceState.sessionActive
+              ? 'Stop Voice Session'
+              : 'Start Voice Session'
+          }
         >
           {voiceState.isProcessing ? (
             <div className="animate-spin h-8 w-8 border-2 border-white border-t-transparent rounded-full" />
@@ -209,7 +218,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
           ) : (
             <MicrophoneIcon className="h-8 w-8" />
           )}
-          
+
           {/* Wake word indicator */}
           {voiceState.wakeWordActive && (
             <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-400 rounded-full animate-pulse" />
@@ -224,9 +233,10 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
           onClick={handleToggleVisual}
           className={`
             p-2 rounded-lg transition-colors text-sm flex items-center space-x-1
-            ${voiceState.visualEnabled
-              ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-              : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+            ${
+              voiceState.visualEnabled
+                ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
             }
           `}
           title="Toggle Visual Analysis"
@@ -240,9 +250,10 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
           onClick={handleToggleAmbient}
           className={`
             p-2 rounded-lg transition-colors text-sm flex items-center space-x-1
-            ${voiceState.ambientEnabled
-              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-              : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+            ${
+              voiceState.ambientEnabled
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
             }
           `}
           title="Toggle Ambient Listening"
@@ -265,7 +276,9 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
       {!voiceState.sessionActive && (
         <div className="text-center">
           <button
-            onClick={() => setLastResponse('Voice system ready for Iteration 21!')}
+            onClick={() =>
+              setLastResponse('Voice system ready for Iteration 21!')
+            }
             className="text-sm text-purple-600 hover:text-purple-700 underline"
           >
             Test Voice System

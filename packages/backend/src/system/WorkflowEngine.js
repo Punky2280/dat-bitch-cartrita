@@ -1,16 +1,16 @@
+/* global console */
 class WorkflowEngine {
-  constructor() {
-    this.initialized = true;
-    console.log('✅ WorkflowEngine ready');
+  constructor(this.initialized = true;
+    console.log('✅ WorkflowEngine ready');) {
+    // TODO: Implement method
   }
 
-  getStatus() {
+  getStatus((error) {
     return {
       service: 'WorkflowEngine',
       initialized: this.initialized,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     };
-  }
-}
 
-module.exports = new WorkflowEngine();
+
+export default new WorkflowEngine();

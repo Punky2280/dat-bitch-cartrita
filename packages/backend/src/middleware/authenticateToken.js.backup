@@ -1,0 +1,32 @@
+/* global process, console */
+const jwt = require('jsonwebtoken');
+
+function authenticateToken(const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN) {
+   // Method implementation
+ }
+
+  if($4) {
+    console.warn('[Auth Middleware] 🚫 No token found in Authorization header.');
+    return res.status(401).json({ error: 'Unauthorized: No token provided.' });
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, decodedPayload) => {
+    if($4) {
+      console.error('[Auth Middleware] ❌ JWT Verification Error:', err);
+      return res.status(403).json({ error: 'Forbidden: Invalid token.' });
+
+    // --- FIX: Create a consistent user object ---
+    // The decoded payload has { sub, email, name }. We map 'sub' to 'id'.
+    req.user = {
+      id: decodedPayload.sub,
+      name: decodedPayload.name,
+      email: decodedPayload.email
+    };
+
+    console.log('[Auth Middleware] ✅ Authenticated user:', req.user.id);
+    console.log('[Auth Middleware] 🔍 Full user object:')
+      JSON.stringify(req.user));
+    next();
+  });
+
+module.exports = authenticateToken;

@@ -21,7 +21,16 @@ interface User {
   email: string;
 }
 
-type DashboardView = 'chat' | 'settings' | 'workflows' | 'knowledge' | 'vault' | 'lifeos' | 'about' | 'license' | 'manual';
+type DashboardView =
+  | 'chat'
+  | 'settings'
+  | 'workflows'
+  | 'knowledge'
+  | 'vault'
+  | 'lifeos'
+  | 'about'
+  | 'license'
+  | 'manual';
 
 export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
   const [user, setUser] = useState<User | null>(null);
@@ -31,11 +40,23 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
     ai_core: { status: 'checking', message: 'Checking AI Core...' },
     websocket: { status: 'checking', message: 'Checking WebSocket...' },
     database: { status: 'checking', message: 'Checking Database...' },
-    voice_service: { status: 'checking', message: 'Checking Voice Services...' },
-    visual_service: { status: 'checking', message: 'Checking Visual Analysis...' },
+    voice_service: {
+      status: 'checking',
+      message: 'Checking Voice Services...',
+    },
+    visual_service: {
+      status: 'checking',
+      message: 'Checking Visual Analysis...',
+    },
     email_service: { status: 'checking', message: 'Checking Email Service...' },
-    calendar_service: { status: 'checking', message: 'Checking Calendar Service...' },
-    contacts_service: { status: 'checking', message: 'Checking Contacts Service...' }
+    calendar_service: {
+      status: 'checking',
+      message: 'Checking Calendar Service...',
+    },
+    contacts_service: {
+      status: 'checking',
+      message: 'Checking Contacts Service...',
+    },
   });
 
   useEffect(() => {
@@ -54,7 +75,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
         // Safely decode and parse the payload
         const base64Payload = tokenParts[1];
         let decodedPayload;
-        
+
         try {
           decodedPayload = atob(base64Payload);
         } catch (decodeError) {
@@ -93,25 +114,34 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
       // Use the comprehensive health endpoint (public endpoint)
       try {
         const healthResponse = await fetch('/api/health');
-        
+
         if (healthResponse.ok) {
           const healthData = await healthResponse.json();
-          
+
           // Update system status based on health data
           setSystemStatus(prev => ({
             ...prev,
             ai_core: {
-              status: healthData.services?.openai?.status === 'healthy' ? 'online' : 'offline',
-              message: healthData.services?.openai?.status === 'healthy' ? 'AI Core Active' : 'AI Core Unavailable'
+              status:
+                healthData.services?.openai?.status === 'healthy'
+                  ? 'online'
+                  : 'offline',
+              message:
+                healthData.services?.openai?.status === 'healthy'
+                  ? 'AI Core Active'
+                  : 'AI Core Unavailable',
             },
             database: {
               status: healthData.overall === 'healthy' ? 'online' : 'offline',
-              message: healthData.overall === 'healthy' ? 'Database Connected' : 'Database Error'
+              message:
+                healthData.overall === 'healthy'
+                  ? 'Database Connected'
+                  : 'Database Error',
             },
             websocket: {
               status: 'online', // Assume online if we can make this request
-              message: 'Socket Connected'
-            }
+              message: 'Socket Connected',
+            },
           }));
 
           // Update voice services
@@ -119,9 +149,15 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
             setSystemStatus(prev => ({
               ...prev,
               voice_service: {
-                status: healthData.services.deepgram.status === 'healthy' ? 'online' : 'offline',
-                message: healthData.services.deepgram.status === 'healthy' ? 'Voice Services Active' : 'Voice Services Offline'
-              }
+                status:
+                  healthData.services.deepgram.status === 'healthy'
+                    ? 'online'
+                    : 'offline',
+                message:
+                  healthData.services.deepgram.status === 'healthy'
+                    ? 'Voice Services Active'
+                    : 'Voice Services Offline',
+              },
             }));
           }
 
@@ -130,50 +166,63 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
             setSystemStatus(prev => ({
               ...prev,
               visual_service: {
-                status: healthData.services.visualAnalysis.status === 'healthy' ? 'online' : 'offline',
-                message: healthData.services.visualAnalysis.status === 'healthy' ? 'Visual Analysis Active' : 'Visual Analysis Offline'
-              }
+                status:
+                  healthData.services.visualAnalysis.status === 'healthy'
+                    ? 'online'
+                    : 'offline',
+                message:
+                  healthData.services.visualAnalysis.status === 'healthy'
+                    ? 'Visual Analysis Active'
+                    : 'Visual Analysis Offline',
+              },
             }));
           }
         }
       } catch (error) {
         console.error('Failed to fetch health status:', error);
         // Set all services to error state
-        setSystemStatus(prev => Object.keys(prev).reduce((acc, key) => ({
-          ...acc,
-          [key]: { status: 'error', message: 'Health Check Failed' }
-        }), {}));
+        setSystemStatus(prev =>
+          Object.keys(prev).reduce(
+            (acc, key) => ({
+              ...acc,
+              [key]: { status: 'error', message: 'Health Check Failed' },
+            }),
+            {}
+          )
+        );
       }
 
       // Check individual service endpoints
       const statusChecks = [
         { key: 'email_service', endpoint: '/api/email/status' },
         { key: 'calendar_service', endpoint: '/api/calendar/status' },
-        { key: 'contacts_service', endpoint: '/api/contacts/status' }
+        { key: 'contacts_service', endpoint: '/api/contacts/status' },
       ];
 
       for (const check of statusChecks) {
         try {
           const response = await fetch(check.endpoint, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` },
           });
-          
+
           if (response.ok) {
             const data = await response.json();
             setSystemStatus(prev => ({
               ...prev,
               [check.key]: {
                 status: 'online',
-                message: data.status?.service ? `${data.status.service} Active` : 'Service Online'
-              }
+                message: data.status?.service
+                  ? `${data.status.service} Active`
+                  : 'Service Online',
+              },
             }));
           } else {
             setSystemStatus(prev => ({
               ...prev,
               [check.key]: {
-                status: 'offline', 
-                message: 'Service Unavailable'
-              }
+                status: 'offline',
+                message: 'Service Unavailable',
+              },
             }));
           }
         } catch (error) {
@@ -181,8 +230,8 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
             ...prev,
             [check.key]: {
               status: 'error',
-              message: 'Connection Error'
-            }
+              message: 'Connection Error',
+            },
           }));
         }
       }
@@ -190,10 +239,10 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
 
     fetchUserData();
     checkSystemStatus();
-    
+
     // Set up periodic status checks
     const statusInterval = setInterval(checkSystemStatus, 30000); // Check every 30 seconds
-    
+
     return () => clearInterval(statusInterval);
   }, [token, onLogout]);
 
@@ -217,22 +266,30 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
 
   // Show workflows page
   if (currentView === 'workflows') {
-    return <WorkflowsPage token={token} onBack={() => setCurrentView('chat')} />;
+    return (
+      <WorkflowsPage token={token} onBack={() => setCurrentView('chat')} />
+    );
   }
 
   // Show knowledge hub page
   if (currentView === 'knowledge') {
-    return <KnowledgeHubPage token={token} onBack={() => setCurrentView('chat')} />;
+    return (
+      <KnowledgeHubPage token={token} onBack={() => setCurrentView('chat')} />
+    );
   }
 
   // Show API key vault page
   if (currentView === 'vault') {
-    return <ApiKeyVaultPage token={token} onBack={() => setCurrentView('chat')} />;
+    return (
+      <ApiKeyVaultPage token={token} onBack={() => setCurrentView('chat')} />
+    );
   }
 
   // Show Personal Life OS page
   if (currentView === 'lifeos') {
-    return <PersonalLifeOSPage token={token} onBack={() => setCurrentView('chat')} />;
+    return (
+      <PersonalLifeOSPage token={token} onBack={() => setCurrentView('chat')} />
+    );
   }
 
   // Show about page
@@ -265,10 +322,10 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
 
           <div className="flex items-center space-x-4">
             {/* Live Chat Button */}
-            <LiveChatButton 
-              token={token} 
+            <LiveChatButton
+              token={token}
               className="transform hover:scale-105"
-              onActivate={(mode) => {
+              onActivate={mode => {
                 console.log(`Live chat activated in ${mode} mode`);
               }}
             />
@@ -419,39 +476,65 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
                 {Object.entries(systemStatus).map(([key, status]) => {
                   const getStatusColor = (status: string) => {
                     switch (status) {
-                      case 'online': return 'text-green-400';
-                      case 'offline': return 'text-red-400';
-                      case 'error': return 'text-yellow-400';
-                      default: return 'text-gray-400';
+                      case 'online':
+                        return 'text-green-400';
+                      case 'offline':
+                        return 'text-red-400';
+                      case 'error':
+                        return 'text-yellow-400';
+                      default:
+                        return 'text-gray-400';
                     }
                   };
-                  
+
                   const getBgColor = (status: string) => {
                     switch (status) {
-                      case 'online': return 'bg-green-500';
-                      case 'offline': return 'bg-red-500';
-                      case 'error': return 'bg-yellow-500';
-                      default: return 'bg-gray-500';
+                      case 'online':
+                        return 'bg-green-500';
+                      case 'offline':
+                        return 'bg-red-500';
+                      case 'error':
+                        return 'bg-yellow-500';
+                      default:
+                        return 'bg-gray-500';
                     }
                   };
-                  
+
                   const getDisplayName = (key: string) => {
                     switch (key) {
-                      case 'ai_core': return 'AI Core';
-                      case 'websocket': return 'WebSocket';
-                      case 'database': return 'Database';
-                      case 'email_service': return 'Email Service';
-                      case 'calendar_service': return 'Calendar Service';
-                      case 'contacts_service': return 'Contacts Service';
-                      default: return key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                      case 'ai_core':
+                        return 'AI Core';
+                      case 'websocket':
+                        return 'WebSocket';
+                      case 'database':
+                        return 'Database';
+                      case 'email_service':
+                        return 'Email Service';
+                      case 'calendar_service':
+                        return 'Calendar Service';
+                      case 'contacts_service':
+                        return 'Contacts Service';
+                      default:
+                        return key
+                          .replace('_', ' ')
+                          .replace(/\b\w/g, l => l.toUpperCase());
                     }
                   };
-                  
+
                   return (
-                    <div key={key} className="flex justify-between items-center">
-                      <span className="text-gray-400">{getDisplayName(key)}</span>
-                      <span className={`${getStatusColor(status.status)} flex items-center space-x-1`}>
-                        <div className={`w-2 h-2 ${getBgColor(status.status)} rounded-full ${status.status === 'checking' ? 'animate-pulse' : ''}`}></div>
+                    <div
+                      key={key}
+                      className="flex justify-between items-center"
+                    >
+                      <span className="text-gray-400">
+                        {getDisplayName(key)}
+                      </span>
+                      <span
+                        className={`${getStatusColor(status.status)} flex items-center space-x-1`}
+                      >
+                        <div
+                          className={`w-2 h-2 ${getBgColor(status.status)} rounded-full ${status.status === 'checking' ? 'animate-pulse' : ''}`}
+                        ></div>
                         <span>{status.message}</span>
                       </span>
                     </div>
@@ -516,7 +599,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
               <span>ℹ️</span>
               <span>About Me</span>
             </button>
-            
+
             <button
               onClick={() => setCurrentView('manual')}
               className="text-gray-400 hover:text-white transition-colors text-sm flex items-center space-x-1"
@@ -524,7 +607,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
               <span>📖</span>
               <span>User Manual</span>
             </button>
-            
+
             <button
               onClick={() => setCurrentView('license')}
               className="text-gray-400 hover:text-white transition-colors text-sm flex items-center space-x-1"
@@ -532,14 +615,13 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
               <span>⚖️</span>
               <span>License</span>
             </button>
-            
+
             <div className="text-gray-500 text-xs">
               © 2025 Dat Bitch Cartrita • Iteration 21
             </div>
           </div>
         </div>
       </footer>
-
     </div>
   );
 };

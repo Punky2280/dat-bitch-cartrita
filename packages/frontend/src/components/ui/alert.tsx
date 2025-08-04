@@ -10,12 +10,11 @@ interface AlertDescriptionProps {
   className?: string;
 }
 
-export const Alert: React.FC<AlertProps> = ({
-  children,
-  className = ''
-}) => {
+export const Alert: React.FC<AlertProps> = ({ children, className = '' }) => {
   return (
-    <div className={`relative w-full rounded-lg border border-gray-200 p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-gray-950 ${className}`}>
+    <div
+      className={`relative w-full rounded-lg border border-gray-200 p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-gray-950 ${className}`}
+    >
       {children}
     </div>
   );
@@ -23,7 +22,7 @@ export const Alert: React.FC<AlertProps> = ({
 
 export const AlertDescription: React.FC<AlertDescriptionProps> = ({
   children,
-  className = ''
+  className = '',
 }) => {
   return (
     <div className={`text-sm [&_p]:leading-relaxed ${className}`}>

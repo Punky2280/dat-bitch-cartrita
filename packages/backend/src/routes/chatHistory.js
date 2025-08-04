@@ -1,7 +1,15 @@
-const express = require('express');
-const authenticateToken = require('../middleware/authenticateToken');
-const db = require('../db');
+import express from 'express';
+import authenticateToken from '../middleware/authenticateToken.js';
+import db from '../db.js';
 const router = express.Router();
+
+// Simple test route to verify route registration
+router.get('/test', (req, res) => {
+  res.json({ 
+    message: 'Chat history routes are working!',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Get chat history for authenticated user
 router.get('/history', authenticateToken, async (req, res) => {
@@ -55,7 +63,7 @@ router.delete('/history', authenticateToken, async (req, res) => {
     }
 
     const result = await db.query(
-      'DELETE FROM conversations WHERE user_id = $1',
+      'DELETE FROM conversations WHERE user_id = $1', 
       [userId]
     );
 
@@ -65,7 +73,7 @@ router.delete('/history', authenticateToken, async (req, res) => {
 
     res.json({
       message: 'Chat history cleared',
-      deletedCount: result.rowCount,
+      deletedCount: result.rowCount
     });
   } catch (error) {
     console.error('[ChatHistory] ❌ Error clearing chat history:', error);
@@ -108,4 +116,4 @@ router.get('/stats', authenticateToken, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

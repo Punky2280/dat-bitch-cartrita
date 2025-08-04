@@ -1,14 +1,17 @@
 # Iteration 19: Personal Life OS - Architecture & Implementation Plan
 
 ## Overview
+
 Transform Cartrita into a comprehensive Personal Life OS by integrating with Calendar, Email, and Contact APIs. This iteration leverages the existing Secure API Key Vault (Iteration 18) to provide seamless integration with major productivity services.
 
 ## Core Services Architecture
 
 ### 1. Google Calendar Integration Service
+
 **File**: `/packages/backend/src/services/CalendarService.js`
 
 **Capabilities**:
+
 - Event creation, modification, and deletion
 - Calendar synchronization across multiple calendars
 - Recurring event management
@@ -18,6 +21,7 @@ Transform Cartrita into a comprehensive Personal Life OS by integrating with Cal
 - Time zone management
 
 **API Endpoints**:
+
 - `GET /api/calendar/events` - Fetch events with filtering
 - `POST /api/calendar/events` - Create new events
 - `PUT /api/calendar/events/:id` - Update existing events
@@ -26,9 +30,11 @@ Transform Cartrita into a comprehensive Personal Life OS by integrating with Cal
 - `POST /api/calendar/schedule` - Smart scheduling with AI
 
 ### 2. Email Management Service
+
 **File**: `/packages/backend/src/services/EmailService.js`
 
 **Capabilities**:
+
 - Gmail and Outlook integration
 - Email summarization with AI
 - Intelligent email categorization
@@ -38,6 +44,7 @@ Transform Cartrita into a comprehensive Personal Life OS by integrating with Cal
 - Spam and priority detection
 
 **API Endpoints**:
+
 - `GET /api/email/messages` - Fetch emails with filtering
 - `POST /api/email/send` - Send emails
 - `PUT /api/email/messages/:id` - Update email (labels, read status)
@@ -45,9 +52,11 @@ Transform Cartrita into a comprehensive Personal Life OS by integrating with Cal
 - `POST /api/email/compose-assist` - AI writing assistance
 
 ### 3. Contact Synchronization Service
+
 **File**: `/packages/backend/src/services/ContactService.js`
 
 **Capabilities**:
+
 - Google Contacts and Outlook integration
 - Contact deduplication and merging
 - Social media profile linking
@@ -56,6 +65,7 @@ Transform Cartrita into a comprehensive Personal Life OS by integrating with Cal
 - Contact interaction history
 
 **API Endpoints**:
+
 - `GET /api/contacts` - Fetch contacts with search
 - `POST /api/contacts` - Create new contacts
 - `PUT /api/contacts/:id` - Update contact information
@@ -63,9 +73,11 @@ Transform Cartrita into a comprehensive Personal Life OS by integrating with Cal
 - `GET /api/contacts/:id/interactions` - Interaction history
 
 ### 4. Proactive Assistant Agent
+
 **File**: `/packages/backend/src/agi/consciousness/PersonalAssistantAgent.js`
 
 **Capabilities**:
+
 - Meeting preparation assistance
 - Email triage and prioritization
 - Calendar optimization suggestions
@@ -76,6 +88,7 @@ Transform Cartrita into a comprehensive Personal Life OS by integrating with Cal
 ## Database Schema Extensions
 
 ### Calendar Data Tables
+
 ```sql
 -- Calendar events storage
 CREATE TABLE user_calendar_events (
@@ -116,6 +129,7 @@ CREATE TABLE user_calendar_sync (
 ```
 
 ### Email Data Tables
+
 ```sql
 -- Email messages cache
 CREATE TABLE user_email_messages (
@@ -163,6 +177,7 @@ CREATE TABLE user_email_sync (
 ```
 
 ### Contact Data Tables
+
 ```sql
 -- Contact information
 CREATE TABLE user_contacts (
@@ -208,9 +223,11 @@ CREATE TABLE user_contact_interactions (
 ## Frontend Components
 
 ### 1. Calendar Interface
+
 **File**: `/packages/frontend/src/pages/CalendarPage.tsx`
 
 **Features**:
+
 - Monthly, weekly, daily calendar views
 - Event creation and editing modal
 - Drag-and-drop event scheduling
@@ -219,9 +236,11 @@ CREATE TABLE user_contact_interactions (
 - Smart scheduling suggestions from AI
 
 ### 2. Email Management Interface
+
 **File**: `/packages/frontend/src/pages/EmailPage.tsx`
 
 **Features**:
+
 - Inbox with smart categorization
 - AI-generated email summaries
 - Compose assistance with AI suggestions
@@ -230,9 +249,11 @@ CREATE TABLE user_contact_interactions (
 - Email search with semantic understanding
 
 ### 3. Contact Management Interface
+
 **File**: `/packages/frontend/src/pages/ContactsPage.tsx`
 
 **Features**:
+
 - Contact list with search and filtering
 - Contact detail view with interaction history
 - Contact creation and editing
@@ -241,9 +262,11 @@ CREATE TABLE user_contact_interactions (
 - Birthday and anniversary reminders
 
 ### 4. Personal Assistant Dashboard
+
 **File**: `/packages/frontend/src/components/PersonalAssistantPanel.tsx`
 
 **Features**:
+
 - Today's agenda overview
 - Pending email actions
 - Upcoming reminders
@@ -254,6 +277,7 @@ CREATE TABLE user_contact_interactions (
 ## Privacy & Security Features
 
 ### Data Access Controls
+
 - Granular permissions for each service (Calendar, Email, Contacts)
 - OAuth 2.0 integration with proper scopes
 - Data retention policies with user control
@@ -261,6 +285,7 @@ CREATE TABLE user_contact_interactions (
 - Audit logs for all data access
 
 ### User Consent Management
+
 - Clear opt-in for each data type
 - Easy data deletion and export
 - Service disconnection options
@@ -270,6 +295,7 @@ CREATE TABLE user_contact_interactions (
 ## AI Integration Points
 
 ### 1. Intelligent Email Management
+
 - Email summarization and categorization
 - Priority detection based on content and sender
 - Auto-response suggestions
@@ -277,6 +303,7 @@ CREATE TABLE user_contact_interactions (
 - Task creation from email content
 
 ### 2. Smart Calendar Management
+
 - Meeting scheduling optimization
 - Travel time calculation
 - Calendar conflict resolution
@@ -284,6 +311,7 @@ CREATE TABLE user_contact_interactions (
 - Follow-up reminder creation
 
 ### 3. Contact Intelligence
+
 - Relationship mapping and insights
 - Interaction frequency analysis
 - Birthday and anniversary reminders
@@ -293,36 +321,42 @@ CREATE TABLE user_contact_interactions (
 ## Implementation Phases
 
 ### Phase 1: Core Infrastructure (Week 1)
+
 - Database schema creation
 - Basic service classes setup
 - API route structure
 - Authentication integration with existing vault
 
 ### Phase 2: Google Calendar Integration (Week 1-2)
+
 - Google Calendar API integration
 - Event CRUD operations
 - Calendar synchronization
 - Frontend calendar interface
 
 ### Phase 3: Email Integration (Week 2-3)
+
 - Gmail and Outlook API integration
 - Email fetching and caching
 - AI summarization service
 - Frontend email interface
 
 ### Phase 4: Contact Management (Week 3)
+
 - Contact synchronization
 - Deduplication logic
 - Interaction tracking
 - Frontend contact interface
 
 ### Phase 5: AI Assistant Features (Week 4)
+
 - Personal Assistant Agent
 - Proactive notifications
 - Smart suggestions
 - Context-aware recommendations
 
 ### Phase 6: Advanced Features & Polish (Week 4)
+
 - Privacy controls implementation
 - Performance optimization
 - Error handling and recovery
@@ -331,18 +365,21 @@ CREATE TABLE user_contact_interactions (
 ## Success Metrics
 
 ### Technical Performance
+
 - Calendar sync: <30 seconds for 1000 events
 - Email processing: <5 seconds for inbox analysis
 - Contact sync: <10 seconds for 500 contacts
 - AI response time: <2 seconds for suggestions
 
 ### User Experience
+
 - Setup completion rate: >80%
 - Daily active usage: >60% of users
 - Feature adoption: >40% use all three services
 - User satisfaction: >4.5/5 rating
 
 ### Security & Privacy
+
 - Zero data breaches
 - 100% GDPR compliance
 - <1% permission errors

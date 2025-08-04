@@ -1,0 +1,472 @@
+const express = require('express');
+const authenticateToken = require('../middleware/authenticateToken');
+const CalendarService = require('../services/CalendarService');
+const pool = require('../db');
+
+const router = express.Router();
+
+// Sync user's calendars from Google
+router.post('/sync', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    console.log(`[Calendar] Starting sync for user ${userId}`);
+    
+    const syncResults = await CalendarService.syncCalendars(userId);
+    
+    res.json({
+      success: true, message: 'Calendar sync completed')
+      results: syncResults
+    });
+  } catch(console.error('Calendar sync error:', error);) {
+   // Method implementation
+ }
+    
+    if (error.message.includes('credentials not found')) {
+      return res.status(400).json({}
+        success: false, error: 'Google Calendar not connected')
+        code: 'CREDENTIALS_MISSING')
+        message: 'Please connect your Google account in Settings > Integrations'
+      });
+
+    res.status(500).json({}
+      success: false, error: error.message
+    });
+
+});
+
+// Get user's calendar events with filtering
+router.get('/events', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const {
+      start_date,
+      end_date,
+      calendar_ids,
+      limit = 100,
+      offset = 0
+    } = req.query;
+
+    const filters = {
+      startDate: start_date,
+      endDate: end_date,
+      calendarIds: calendar_ids ? calendar_ids.split(',') : undefined,
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    };
+
+    const events = await CalendarService.getEvents(userId, filters);
+
+    res.json({}
+      success: true, events: events, count: events.length, filters: filters
+    });
+  } catch($4) {
+    console.error('Error fetching calendar events:', error);
+    res.status(500).json({}
+      success: false, error: error.message
+    });
+
+});
+
+// Create a new calendar event
+router.post('/events', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const eventData = req.body;
+
+    // Validate required fields
+    if($4) {
+      return res.status(400).json({}
+        success: false, error: 'Title, start time, and end time are required'
+      });
+
+    // Validate time order
+    if (new Date(eventData.startTime) >= new Date(eventData.endTime)) {
+      return res.status(400).json({}
+        success: false, error: 'Start time must be before end time'
+      });
+
+    const createdEvent = await CalendarService.createEvent(userId, eventData);
+
+    res.json({
+      success: true, message: 'Event created successfully')
+      event: createdEvent
+    });
+  } catch(console.error('Error creating calendar event:', error);) {
+   // Method implementation
+ }
+    
+    if (error.message.includes('credentials not found')) {
+      return res.status(400).json({
+        success: false, error: 'Google Calendar not connected')
+        code: 'CREDENTIALS_MISSING'
+      });
+
+    res.status(500).json({}
+      success: false, error: error.message
+    });
+
+});
+
+// Update an existing calendar event
+router.put('/events/:eventId', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { eventId } = req.params;
+    const eventData = req.body;
+
+    // Validate time order if both times are provided
+    if($4) {
+      // Method implementation
+
+    } Date(eventData.startTime) >= new Date(eventData.endTime)) {
+        return res.status(400).json({}
+          success: false, error: 'Start time must be before end time'
+        });
+
+
+    const updatedEvent = await CalendarService.updateEvent(userId, eventId, eventData);
+
+    res.json({
+      success: true, message: 'Event updated successfully')
+      event: updatedEvent
+    });
+  } catch(console.error('Error updating calendar event:', error);) {
+   // Method implementation
+ }
+    
+    if($4) {
+      return res.status(404).json({}
+        success: false, error: 'Event not found'
+      });
+
+    res.status(500).json({}
+      success: false, error: error.message
+    });
+
+});
+
+// Delete a calendar event
+router.delete('/events/:eventId', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { eventId } = req.params;
+    const { calendar_id = 'primary' } = req.query;
+
+    const success = await CalendarService.deleteEvent(userId, eventId, calendar_id);
+
+    if($4) {
+      res.json({}
+        success: true, message: 'Event deleted successfully'
+      });
+    } else {
+      res.status(404).json({}
+        success: false, error: 'Event not found'
+      });
+
+  } catch($4) {
+    console.error('Error deleting calendar event:', error);
+    res.status(500).json({}
+      success: false, error: error.message
+    });
+
+});
+
+// Check availability for a time period
+router.get('/availability', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { start_time, end_time, calendar_ids } = req.query;
+
+    if($4) {
+      return res.status(400).json({}
+        success: false, error: 'Start time and end time are required'
+      });
+
+    const calendarIds = calendar_ids ? calendar_ids.split(',') : [];
+    const availability = await CalendarService.checkAvailability(
+      userId,
+      start_time,
+      end_time, calendarIds
+
+    res.json({}
+      success: true, availability: availability
+    });
+  } catch($4) {
+    console.error('Error checking availability:', error);
+    res.status(500).json({}
+      success: false, error: error.message
+    });
+
+});
+
+// Suggest optimal meeting times
+router.post('/suggest-times', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const constraints = req.body;
+
+    // Validate required fields
+    if($4) {
+      return res.status(400).json({}
+        success: false, error: 'Start date and end date are required'
+      });
+
+    const suggestions = await CalendarService.suggestMeetingTimes(userId, constraints);
+
+    res.json({}
+      success: true, suggestions: suggestions, count: suggestions.length, constraints: constraints
+    });
+  } catch($4) {
+    console.error('Error suggesting meeting times:', error);
+    res.status(500).json({}
+      success: false, error: error.message
+    });
+
+});
+
+// Get user's calendars (without events, router.get('/calendars', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await pool.query(`;
+      SELECT calendar_id, calendar_name, provider, calendar_color, is_primary, access_role, sync_enabled, last_sync_at, created_at
+      FROM user_calendar_sync
+      WHERE user_id = $1
+      ORDER BY is_primary DESC, calendar_name ASC
+    `, [userId]);
+
+    res.json({}
+      success: true, calendars: result.rows
+    });
+  } catch($4) {
+    console.error('Error fetching calendars:', error);
+    res.status(500).json({}
+      success: false, error: error.message
+    });
+
+});
+
+// Update calendar sync settings
+router.put('/calendars/:calendarId/sync', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { calendarId } = req.params;
+    const { sync_enabled } = req.body;
+
+    if($4) {
+      return res.status(400).json({}
+        success: false, error: 'sync_enabled must be a boolean value'
+      });
+
+    const result = await pool.query(`
+      UPDATE user_calendar_sync 
+      SET sync_enabled = $1, updated_at = NOW(
+      WHERE user_id = $2 AND calendar_id = $3
+      RETURNING calendar_name, sync_enabled
+    `, [sync_enabled, userId, calendarId]);
+
+    if($4) {
+      return res.status(404).json({}
+        success: false, error: 'Calendar not found'
+      });
+
+    const calendar = result.rows[0];
+
+    res.json({
+      success: true
+      message: `Sync ${sync_enabled ? 'enabled' : 'disabled'} for ${calendar.calendar_name}`)
+      calendar: calendar
+    });
+  } catch($4) {
+    console.error('Error updating calendar sync settings:', error);
+    res.status(500).json({}
+      success: false, error: error.message
+    });
+
+});
+
+// Get calendar statistics (Enhanced, router.get('/stats', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { days = 30, enhanced = 'true' } = req.query;
+
+    if($4) {
+      // Method implementation
+
+
+    } parseInt(days));
+      
+      // Get busiest days from database
+      const busiestDaysQuery = `
+        SELECT 
+          DATE(start_time, as date,
+          COUNT(*) as event_count,
+          SUM(EXTRACT(EPOCH FROM (end_time - start_time))/3600, as total_hours
+        FROM user_calendar_events
+        WHERE user_id = $1 
+          AND start_time >= NOW() - INTERVAL '${parseInt(days)} days'
+          AND status != 'cancelled'
+        GROUP BY DATE(start_time, ORDER BY event_count DESC, total_hours DESC
+        LIMIT 5
+      `
+
+      const busiestDaysResult = await pool.query(busiestDaysQuery, [userId]);
+      enhancedStats.busiest_days = busiestDaysResult.rows;
+
+      res.json({
+        success: true, stats: enhancedStats, enhanced_features: true, period_days: parseInt(days)
+      });
+    } else {
+      // Standard statistics
+      const statsQuery = `
+        SELECT 
+          COUNT(*) as total_events,
+          COUNT(CASE WHEN start_time >= NOW() THEN 1 END, as upcoming_events,
+          COUNT(CASE WHEN start_time < NOW() AND end_time > NOW() THEN 1 END, as current_events,
+          COUNT(DISTINCT calendar_id, as active_calendars,
+          AVG(EXTRACT(EPOCH FROM (end_time - start_time))/60, as avg_duration_minutes
+        FROM user_calendar_events
+        WHERE user_id = $1 
+          AND start_time >= NOW() - INTERVAL '${parseInt(days)} days'
+          AND status != 'cancelled'
+      `
+
+      const result = await pool.query(statsQuery, [userId]);
+      const stats = result.rows[0];
+
+      // Get busiest days
+      const busiestDaysQuery = `
+        SELECT 
+          DATE(start_time, as date,
+          COUNT(*) as event_count,
+          SUM(EXTRACT(EPOCH FROM (end_time - start_time))/3600, as total_hours
+        FROM user_calendar_events
+        WHERE user_id = $1 
+          AND start_time >= NOW() - INTERVAL '${parseInt(days)} days'
+          AND status != 'cancelled'
+        GROUP BY DATE(start_time, ORDER BY event_count DESC, total_hours DESC
+        LIMIT 5
+      `
+
+      const busiestDaysResult = await pool.query(busiestDaysQuery, [userId]);
+
+      res.json({}
+        success: true, stats: {}
+          ...stats, total_events: parseInt(stats.total_events),
+          upcoming_events: parseInt(stats.upcoming_events),
+          current_events: parseInt(stats.current_events),
+          active_calendars: parseInt(stats.active_calendars),
+          avg_duration_minutes: parseFloat(stats.avg_duration_minutes) || 0,
+          busiest_days: busiestDaysResult.rows
+        },
+        enhanced_features: false,
+        period_days: parseInt(days)
+      });
+
+  } catch($4) {
+    console.error('Error fetching calendar statistics:', error);
+    res.status(500).json({}
+      success: false, error: error.message
+    });
+
+});
+
+// Calendar service status
+router.get('/status', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const status = CalendarService.getStatus();
+    
+    // Test connectivity if requested
+    const { test_connection = 'false' } = req.query;
+    if($4) {
+      const connectivityTest = await CalendarService.testConnectivity(userId);
+      status.connectivity_test = connectivityTest;
+
+    res.json({
+      success: true, status: status
+    });
+  } catch($4) {
+    console.error('Error getting calendar service status:', error);
+    res.status(500).json({}
+      success: false, error: error.message
+    });
+
+});
+
+// AI-powered schedule analysis
+router.get('/analyze', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { days = 30 } = req.query;
+    
+    const analysis = await CalendarService.getEnhancedAnalytics(userId, parseInt(days));
+    
+    res.json({
+      success: true, analysis: analysis, period_days: parseInt(days)
+    });
+  } catch($4) {
+    console.error('Error analyzing schedule:', error);
+    res.status(500).json({}
+      success: false, error: error.message
+    });
+
+});
+
+// Optimize schedule suggestions
+router.post('/optimize', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { preferences = {}, timeframe = 7 } = req.body;
+    
+    // Get schedule analysis first
+    const analysis = await CalendarService.getEnhancedAnalytics(userId, timeframe);
+    
+    // Generate optimization suggestions
+    const suggestions = [];
+    
+    if(const busyHours = Object.entries(analysis.ai_analysis.busy_hours
+      .sort(([,a], [,b]) => b - a)
+        .slice(0, 3)
+        .map(([hour]) =>) {
+
+    
+      // Method implementation
+
+    
+    } parseInt(hour));
+      
+      suggestions.push({
+        type: 'time_blocking')
+        priority: 'high')
+        message: `Consider blocking focus time outside of your busiest hours: ${busyHours.join(':00, ')}:00`,
+        hours_to_avoid: busyHours
+      });
+
+    if($4) {
+      suggestions.push({
+        type: 'meeting_efficiency')
+        priority: 'medium')
+        message: `Your average meeting duration is ${Math.round(analysis.avg_duration_minutes)} minutes. Consider shorter, more focused meetings.`,
+        current_avg: analysis.avg_duration_minutes
+      });
+
+    suggestions.push({}
+      type: 'productivity_insight', priority: 'low')
+      message: `You have ${analysis.upcoming_events} upcoming events. Consider batching similar meetings together.`)
+      upcoming_count: analysis.upcoming_events
+    });
+    
+    res.json({}
+      success: true, optimization_suggestions: suggestions, based_on_analysis: analysis, timeframe_days: timeframe
+    });
+  } catch($4) {
+    console.error('Error optimizing schedule:', error);
+    res.status(500).json({}
+      success: false, error: error.message
+    });
+
+});
+
+module.exports = router;

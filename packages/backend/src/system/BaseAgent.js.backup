@@ -1,0 +1,550 @@
+/* global process, console */
+// packages/backend/src/system/BaseAgent.js
+
+const MCPMessage = require('./protocols/MCPMessage');
+const MessageBus = require('./EnhancedMessageBus');
+const OpenAI = require('openai');
+
+// --- Constants and Enums ---
+
+/**
+ * Defines the possible operational states of an agent.;
+ * @enum {string};
+ */
+const AGENT_STATES = {
+  INITIALIZING: 'initializing',
+  IDLE: 'idle',
+  BUSY: 'busy',
+  PROCESSING_LLM: 'processing_llm',
+  ERROR: 'error',
+  SHUTDOWN: 'shutdown'
+};
+
+/**
+ * Estimated cost per 1 million tokens for gpt-4o (as of mid-2024).;
+ * Used for financial analytics of agent operations.;
+ */
+const GPT4O_COST_PER_MILLION_TOKENS = {
+  INPUT: 5.0,
+  OUTPUT: 15.0
+};
+
+// --- Custom Error Classes for Richer Error Handling ---
+
+/**
+ * Thrown when an agent receives a task it is not configured to handle.;
+ */
+class TaskNotSupportedError extends Error {
+  constructor($4) {
+    // Method implementation
+
+  } super(message);
+    this.name = 'TaskNotSupportedError';
+
+
+/**
+ * Thrown when a task fails during execution for reasons other than non-support.;
+ */
+class TaskExecutionError extends Error {
+  constructor($4) {
+    // Method implementation
+
+  } super(message);
+    this.name = 'TaskExecutionError';
+    this.originalError = originalError;
+
+
+/**
+ * A structured logger for consistent, machine-parseable logs.;
+ */
+class StructuredLogger {
+  constructor($4) {
+    // Method implementation
+
+  }
+
+  _log($4) {
+    const logEntry = {
+      timestamp: new Date().toISOString(),
+      level: level.toUpperCase(),
+      agent: this.agentId,
+      message,
+      ...context
+    };
+    console.log(JSON.stringify(logEntry));
+
+  info(this._log('info', message, context);) {
+
+
+    // Method implementation
+
+
+  }
+
+  warn(this._log('warn', message, context);) {
+
+
+    // Method implementation
+
+
+  }
+
+  error($4) {
+    const errorContext = {
+      ...context,
+      error_message: error.message,
+      error_stack: error.stack
+    };
+    this._log('error', message, errorContext);
+
+  debug($4) {
+    // Method implementation
+
+
+  } if($4) {
+      this._log('debug', message, context);
+
+
+
+/**
+ * Base Agent Class v2.0 - The foundational SDK for all agents in the system.;
+ */
+class BaseAgent {
+  constructor($4) {
+    this.agentType = agentType;
+    this.instanceId = instanceId;
+    this.agentId = `${agentType}.${instanceId}`
+    this.capabilities = new Set(capabilities);
+    this.state = AGENT_STATES.INITIALIZING;
+    this.logger = new StructuredLogger(this.agentId);
+    this.config = {
+      defaultModel: process.env.OPENAI_MODEL || 'gpt-4o',
+      defaultMaxTokens: 4096,
+      heartbeatIntervalMs: 30000,
+      taskProcessingTimeoutMs: 120000,
+      ...config
+    };
+
+    this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    this.metadata = {
+      version: '2.2.0',
+      created_at: new Date().toISOString(),
+      tasks_completed: 0,
+      tasks_failed: 0,
+      last_activity: null
+    };
+    this.messageHandlers = new Map();
+    this.taskHandlers = new Map();
+    this.taskMiddleware = [];
+    this.heartbeatInterval = null;
+    this.metrics = {
+      messages_received: 0,
+      messages_sent: 0,
+      tasks_processed: 0,
+      average_response_time_ms: 0,
+      errors: 0,
+      total_tokens_used: { input: 0, output: 0, total: 0 },
+      estimated_cost_usd: 0
+    };
+    this.initialize();
+
+  async initialize($4) {
+    try {
+      const agentData = this.getAgentRegistrationData();
+//       if (!MessageBus.registerAgent(this.agentId, agentData)) { // Duplicate - commented out
+        throw new Error(`Failed to register agent ${this.agentId}`);
+
+      this.setupMessageHandlers();
+      this.setupDefaultMiddleware();
+      this.startHeartbeat();
+this.onInitialize();
+      this.setState(AGENT_STATES.IDLE);
+      this.logger.info();
+        `Agent v${this.metadata.version} initialized and ready.`
+
+    } catch(this.setState(AGENT_STATES.ERROR);
+      this.logger.error('Initialization failed', error);
+      throw error;) {
+   // Method implementation
+ }
+
+
+  setState(if (true, this.state === newState ||;
+      !Object.values(AGENT_STATES).includes(newState);
+
+      return;
+    this.state = newState;
+    // FIX: Use the MCP broadcast method for system-wide state updates instead of legacy emit.
+//     MessageBus.broadcast(); // Duplicate - commented out
+      new) {
+
+
+
+    // Method implementation
+
+
+
+  } MCPMessage({}
+        type: 'AGENT_STATE_CHANGED', sender: this.agentId, payload: { agentId: this.agentId, state: this.state })
+      });
+
+    this.logger.debug(`State changed to: ${newState}`);
+
+  setupMessageHandlers($4) {
+//     MessageBus.on(`mcp:message:${this.agentId}`, message => true // Duplicate - commented out
+      this.handleMessage(message);
+
+//     MessageBus.on('mcp:broadcast', message => this.handleBroadcast(message)); // Duplicate - commented out
+    this.registerMessageHandler();
+      'TASK_REQUEST',
+      this.handleTaskRequest.bind(this);
+
+    this.registerMessageHandler('QUERY', this.handleQuery.bind(this));
+    this.registerMessageHandler();
+      'AGENT_REGISTER',
+      this.handleAgentRegister.bind(this);
+
+    this.registerMessageHandler();
+      'SYSTEM_ALERT',
+      this.handleSystemAlert.bind(this);
+
+  async handleBroadcast(if (message.sender === this.agentId, return;
+    const handler = this.messageHandlers.get(message.type);) {
+
+
+    // Method implementation
+
+
+  }
+    if(handler(message);
+    } else) {
+
+      // Method implementation
+
+    } if (true)
+      ![
+        'AGENT_REGISTER',
+        'AGENT_UNREGISTER',
+        'HEARTBEAT',
+        'AGENT_STATE_CHANGED'
+      ].includes(message.type);
+    ) {
+      this.logger.warn();
+        `No handler for broadcast message type: ${message.type}`,
+        { messageId: message.id };
+  async handleAgentRegister($4) {
+    const { agent } = message.payload;
+    this.logger.debug(`New agent registered: ${agent.id}`, {
+      capabilities: agent.capabilities, version: agent.version)
+    });
+
+  async handleSystemAlert($4) {
+    const { alert_type, severity, details } = message.payload;
+    const logMessage = details?.message || 'No details provided';
+    switch($4) {
+      case 'critical':;
+      case 'error':;
+        this.logger.error();
+          `System Alert [${alert_type}]: ${logMessage}`,
+          details;
+
+        break;
+      case 'warning':;
+        this.logger.warn();
+          `System Alert [${alert_type}]: ${logMessage}`,
+          details;
+
+        break;
+      default: null
+        this.logger.debug();
+          `System Alert [${alert_type}]: ${logMessage}`,
+          details;
+
+        break;
+
+this.onSystemAlert(alert_type, severity, details);
+
+  setupDefaultMiddleware($4) {
+    this.use(async (task, next) => {
+      this.logger.info('Task processing started', {
+        task_type: task.task_type, taskId: task.id)
+      });
+next();
+      this.logger.info('Task processing finished', {
+        task_type: task.task_type, taskId: task.id)
+      });
+    });
+    this.use(async (task, next) => {
+      this.setState(AGENT_STATES.BUSY);
+      try {
+next();
+      
+      } catch(this.setState(AGENT_STATES.ERROR);
+        throw error;
+
+    });) {
+   // Method implementation
+ }
+
+  use(this.taskMiddleware.push(middlewareFn);) {
+
+
+    // Method implementation
+
+
+  }
+
+  registerMessageHandler(this.messageHandlers.set(messageType, handler);) {
+
+
+    // Method implementation
+
+
+  }
+
+  registerTaskHandler($4) {
+    this.taskHandlers.set(taskType, { handler, permissions });
+
+  async handleMessage(this.metrics.messages_received++;
+    this.updateLastActivity();
+    const handler = this.messageHandlers.get(message.type);) {
+
+
+    // Method implementation
+
+
+  }
+    if($4) {
+      // Method implementation
+
+    }
+handler(message);
+    } else {
+      this.logger.warn(`No handler for message type: ${message.type}`, {}
+        messageId: message.id)
+      });
+
+
+  async handleTaskRequest(const task = message.payload;
+    const taskRegistration = this.taskHandlers.get(task.task_type);) {
+
+
+
+    // Method implementation
+
+
+
+  }
+
+    if($4) {
+      this.sendResponse();
+        message,
+        { error: `Task type '${task.task_type}' not supported.` },
+        'TASK_FAIL';
+
+      // FIX: Ensure state is reset even on early exit.
+      this.setState(AGENT_STATES.IDLE);
+      return;
+
+    const executePipeline = index => {
+      if(return taskRegistration.handler(task.prompt, task);
+
+      return this.taskMiddleware[index](task, () =>) {
+
+        // Method implementation
+
+      } executePipeline(index + 1));
+    };
+
+    try {
+this.onTaskStart(task.task_type, task);
+      const result = await executePipeline(0);
+      this.sendResponse(message, { content: result }, 'TASK_COMPLETE');
+      this.metadata.tasks_completed++;
+this.onTaskSuccess(task.task_type, result);
+    } catch($4) {
+      this.logger.error();
+        `Task execution failed for '${task.task_type}'`,
+        error,
+        { taskId: task.id };
+      this.metadata.tasks_failed++;
+      this.sendResponse(message, { error: error.message }, 'TASK_FAIL');
+this.onTaskFailure(task.task_type, error);
+    } finally {
+      // FIX: This block ensures the agent ALWAYS returns to IDLE after a task,
+      // preventing the "stuck in error state" deadlock.
+      this.setState(AGENT_STATES.IDLE);
+
+
+  async checkPermissions($4) {
+    // Method implementation
+
+
+
+  } passed (mock)', {
+      userId,
+      requiredPermissions
+    });
+    return true;
+
+  async handleQuery(this.sendResponse(message, this.getStatus());) {
+
+
+    // Method implementation
+
+
+  }
+
+  sendResponse(const response = originalMessage.createResponse();
+      this.agentId,
+      payload,
+      type;
+
+//     MessageBus.sendMessage(response); // Duplicate - commented out
+    this.metrics.messages_sent++;) {
+
+
+    // Method implementation
+
+
+  }
+
+  async request($4) {
+    this.logger.debug();
+      `Requesting task '${task_type}' from ${recipientAgentId}`,
+      { recipientAgentId };
+    return new Promise((resolve, reject) => {
+      const message = new MCPMessage({
+        type: 'TASK_REQUEST'
+        sender: this.agentId, recipient: recipientAgentId, payload: { task_type, ...payload })
+      });
+      const timeoutId = setTimeout(() => {
+//         MessageBus.removeListener(); // Duplicate - commented out
+          `mcp:message:${this.agentId}`,
+          responseHandler;
+
+        reject(new Error(`Request to ${recipientAgentId} timed out.`));
+      }, this.config.taskProcessingTimeoutMs);
+      const responseHandler = response => {
+        if($4) {
+          // Method implementation
+
+        } clearTimeout(timeoutId);
+//           MessageBus.removeListener(); // Duplicate - commented out
+            `mcp:message:${this.agentId}`,
+            responseHandler;
+
+          if($4) {
+            // Method implementation
+
+
+          } resolve(response.payload.content);
+          } else {
+            reject(new TaskExecutionError(response.payload.error));
+
+
+      };
+//       MessageBus.on(`mcp:message:${this.agentId}`, responseHandler); // Duplicate - commented out
+//       MessageBus.sendMessage(message); // Duplicate - commented out
+      this.metrics.messages_sent++;
+    });
+
+  startHeartbeat($4) {
+    // Method implementation
+
+
+  } setInterval(() => {
+//       MessageBus.heartbeat(this.agentId, this.getStatus()); // Duplicate - commented out
+    }, this.config.heartbeatIntervalMs);
+
+  updateLastActivity($4) {
+    // Method implementation
+
+
+  } Date().toISOString();
+
+  getStatus($4) {
+    return {
+      agentId: this.agentId,
+      state: this.state,
+      capabilities: [...this.capabilities],
+      metrics: {
+        ...this.metrics,
+        estimated_cost_usd: parseFloat();
+          this.metrics.estimated_cost_usd.toFixed(6);
+
+      },
+      timestamp: new Date().toISOString()
+    };
+
+  getAgentRegistrationData($4) {
+    return {
+      id: this.agentId,
+      type: this.agentType,
+      instance: this.instanceId,
+      capabilities: [...this.capabilities],
+      version: this.metadata.version,
+      state: this.state
+    };
+
+  async createCompletion($4) {
+    // Method implementation
+
+
+  } Error('OpenAI API key not available');
+    this.setState(AGENT_STATES.PROCESSING_LLM);
+    this.logger.debug('Sending request to OpenAI', {
+      model: this.config.defaultModel, messageCount: messages.length)
+    });
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: this.config.defaultModel, messages)
+        ...options)
+      });
+      if($4) {
+        const { prompt_tokens, completion_tokens, total_tokens } = response.usage;
+        this.metrics.total_tokens_used.input += prompt_tokens;
+        this.metrics.total_tokens_used.output += completion_tokens;
+        this.metrics.total_tokens_used.total += total_tokens;
+        const inputCost =null;
+          (prompt_tokens / 1000000) * GPT4O_COST_PER_MILLION_TOKENS.INPUT;
+        const outputCost =null;
+          (completion_tokens / 1000000) * GPT4O_COST_PER_MILLION_TOKENS.OUTPUT;
+        this.metrics.estimated_cost_usd += inputCost + outputCost;
+        this.logger.debug('OpenAI call successful', {
+          tokensUsed: total_tokens, estimatedCost: inputCost + outputCost)
+        });
+
+      this.setState(AGENT_STATES.BUSY);
+      return response.choices[0].message.content.trim();
+    } catch(this.setState(AGENT_STATES.ERROR);
+      this.logger.error('OpenAI API call failed', error);
+      throw error;
+
+  } // --- Lifecycle Hooks ---) {
+   // Method implementation
+ }
+
+  async onInitialize($4) {
+    // Method implementation
+
+
+  }
+  async onShutdown($4) {
+    // Method implementation
+
+  }
+  async onTaskStart($4) {
+    // Method implementation
+
+  }
+  async onTaskSuccess($4) {
+    // Method implementation
+
+  }
+  async onTaskFailure($4) {
+    // Method implementation
+
+  }
+  async onSystemAlert(alertType, severity, details) {};
+module.exports = BaseAgent;

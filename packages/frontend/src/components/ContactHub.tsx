@@ -1,12 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { 
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
   Users,
   RefreshCw,
   Search,
@@ -24,7 +36,7 @@ import {
   UserCheck,
   Activity,
   Gift,
-  Tag
+  Tag,
 } from 'lucide-react';
 
 interface Contact {
@@ -34,10 +46,16 @@ interface Contact {
   first_name: string;
   last_name: string;
   display_name: string;
-  email_addresses: Array<{email: string, type: string, primary: boolean}>;
-  phone_numbers: Array<{number: string, type: string, primary: boolean}>;
-  addresses: Array<{street: string, city: string, state: string, country: string, type: string}>;
-  organizations: Array<{company: string, title: string, department: string}>;
+  email_addresses: Array<{ email: string; type: string; primary: boolean }>;
+  phone_numbers: Array<{ number: string; type: string; primary: boolean }>;
+  addresses: Array<{
+    street: string;
+    city: string;
+    state: string;
+    country: string;
+    type: string;
+  }>;
+  organizations: Array<{ company: string; title: string; department: string }>;
   birthday: string;
   anniversary: string;
   notes: string;
@@ -77,9 +95,9 @@ const ContactHub: React.FC = () => {
   const [newInteraction, setNewInteraction] = useState({
     type: 'email',
     description: '',
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
   });
-  
+
   // New contact form state
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newContact, setNewContact] = useState({
@@ -87,7 +105,7 @@ const ContactHub: React.FC = () => {
     last_name: '',
     email_addresses: [{ email: '', type: 'personal', primary: true }],
     phone_numbers: [{ number: '', type: 'mobile', primary: true }],
-    notes: ''
+    notes: '',
   });
 
   useEffect(() => {
@@ -100,10 +118,10 @@ const ContactHub: React.FC = () => {
       const token = localStorage.getItem('token');
       const response = await fetch('/api/contacts/stats', {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setStats(data);
@@ -119,16 +137,16 @@ const ContactHub: React.FC = () => {
       const token = localStorage.getItem('token');
       const params = new URLSearchParams({
         limit: '100',
-        ...(searchQuery && { query: searchQuery })
+        ...(searchQuery && { query: searchQuery }),
       });
-      
+
       const endpoint = searchQuery ? '/api/contacts/search' : '/api/contacts';
       const response = await fetch(`${endpoint}?${params}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setContacts(data.contacts || data.results || []);
@@ -149,15 +167,15 @@ const ContactHub: React.FC = () => {
       const response = await fetch('/api/contacts/sync', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           providers: ['google'],
-          max_contacts: 500
-        })
+          max_contacts: 500,
+        }),
       });
-      
+
       if (response.ok) {
         await fetchContacts();
         await fetchContactStats();
@@ -177,10 +195,10 @@ const ContactHub: React.FC = () => {
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/contacts/${contactId}/interactions`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setInteractions(data.interactions || []);
@@ -192,28 +210,31 @@ const ContactHub: React.FC = () => {
 
   const addInteraction = async () => {
     if (!selectedContact) return;
-    
+
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/contacts/${selectedContact.id}/interactions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          interaction_type: newInteraction.type,
-          interaction_date: new Date(newInteraction.date).toISOString(),
-          description: newInteraction.description
-        })
-      });
-      
+      const response = await fetch(
+        `/api/contacts/${selectedContact.id}/interactions`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            interaction_type: newInteraction.type,
+            interaction_date: new Date(newInteraction.date).toISOString(),
+            description: newInteraction.description,
+          }),
+        }
+      );
+
       if (response.ok) {
         await fetchContactInteractions(selectedContact.id);
         setNewInteraction({
           type: 'email',
           description: '',
-          date: new Date().toISOString().split('T')[0]
+          date: new Date().toISOString().split('T')[0],
         });
         setShowInteractionModal(false);
       }
@@ -228,15 +249,16 @@ const ContactHub: React.FC = () => {
       const response = await fetch('/api/contacts', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           ...newContact,
-          display_name: `${newContact.first_name} ${newContact.last_name}`.trim()
-        })
+          display_name:
+            `${newContact.first_name} ${newContact.last_name}`.trim(),
+        }),
       });
-      
+
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
@@ -246,7 +268,7 @@ const ContactHub: React.FC = () => {
             last_name: '',
             email_addresses: [{ email: '', type: 'personal', primary: true }],
             phone_numbers: [{ number: '', type: 'mobile', primary: true }],
-            notes: ''
+            notes: '',
           });
           setShowCreateForm(false);
         } else {
@@ -270,8 +292,10 @@ const ContactHub: React.FC = () => {
     if (!dateString) return 'Never';
     const date = new Date(dateString);
     const now = new Date();
-    const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    
+    const diffInDays = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
     if (diffInDays === 0) return 'Today';
     if (diffInDays === 1) return 'Yesterday';
     if (diffInDays < 7) return `${diffInDays} days ago`;
@@ -281,20 +305,25 @@ const ContactHub: React.FC = () => {
 
   const getInteractionIcon = (type: string) => {
     switch (type) {
-      case 'email': return <Mail className="w-4 h-4" />;
-      case 'phone': return <Phone className="w-4 h-4" />;
-      case 'meeting': return <Calendar className="w-4 h-4" />;
-      case 'message': return <MessageCircle className="w-4 h-4" />;
-      default: return <Activity className="w-4 h-4" />;
+      case 'email':
+        return <Mail className="w-4 h-4" />;
+      case 'phone':
+        return <Phone className="w-4 h-4" />;
+      case 'meeting':
+        return <Calendar className="w-4 h-4" />;
+      case 'message':
+        return <MessageCircle className="w-4 h-4" />;
+      default:
+        return <Activity className="w-4 h-4" />;
     }
   };
 
   const getInteractionColor = (type: string) => {
     const colors = {
-      'email': 'bg-blue-100 text-blue-800',
-      'phone': 'bg-green-100 text-green-800',
-      'meeting': 'bg-purple-100 text-purple-800',
-      'message': 'bg-yellow-100 text-yellow-800'
+      email: 'bg-blue-100 text-blue-800',
+      phone: 'bg-green-100 text-green-800',
+      meeting: 'bg-purple-100 text-purple-800',
+      message: 'bg-yellow-100 text-yellow-800',
     };
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
@@ -302,7 +331,11 @@ const ContactHub: React.FC = () => {
   const getInitials = (contact: Contact) => {
     const first = contact.first_name?.charAt(0) || '';
     const last = contact.last_name?.charAt(0) || '';
-    return (first + last).toUpperCase() || contact.display_name?.charAt(0)?.toUpperCase() || '?';
+    return (
+      (first + last).toUpperCase() ||
+      contact.display_name?.charAt(0)?.toUpperCase() ||
+      '?'
+    );
   };
 
   const handleSearch = () => {
@@ -321,15 +354,15 @@ const ContactHub: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Contact Hub</h2>
-          <p className="text-gray-600">Sync and manage your contacts with interaction tracking</p>
+          <p className="text-gray-600">
+            Sync and manage your contacts with interaction tracking
+          </p>
         </div>
         <div className="flex space-x-2">
-          <Button 
-            onClick={syncContacts} 
-            disabled={syncing}
-            variant="outline"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+          <Button onClick={syncContacts} disabled={syncing} variant="outline">
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`}
+            />
             {syncing ? 'Syncing...' : 'Sync Contacts'}
           </Button>
           <Button onClick={() => setShowCreateForm(true)}>
@@ -353,37 +386,43 @@ const ContactHub: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Synced Today</p>
-                  <p className="text-2xl font-bold text-green-600">{stats.synced_today}</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {stats.synced_today}
+                  </p>
                 </div>
                 <UserCheck className="w-8 h-8 text-green-500" />
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Upcoming Birthdays</p>
-                  <p className="text-2xl font-bold text-purple-600">{stats.upcoming_birthdays}</p>
+                  <p className="text-2xl font-bold text-purple-600">
+                    {stats.upcoming_birthdays}
+                  </p>
                 </div>
                 <Gift className="w-8 h-8 text-purple-500" />
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Recent Interactions</p>
-                  <p className="text-2xl font-bold text-orange-600">{stats.recent_interactions}</p>
+                  <p className="text-2xl font-bold text-orange-600">
+                    {stats.recent_interactions}
+                  </p>
                 </div>
                 <Activity className="w-8 h-8 text-orange-500" />
               </div>
@@ -399,8 +438,8 @@ const ContactHub: React.FC = () => {
             <Input
               placeholder="Search contacts..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              onChange={e => setSearchQuery(e.target.value)}
+              onKeyPress={e => e.key === 'Enter' && handleSearch()}
               className="flex-1"
             />
             <Button onClick={handleSearch} variant="outline">
@@ -419,12 +458,14 @@ const ContactHub: React.FC = () => {
           </div>
         ) : contacts.length === 0 ? (
           <div className="col-span-full text-center py-8 text-gray-500">
-            {searchQuery ? 'No contacts match your search' : 'No contacts found'}
+            {searchQuery
+              ? 'No contacts match your search'
+              : 'No contacts found'}
           </div>
         ) : (
-          contacts.map((contact) => (
-            <Card 
-              key={contact.id} 
+          contacts.map(contact => (
+            <Card
+              key={contact.id}
               className="hover:shadow-md transition-shadow cursor-pointer"
               onClick={() => openContactDetails(contact)}
             >
@@ -433,8 +474,8 @@ const ContactHub: React.FC = () => {
                   {/* Avatar */}
                   <div className="flex-shrink-0">
                     {contact.photo_url ? (
-                      <img 
-                        src={contact.photo_url} 
+                      <img
+                        src={contact.photo_url}
                         alt={contact.display_name}
                         className="w-12 h-12 rounded-full object-cover"
                       />
@@ -444,13 +485,14 @@ const ContactHub: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Contact Info */}
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-gray-900 truncate">
-                      {contact.display_name || `${contact.first_name} ${contact.last_name}`}
+                      {contact.display_name ||
+                        `${contact.first_name} ${contact.last_name}`}
                     </h3>
-                    
+
                     {/* Primary Email */}
                     {contact.email_addresses?.find(e => e.primary)?.email && (
                       <div className="flex items-center text-sm text-gray-600 mt-1">
@@ -460,7 +502,7 @@ const ContactHub: React.FC = () => {
                         </span>
                       </div>
                     )}
-                    
+
                     {/* Primary Phone */}
                     {contact.phone_numbers?.find(p => p.primary)?.number && (
                       <div className="flex items-center text-sm text-gray-600 mt-1">
@@ -470,7 +512,7 @@ const ContactHub: React.FC = () => {
                         </span>
                       </div>
                     )}
-                    
+
                     {/* Company */}
                     {contact.organizations?.[0]?.company && (
                       <div className="flex items-center text-sm text-gray-600 mt-1">
@@ -480,12 +522,16 @@ const ContactHub: React.FC = () => {
                         </span>
                       </div>
                     )}
-                    
+
                     {/* Tags */}
                     {contact.tags && contact.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
                         {contact.tags.slice(0, 2).map((tag, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
+                          <Badge
+                            key={index}
+                            variant="secondary"
+                            className="text-xs"
+                          >
                             {tag}
                           </Badge>
                         ))}
@@ -496,7 +542,7 @@ const ContactHub: React.FC = () => {
                         )}
                       </div>
                     )}
-                    
+
                     {/* Last Interaction */}
                     <div className="flex items-center space-x-4 mt-3 text-xs text-gray-500">
                       <div className="flex items-center">
@@ -521,8 +567,8 @@ const ContactHub: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-3">
               {selectedContact?.photo_url ? (
-                <img 
-                  src={selectedContact.photo_url} 
+                <img
+                  src={selectedContact.photo_url}
                   alt={selectedContact.display_name}
                   className="w-12 h-12 rounded-full object-cover"
                 />
@@ -533,75 +579,103 @@ const ContactHub: React.FC = () => {
               )}
               <div>
                 <h3 className="text-lg font-semibold">
-                  {selectedContact?.display_name || `${selectedContact?.first_name} ${selectedContact?.last_name}`}
+                  {selectedContact?.display_name ||
+                    `${selectedContact?.first_name} ${selectedContact?.last_name}`}
                 </h3>
                 <p className="text-sm text-gray-600">
-                  {selectedContact?.organizations?.[0]?.title} at {selectedContact?.organizations?.[0]?.company}
+                  {selectedContact?.organizations?.[0]?.title} at{' '}
+                  {selectedContact?.organizations?.[0]?.company}
                 </p>
               </div>
             </DialogTitle>
           </DialogHeader>
-          
+
           {selectedContact && (
             <div className="space-y-6">
               {/* Contact Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Email Addresses */}
-                {selectedContact.email_addresses && selectedContact.email_addresses.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Email Addresses</h4>
-                    <div className="space-y-1">
-                      {selectedContact.email_addresses.map((email, index) => (
-                        <div key={index} className="flex items-center space-x-2 text-sm">
-                          <Mail className="w-4 h-4 text-gray-400" />
-                          <span>{email.email}</span>
-                          <Badge variant="outline" className="text-xs">{email.type}</Badge>
-                          {email.primary && <Star className="w-3 h-3 text-yellow-500 fill-current" />}
-                        </div>
-                      ))}
+                {selectedContact.email_addresses &&
+                  selectedContact.email_addresses.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">
+                        Email Addresses
+                      </h4>
+                      <div className="space-y-1">
+                        {selectedContact.email_addresses.map((email, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center space-x-2 text-sm"
+                          >
+                            <Mail className="w-4 h-4 text-gray-400" />
+                            <span>{email.email}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {email.type}
+                            </Badge>
+                            {email.primary && (
+                              <Star className="w-3 h-3 text-yellow-500 fill-current" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-                
+                  )}
+
                 {/* Phone Numbers */}
-                {selectedContact.phone_numbers && selectedContact.phone_numbers.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Phone Numbers</h4>
-                    <div className="space-y-1">
-                      {selectedContact.phone_numbers.map((phone, index) => (
-                        <div key={index} className="flex items-center space-x-2 text-sm">
-                          <Phone className="w-4 h-4 text-gray-400" />
-                          <span>{phone.number}</span>
-                          <Badge variant="outline" className="text-xs">{phone.type}</Badge>
-                          {phone.primary && <Star className="w-3 h-3 text-yellow-500 fill-current" />}
-                        </div>
-                      ))}
+                {selectedContact.phone_numbers &&
+                  selectedContact.phone_numbers.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">
+                        Phone Numbers
+                      </h4>
+                      <div className="space-y-1">
+                        {selectedContact.phone_numbers.map((phone, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center space-x-2 text-sm"
+                          >
+                            <Phone className="w-4 h-4 text-gray-400" />
+                            <span>{phone.number}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {phone.type}
+                            </Badge>
+                            {phone.primary && (
+                              <Star className="w-3 h-3 text-yellow-500 fill-current" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
-              
+
               {/* Important Dates */}
               {(selectedContact.birthday || selectedContact.anniversary) && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Important Dates</h4>
+                  <h4 className="font-medium text-gray-900 mb-2">
+                    Important Dates
+                  </h4>
                   <div className="space-y-1 text-sm">
                     {selectedContact.birthday && (
                       <div className="flex items-center space-x-2">
                         <Gift className="w-4 h-4 text-gray-400" />
-                        <span>Birthday: {formatDate(selectedContact.birthday)}</span>
+                        <span>
+                          Birthday: {formatDate(selectedContact.birthday)}
+                        </span>
                       </div>
                     )}
                     {selectedContact.anniversary && (
                       <div className="flex items-center space-x-2">
                         <Calendar className="w-4 h-4 text-gray-400" />
-                        <span>Anniversary: {formatDate(selectedContact.anniversary)}</span>
+                        <span>
+                          Anniversary: {formatDate(selectedContact.anniversary)}
+                        </span>
                       </div>
                     )}
                   </div>
                 </div>
               )}
-              
+
               {/* Notes */}
               {selectedContact.notes && (
                 <div>
@@ -611,33 +685,50 @@ const ContactHub: React.FC = () => {
                   </p>
                 </div>
               )}
-              
+
               {/* Interactions */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium text-gray-900">Recent Interactions</h4>
-                  <Button 
-                    size="sm" 
+                  <h4 className="font-medium text-gray-900">
+                    Recent Interactions
+                  </h4>
+                  <Button
+                    size="sm"
                     onClick={() => setShowInteractionModal(true)}
                   >
                     <Plus className="w-4 h-4 mr-1" />
                     Add
                   </Button>
                 </div>
-                
+
                 {interactions.length === 0 ? (
-                  <p className="text-sm text-gray-500">No interactions recorded</p>
+                  <p className="text-sm text-gray-500">
+                    No interactions recorded
+                  </p>
                 ) : (
                   <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {interactions.map((interaction) => (
-                      <div key={interaction.id} className="flex items-start space-x-3 p-2 bg-gray-50 rounded">
-                        <Badge className={getInteractionColor(interaction.interaction_type)}>
+                    {interactions.map(interaction => (
+                      <div
+                        key={interaction.id}
+                        className="flex items-start space-x-3 p-2 bg-gray-50 rounded"
+                      >
+                        <Badge
+                          className={getInteractionColor(
+                            interaction.interaction_type
+                          )}
+                        >
                           {getInteractionIcon(interaction.interaction_type)}
-                          <span className="ml-1 capitalize">{interaction.interaction_type}</span>
+                          <span className="ml-1 capitalize">
+                            {interaction.interaction_type}
+                          </span>
                         </Badge>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-900">{interaction.description}</p>
-                          <p className="text-xs text-gray-500">{formatDate(interaction.interaction_date)}</p>
+                          <p className="text-sm text-gray-900">
+                            {interaction.description}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {formatDate(interaction.interaction_date)}
+                          </p>
                         </div>
                       </div>
                     ))}
@@ -650,7 +741,10 @@ const ContactHub: React.FC = () => {
       </Dialog>
 
       {/* Add Interaction Modal */}
-      <Dialog open={showInteractionModal} onOpenChange={setShowInteractionModal}>
+      <Dialog
+        open={showInteractionModal}
+        onOpenChange={setShowInteractionModal}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Interaction</DialogTitle>
@@ -658,7 +752,12 @@ const ContactHub: React.FC = () => {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-gray-700">Type</label>
-              <Select value={newInteraction.type} onValueChange={(value) => setNewInteraction({...newInteraction, type: value})}>
+              <Select
+                value={newInteraction.type}
+                onValueChange={value =>
+                  setNewInteraction({ ...newInteraction, type: value })
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -670,31 +769,46 @@ const ContactHub: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <label className="text-sm font-medium text-gray-700">Date</label>
               <Input
                 type="date"
                 value={newInteraction.date}
-                onChange={(e) => setNewInteraction({...newInteraction, date: e.target.value})}
+                onChange={e =>
+                  setNewInteraction({ ...newInteraction, date: e.target.value })
+                }
               />
             </div>
-            
+
             <div>
-              <label className="text-sm font-medium text-gray-700">Description</label>
+              <label className="text-sm font-medium text-gray-700">
+                Description
+              </label>
               <Textarea
                 value={newInteraction.description}
-                onChange={(e) => setNewInteraction({...newInteraction, description: e.target.value})}
+                onChange={e =>
+                  setNewInteraction({
+                    ...newInteraction,
+                    description: e.target.value,
+                  })
+                }
                 placeholder="Brief description of the interaction..."
                 rows={3}
               />
             </div>
-            
+
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setShowInteractionModal(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowInteractionModal(false)}
+              >
                 Cancel
               </Button>
-              <Button onClick={addInteraction} disabled={!newInteraction.description}>
+              <Button
+                onClick={addInteraction}
+                disabled={!newInteraction.description}
+              >
                 Add Interaction
               </Button>
             </div>
@@ -711,76 +825,103 @@ const ContactHub: React.FC = () => {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">First Name</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  First Name
+                </label>
                 <Input
                   value={newContact.first_name}
-                  onChange={(e) => setNewContact({ ...newContact, first_name: e.target.value })}
+                  onChange={e =>
+                    setNewContact({ ...newContact, first_name: e.target.value })
+                  }
                   placeholder="John"
                   className="glass-card border-gray-600/50 text-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Last Name</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Last Name
+                </label>
                 <Input
                   value={newContact.last_name}
-                  onChange={(e) => setNewContact({ ...newContact, last_name: e.target.value })}
+                  onChange={e =>
+                    setNewContact({ ...newContact, last_name: e.target.value })
+                  }
                   placeholder="Doe"
                   className="glass-card border-gray-600/50 text-white"
                 />
               </div>
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Email
+              </label>
               <Input
                 type="email"
                 value={newContact.email_addresses[0]?.email || ''}
-                onChange={(e) => setNewContact({ 
-                  ...newContact, 
-                  email_addresses: [{ 
-                    ...newContact.email_addresses[0],
-                    email: e.target.value 
-                  }] 
-                })}
+                onChange={e =>
+                  setNewContact({
+                    ...newContact,
+                    email_addresses: [
+                      {
+                        ...newContact.email_addresses[0],
+                        email: e.target.value,
+                      },
+                    ],
+                  })
+                }
                 placeholder="john.doe@example.com"
                 className="glass-card border-gray-600/50 text-white"
               />
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Phone</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Phone
+              </label>
               <Input
                 type="tel"
                 value={newContact.phone_numbers[0]?.number || ''}
-                onChange={(e) => setNewContact({ 
-                  ...newContact, 
-                  phone_numbers: [{ 
-                    ...newContact.phone_numbers[0],
-                    number: e.target.value 
-                  }] 
-                })}
+                onChange={e =>
+                  setNewContact({
+                    ...newContact,
+                    phone_numbers: [
+                      {
+                        ...newContact.phone_numbers[0],
+                        number: e.target.value,
+                      },
+                    ],
+                  })
+                }
                 placeholder="+1 (555) 123-4567"
                 className="glass-card border-gray-600/50 text-white"
               />
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Notes</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Notes
+              </label>
               <Textarea
                 value={newContact.notes}
-                onChange={(e) => setNewContact({ ...newContact, notes: e.target.value })}
+                onChange={e =>
+                  setNewContact({ ...newContact, notes: e.target.value })
+                }
                 placeholder="Additional notes..."
                 rows={3}
                 className="glass-card border-gray-600/50 text-white"
               />
             </div>
-            
+
             <div className="flex justify-end space-x-2 pt-4">
-              <Button variant="outline" onClick={() => setShowCreateForm(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowCreateForm(false)}
+              >
                 Cancel
               </Button>
-              <Button 
-                onClick={createContact} 
+              <Button
+                onClick={createContact}
                 disabled={!newContact.first_name && !newContact.last_name}
                 className="bg-gradient-green"
               >

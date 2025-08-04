@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ThemeCustomizer } from '@/components/ThemeCustomizer';
 import { LanguageSelector } from '@/components/LanguageSelector';
+import SystemHealthIndicator from '@/components/SystemHealthIndicator';
 import { useThemeContext, Theme } from '@/context/ThemeContext';
 
 interface SettingsPageProps {
@@ -72,7 +73,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<
-    'profile' | 'password' | 'preferences'
+    'profile' | 'password' | 'preferences' | 'health'
   >('profile');
   const [showThemeCustomizer, setShowThemeCustomizer] = useState(false);
   const { theme, setTheme } = useThemeContext();
@@ -119,7 +120,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
           verbosity: settingsData.verbosity || 'normal',
           humor: settingsData.humor || 'playful',
         });
-        
+
         // Set audio settings with fallbacks
         setAudioForm({
           voice_responses: settingsData.voice_responses ?? false,
@@ -129,10 +130,10 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
         });
       } catch (err: any) {
         console.error('Error during settings page data fetch:', err); // Log the full error
-        
+
         // Use default settings as fallback when backend fails
         console.warn('Backend unavailable, using default settings');
-        
+
         const defaultSettings = {
           sarcasm: 5,
           verbosity: 'normal' as const,
@@ -140,43 +141,54 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
           voice_responses: false,
           ambient_listening: false,
           sound_effects: true,
-          camera_enabled: false
+          camera_enabled: false,
         };
-        
+
         // Set default user data if user fetch failed
         if (!user) {
           setUser({
             id: 1,
             name: 'User',
             email: 'user@example.com',
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
           });
           setProfileForm({ name: 'User', email: 'user@example.com' });
         }
-        
+
         // Set default settings
         setPersonalityForm({
           sarcasm: defaultSettings.sarcasm,
           verbosity: defaultSettings.verbosity,
-          humor: defaultSettings.humor
+          humor: defaultSettings.humor,
         });
-        
+
         setAudioForm({
           voice_responses: defaultSettings.voice_responses,
           ambient_listening: defaultSettings.ambient_listening,
           sound_effects: defaultSettings.sound_effects,
-          camera_enabled: defaultSettings.camera_enabled
+          camera_enabled: defaultSettings.camera_enabled,
         });
-        
+
         // Handle specific error cases with better messages
         if (err.message.includes('Failed to fetch')) {
-          setError('⚠️ Backend temporarily unavailable. Using default settings. Please check that the backend is running on port 8000.');
-        } else if (err.message.includes('403') || err.message.includes('Forbidden')) {
-          setError('🔐 Authentication failed. Please try logging out and logging back in.');
+          setError(
+            '⚠️ Backend temporarily unavailable. Using default settings. Please check that the backend is running on port 8000.'
+          );
+        } else if (
+          err.message.includes('403') ||
+          err.message.includes('Forbidden')
+        ) {
+          setError(
+            '🔐 Authentication failed. Please try logging out and logging back in.'
+          );
         } else if (err.message.includes('500')) {
-          setError('🚨 Server error detected. Using default settings. Check backend logs for details.');
+          setError(
+            '🚨 Server error detected. Using default settings. Check backend logs for details.'
+          );
         } else {
-          setError(`⚡ Settings loading failed: ${err.message}. Using defaults.`);
+          setError(
+            `⚡ Settings loading failed: ${err.message}. Using defaults.`
+          );
         }
       } finally {
         setLoading(false);
@@ -238,17 +250,20 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/api/user/me/password', {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          currentPassword: passwordForm.currentPassword,
-          newPassword: passwordForm.newPassword,
-        }),
-      });
+      const response = await fetch(
+        'http://localhost:8000/api/user/me/password',
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            currentPassword: passwordForm.currentPassword,
+            newPassword: passwordForm.newPassword,
+          }),
+        }
+      );
 
       const data = await response.json();
       if (!response.ok)
@@ -360,7 +375,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
   // Handle theme change with backend persistence
   const handleThemeChange = async (newTheme: string) => {
     setTheme(newTheme as Theme);
-    
+
     try {
       await fetch('http://localhost:8000/api/settings', {
         method: 'PUT',
@@ -377,20 +392,30 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
 
   // Quick Actions handlers
   const handleClearChatHistory = async () => {
-    if (!confirm('Are you sure you want to clear all your chat history? This cannot be undone.')) {
+    if (
+      !confirm(
+        'Are you sure you want to clear all your chat history? This cannot be undone.'
+      )
+    ) {
       return;
     }
 
     try {
-      const response = await fetch('http://localhost:8000/api/settings/clear-chat-history', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(
+        'http://localhost:8000/api/settings/clear-chat-history',
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to clear chat history');
+      if (!response.ok)
+        throw new Error(data.error || 'Failed to clear chat history');
 
-      setMessage(`Chat history cleared successfully. ${data.deletedCount} messages deleted.`);
+      setMessage(
+        `Chat history cleared successfully. ${data.deletedCount} messages deleted.`
+      );
       setTimeout(() => setMessage(''), 5000);
     } catch (err: any) {
       setError(err.message);
@@ -399,9 +424,12 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
 
   const handleExportData = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/settings/export-data', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(
+        'http://localhost:8000/api/settings/export-data',
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -430,22 +458,30 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     const password = prompt('Enter your password to confirm account deletion:');
     if (!password) return;
 
-    if (!confirm('Are you absolutely sure you want to delete your account? This action cannot be undone and will permanently delete all your data.')) {
+    if (
+      !confirm(
+        'Are you absolutely sure you want to delete your account? This action cannot be undone and will permanently delete all your data.'
+      )
+    ) {
       return;
     }
 
     try {
-      const response = await fetch('http://localhost:8000/api/settings/delete-account', {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ confirmPassword: password }),
-      });
+      const response = await fetch(
+        'http://localhost:8000/api/settings/delete-account',
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ confirmPassword: password }),
+        }
+      );
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to delete account');
+      if (!response.ok)
+        throw new Error(data.error || 'Failed to delete account');
 
       alert('Account deleted successfully. You will be logged out.');
       // Redirect to login or home page
@@ -517,6 +553,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
               { key: 'profile', label: 'Profile', icon: '👤' },
               { key: 'password', label: 'Password', icon: '🔒' },
               { key: 'preferences', label: 'Preferences', icon: '⚙️' },
+              { key: 'health', label: 'System Health', icon: '🏥' },
             ].map(tab => (
               <button
                 key={tab.key}
@@ -867,7 +904,10 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                       <LanguageSelector />
                     </div>
 
-                    <form onSubmit={handleAudioSubmit} className="p-4 border border-gray-600/50 rounded-lg">
+                    <form
+                      onSubmit={handleAudioSubmit}
+                      className="p-4 border border-gray-600/50 rounded-lg"
+                    >
                       <h3 className="font-medium mb-2 flex items-center justify-between">
                         <span>🔊 {t('settings.audioSettings')}</span>
                         <button
@@ -884,29 +924,44 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                       <div className="space-y-3">
                         <label className="flex items-center justify-between">
                           <span>{t('settings.voiceResponses')}</span>
-                          <input 
-                            type="checkbox" 
+                          <input
+                            type="checkbox"
                             checked={audioForm.voice_responses}
-                            onChange={(e) => handleAudioChange('voice_responses', e.target.checked)}
-                            className="toggle" 
+                            onChange={e =>
+                              handleAudioChange(
+                                'voice_responses',
+                                e.target.checked
+                              )
+                            }
+                            className="toggle"
                           />
                         </label>
                         <label className="flex items-center justify-between">
                           <span>{t('settings.ambientListening')}</span>
-                          <input 
-                            type="checkbox" 
+                          <input
+                            type="checkbox"
                             checked={audioForm.ambient_listening}
-                            onChange={(e) => handleAudioChange('ambient_listening', e.target.checked)}
-                            className="toggle" 
+                            onChange={e =>
+                              handleAudioChange(
+                                'ambient_listening',
+                                e.target.checked
+                              )
+                            }
+                            className="toggle"
                           />
                         </label>
                         <label className="flex items-center justify-between">
                           <span>Camera Access</span>
-                          <input 
-                            type="checkbox" 
+                          <input
+                            type="checkbox"
                             checked={audioForm.camera_enabled}
-                            onChange={(e) => handleAudioChange('camera_enabled', e.target.checked)}
-                            className="toggle" 
+                            onChange={e =>
+                              handleAudioChange(
+                                'camera_enabled',
+                                e.target.checked
+                              )
+                            }
+                            className="toggle"
                           />
                         </label>
                         <label className="flex items-center justify-between">
@@ -914,7 +969,12 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                           <input
                             type="checkbox"
                             checked={audioForm.sound_effects}
-                            onChange={(e) => handleAudioChange('sound_effects', e.target.checked)}
+                            onChange={e =>
+                              handleAudioChange(
+                                'sound_effects',
+                                e.target.checked
+                              )
+                            }
                             className="toggle"
                           />
                         </label>
@@ -922,6 +982,12 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                     </form>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {activeTab === 'health' && (
+              <div className="space-y-6">
+                <SystemHealthIndicator token={token} />
               </div>
             )}
           </div>
@@ -961,21 +1027,21 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                 <span>Quick Actions</span>
               </h3>
               <div className="space-y-3">
-                <button 
+                <button
                   onClick={handleClearChatHistory}
                   className="w-full text-left p-3 rounded-lg hover:bg-gray-800/50 transition-colors text-sm flex items-center space-x-2"
                 >
                   <span>🗑️</span>
                   <span>Clear Chat History</span>
                 </button>
-                <button 
+                <button
                   onClick={handleExportData}
                   className="w-full text-left p-3 rounded-lg hover:bg-gray-800/50 transition-colors text-sm flex items-center space-x-2"
                 >
                   <span>📥</span>
                   <span>Export Data</span>
                 </button>
-                <button 
+                <button
                   onClick={handleDeleteAccount}
                   className="w-full text-left p-3 rounded-lg hover:bg-red-900/20 hover:text-red-400 transition-colors text-sm flex items-center space-x-2"
                 >

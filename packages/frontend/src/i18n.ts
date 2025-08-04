@@ -47,7 +47,9 @@ i18n
     nsSeparator: ':',
     // Add error handling
     missingKeyHandler: (lng, _ns, key) => {
-      console.debug(`i18n: Missing translation key "${key}" for language "${lng}"`);
+      console.debug(
+        `i18n: Missing translation key "${key}" for language "${lng}"`
+      );
     },
   })
   .catch(error => {

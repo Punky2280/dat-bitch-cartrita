@@ -1,449 +1,158 @@
-const BaseAgent = require('../../system/BaseAgent');
-const VoiceInteractionService = require('../../services/VoiceInteractionService');
-const AmbientListeningService = require('../../services/AmbientListeningService');
-const VisualAnalysisService = require('../../services/VisualAnalysisService');
-const TextToSpeechService = require('../../services/TextToSpeechService');
+import BaseAgent from '../../system/BaseAgent.js';
+import VoiceInteractionService from '../../services/VoiceInteractionService.js';
+import AmbientListeningService from '../../services/AmbientListeningService.js';
+import VisualAnalysisService from '../../services/VisualAnalysisService.js';
+import TextToSpeechService from '../../services/TextToSpeechService.js';
 
 class MultiModalFusionAgent extends BaseAgent {
-  constructor() {
-    super('MultiModalFusionAgent', 'main', [
-      'multi_modal_fusion',
-      'contextual_understanding', 
-      'sensory_integration',
-      'comprehensive_response_generation',
-      'environmental_awareness',
-      'adaptive_personality'
-    ]);
-    
-    this.sensorData = {
-      audio: {
-        ambient: null,
-        voice: null,
-        environmental: null,
-        lastUpdate: null
-      },
-      visual: {
-        scene: null,
-        changes: null,
-        context: null,
-        lastUpdate: null
-      },
-      contextual: {
-        timeOfDay: null,
-        userActivity: null,
-        environment: null,
-        mood: null,
-        lastUpdate: null
-      }
+  constructor(config = {}) {
+    super('MultiModalFusionAgent', config);
+    this.modalityWeights = {
+      voice: 0.4,
+      visual: 0.3,
+      ambient: 0.2,
+      text: 0.1
     };
-    
     this.fusionHistory = [];
-    this.personalityState = {
-      current_mood: 'friendly',
-      energy_level: 'moderate',
-      interaction_style: 'casual',
-      attention_focus: 'balanced'
-    };
+    this.activeModalities = new Set();
+    this.initialized = false;
     
-    this.responseStrategies = new Map();
-    this.initializeFusionEngine();
+    console.log('🔀 MultiModalFusionAgent initialized');
+    this.initialize();
   }
 
-  async onInitialize() {
-    this.registerTaskHandler({
-      taskType: 'fuse_sensory_data',
-      handler: this.fuseSensoryData.bind(this)
-    });
-    this.registerTaskHandler({
-      taskType: 'generate_contextual_response',
-      handler: this.generateContextualResponse.bind(this)
-    });
-    this.registerTaskHandler({
-      taskType: 'analyze_user_state',
-      handler: this.analyzeUserState.bind(this)
-    });
-    this.registerTaskHandler({
-      taskType: 'adapt_personality',
-      handler: this.adaptPersonality.bind(this)
-    });
-    this.registerTaskHandler({
-      taskType: 'synthesize_interaction',
-      handler: this.synthesizeInteraction.bind(this)
-    });
-    this.registerTaskHandler({
-      taskType: 'get_fusion_insights',
-      handler: this.getFusionInsights.bind(this)
-    });
-    
-    this.setupCrossServiceListeners();
-    console.log('[MultiModalFusionAgent] Multi-modal fusion capabilities activated');
-  }
-
-  initializeFusionEngine() {
-    this.responseStrategies.set('audio_visual_active', {
-      priority: 'high',
-      responseType: 'comprehensive',
-      personalityAdjustment: 'engaged',
-      template: 'I can hear {audio_context} and see {visual_context}. {contextual_response}'
-    });
-    
-    this.responseStrategies.set('voice_only', {
-      priority: 'high',
-      responseType: 'conversational',
-      personalityAdjustment: 'focused',
-      template: '{voice_response}'
-    });
-    
-    this.responseStrategies.set('visual_only', {
-      priority: 'medium',
-      responseType: 'descriptive',
-      personalityAdjustment: 'observant',
-      template: '{visual_response}'
-    });
-    
-    console.log('[MultiModalFusionAgent] Fusion strategies initialized');
-  }
-
-  setupCrossServiceListeners() {
+  async initialize() {
     try {
-      VoiceInteractionService.on('finalTranscript', (data) => {
-        this.updateSensorData('audio', 'voice', data);
-      });
+      // Set up cross-modal event listeners
+      this.setupModalityListeners();
       
-      AmbientListeningService.on('ambientResponse', (data) => {
-        this.updateSensorData('audio', 'ambient', data);
-      });
-      
-      VisualAnalysisService.on('analysisCompleted', (data) => {
-        this.updateSensorData('visual', 'scene', data);
-      });
-      
-      console.log('[MultiModalFusionAgent] Cross-service listeners activated');
+      this.initialized = true;
+      console.log('[MultiModalFusionAgent] ✅ Service initialized');
     } catch (error) {
-      console.error('[MultiModalFusionAgent] Error setting up listeners:', error);
+      console.error('[MultiModalFusionAgent] ❌ Initialization failed:', error);
     }
   }
 
-  async fuseSensoryData(prompt, language, userId, payload) {
-    try {
-      const { audioData, visualData, contextData, fusionType = 'comprehensive' } = payload;
-      
-      console.log('[MultiModalFusionAgent] Fusing sensory data for user:', userId);
-      
-      if (audioData) this.updateSensorData('audio', 'current', audioData);
-      if (visualData) this.updateSensorData('visual', 'current', visualData);
-      if (contextData) this.updateSensorData('contextual', 'current', contextData);
-      
-      const dataRelationships = await this.analyzeDataRelationships();
-      const fusionInsights = await this.generateFusionInsights(dataRelationships);
-      
-      const comprehensiveUnderstanding = {
-        timestamp: new Date(),
-        userId: userId,
-        fusionType: fusionType,
-        sensorData: this.sensorData,
-        relationships: dataRelationships,
-        insights: fusionInsights,
-        confidence: this.calculateFusionConfidence()
-      };
-      
-      this.recordFusion(comprehensiveUnderstanding);
-      
-      return {
-        fusion_successful: true,
-        understanding: comprehensiveUnderstanding,
-        response_strategy: this.selectResponseStrategy(comprehensiveUnderstanding),
-        personality_adjustments: { mood: 'maintain' }
-      };
-      
-    } catch (error) {
-      console.error('[MultiModalFusionAgent] Error fusing sensory data:', error);
-      throw error;
-    }
+  setupModalityListeners() {
+    // Voice interaction events
+    VoiceInteractionService.on('transcript-ready', (data) => {
+      this.processFusion('voice', data);
+    });
+
+    // Ambient listening events
+    AmbientListeningService.on('ambient-sound-detected', (data) => {
+      this.processFusion('ambient', data);
+    });
   }
 
-  async generateContextualResponse(prompt, language, userId, payload) {
+  async processFusion(modality, data) {
     try {
-      const { situation, responseType = 'natural', personalityMode = 'adaptive' } = payload;
+      this.activeModalities.add(modality);
       
-      console.log('[MultiModalFusionAgent] Generating contextual response');
-      
-      const currentState = this.getCurrentSensorState();
-      const situationAnalysis = await this.analyzeSituation(currentState, situation);
-      const strategy = this.selectResponseStrategy(situationAnalysis);
-      const baseResponse = await this.generateBaseResponse(situationAnalysis, strategy);
-      const personalizedResponse = await this.applyPersonalityAdjustments(baseResponse, personalityMode, situationAnalysis);
-      const emotionalContext = this.generateEmotionalContext(situationAnalysis);
-      
-      return {
-        response: personalizedResponse,
-        emotion: emotionalContext.primary_emotion,
-        energy_level: emotionalContext.energy_level,
-        confidence: situationAnalysis.confidence,
-        strategy_used: strategy,
-        situational_context: situationAnalysis,
-        personality_state: this.personalityState
+      const fusionData = {
+        modality,
+        data,
+        timestamp: new Date().toISOString(),
+        weight: this.modalityWeights[modality] || 0.1
       };
-      
-    } catch (error) {
-      console.error('[MultiModalFusionAgent] Error generating contextual response:', error);
-      throw error;
-    }
-  }
 
-  async analyzeUserState(prompt, language, userId, payload) {
-    try {
-      const { analysis_depth = 'standard', focus_areas = ['all'] } = payload;
+      this.fusionHistory.push(fusionData);
       
-      console.log('[MultiModalFusionAgent] Analyzing user state');
-      
-      const userState = {
-        timestamp: new Date(),
-        userId: userId,
-        overall_mood: 'unknown',
-        activity_level: 'unknown',
-        engagement_level: 'unknown',
-        environmental_context: {},
-        social_context: 'individual',
-        attention_state: 'unknown'
-      };
-      
-      if (focus_areas.includes('all') || focus_areas.includes('audio')) {
-        userState.audio_analysis = await this.analyzeAudioState();
+      // Keep only recent fusion events
+      if (this.fusionHistory.length > 50) {
+        this.fusionHistory = this.fusionHistory.slice(-25);
       }
-      
-      if (focus_areas.includes('all') || focus_areas.includes('visual')) {
-        userState.visual_analysis = await this.analyzeVisualState();
+
+      // Trigger multi-modal analysis if multiple modalities are active
+      if (this.activeModalities.size >= 2) {
+        await this.performFusionAnalysis();
       }
-      
-      const synthesizedState = await this.synthesizeUserState(userState);
-      const insights = this.generateUserStateInsights(synthesizedState);
-      
-      return {
-        user_state: synthesizedState,
-        insights: insights,
-        analysis_confidence: 0.7,
-        suggested_personality_mode: 'adaptive'
-      };
-      
+
     } catch (error) {
-      console.error('[MultiModalFusionAgent] Error analyzing user state:', error);
-      throw error;
+      console.error('[MultiModalFusionAgent] ❌ Fusion processing failed:', error);
     }
   }
 
-  async adaptPersonality(prompt, language, userId, payload) {
-    try {
-      const { adaptation_trigger, context, intensity = 'moderate' } = payload;
-      
-      console.log('[MultiModalFusionAgent] Adapting personality based on context');
-      
-      const currentContext = this.getCurrentSensorState();
-      const previousState = { ...this.personalityState };
-      
-      const adjustments = {
-        mood: 'maintain',
-        energy: 'maintain',
-        formality: 'maintain',
-        responsiveness: 'maintain'
-      };
-      
-      return {
-        adaptation_successful: true,
-        previous_state: previousState,
-        new_state: this.personalityState,
-        adjustments_made: adjustments,
-        effectiveness_prediction: 0.8
-      };
-      
-    } catch (error) {
-      console.error('[MultiModalFusionAgent] Error adapting personality:', error);
-      throw error;
-    }
-  }
-
-  async synthesizeInteraction(prompt, language, userId, payload) {
-    try {
-      const { interaction_type, user_input, context_override } = payload;
-      
-      console.log('[MultiModalFusionAgent] Synthesizing complete interaction');
-      
-      const fullContext = context_override || await this.getComprehensiveContext(userId);
-      const interactionRequirements = { complexity: 'moderate' };
-      
-      const responseComponents = {
-        verbal: { text: 'Response generated' },
-        emotional: { emotion: 'friendly' },
-        contextual: [],
-        personality: { style: 'casual' }
-      };
-      
-      const synthesizedResponse = {
-        text: responseComponents.verbal.text,
-        emotion: responseComponents.emotional.emotion,
-        confidence: 0.8,
-        strategy: 'standard'
-      };
-      
-      return {
-        interaction_synthesis: {
-          text: synthesizedResponse.text,
-          emotion: synthesizedResponse.emotion,
-          contextual_actions: [],
-          personality_expression: responseComponents.personality,
-          confidence: synthesizedResponse.confidence
-        },
-        full_context: fullContext,
-        interaction_metadata: {
-          type: interaction_type,
-          requirements: interactionRequirements,
-          synthesis_strategy: synthesizedResponse.strategy,
-          timestamp: new Date()
-        }
-      };
-      
-    } catch (error) {
-      console.error('[MultiModalFusionAgent] Error synthesizing interaction:', error);
-      throw error;
-    }
-  }
-
-  async getFusionInsights(prompt, language, userId, payload) {
-    try {
-      const { timeframe = '1h', insight_types = ['all'] } = payload;
-      
-      console.log('[MultiModalFusionAgent] Generating fusion insights');
-      
-      const insights = {
-        timeframe: timeframe,
-        generated_at: new Date(),
-        user_id: userId,
-        insights: []
-      };
-      
-      return {
-        fusion_insights: insights,
-        total_insights: insights.insights.length,
-        confidence_score: 0.7,
-        recommendations: []
-      };
-      
-    } catch (error) {
-      console.error('[MultiModalFusionAgent] Error generating fusion insights:', error);
-      throw error;
-    }
-  }
-
-  updateSensorData(modality, type, data) {
-    if (!this.sensorData[modality]) {
-      this.sensorData[modality] = {};
-    }
+  async performFusionAnalysis() {
+    const recentEvents = this.fusionHistory.slice(-10);
+    const modalityGroups = this.groupByModality(recentEvents);
     
-    this.sensorData[modality][type] = {
-      data: data,
-      timestamp: new Date(),
-      confidence: data.confidence || 0.7
+    const fusionResult = {
+      timestamp: new Date().toISOString(),
+      modalities: Array.from(this.activeModalities),
+      confidence: this.calculateFusionConfidence(modalityGroups),
+      summary: await this.generateFusionSummary(modalityGroups)
     };
+
+    this.emit('fusion-complete', fusionResult);
+    console.log('[MultiModalFusionAgent] 🔗 Multi-modal fusion completed');
     
-    this.sensorData[modality].lastUpdate = new Date();
+    return fusionResult;
   }
 
-  async analyzeDataRelationships() {
+  groupByModality(events) {
+    const groups = {};
+    
+    for (const event of events) {
+      if (!groups[event.modality]) {
+        groups[event.modality] = [];
+      }
+      groups[event.modality].push(event);
+    }
+    
+    return groups;
+  }
+
+  calculateFusionConfidence(modalityGroups) {
+    let totalWeight = 0;
+    let weightedConfidence = 0;
+    
+    for (const [modality, events] of Object.entries(modalityGroups)) {
+      const weight = this.modalityWeights[modality] || 0.1;
+      const avgConfidence = events.reduce((sum, event) => 
+        sum + (event.data.confidence || 0.5), 0) / events.length;
+      
+      totalWeight += weight;
+      weightedConfidence += weight * avgConfidence;
+    }
+    
+    return totalWeight > 0 ? weightedConfidence / totalWeight : 0.5;
+  }
+
+  async generateFusionSummary(modalityGroups) {
+    const summaryParts = [];
+    
+    for (const [modality, events] of Object.entries(modalityGroups)) {
+      const latest = events[events.length - 1];
+      
+      switch (modality) {
+        case 'voice':
+          summaryParts.push(`Voice: "${latest.data.transcript}"`);
+          break;
+        case 'visual':
+          summaryParts.push(`Visual: ${latest.data.analysis}`);
+          break;
+        case 'ambient':
+          summaryParts.push(`Ambient: ${latest.data.type} detected`);
+          break;
+        default:
+          summaryParts.push(`${modality}: ${JSON.stringify(latest.data)}`);
+      }
+    }
+    
+    return summaryParts.join(' | ');
+  }
+
+  getStatus() {
     return {
-      audio_visual_sync: 0.7,
-      context_audio_alignment: 0.6,
-      context_visual_alignment: 0.8,
-      temporal_coherence: 0.75,
-      semantic_consistency: 0.7
+      agent: 'MultiModalFusionAgent',
+      initialized: this.initialized,
+      activeModalities: Array.from(this.activeModalities),
+      fusionHistorySize: this.fusionHistory.length,
+      modalityWeights: this.modalityWeights,
+      timestamp: new Date().toISOString()
     };
   }
-
-  async generateFusionInsights(relationships) {
-    const insights = [];
-    
-    if (relationships.audio_visual_sync > 0.8) {
-      insights.push({
-        type: 'synchronization',
-        message: 'Strong audio-visual synchronization detected',
-        confidence: relationships.audio_visual_sync,
-        action: 'enhance_multi_modal_response'
-      });
-    }
-    
-    return insights;
-  }
-
-  selectResponseStrategy(understanding) {
-    const audioActive = this.sensorData.audio.voice?.timestamp > Date.now() - 10000;
-    const visualActive = this.sensorData.visual.scene?.timestamp > Date.now() - 30000;
-    
-    if (audioActive && visualActive) {
-      return this.responseStrategies.get('audio_visual_active');
-    } else if (audioActive) {
-      return this.responseStrategies.get('voice_only');
-    } else if (visualActive) {
-      return this.responseStrategies.get('visual_only');  
-    }
-    
-    return this.responseStrategies.get('voice_only');
-  }
-
-  calculateFusionConfidence() {
-    let confidence = 0.5;
-    const now = Date.now();
-    
-    if (this.sensorData.audio.lastUpdate > now - 10000) confidence += 0.2;
-    if (this.sensorData.visual.lastUpdate > now - 30000) confidence += 0.2;
-    if (this.sensorData.contextual.lastUpdate > now - 60000) confidence += 0.1;
-    
-    return Math.min(1.0, confidence);
-  }
-
-  recordFusion(understanding) {
-    this.fusionHistory.push({
-      timestamp: understanding.timestamp,
-      userId: understanding.userId,
-      confidence: understanding.confidence,
-      insights: understanding.insights.length
-    });
-    
-    if (this.fusionHistory.length > 100) {
-      this.fusionHistory = this.fusionHistory.slice(-100);
-    }
-  }
-
-  getCurrentSensorState() {
-    return {
-      timestamp: new Date(),
-      audio: this.sensorData.audio,
-      visual: this.sensorData.visual,
-      contextual: this.sensorData.contextual,
-      personality: this.personalityState
-    };
-  }
-
-  // Placeholder methods
-  async analyzeSituation(state, situation) {
-    return { confidence: 0.8, complexity: 'moderate', urgency: 'normal', emotionalContent: 'neutral' };
-  }
-
-  async generateBaseResponse(analysis, strategy) {
-    return { text: "I understand what's happening and I'm here to help!", emotion: 'friendly', confidence: 0.8 };
-  }
-
-  async applyPersonalityAdjustments(response, mode, analysis) {
-    return { ...response, text: response.text };
-  }
-
-  generateEmotionalContext(analysis) {
-    return { primary_emotion: 'friendly', energy_level: this.personalityState.energy_level, engagement: 'high' };
-  }
-
-  async analyzeAudioState() { return { mood: 'neutral', activity: 'unknown' }; }
-  async analyzeVisualState() { return { scene: 'unknown', people: 0 }; }
-  async synthesizeUserState(state) { return { ...state, overall: 'stable' }; }
-  generateUserStateInsights(state) { return []; }
-  async getComprehensiveContext(userId) { return { userId, timestamp: new Date() }; }
 }
 
-module.exports = MultiModalFusionAgent;
+export default MultiModalFusionAgent;

@@ -1,12 +1,29 @@
-# packages/backend/Dockerfile
 FROM node:22-alpine
+
 WORKDIR /usr/src/app
+
+# Copy package files for dependency installation
 COPY package*.json ./
 COPY packages/backend/package.json ./packages/backend/
 COPY packages/frontend/package.json ./packages/frontend/
 COPY packages/robotics/package.json ./packages/robotics/
 COPY packages/shared/package.json ./packages/shared/
+
+# Install dependencies
 RUN npm install --omit=dev --workspaces
+
+# Copy all application files
 COPY . .
+
+# Set working directory to backend
 WORKDIR /usr/src/app/packages/backend
-CMD ["node", "index.js"]
+
+# Expose port
+EXPOSE 8000
+
+# Add healthcheck (your backend already has /health endpoint!)
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8000/health || exit 1
+
+# Use the npm start script (which runs "node .")
+CMD ["npm", "start"]

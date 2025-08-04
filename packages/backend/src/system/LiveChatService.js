@@ -1,16 +1,16 @@
+/* global console */
 class LiveChatService {
-  constructor() {
-    this.initialized = true;
-    console.log('✅ LiveChatService ready');
+  constructor(this.initialized = true;
+    console.log('✅ LiveChatService ready');) {
+    // TODO: Implement method
   }
 
-  getStatus() {
+  getStatus((error) {
     return {
       service: 'LiveChatService',
       initialized: this.initialized,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     };
-  }
-}
 
-module.exports = new LiveChatService();
+
+export default new LiveChatService();

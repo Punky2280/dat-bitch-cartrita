@@ -1,47 +1,95 @@
+version: '3.8'
+
 services:
-  db:
-    # --- FIX: Build our custom image instead of pulling one ---
-    build:
-      context: ./postgres-custom
-    container_name: cartrita_db
+  # PostgreSQL Database - Using regular PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: cartrita-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: robert
+      POSTGRES_PASSWORD: punky1
+      POSTGRES_DB: dat-bitch-cartrita
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
     ports:
-      - '5434:5432'
+      - "5432:5432"
     volumes:
-      - ./db-init:/docker-entrypoint-initdb.d
       - postgres_data:/var/lib/postgresql/data
+      - ./packages/backend/db-init:/docker-entrypoint-initdb.d
+    networks:
+      - cartrita-network
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      test: ["CMD-SHELL", "pg_isready -U robert -d dat-bitch-cartrita"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - cartrita-net
 
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: cartrita-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - cartrita-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Backend API
   backend:
     build:
       context: .
-      dockerfile: packages/backend/Dockerfile # Correct path to backend Dockerfile
-    container_name: cartrita_backend
+      dockerfile: Dockerfile  # Changed this line - points to root Dockerfile
+    container_name: cartrita-backend
     restart: unless-stopped
-    env_file:
-      - ./.env
+    environment:
+      - NODE_ENV=production
+      - PORT=8000
+      - POSTGRES_USER=robert
+      - POSTGRES_PASSWORD=punky1
+      - POSTGRES_DB=dat-bitch-cartrita
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DATABASE_URL=postgresql://robert:punky1@postgres:5432/dat-bitch-cartrita
+      - OPENAI_API_KEY=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
+      - OPENAI_MODEL=gpt-4o
+      - OPENAI_RPM_LIMIT=60
+      - OPENAI_TPM_LIMIT=90000
+      - OPENAI_CONCURRENT_LIMIT=10
+      - JWT_SECRET=cartrita-super-secret-jwt-key-2024
+      - ENCRYPTION_KEY=abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789
+      - DEEPGRAM_API_KEY=8be507456f22a1046d56d701b20c79582c8dddb6
+      - GITHUB_TOKEN=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
     ports:
-      - '8000:8000'
-    depends_on:
-      db:
-        condition: service_healthy
+      - "8000:8000"
+    volumes:
+      - backend_node_modules:/usr/src/app/node_modules
     networks:
-      - cartrita-net
-
-networks:
-  cartrita-net:
-    driver: bridge
+      - cartrita-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   postgres_data:
-    driver: local
+  redis_data:
+  backend_node_modules:
+
+networks:
+  cartrita-network:
+    driver: bridge

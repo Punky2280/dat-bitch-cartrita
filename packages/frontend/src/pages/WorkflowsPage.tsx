@@ -12,7 +12,7 @@ import ReactFlow, {
   ConnectionMode,
   Panel,
   ReactFlowProvider,
-  useReactFlow
+  useReactFlow,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
@@ -48,15 +48,19 @@ interface NodeCategories {
   [key: string]: NodeType[];
 }
 
-const WorkflowBuilder: React.FC<{ 
-  workflow: Workflow | null; 
-  onSave: (workflow: any) => void; 
-  token: string; 
-  nodeTypes: NodeCategories 
+const WorkflowBuilder: React.FC<{
+  workflow: Workflow | null;
+  onSave: (workflow: any) => void;
+  token: string;
+  nodeTypes: NodeCategories;
 }> = ({ workflow, onSave, token, nodeTypes }) => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const [nodes, setNodes, onNodesChange] = useNodesState(workflow?.workflow_data.nodes || []);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(workflow?.workflow_data.edges || []);
+  const [nodes, setNodes, onNodesChange] = useNodesState(
+    workflow?.workflow_data.nodes || []
+  );
+  const [edges, setEdges, onEdgesChange] = useEdgesState(
+    workflow?.workflow_data.edges || []
+  );
   const [showNodePalette, setShowNodePalette] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionLogs, setExecutionLogs] = useState<any[]>([]);
@@ -64,7 +68,7 @@ const WorkflowBuilder: React.FC<{
   const { project } = useReactFlow();
 
   const onConnect = useCallback(
-    (params: Edge | Connection) => setEdges((eds) => addEdge(params, eds)),
+    (params: Edge | Connection) => setEdges(eds => addEdge(params, eds)),
     [setEdges]
   );
 
@@ -91,12 +95,12 @@ const WorkflowBuilder: React.FC<{
           id: `${nodeType.type}_${Date.now()}`,
           type: 'default',
           position,
-          data: { 
+          data: {
             label: nodeType.name,
             nodeType: nodeType.type,
             icon: nodeType.icon,
             description: nodeType.description,
-            config: getDefaultConfig(nodeType.type)
+            config: getDefaultConfig(nodeType.type),
           },
           style: {
             background: getNodeColor(nodeType.type),
@@ -110,34 +114,57 @@ const WorkflowBuilder: React.FC<{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-          }
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          },
         };
 
-        setNodes((nds) => nds.concat(newNode));
+        setNodes(nds => nds.concat(newNode));
       }
     },
     [project, setNodes]
   );
 
   const getNodeColor = (nodeType: string): string => {
-    if (nodeType.startsWith('trigger')) return 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-    if (nodeType.startsWith('ai-')) return 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
-    if (nodeType.startsWith('rag-')) return 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)';
-    if (nodeType.startsWith('mcp-')) return 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)';
-    if (nodeType.startsWith('http-') || nodeType.includes('integration')) return 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)';
-    if (nodeType.startsWith('logic-')) return 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)';
-    if (nodeType.startsWith('data-')) return 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)';
+    if (nodeType.startsWith('trigger'))
+      return 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    if (nodeType.startsWith('ai-'))
+      return 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+    if (nodeType.startsWith('rag-'))
+      return 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)';
+    if (nodeType.startsWith('mcp-'))
+      return 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)';
+    if (nodeType.startsWith('http-') || nodeType.includes('integration'))
+      return 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)';
+    if (nodeType.startsWith('logic-'))
+      return 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)';
+    if (nodeType.startsWith('data-'))
+      return 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)';
     return 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
   };
 
   const getDefaultConfig = (nodeType: string): any => {
     const configs: { [key: string]: any } = {
-      'ai-gpt4': { model: 'gpt-4', prompt: 'You are a helpful assistant. Please respond to: {{input}}', temperature: 0.7 },
-      'ai-claude': { model: 'claude-3-sonnet', prompt: 'You are a helpful assistant. Please respond to: {{input}}', temperature: 0.7 },
-      'http-request': { method: 'GET', url: 'https://api.example.com', headers: {} },
+      'ai-gpt4': {
+        model: 'gpt-4',
+        prompt: 'You are a helpful assistant. Please respond to: {{input}}',
+        temperature: 0.7,
+      },
+      'ai-claude': {
+        model: 'claude-3-sonnet',
+        prompt: 'You are a helpful assistant. Please respond to: {{input}}',
+        temperature: 0.7,
+      },
+      'http-request': {
+        method: 'GET',
+        url: 'https://api.example.com',
+        headers: {},
+      },
       'rag-search': { query: '{{input}}', top_k: 5 },
-      'logic-condition': { condition: 'data.value > 0', true_value: 'positive', false_value: 'negative' }
+      'logic-condition': {
+        condition: 'data.value > 0',
+        true_value: 'positive',
+        false_value: 'negative',
+      },
     };
     return configs[nodeType] || {};
   };
@@ -148,7 +175,7 @@ const WorkflowBuilder: React.FC<{
       description: workflow?.description || '',
       workflow_data: { nodes, edges },
       category: workflow?.category || 'custom',
-      tags: workflow?.tags || []
+      tags: workflow?.tags || [],
     };
 
     onSave(workflowData);
@@ -165,20 +192,20 @@ const WorkflowBuilder: React.FC<{
       const response = await fetch(`/api/workflows/${workflow.id}/execute`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ input_data: { message: 'Test execution' } })
+        body: JSON.stringify({ input_data: { message: 'Test execution' } }),
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         // Poll for execution status
         pollExecutionStatus(result.execution.id);
       }
     } catch (error) {
-      console.error('Execution failed:', error);
+      // Handle execution error (e.g., set error state or show notification)
       setIsExecuting(false);
     }
   };
@@ -186,14 +213,14 @@ const WorkflowBuilder: React.FC<{
   const pollExecutionStatus = async (executionId: string) => {
     try {
       const response = await fetch(`/api/workflows/executions/${executionId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         const execution = result.execution;
-        
+
         if (execution.status === 'running') {
           // Continue polling
           setTimeout(() => pollExecutionStatus(executionId), 1000);
@@ -204,7 +231,7 @@ const WorkflowBuilder: React.FC<{
         }
       }
     } catch (error) {
-      console.error('Failed to fetch execution status:', error);
+      // Error handling: optionally set an error state or show a notification here
       setIsExecuting(false);
     }
   };
@@ -212,16 +239,20 @@ const WorkflowBuilder: React.FC<{
   return (
     <div className="h-screen bg-gray-900 flex">
       {/* Node Palette */}
-      <div className={`bg-gray-800 border-r border-gray-700 transition-all duration-300 ${
-        showNodePalette ? 'w-80' : 'w-16'
-      }`}>
+      <div
+        className={`bg-gray-800 border-r border-gray-700 transition-all duration-300 ${
+          showNodePalette ? 'w-80' : 'w-16'
+        }`}
+      >
         <div className="p-4">
           <button
             onClick={() => setShowNodePalette(!showNodePalette)}
             className="w-full flex items-center justify-center p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
           >
             <span className="text-xl">🧩</span>
-            {showNodePalette && <span className="ml-2 font-semibold">Node Palette</span>}
+            {showNodePalette && (
+              <span className="ml-2 font-semibold">Node Palette</span>
+            )}
           </button>
         </div>
 
@@ -233,12 +264,15 @@ const WorkflowBuilder: React.FC<{
                   {category}
                 </h3>
                 <div className="space-y-2">
-                  {types.map((nodeType) => (
+                  {types.map(nodeType => (
                     <div
                       key={nodeType.type}
                       draggable
-                      onDragStart={(event) => {
-                        event.dataTransfer.setData('application/reactflow', JSON.stringify(nodeType));
+                      onDragStart={event => {
+                        event.dataTransfer.setData(
+                          'application/reactflow',
+                          JSON.stringify(nodeType)
+                        );
                         event.dataTransfer.effectAllowed = 'move';
                       }}
                       className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg cursor-grab active:cursor-grabbing transition-colors border border-gray-600 hover:border-blue-400"
@@ -278,21 +312,21 @@ const WorkflowBuilder: React.FC<{
             fitView
             style={{ background: '#111827' }}
           >
-            <Background 
-              color="#374151" 
-              gap={20} 
+            <Background
+              color="#374151"
+              gap={20}
               size={1}
               style={{ backgroundColor: '#111827' }}
             />
             <Controls />
-            <MiniMap 
-              style={{ 
+            <MiniMap
+              style={{
                 backgroundColor: '#1F2937',
-                border: '1px solid #374151'
+                border: '1px solid #374151',
               }}
               nodeColor={() => '#3B82F6'}
             />
-            
+
             {/* Top Toolbar */}
             <Panel position="top-right" className="flex space-x-2">
               <button
@@ -302,7 +336,7 @@ const WorkflowBuilder: React.FC<{
                 <span>💾</span>
                 <span>Save</span>
               </button>
-              
+
               <button
                 onClick={handleExecute}
                 disabled={isExecuting || !workflow?.id}
@@ -327,7 +361,9 @@ const WorkflowBuilder: React.FC<{
         {showLogs && (
           <div className="absolute bottom-0 left-0 right-0 h-64 bg-gray-800 border-t border-gray-700 p-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">Execution Logs</h3>
+              <h3 className="text-lg font-semibold text-white">
+                Execution Logs
+              </h3>
               <button
                 onClick={() => setShowLogs(false)}
                 className="text-gray-400 hover:text-white"
@@ -337,14 +373,23 @@ const WorkflowBuilder: React.FC<{
             </div>
             <div className="overflow-y-auto h-40 space-y-2">
               {executionLogs.map((log, index) => (
-                <div key={index} className={`p-2 rounded text-sm ${
-                  log.level === 'error' ? 'bg-red-900/50 text-red-200' :
-                  log.level === 'success' ? 'bg-green-900/50 text-green-200' :
-                  'bg-gray-700 text-gray-200'
-                }`}>
+                <div
+                  key={index}
+                  className={`p-2 rounded text-sm ${
+                    log.level === 'error'
+                      ? 'bg-red-900/50 text-red-200'
+                      : log.level === 'success'
+                        ? 'bg-green-900/50 text-green-200'
+                        : 'bg-gray-700 text-gray-200'
+                  }`}
+                >
                   <span className="text-gray-400 text-xs">{log.timestamp}</span>
                   <span className="ml-2 font-medium">{log.message}</span>
-                  {log.nodeId && <span className="ml-2 text-xs text-gray-400">({log.nodeId})</span>}
+                  {log.nodeId && (
+                    <span className="ml-2 text-xs text-gray-400">
+                      ({log.nodeId})
+                    </span>
+                  )}
                 </div>
               ))}
               {executionLogs.length === 0 && (
@@ -360,11 +405,16 @@ const WorkflowBuilder: React.FC<{
   );
 };
 
-export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({ token, onBack }) => {
+export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
+  token,
+  onBack,
+}) => {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [templates, setTemplates] = useState<Workflow[]>([]);
   const [nodeTypes, setNodeTypes] = useState<NodeCategories>({});
-  const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(
+    null
+  );
   const [showBuilder, setShowBuilder] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -378,15 +428,21 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({ token, onBack }) =
     setLoading(true);
     try {
       const [workflowsRes, templatesRes, nodeTypesRes] = await Promise.all([
-        fetch('/api/workflows', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('/api/workflows/templates', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('/api/workflows/node-types', { headers: { 'Authorization': `Bearer ${token}` } })
+        fetch('/api/workflows', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch('/api/workflows/templates', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch('/api/workflows/node-types', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
       ]);
 
       const [workflowsData, templatesData, nodeTypesData] = await Promise.all([
         workflowsRes.json(),
         templatesRes.json(),
-        nodeTypesRes.json()
+        nodeTypesRes.json(),
       ]);
 
       if (workflowsData.success) setWorkflows(workflowsData.workflows);
@@ -409,7 +465,7 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({ token, onBack }) =
       tags: [],
       is_active: true,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
     setSelectedWorkflow(newWorkflow);
     setShowBuilder(true);
@@ -420,7 +476,7 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({ token, onBack }) =
       ...template,
       id: 0,
       name: `${template.name} (Copy)`,
-      is_template: false
+      is_template: false,
     };
     setSelectedWorkflow(newWorkflow);
     setShowBuilder(true);
@@ -428,16 +484,18 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({ token, onBack }) =
 
   const handleSaveWorkflow = async (workflowData: any) => {
     try {
-      const url = selectedWorkflow?.id ? `/api/workflows/${selectedWorkflow.id}` : '/api/workflows';
+      const url = selectedWorkflow?.id
+        ? `/api/workflows/${selectedWorkflow.id}`
+        : '/api/workflows';
       const method = selectedWorkflow?.id ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
         method,
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(workflowData)
+        body: JSON.stringify(workflowData),
       });
 
       const result = await response.json();
@@ -458,7 +516,7 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({ token, onBack }) =
     try {
       const response = await fetch(`/api/workflows/${workflowId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
@@ -470,9 +528,11 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({ token, onBack }) =
   };
 
   const filteredWorkflows = workflows.filter(workflow => {
-    const matchesSearch = workflow.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         workflow.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || workflow.category === selectedCategory;
+    const matchesSearch =
+      workflow.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      workflow.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory =
+      selectedCategory === 'all' || workflow.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -519,7 +579,8 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({ token, onBack }) =
                 🚀 Workflow Automation
               </h1>
               <p className="text-gray-400 mt-1">
-                Build powerful AI workflows, RAG pipelines, and multi-agent automations
+                Build powerful AI workflows, RAG pipelines, and multi-agent
+                automations
               </p>
             </div>
           </div>
@@ -541,19 +602,23 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({ token, onBack }) =
               type="text"
               placeholder="Search workflows..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
             />
           </div>
           <select
             value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            onChange={e => setSelectedCategory(e.target.value)}
             className="px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
           >
             <option value="all">All Categories</option>
-            {categories.filter(c => c !== 'all').map(category => (
-              <option key={category} value={category}>{category}</option>
-            ))}
+            {categories
+              .filter(c => c !== 'all')
+              .map(category => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
           </select>
         </div>
 
@@ -565,21 +630,31 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({ token, onBack }) =
               <span>Workflow Templates</span>
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {templates.map((template) => (
-                <div key={template.id} className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-blue-500 transition-colors">
+              {templates.map(template => (
+                <div
+                  key={template.id}
+                  className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-blue-500 transition-colors"
+                >
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h3 className="text-lg font-semibold text-white mb-2">{template.name}</h3>
-                      <p className="text-gray-400 text-sm">{template.description}</p>
+                      <h3 className="text-lg font-semibold text-white mb-2">
+                        {template.name}
+                      </h3>
+                      <p className="text-gray-400 text-sm">
+                        {template.description}
+                      </p>
                     </div>
                     <span className="px-3 py-1 bg-blue-600 text-blue-100 rounded-full text-xs font-medium">
                       {template.category}
                     </span>
                   </div>
-                  
+
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {template.tags.map((tag) => (
-                      <span key={tag} className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs">
+                    {template.tags.map(tag => (
+                      <span
+                        key={tag}
+                        className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs"
+                      >
                         {tag}
                       </span>
                     ))}
@@ -602,13 +677,17 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({ token, onBack }) =
           <h2 className="text-2xl font-bold mb-6 flex items-center space-x-2">
             <span>⚙️</span>
             <span>Your Workflows</span>
-            <span className="text-sm font-normal text-gray-400">({filteredWorkflows.length})</span>
+            <span className="text-sm font-normal text-gray-400">
+              ({filteredWorkflows.length})
+            </span>
           </h2>
 
           {filteredWorkflows.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-gray-400 text-lg mb-4">
-                {searchTerm || selectedCategory !== 'all' ? 'No workflows match your filters' : 'No workflows yet'}
+                {searchTerm || selectedCategory !== 'all'
+                  ? 'No workflows match your filters'
+                  : 'No workflows yet'}
               </div>
               <button
                 onClick={handleCreateWorkflow}
@@ -619,34 +698,51 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({ token, onBack }) =
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredWorkflows.map((workflow) => (
-                <div key={workflow.id} className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-blue-500 transition-colors">
+              {filteredWorkflows.map(workflow => (
+                <div
+                  key={workflow.id}
+                  className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-blue-500 transition-colors"
+                >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-white mb-2">{workflow.name}</h3>
-                      <p className="text-gray-400 text-sm">{workflow.description}</p>
+                      <h3 className="text-lg font-semibold text-white mb-2">
+                        {workflow.name}
+                      </h3>
+                      <p className="text-gray-400 text-sm">
+                        {workflow.description}
+                      </p>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className={`w-3 h-3 rounded-full ${
-                        workflow.is_active ? 'bg-green-400' : 'bg-red-400'
-                      }`}></span>
+                      <span
+                        className={`w-3 h-3 rounded-full ${
+                          workflow.is_active ? 'bg-green-400' : 'bg-red-400'
+                        }`}
+                      ></span>
                       <span className="px-3 py-1 bg-purple-600 text-purple-100 rounded-full text-xs font-medium">
                         {workflow.category}
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {workflow.tags.map((tag) => (
-                      <span key={tag} className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs">
+                    {workflow.tags.map(tag => (
+                      <span
+                        key={tag}
+                        className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs"
+                      >
                         {tag}
                       </span>
                     ))}
                   </div>
 
                   <div className="text-xs text-gray-500 mb-4">
-                    <div>Nodes: {workflow.workflow_data.nodes?.length || 0}</div>
-                    <div>Updated: {new Date(workflow.updated_at).toLocaleDateString()}</div>
+                    <div>
+                      Nodes: {workflow.workflow_data.nodes?.length || 0}
+                    </div>
+                    <div>
+                      Updated:{' '}
+                      {new Date(workflow.updated_at).toLocaleDateString()}
+                    </div>
                   </div>
 
                   <div className="flex space-x-2">

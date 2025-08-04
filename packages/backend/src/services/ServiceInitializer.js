@@ -1,14 +1,24 @@
-const DeepgramService = require('./DeepgramService');
-const VoiceInteractionService = require('./VoiceInteractionService');
-const TextToSpeechService = require('./TextToSpeechService');
-const AmbientListeningService = require('./AmbientListeningService');
-const VisualAnalysisService = require('./VisualAnalysisService');
-const MultiModalFusionAgent = require('../agi/consciousness/MultiModalFusionAgent');
+/* global process, console */
+import DeepgramService from './DeepgramService.js';
+import VoiceInteractionService from './VoiceInteractionService.js';
+import TextToSpeechService from './TextToSpeechService.js';
+import AmbientListeningService from './AmbientListeningService.js';
+import VisualAnalysisService from './VisualAnalysisService.js';
+import MultiModalFusionAgent from '../agi/consciousness/MultiModalFusionAgent.js';
+import WorkflowEngine from './WorkflowEngine.js';
 
+/**
+ * 🚀 CARTRITA SERVICE INITIALIZER
+ * Manages initialization and coordination of all Cartrita services
+ * Compatible with EnhancedLangChainCoreAgent hierarchical system
+ */
 class ServiceInitializer {
   constructor() {
     this.servicesInitialized = false;
     this.initializationPromise = null;
+    this.services = {};
+    this.healthStatus = {};
+    console.log('[ServiceInitializer] Constructor initialized');
   }
 
   /**
@@ -39,7 +49,7 @@ class ServiceInitializer {
       // Check required environment variables
       const requiredEnvVars = ['DEEPGRAM_API_KEY', 'OPENAI_API_KEY'];
       const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
-      
+
       if (missingVars.length > 0) {
         console.warn(`[ServiceInitializer] Missing environment variables: ${missingVars.join(', ')}`);
         console.warn('[ServiceInitializer] Some features may not be available');
@@ -51,6 +61,7 @@ class ServiceInitializer {
       // Initialize Deepgram Service
       if (process.env.DEEPGRAM_API_KEY) {
         console.log('[ServiceInitializer] ✓ Deepgram service available');
+        this.services.deepgram = DeepgramService;
       } else {
         console.warn('[ServiceInitializer] ⚠ Deepgram service unavailable (no API key)');
       }
@@ -58,6 +69,7 @@ class ServiceInitializer {
       // Initialize Visual Analysis Service
       if (process.env.OPENAI_API_KEY) {
         console.log('[ServiceInitializer] ✓ Visual analysis service available');
+        this.services.visualAnalysis = VisualAnalysisService;
       } else {
         console.warn('[ServiceInitializer] ⚠ Visual analysis service unavailable (no API key)');
       }
@@ -65,12 +77,37 @@ class ServiceInitializer {
       // Initialize Text-to-Speech Service
       if (process.env.OPENAI_API_KEY) {
         console.log('[ServiceInitializer] ✓ Text-to-speech service available');
+        this.services.textToSpeech = TextToSpeechService;
       } else {
         console.warn('[ServiceInitializer] ⚠ Text-to-speech service unavailable (no API key)');
       }
 
+      // Initialize Voice Interaction Service
+      if (process.env.DEEPGRAM_API_KEY && process.env.OPENAI_API_KEY) {
+        console.log('[ServiceInitializer] ✓ Voice interaction service available');
+        this.services.voiceInteraction = VoiceInteractionService;
+      } else {
+        console.warn('[ServiceInitializer] ⚠ Voice interaction service unavailable (missing API keys)');
+      }
+
+      // Initialize Ambient Listening Service
+      if (process.env.DEEPGRAM_API_KEY) {
+        console.log('[ServiceInitializer] ✓ Ambient listening service available');
+        this.services.ambientListening = AmbientListeningService;
+      } else {
+        console.warn('[ServiceInitializer] ⚠ Ambient listening service unavailable (no Deepgram API key)');
+      }
+
       // Initialize multi-modal services
       console.log('[ServiceInitializer] Initializing multi-modal services...');
+
+      // Initialize WorkflowEngine
+      try {
+        this.services.workflowEngine = new WorkflowEngine();
+        console.log('[ServiceInitializer] ✓ WorkflowEngine initialized');
+      } catch (error) {
+        console.error('[ServiceInitializer] Error initializing WorkflowEngine:', error);
+      }
 
       // Set up service event listeners for cross-service communication
       this.setupServiceEventListeners();
@@ -79,6 +116,7 @@ class ServiceInitializer {
       try {
         const fusionAgent = new MultiModalFusionAgent();
         await fusionAgent.onInitialize();
+        this.services.multiModalFusion = fusionAgent;
         console.log('[ServiceInitializer] ✓ MultiModal Fusion Agent initialized');
       } catch (error) {
         console.error('[ServiceInitializer] Error initializing MultiModal Fusion Agent:', error);
@@ -94,10 +132,11 @@ class ServiceInitializer {
       console.log('  • Visual analysis with OpenAI Vision');
       console.log('  • Multi-modal sensory fusion');
       console.log('  • Context-aware personality adaptation');
+      console.log('  • Workflow automation engine');
+      console.log('  • Enhanced LangChain agent orchestration');
 
       this.servicesInitialized = true;
       return true;
-
     } catch (error) {
       console.error('[ServiceInitializer] Service initialization failed:', error);
       this.initializationPromise = null;
@@ -111,53 +150,65 @@ class ServiceInitializer {
   setupServiceEventListeners() {
     console.log('[ServiceInitializer] Setting up cross-service event listeners...');
 
-    // Voice Interaction Service events
-    VoiceInteractionService.on('voiceModeActivated', (data) => {
-      console.log('[ServiceInitializer] Voice mode activated:', data);
-      // Could trigger other services to adjust behavior
-    });
+    try {
+      // Voice Interaction Service events
+      if (this.services.voiceInteraction) {
+        VoiceInteractionService.on('voiceModeActivated', data => {
+          console.log('[ServiceInitializer] Voice mode activated:', data);
+          // Could trigger other services to adjust behavior
+        });
 
-    VoiceInteractionService.on('conversationStarted', (data) => {
-      console.log('[ServiceInitializer] Voice conversation started');
-      // Could pause ambient listening or adjust sensitivity
-    });
+        VoiceInteractionService.on('conversationStarted', data => {
+          console.log('[ServiceInitializer] Voice conversation started');
+          // Could pause ambient listening or adjust sensitivity
+        });
+      }
 
-    // Ambient Listening Service events
-    AmbientListeningService.on('ambientResponse', (response) => {
-      console.log('[ServiceInitializer] Ambient response generated:', response.text);
-      // Could trigger TTS or other responses
-    });
+      // Ambient Listening Service events
+      if (this.services.ambientListening) {
+        AmbientListeningService.on('ambientResponse', response => {
+          console.log('[ServiceInitializer] Ambient response generated:', response.text);
+          // Could trigger TTS or other responses
+        });
 
-    AmbientListeningService.on('contextUpdated', (context) => {
-      console.log('[ServiceInitializer] Environmental context updated:', context.activityLevel);
-      // Could inform other services about environmental changes
-    });
+        AmbientListeningService.on('contextUpdated', context => {
+          console.log('[ServiceInitializer] Environmental context updated:', context.activityLevel);
+          // Could inform other services about environmental changes
+        });
+      }
 
-    // Visual Analysis Service events
-    VisualAnalysisService.on('analysisCompleted', (analysis) => {
-      console.log('[ServiceInitializer] Visual analysis completed:', analysis.scene);
-      // Could trigger contextual responses or personality adjustments
-    });
+      // Visual Analysis Service events
+      if (this.services.visualAnalysis) {
+        VisualAnalysisService.on('analysisCompleted', analysis => {
+          console.log('[ServiceInitializer] Visual analysis completed:', analysis.scene);
+          // Could trigger contextual responses or personality adjustments
+        });
 
-    VisualAnalysisService.on('contextUpdated', (context) => {
-      console.log('[ServiceInitializer] Visual context updated:', context.environment);
-      // Could inform other services about scene changes
-    });
+        VisualAnalysisService.on('contextUpdated', context => {
+          console.log('[ServiceInitializer] Visual context updated:', context.environment);
+          // Could inform other services about scene changes
+        });
+      }
 
-    // Deepgram Service events
-    DeepgramService.on('finalTranscript', (result) => {
-      // This will be handled by individual services
-    });
+      // Deepgram Service events
+      if (this.services.deepgram) {
+        DeepgramService.on('finalTranscript', result => {
+          // This will be handled by individual services
+        });
 
-    DeepgramService.on('speechStarted', () => {
-      // User started speaking - could adjust other services
-    });
+        DeepgramService.on('speechStarted', () => {
+          // User started speaking - could adjust other services
+        });
 
-    DeepgramService.on('speechEnded', () => {
-      // User stopped speaking - could trigger processing
-    });
+        DeepgramService.on('speechEnded', () => {
+          // User stopped speaking - could trigger processing
+        });
+      }
 
-    console.log('[ServiceInitializer] ✓ Cross-service event listeners configured');
+      console.log('[ServiceInitializer] ✓ Cross-service event listeners configured');
+    } catch (error) {
+      console.error('[ServiceInitializer] Error setting up event listeners:', error);
+    }
   }
 
   /**
@@ -177,30 +228,38 @@ class ServiceInitializer {
         },
         visualAnalysis: {
           available: !!process.env.OPENAI_API_KEY,
-          status: VisualAnalysisService.getStatus().openaiConfigured ? 'ready' : 'unavailable'
+          status: this.services.visualAnalysis && VisualAnalysisService.getStatus ? 
+            (VisualAnalysisService.getStatus().openaiConfigured ? 'ready' : 'unavailable') : 'ready'
         },
         voiceInteraction: {
-          available: !!process.env.DEEPGRAM_API_KEY && !!process.env.OPENAI_API_KEY,
+          available: !!(process.env.DEEPGRAM_API_KEY && process.env.OPENAI_API_KEY),
           status: 'ready'
         },
         ambientListening: {
           available: !!process.env.DEEPGRAM_API_KEY,
-          status: AmbientListeningService.getStatus().isAmbientActive ? 'active' : 'ready'
+          status: this.services.ambientListening && AmbientListeningService.getStatus ? 
+            (AmbientListeningService.getStatus().isAmbientActive ? 'active' : 'ready') : 'ready'
         },
         multiModalFusion: {
           available: true,
           status: 'ready'
+        },
+        workflowEngine: {
+          available: true,
+          status: this.services.workflowEngine ? 'ready' : 'unavailable'
         }
       },
       features: {
         speechToText: !!process.env.DEEPGRAM_API_KEY,
         wakeWordDetection: !!process.env.DEEPGRAM_API_KEY,
         voiceSynthesis: !!process.env.OPENAI_API_KEY,
-        liveVoiceChat: !!process.env.DEEPGRAM_API_KEY && !!process.env.OPENAI_API_KEY,
+        liveVoiceChat: !!(process.env.DEEPGRAM_API_KEY && process.env.OPENAI_API_KEY),
         ambientListening: !!process.env.DEEPGRAM_API_KEY,
         visualAnalysis: !!process.env.OPENAI_API_KEY,
         multiModalFusion: true,
-        contextualPersonality: true
+        contextualPersonality: true,
+        workflowAutomation: true,
+        langChainOrchestration: true
       }
     };
   }
@@ -213,23 +272,27 @@ class ServiceInitializer {
       console.log('[ServiceInitializer] Cleaning up services...');
 
       // Cleanup individual services
-      if (AmbientListeningService.cleanup) {
-        AmbientListeningService.cleanup();
+      if (this.services.ambientListening && AmbientListeningService.cleanup) {
+        await AmbientListeningService.cleanup();
       }
 
-      if (VisualAnalysisService.cleanup) {
-        VisualAnalysisService.cleanup();
+      if (this.services.visualAnalysis && VisualAnalysisService.cleanup) {
+        await VisualAnalysisService.cleanup();
       }
 
-      if (VoiceInteractionService.cleanup) {
-        VoiceInteractionService.cleanup();
+      if (this.services.voiceInteraction && VoiceInteractionService.cleanup) {
+        await VoiceInteractionService.cleanup();
+      }
+
+      if (this.services.multiModalFusion && this.services.multiModalFusion.cleanup) {
+        await this.services.multiModalFusion.cleanup();
       }
 
       this.servicesInitialized = false;
       this.initializationPromise = null;
+      this.services = {};
 
       console.log('[ServiceInitializer] ✓ Services cleaned up');
-
     } catch (error) {
       console.error('[ServiceInitializer] Error during cleanup:', error);
     }
@@ -249,22 +312,34 @@ class ServiceInitializer {
       // Check each service
       health.services.deepgram = {
         status: process.env.DEEPGRAM_API_KEY ? 'healthy' : 'unavailable',
-        message: process.env.DEEPGRAM_API_KEY ? 'API key configured' : 'No API key'
+        message: process.env.DEEPGRAM_API_KEY
+          ? 'API key configured'
+          : 'No API key'
       };
 
       health.services.openai = {
         status: process.env.OPENAI_API_KEY ? 'healthy' : 'unavailable',
-        message: process.env.OPENAI_API_KEY ? 'API key configured' : 'No API key'
+        message: process.env.OPENAI_API_KEY
+          ? 'API key configured'
+          : 'No API key'
       };
 
       health.services.visualAnalysis = {
         status: 'healthy',
-        details: VisualAnalysisService.getStatus()
+        details: this.services.visualAnalysis && VisualAnalysisService.getStatus ? 
+          VisualAnalysisService.getStatus() : { initialized: true }
       };
 
       health.services.ambientListening = {
         status: 'healthy',
-        details: AmbientListeningService.getStatus()
+        details: this.services.ambientListening && AmbientListeningService.getStatus ? 
+          AmbientListeningService.getStatus() : { initialized: true }
+      };
+
+      health.services.workflowEngine = {
+        status: this.services.workflowEngine ? 'healthy' : 'unavailable',
+        details: this.services.workflowEngine ? 
+          this.services.workflowEngine.getStatus() : { initialized: false }
       };
 
       // Check if any critical services are down
@@ -278,14 +353,35 @@ class ServiceInitializer {
         health.message = `Some services unavailable: ${unhealthyServices.join(', ')}`;
       }
 
+      return health;
     } catch (error) {
-      health.overall = 'unhealthy';
+      console.error('[ServiceInitializer] Health check error:', error);
+      health.overall = 'error';
       health.error = error.message;
+      return health;
     }
+  }
 
-    return health;
+  /**
+   * Get initialized services
+   */
+  getServices() {
+    return this.services;
+  }
+
+  /**
+   * Check if a specific service is available
+   */
+  isServiceAvailable(serviceName) {
+    return !!this.services[serviceName];
+  }
+
+  /**
+   * Get a specific service
+   */
+  getService(serviceName) {
+    return this.services[serviceName] || null;
   }
 }
 
-// Export singleton instance
-module.exports = new ServiceInitializer();
+export default new ServiceInitializer();

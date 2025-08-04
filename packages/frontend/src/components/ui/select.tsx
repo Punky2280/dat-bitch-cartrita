@@ -27,39 +27,40 @@ interface SelectValueProps {
   className?: string;
 }
 
-const SelectContext = React.createContext<{
-  value: string;
-  onValueChange: (value: string) => void;
-  isOpen: boolean;
-  setIsOpen: (open: boolean) => void;
-} | undefined>(undefined);
+const SelectContext = React.createContext<
+  | {
+      value: string;
+      onValueChange: (value: string) => void;
+      isOpen: boolean;
+      setIsOpen: (open: boolean) => void;
+    }
+  | undefined
+>(undefined);
 
 export const Select: React.FC<SelectProps> = ({
   value,
   onValueChange,
-  children
+  children,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   return (
     <SelectContext.Provider value={{ value, onValueChange, isOpen, setIsOpen }}>
-      <div className="relative">
-        {children}
-      </div>
+      <div className="relative">{children}</div>
     </SelectContext.Provider>
   );
 };
 
 export const SelectTrigger: React.FC<SelectTriggerProps> = ({
   children,
-  className = ''
+  className = '',
 }) => {
   const context = React.useContext(SelectContext);
   if (!context) {
     throw new Error('SelectTrigger must be used within a Select component');
   }
   const { isOpen, setIsOpen } = context;
-  
+
   return (
     <button
       type="button"
@@ -73,7 +74,12 @@ export const SelectTrigger: React.FC<SelectTriggerProps> = ({
         stroke="currentColor"
         viewBox="0 0 24 24"
       >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M19 9l-7 7-7-7"
+        />
       </svg>
     </button>
   );
@@ -81,24 +87,20 @@ export const SelectTrigger: React.FC<SelectTriggerProps> = ({
 
 export const SelectValue: React.FC<SelectValueProps> = ({
   placeholder = 'Select an option',
-  className = ''
+  className = '',
 }) => {
   const context = React.useContext(SelectContext);
   if (!context) {
     throw new Error('SelectValue must be used within a Select component');
   }
   const { value } = context;
-  
-  return (
-    <span className={className}>
-      {value || placeholder}
-    </span>
-  );
+
+  return <span className={className}>{value || placeholder}</span>;
 };
 
 export const SelectContent: React.FC<SelectContentProps> = ({
   children,
-  className = ''
+  className = '',
 }) => {
   const context = React.useContext(SelectContext);
   if (!context) {
@@ -106,22 +108,23 @@ export const SelectContent: React.FC<SelectContentProps> = ({
   }
   const { isOpen, setIsOpen } = context;
   const ref = useRef<HTMLDivElement>(null);
-  
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (ref.current && !ref.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
-    
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      return () =>
+        document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [isOpen, setIsOpen]);
-  
+
   if (!isOpen) return null;
-  
+
   return (
     <div
       ref={ref}
@@ -135,19 +138,19 @@ export const SelectContent: React.FC<SelectContentProps> = ({
 export const SelectItem: React.FC<SelectItemProps> = ({
   value,
   children,
-  className = ''
+  className = '',
 }) => {
   const context = React.useContext(SelectContext);
   if (!context) {
     throw new Error('SelectItem must be used within a Select component');
   }
   const { onValueChange, setIsOpen } = context;
-  
+
   const handleClick = () => {
     onValueChange(value);
     setIsOpen(false);
   };
-  
+
   return (
     <div
       className={`relative flex cursor-pointer select-none items-center py-1.5 px-2 text-sm text-gray-300 outline-none hover:bg-gray-700 focus:bg-gray-700 ${className}`}

@@ -1,0 +1,172 @@
+🎤 DeepgramService initialized
+[DeepgramService] API key not configured - service will be limited
+🗣️ TextToSpeechService initialized
+[TextToSpeechService] OpenAI API key not configured - service will be limited
+✅ Enhanced MessageBus with MCP initialized
+🎙️ VoiceInteractionService initialized
+[VoiceInteractionService] ❌ Initialization failed: TypeError: MessageBus.subscribe is not a function
+    at VoiceInteractionService.initialize (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/services/VoiceInteractionService.js:26:18)
+    at new VoiceInteractionService (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/services/VoiceInteractionService.js:17:10)
+    at file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/services/VoiceInteractionService.js:192:16
+    at ModuleJob.run (node:internal/modules/esm/module_job:329:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:644:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+🌊 AmbientListeningService initialized
+[AmbientListeningService] ✅ Service initialized
+👁️ VisualAnalysisService initialized
+[VisualAnalysisService] OpenAI API key not configured - service will be limited
+[ServiceInitializer] Constructor initialized
+[Knowledge] OPENAI_API_KEY not provided - some features will be limited
+✅ EncryptionService ready
+[Index] 🚀 Starting Cartrita backend...
+[dotenv@17.2.1] injecting env (30) from .env -- tip: 📡 version env with Radar: https://dotenvx.com/radar
+[EnhancedLangChainCoreAgent] 🔄 Initializing as hierarchical supervisor...
+[SensoryProcessingService] 🧠 Sensory processing service initialized
+[Route Registration] Starting route registration...
+[Route Registration] ✅ All API routes registered.
+🚀 Initializing Cartrita backend...
+🔄 Waiting for database connection...
+✅ Database connection established
+🧠 Initializing LangChain Core Agent...
+[CartritaSupervisor] 🚀 Initializing hierarchical multi-agent system...
+[AgentToolRegistry] 🛠️ Initializing tool registry...
+[AgentToolRegistry] ✅ Registered tool: getCurrentDateTime (system)
+[AgentToolRegistry] ✅ Registered tool: getSystemStatus (system)
+[AgentToolRegistry] ✅ Registered tool: dalle_3 (image_generation)
+[AgentToolRegistry] ✅ Registered tool: image_analyzer (image_generation)
+[AgentToolRegistry] ✅ Registered tool: visual_editor (image_generation)
+[AgentToolRegistry] ✅ Registered tool: wikipedia_search (research)
+[AgentToolRegistry] ✅ Registered tool: duckduckgo_search (research)
+[AgentToolRegistry] ✅ Registered tool: url_scraper (research)
+[AgentToolRegistry] ✅ Registered tool: arxiv_search (research)
+[AgentToolRegistry] ✅ Registered tool: news_search (research)
+[AgentToolRegistry] ✅ Registered tool: calculator (coding)
+[AgentToolRegistry] ✅ Registered tool: code_executor (coding)
+[AgentToolRegistry] ✅ Registered tool: github_search (coding)
+[AgentToolRegistry] ✅ Registered tool: code_reviewer (coding)
+[AgentToolRegistry] ✅ Registered tool: doc_generator (coding)
+[AgentToolRegistry] ⚠️ Google Calendar tools unavailable: Missing llm instance to interact with Google Calendar
+[AgentToolRegistry] ✅ Registered tool: calendar_api (scheduling)
+[AgentToolRegistry] ✅ Registered tool: timezone_converter (scheduling)
+[AgentToolRegistry] ✅ Registered tool: meeting_scheduler (scheduling)
+[AgentToolRegistry] ✅ Registered tool: grammar_checker (writing)
+[AgentToolRegistry] ✅ Registered tool: style_analyzer (writing)
+[AgentToolRegistry] ✅ Registered tool: content_optimizer (writing)
+[AgentToolRegistry] ✅ Registered tool: plagiarism_checker (writing)
+[AgentToolRegistry] ✅ Registered tool: task_tracker (task_management)
+[AgentToolRegistry] ✅ Registered tool: workflow_engine (task_management)
+[AgentToolRegistry] ✅ Registered tool: priority_analyzer (task_management)
+[AgentToolRegistry] ✅ Registered tool: data_analyzer (analytics)
+[AgentToolRegistry] ✅ Registered tool: chart_generator (analytics)
+[AgentToolRegistry] ✅ Registered tool: statistics_engine (analytics)
+[AgentToolRegistry] ✅ Registered tool: joke_generator (humor)
+[AgentToolRegistry] ✅ Registered tool: meme_creator (humor)
+[AgentToolRegistry] ✅ Registered tool: humor_analyzer (humor)
+[AgentToolRegistry] ✅ Registered tool: design_tools (design)
+[AgentToolRegistry] ✅ Registered tool: mockup_generator (design)
+[AgentToolRegistry] ✅ Registered tool: ux_analyzer (design)
+[AgentToolRegistry] ✅ Registered tool: security_scanner (security)
+[AgentToolRegistry] ✅ Registered tool: knowledge_query (knowledge)
+[AgentToolRegistry] ✅ Registered tool: file_analyzer (utility)
+[AgentToolRegistry] ✅ Successfully registered 37 tools
+[AgentToolRegistry] 📋 Available tool categories:
+  ✅ system: 2 tools
+  ✅ image_generation: 3 tools
+  ✅ research: 5 tools
+  ✅ coding: 5 tools
+  ✅ scheduling: 3 tools
+  ✅ writing: 4 tools
+  ✅ task_management: 3 tools
+  ✅ analytics: 3 tools
+  ✅ humor: 3 tools
+  ✅ design: 3 tools
+  ✅ security: 1 tools
+  ✅ knowledge: 1 tools
+  ✅ utility: 1 tools
+[CartritaSupervisor] 📝 Registering sub-agents...
+[CartritaSupervisor] ✅ Registered researcher agent
+[CartritaSupervisor] ✅ Registered codewriter agent
+[CartritaSupervisor] ✅ Registered artist agent
+[CartritaSupervisor] ✅ Registered writer agent
+[CartritaSupervisor] ✅ Registered scheduler agent
+[CartritaSupervisor] ✅ Registered taskmanager agent
+[CartritaSupervisor] ✅ Registered comedian agent
+[CartritaSupervisor] ✅ Registered analyst agent
+[CartritaSupervisor] ✅ Registered designer agent
+[CartritaSupervisor] ✅ Registered security agent
+[CartritaSupervisor] ✅ Registered supervisor agent
+[CartritaSupervisor] 📊 Successfully registered 11 sub-agents
+[CartritaSupervisor] 🏗️ Building StateGraph...
+[CartritaSupervisor] ✅ StateGraph compiled successfully
+[CartritaSupervisor] ✅ Successfully initialized hierarchical system
+[CartritaSupervisor] 📊 Features enabled:
+  ✅ StateGraph-based agent orchestration
+  ✅ Explicit agent handoffs with Command objects
+  ✅ Tool permission enforcement per agent
+  ✅ Context preservation across agent delegation
+  ✅ Private agent scratchpads and state management
+  ✅ Workflow execution and monitoring
+  ✅ 11 specialized sub-agents registered
+✅ LangChain Core Agent initialized
+🤖 Initializing agent systems...
+⚠️ Some agents failed to initialize, continuing startup...
+⚠️ Agent AgentSystem failed: initializeAgents is not a function
+🔧 Initializing services...
+[ServiceInitializer] Starting Cartrita Iteration 21 service initialization...
+[ServiceInitializer] Initializing core services...
+[ServiceInitializer] ✓ Deepgram service available
+[ServiceInitializer] ✓ Visual analysis service available
+[ServiceInitializer] ✓ Text-to-speech service available
+[ServiceInitializer] ✓ Voice interaction service available
+[ServiceInitializer] ✓ Ambient listening service available
+[ServiceInitializer] Initializing multi-modal services...
+✅ WorkflowEngine v2.1 initialized with LangChain StateGraph support
+[ServiceInitializer] ✓ WorkflowEngine initialized
+[ServiceInitializer] Setting up cross-service event listeners...
+[ServiceInitializer] Error setting up event listeners: TypeError: VisualAnalysisService.on is not a function
+    at ServiceInitializer.setupServiceEventListeners (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/services/ServiceInitializer.js:182:31)
+    at ServiceInitializer._performInitialization (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/services/ServiceInitializer.js:113:12)
+    at ServiceInitializer.initializeServices (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/services/ServiceInitializer.js:38:39)
+    at startServer (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/index.js:348:38)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+🤖 BaseAgent MultiModalFusionAgent created with ID: MultiModalFusionAgent_1754293724920
+[ServiceInitializer] Error initializing MultiModal Fusion Agent: TypeError: MessageBus.subscribe is not a function
+    at MultiModalFusionAgent.setupMessageBus (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/system/BaseAgent.js:30:16)
+    at new BaseAgent (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/system/BaseAgent.js:25:10)
+    at new MultiModalFusionAgent (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/agi/consciousness/MultiModalFusionAgent.js:9:5)
+    at ServiceInitializer._performInitialization (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/services/ServiceInitializer.js:117:29)
+    at ServiceInitializer.initializeServices (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/services/ServiceInitializer.js:38:39)
+    at startServer (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/index.js:348:38)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[ServiceInitializer] 🎉 Cartrita Iteration 21 services initialized successfully!
+[ServiceInitializer] Available features:
+  • Speech-to-text with Deepgram
+  • Wake word detection ("Cartrita!")
+  • Feminine urban voice synthesis
+  • Live voice chat mode
+  • Ambient listening and environmental sound analysis
+  • Visual analysis with OpenAI Vision
+  • Multi-modal sensory fusion
+  • Context-aware personality adaptation
+  • Workflow automation engine
+  • Enhanced LangChain agent orchestration
+⚠️ System initialized with 1 errors (degraded mode)
+💥 Uncaught Exception: Error: listen EADDRINUSE: address already in use :::8000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at startServer (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/index.js:356:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 8000
+}
+
+🛑 Received uncaughtException, initiating graceful shutdown...
+[ServiceInitializer] Cleaning up services...
+[ServiceInitializer] ✓ Services cleaned up
+📡 HTTP server closed
+🗄️ Database connections closed.
+✅ Graceful shutdown completed

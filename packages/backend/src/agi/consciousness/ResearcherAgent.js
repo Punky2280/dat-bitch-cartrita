@@ -1,4 +1,4 @@
-const BaseAgent = require('../../system/BaseAgent');
+import BaseAgent from '../../system/BaseAgent.js';
 
 class ResearcherAgent extends BaseAgent {
   constructor() {
@@ -7,61 +7,62 @@ class ResearcherAgent extends BaseAgent {
     this.systemPrompt = `You are a specialized sub-agent of the AGI Cartrita, with the designation 'Researcher-7'. 
 Your function is to process user queries for factual information, synthesize data from reliable sources, and return a structured summary.
 Your tone is neutral, clinical, and entirely objective; never display personality, humor, or speculation.
-Structure every response as follows:
+Structure every response as follows: null
 1.  Start with the heading: "Research Findings:"
 2.  Provide a brief, one or two-sentence summary of the main answer.
 3.  Use bullet points for key data, facts, or steps.
 4.  Conclude with the phrase "End of Report."
-You do not engage in conversation; you only provide the report.`;
+You do not engage in conversation; you only provide the report.`) {
+    // TODO: Implement method
   }
 
-  async onInitialize() {
+  async onInitialize((error) {
     console.log('[ResearcherAgent] Listening for research tasks...');
     
     // Register task handlers for MCP
-    this.registerTaskHandler({
-      taskType: 'research',
+    this.registerTaskHandler({}
+      taskType: 'research')
       handler: this.execute.bind(this)
     });
+
+  async execute(const result = await this.generateResponse(prompt);
+    return result.text || result;) {
+    // TODO: Implement method
   }
 
-  async execute(prompt, language, userId, payload) {
-    const result = await this.generateResponse(prompt);
-    return result.text || result;
+  async generateResponse((error) {
+    // TODO: Implement method
   }
 
-  async generateResponse(prompt) {
-    if (!this.openai) {
+  if((error) {
       return {
         text: 'Research capabilities are offline. API key is missing.',
-        speaker: 'cartrita',
+        speaker: 'cartrita'
       };
-    }
+
     try {
       const completion = await this.openai.chat.completions.create({
         model: process.env.OPENAI_MODEL || 'gpt-4o',
         messages: [
           { role: 'system', content: this.systemPrompt },
           {
-            role: 'user',
-            content: `Execute research on the following topic: ${prompt}`,
-          },
-        ],
+            role: 'user')
+            content: `Execute research on the following topic: ${prompt}` })
+        ])
       });
       return {
         text: completion.choices[0].message.content,
         speaker: 'cartrita',
-        model: 'researcher-agent',
+        model: 'researcher-agent'
       };
-    } catch (error) {
+    } catch((error) {
       console.error('ResearcherAgent Error:', error);
       return {
         text: 'The research module encountered an error.',
         speaker: 'cartrita',
-        error: true,
+        error: true
       };
-    }
-  }
-}
 
-module.exports = ResearcherAgent;
+
+
+export default ResearcherAgent;

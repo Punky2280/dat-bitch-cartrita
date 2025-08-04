@@ -6,7 +6,7 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   InformationCircleIcon,
-  Cog6ToothIcon
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 
 export interface MediaPermissionState {
@@ -26,18 +26,18 @@ export const MediaPermissionHandler: React.FC<MediaPermissionHandlerProps> = ({
   onPermissionChange,
   requiredPermissions,
   showUI = true,
-  autoRequest = false
+  autoRequest = false,
 }) => {
   const [permissions, setPermissions] = useState<MediaPermissionState>({
     microphone: 'unknown',
-    camera: 'unknown'
+    camera: 'unknown',
   });
 
   const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     checkExistingPermissions();
-    
+
     if (autoRequest) {
       requestPermissions();
     }
@@ -54,18 +54,22 @@ export const MediaPermissionHandler: React.FC<MediaPermissionHandlerProps> = ({
         return;
       }
 
-      const micPermission = requiredPermissions.includes('microphone') 
-        ? await navigator.permissions.query({ name: 'microphone' as PermissionName })
+      const micPermission = requiredPermissions.includes('microphone')
+        ? await navigator.permissions.query({
+            name: 'microphone' as PermissionName,
+          })
         : null;
-      
+
       const cameraPermission = requiredPermissions.includes('camera')
-        ? await navigator.permissions.query({ name: 'camera' as PermissionName })
+        ? await navigator.permissions.query({
+            name: 'camera' as PermissionName,
+          })
         : null;
 
       setPermissions(prev => ({
         ...prev,
-        microphone: micPermission ? micPermission.state as any : 'unknown',
-        camera: cameraPermission ? cameraPermission.state as any : 'unknown'
+        microphone: micPermission ? (micPermission.state as any) : 'unknown',
+        camera: cameraPermission ? (cameraPermission.state as any) : 'unknown',
       }));
 
       // Listen for permission changes
@@ -73,7 +77,7 @@ export const MediaPermissionHandler: React.FC<MediaPermissionHandlerProps> = ({
         micPermission.onchange = () => {
           setPermissions(prev => ({
             ...prev,
-            microphone: micPermission.state as any
+            microphone: micPermission.state as any,
           }));
         };
       }
@@ -82,11 +86,10 @@ export const MediaPermissionHandler: React.FC<MediaPermissionHandlerProps> = ({
         cameraPermission.onchange = () => {
           setPermissions(prev => ({
             ...prev,
-            camera: cameraPermission.state as any
+            camera: cameraPermission.state as any,
           }));
         };
       }
-
     } catch (error) {
       console.error('[MediaPermissions] Failed to check permissions:', error);
     }
@@ -100,7 +103,7 @@ export const MediaPermissionHandler: React.FC<MediaPermissionHandlerProps> = ({
         constraints.audio = {
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true
+          autoGainControl: true,
         };
         setPermissions(prev => ({ ...prev, microphone: 'requesting' }));
       }
@@ -109,37 +112,41 @@ export const MediaPermissionHandler: React.FC<MediaPermissionHandlerProps> = ({
         constraints.video = {
           width: { ideal: 1280 },
           height: { ideal: 720 },
-          facingMode: 'user'
+          facingMode: 'user',
         };
         setPermissions(prev => ({ ...prev, camera: 'requesting' }));
       }
 
       console.log('[MediaPermissions] Requesting permissions...', constraints);
-      
+
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      
+
       // Permission granted - update state
       setPermissions(prev => ({
         ...prev,
         microphone: constraints.audio ? 'granted' : prev.microphone,
         camera: constraints.video ? 'granted' : prev.camera,
-        error: undefined
+        error: undefined,
       }));
 
       // Clean up the stream (we just needed it for permission)
       stream.getTracks().forEach(track => track.stop());
 
       console.log('[MediaPermissions] Permissions granted');
-
     } catch (error: any) {
       console.error('[MediaPermissions] Permission request failed:', error);
-      
+
       let errorMessage = 'Permission request failed';
-      const micState = permissions.microphone === 'requesting' ? 'denied' : permissions.microphone;
-      const camState = permissions.camera === 'requesting' ? 'denied' : permissions.camera;
+      const micState =
+        permissions.microphone === 'requesting'
+          ? 'denied'
+          : permissions.microphone;
+      const camState =
+        permissions.camera === 'requesting' ? 'denied' : permissions.camera;
 
       if (error.name === 'NotAllowedError') {
-        errorMessage = 'Permission was denied. Please allow access and try again.';
+        errorMessage =
+          'Permission was denied. Please allow access and try again.';
       } else if (error.name === 'NotFoundError') {
         errorMessage = 'No microphone or camera found.';
       } else if (error.name === 'NotReadableError') {
@@ -152,7 +159,7 @@ export const MediaPermissionHandler: React.FC<MediaPermissionHandlerProps> = ({
         ...prev,
         microphone: micState,
         camera: camState,
-        error: errorMessage
+        error: errorMessage,
       }));
     }
   };
@@ -172,29 +179,34 @@ Or go to your browser settings:
   };
 
   const getPermissionIcon = (permission: string, state: string) => {
-    const iconClass = "h-5 w-5";
-    
+    const iconClass = 'h-5 w-5';
+
     if (state === 'granted') {
       return <CheckCircleIcon className={`${iconClass} text-green-500`} />;
     } else if (state === 'denied') {
       return <XCircleIcon className={`${iconClass} text-red-500`} />;
     } else if (state === 'requesting') {
-      return <div className={`${iconClass} animate-pulse`}>
-        {permission === 'microphone' ? 
-          <MicrophoneIcon className={`${iconClass} text-blue-500`} /> : 
-          <VideoCameraIcon className={`${iconClass} text-blue-500`} />
-        }
-      </div>;
+      return (
+        <div className={`${iconClass} animate-pulse`}>
+          {permission === 'microphone' ? (
+            <MicrophoneIcon className={`${iconClass} text-blue-500`} />
+          ) : (
+            <VideoCameraIcon className={`${iconClass} text-blue-500`} />
+          )}
+        </div>
+      );
     } else {
-      return permission === 'microphone' ? 
-        <MicrophoneIcon className={`${iconClass} text-gray-400`} /> : 
-        <VideoCameraIcon className={`${iconClass} text-gray-400`} />;
+      return permission === 'microphone' ? (
+        <MicrophoneIcon className={`${iconClass} text-gray-400`} />
+      ) : (
+        <VideoCameraIcon className={`${iconClass} text-gray-400`} />
+      );
     }
   };
 
   const getPermissionText = (permission: string, state: string) => {
     const name = permission === 'microphone' ? 'Microphone' : 'Camera';
-    
+
     switch (state) {
       case 'granted':
         return `${name} access granted`;
@@ -211,9 +223,9 @@ Or go to your browser settings:
     perm => permissions[perm] === 'granted'
   );
 
-  const hasPermissionErrors = requiredPermissions.some(
-    perm => permissions[perm] === 'denied'
-  ) || !!permissions.error;
+  const hasPermissionErrors =
+    requiredPermissions.some(perm => permissions[perm] === 'denied') ||
+    !!permissions.error;
 
   if (!showUI) {
     return null;
@@ -243,7 +255,7 @@ Or go to your browser settings:
                   {getPermissionText(permission, permissions[permission])}
                 </span>
               </div>
-              
+
               {permissions[permission] === 'denied' && (
                 <button
                   onClick={requestPermissions}
@@ -283,7 +295,7 @@ Or go to your browser settings:
                 <span>Ready to use</span>
               </div>
             )}
-            
+
             {hasPermissionErrors && (
               <div className="flex items-center space-x-1 text-red-400 text-xs">
                 <XCircleIcon className="h-4 w-4" />
@@ -302,17 +314,20 @@ Or go to your browser settings:
                 Settings
               </button>
             )}
-            
+
             {!allPermissionsGranted && (
               <button
                 onClick={requestPermissions}
-                disabled={permissions.microphone === 'requesting' || permissions.camera === 'requesting'}
+                disabled={
+                  permissions.microphone === 'requesting' ||
+                  permissions.camera === 'requesting'
+                }
                 className="text-xs bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-3 py-1 rounded text-white transition-colors"
               >
-                {permissions.microphone === 'requesting' || permissions.camera === 'requesting' 
-                  ? 'Requesting...' 
-                  : 'Grant Access'
-                }
+                {permissions.microphone === 'requesting' ||
+                permissions.camera === 'requesting'
+                  ? 'Requesting...'
+                  : 'Grant Access'}
               </button>
             )}
           </div>
@@ -333,7 +348,8 @@ Or go to your browser settings:
               )}
             </ul>
             <p className="mt-2 text-blue-400">
-              Your privacy is protected - media is processed securely and not stored without permission.
+              Your privacy is protected - media is processed securely and not
+              stored without permission.
             </p>
           </div>
         )}

@@ -1,0 +1,271 @@
+/* global console */
+// packages/backend/src/system/MessageBus.js
+
+/**
+ * Enhanced MessageBus with Multi-Agent Communication Protocol (MCP)
+ * This replaces the basic MessageBus with a sophisticated communication system
+ * that supports agent registration, message routing, health monitoring, and
+ * protocol validation.
+ */
+
+import EventEmitter from 'events';
+import MCPMessage from './protocols/MCPMessage.js';
+
+class EnhancedMessageBus extends EventEmitter {
+  constructor() {
+    super();
+    // FIX: Increase listener limit to prevent warnings in a multi-agent system.
+    this.setMaxListeners(50); 
+    // Agent registry
+    this.agents = new Map(); // agentId -> agent metadata
+    this.messageQueue = new Map(); // messageId -> message
+    this.messageHistory = []; // Recent messages for debugging
+    this.maxHistorySize = 1000; 
+    // Performance metrics
+    this.metrics = {
+      messages_sent: 0,
+      messages_delivered: 0,
+      messages_failed: 0,
+      agents_registered: 0,
+      agents_active: 0,
+      uptime_start: Date.now()
+    };
+    // Health monitoring
+    this.heartbeatInterval = 30000; // 30 seconds
+    this.heartbeatTimer = null;
+    this.initialized = true;
+    console.log('✅ Enhanced MessageBus with MCP initialized');
+    
+    // Start health monitoring
+    this.startHealthMonitoring();
+  }
+
+  /**
+   * Register an agent with the message bus
+   */
+  registerAgent(agentId, metadata) {
+    try {
+      // Check if agent is already registered
+      if (this.agents.has(agentId)) {
+        console.log(`[MCP] Agent ${agentId} already registered, updating metadata`);
+        const existingAgent = this.agents.get(agentId);
+        existingAgent.metadata = { ...existingAgent.metadata, ...metadata };
+        existingAgent.last_heartbeat = new Date().toISOString();
+        existingAgent.status = 'active';
+        return true;
+      }
+      
+      // Validate agent ID format
+      if (!agentId || typeof agentId !== 'string') {
+        throw new Error('Invalid agent ID');
+      }
+
+      const agentInfo = {
+        id: agentId,
+        status: 'active',
+        registered_at: new Date().toISOString(),
+        last_heartbeat: new Date().toISOString(),
+        capabilities: metadata.capabilities || [],
+        version: metadata.version || '1.0.0',
+        metadata: metadata
+      };
+      
+      this.agents.set(agentId, agentInfo);
+      this.metrics.agents_registered++;
+      this.metrics.agents_active++;
+      console.log(`[MCP] Agent registered: ${agentId}`);
+      
+      // Broadcast agent registration
+      this.broadcast(new MCPMessage({
+        type: 'AGENT_REGISTER',
+        sender: 'messageBus.system',
+        payload: { agent: agentInfo }
+      }));
+
+      return true;
+    } catch(error) {
+      console.error(`[MCP] Agent registration failed for ${agentId}:`, error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Send a message through the bus
+   */
+  sendMessage(message) {
+    try {
+      if (!message || !message.id) {
+        throw new Error('Invalid message format');
+      }
+
+      this.metrics.messages_sent++;
+      this.addToHistory(message);
+
+      // Route to specific recipient or broadcast
+      if (message.recipient && message.recipient !== 'all') {
+        this.emit(`mcp:message:${message.recipient}`, message);
+      } else {
+        this.emit('mcp:broadcast', message);
+      }
+
+      this.metrics.messages_delivered++;
+      console.log(`[MCP] Message delivered: ${message.type} from ${message.sender}`);
+      return true;
+    } catch(error) {
+      this.metrics.messages_failed++;
+      console.error('[MCP] Message delivery failed:', error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Broadcast a message to all agents
+   */
+  broadcast(message) {
+    this.emit('mcp:broadcast', message);
+  }
+
+  /**
+   * Add message to history for debugging
+   */
+  addToHistory(message) {
+    this.messageHistory.unshift({
+      ...message,
+      processed_at: new Date().toISOString()
+    });
+
+    // Maintain history size limit
+    if (this.messageHistory.length > this.maxHistorySize) {
+      this.messageHistory = this.messageHistory.slice(0, this.maxHistorySize);
+    }
+  }
+
+  /**
+   * Start health monitoring
+   */
+  startHealthMonitoring() {
+    this.heartbeatTimer = setInterval(() => {
+      this.performHealthCheck();
+    }, this.heartbeatInterval);
+  }
+
+  /**
+   * Perform health check on all agents
+   */
+  performHealthCheck() {
+    const now = Date.now();
+    const timeout = this.heartbeatInterval * 3; // 3 intervals timeout
+
+    for (const [agentId, agent] of this.agents) {
+      const lastHeartbeat = new Date(agent.last_heartbeat).getTime();
+      
+      if (now - lastHeartbeat > timeout) {
+        console.warn(`[MCP] Agent ${agentId} appears inactive (last heartbeat: ${agent.last_heartbeat})`);
+        agent.status = 'inactive';
+        this.metrics.agents_active = Math.max(0, this.metrics.agents_active - 1);
+      }
+    }
+  }
+
+  /**
+   * Update agent heartbeat
+   */
+  heartbeat(agentId, status) {
+    if (this.agents.has(agentId)) {
+      const agent = this.agents.get(agentId);
+      agent.last_heartbeat = new Date().toISOString();
+      agent.status = 'active';
+      agent.last_status = status;
+    }
+  }
+
+  /**
+   * Get system status
+   */
+  getStatus() {
+    return {
+      service: 'EnhancedMessageBus',
+      initialized: this.initialized,
+      agents_registered: this.agents.size,
+      agents_active: Array.from(this.agents.values()).filter(a => a.status === 'active').length,
+      uptime_ms: Date.now() - this.metrics.uptime_start,
+      metrics: this.metrics,
+      recent_messages: this.messageHistory.slice(0, 10)
+    };
+  }
+
+  /**
+   * Get agents list
+   */
+  getAgents() {
+    return Array.from(this.agents.values());
+  }
+
+  /**
+   * Shutdown the message bus
+   */
+  shutdown() {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+    }
+    this.removeAllListeners();
+    console.log('[MCP] Enhanced MessageBus shutdown complete');
+  }
+}
+
+
+  /**
+   * Subscribe to messages (compatibility method for EventEmitter.on)
+   */
+  subscribe(channel, callback) {
+    this.on(channel, callback);
+    console.log(`[MCP] Subscribed to channel: ${channel}`);
+  }
+
+  /**
+   * Publish messages (compatibility method for EventEmitter.emit)
+   */
+  publish(channel, data) {
+    this.emit(channel, data);
+    console.log(`[MCP] Published to channel: ${channel}`);
+  }
+
+  /**
+   * Unsubscribe from messages (compatibility method for EventEmitter.off)
+   */
+  unsubscribe(channel, callback) {
+    this.off(channel, callback);
+    console.log(`[MCP] Unsubscribed from channel: ${channel}`);
+  }
+}
+
+// Export singleton instance
+export default new EnhancedMessageBus();
+
+  /**
+   * Subscribe to messages (compatibility method for EventEmitter.on)
+   */
+  subscribe(channel, callback) {
+    this.on(channel, callback);
+    console.log(`[MCP] Subscribed to channel: ${channel}`);
+  }
+
+  /**
+   * Publish messages (compatibility method for EventEmitter.emit)
+   */
+  publish(channel, data) {
+    this.emit(channel, data);
+    console.log(`[MCP] Published to channel: ${channel}`);
+  }
+
+  /**
+   * Unsubscribe from messages (compatibility method for EventEmitter.off)
+   */
+  unsubscribe(channel, callback) {
+    this.off(channel, callback);
+    console.log(`[MCP] Unsubscribed from channel: ${channel}`);
+  }
+}
+
+// Export singleton instance
+export default new EnhancedMessageBus();

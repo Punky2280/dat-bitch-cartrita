@@ -11,21 +11,24 @@ const socketConfig = {
     credentials: true
   },
   // Improve connection stability
-  pingTimeout: 60000,        // How long to wait for ping response
-  pingInterval: 25000,       // How often to send ping
+  pingTimeout: 60000, // How long to wait for ping response
+  pingInterval: 25000, // How often to send ping
   transports: ['polling', 'websocket'], // Try polling first
-  allowEIO3: true,          // Support older clients
-  upgradeTimeout: 30000,    // Timeout for WebSocket upgrade
-  maxHttpBufferSize: 1e6,   // 1MB max message size
+  allowEIO3: true, // Support older clients
+  upgradeTimeout: 30000, // Timeout for WebSocket upgrade
+  maxHttpBufferSize: 1e6, // 1MB max message size
   // Additional stability options
-  connectTimeout: 45000,    // Connection timeout
-  serveClient: false,       // Don't serve client files
-  cookie: false,            // Disable cookies for simpler setup
+  connectTimeout: 45000, // Connection timeout
+  serveClient: false, // Don't serve client files
+  cookie: false, // Disable cookies for simpler setup
   // Enhanced error handling
   allowRequest: (req, callback) => {
-    console.log('[Socket.IO] Incoming connection request from:', req.headers.origin);
+    console.log(
+      '[Socket.IO] Incoming connection request from:',
+      req.headers.origin
+    );
     callback(null, true);
   }
 };
 
-module.exports = socketConfig;
+export default socketConfig;

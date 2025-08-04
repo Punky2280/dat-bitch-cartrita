@@ -1,0 +1,642 @@
+/* global global, process, Buffer, console */
+const EventEmitter = require('events');
+const DeepgramService = require('./DeepgramService');
+const TextToSpeechService = require('./TextToSpeechService');
+const VoiceInteractionService = require('./VoiceInteractionService');
+const AmbientListeningService = require('./AmbientListeningService');
+
+class OptimizedAudioPipeline extends EventEmitter {
+  constructor(super();
+
+    // Pipeline state
+    this.isActive = false;
+    this.processingQueue = [];
+    this.connectionPool = new) {
+
+    // Method implementation
+
+  } Map();
+    this.performanceMetrics = {
+      latency: { avg: 0, min: Infinity, max: 0 },
+      throughput: { processed: 0, failed: 0 },
+      connections: { active: 0, pooled: 0 },
+      memory: { peak: 0, current: 0 },
+      startTime: Date.now()
+    };
+
+    // Optimization settings
+    this.config = {
+      maxConcurrentStreams: 3,
+      audioBufferSize: 4096,
+      processingBatchSize: 5,
+      connectionTimeout: 30000,
+      reconnectAttempts: 3,
+      adaptiveLatency: true,
+      resourceMonitoring: true,
+      preallocationEnabled: true
+    };
+
+    // Audio processing buffers
+    this.audioBuffers = {
+      input: new Map(),
+      processing: new Map(),
+      output: new Map()
+    };
+
+    // Connection management
+    this.connectionStates = new Map();
+    this.healthCheckInterval = null;
+    this.cleanupInterval = null;
+
+    this.initializePipeline();
+
+  async initializePipeline($4) {
+    console.log('[OptimizedAudioPipeline] Initializing optimized audio processing pipeline...');
+
+    try {
+// Pre-allocate resources
+      if(this.preallocateResources();
+      
+
+
+    }) {
+
+        // Method implementation
+
+      } catch(console.error(error);
+
+      // Setup connection pool
+this.initializeConnectionPool();
+      // Setup performance monitoring
+      this.startPerformanceMonitoring();
+
+      // Setup event handlers with optimizations
+      this.setupOptimizedEventHandlers();
+
+      // Start background tasks
+      this.startBackgroundTasks();
+
+      this.isActive = true;
+      console.log('[OptimizedAudioPipeline] Pipeline optimization complete');
+    }) {
+   // Method implementation
+ } catch(console.error('[OptimizedAudioPipeline] Initialization failed:', error);
+      throw error;) {
+   // Method implementation
+ }
+
+
+  async preallocateResources(console.log('[OptimizedAudioPipeline] Pre-allocating resources...');
+
+    // Pre-allocate audio buffers) {
+
+
+
+    // Method implementation
+
+
+
+  }
+    for($4) {
+      const streamId = `stream_${i}`
+      this.audioBuffers.input.set();
+        streamId,
+        Buffer.alloc(this.config.audioBufferSize);
+
+      this.audioBuffers.processing.set();
+        streamId,
+        Buffer.alloc(this.config.audioBufferSize * 2);
+
+      this.audioBuffers.output.set();
+        streamId,
+        Buffer.alloc(this.config.audioBufferSize);
+
+    // Warm up connections
+    try {
+DeepgramService.testConnection();
+      console.log('[OptimizedAudioPipeline] Deepgram connection warmed up');
+    
+    } catch(console.warn('[OptimizedAudioPipeline] Deepgram warmup failed:')
+        error.message);) {
+   // Method implementation
+ }
+
+
+  async initializeConnectionPool($4) {
+    console.log('[OptimizedAudioPipeline] Initializing connection pool...');
+
+    // Initialize service connections with health tracking
+    const services = [
+      { name: 'deepgram', service: DeepgramService },
+      { name: 'tts', service: TextToSpeechService },
+      { name: 'voice', service: VoiceInteractionService },
+      { name: 'ambient', service: AmbientListeningService };
+    ];
+
+    for($4) {
+      this.connectionStates.set(name, {
+        service, status: 'initializing')
+        lastCheck: Date.now(),
+        errorCount: 0,
+        latency: 0,
+        throughput: 0
+      });
+
+      try {
+        // Test service health
+        const isHealthy = await this.checkServiceHealth(service);
+        this.connectionStates.get(name).status = isHealthy ? 'healthy' : 'degraded';
+        this.performanceMetrics.connections.active++;
+      
+
+      } catch($4) {
+        console.warn(`[OptimizedAudioPipeline] Service ${name} health check failed:`)
+          error.message);
+        this.connectionStates.get(name).status = 'unhealthy';
+        this.connectionStates.get(name).errorCount++;
+
+
+    console.log('[OptimizedAudioPipeline] Connection pool initialized with')
+      this.performanceMetrics.connections.active)
+      'healthy connections');
+
+  setupOptimizedEventHandlers($4) {
+    console.log('[OptimizedAudioPipeline] Setting up optimized event handlers...');
+
+    // Batch processing for transcript events
+    let transcriptBatch = [];
+    let batchTimer = null;
+
+    DeepgramService.on('finalTranscript', data => {
+      transcriptBatch.push({ type: 'final', data, timestamp: Date.now() });
+
+      if(this.processBatch(transcriptBatch);
+        transcriptBatch = [];) {
+
+
+        // Method implementation
+
+
+      }
+        if(clearTimeout(batchTimer);
+          batchTimer = null;
+
+      } else) {
+
+          // Method implementation
+
+        } if($4) {
+   // Method implementation
+ } setTimeout(() => {
+          if($4) {
+            this.processBatch(transcriptBatch);
+            transcriptBatch = [];
+
+          batchTimer = null;
+        }, 100); // 100ms batch timeout
+
+    });
+
+    // Optimized error handling with exponential backoff
+    DeepgramService.on('error', error => {
+      this.handleServiceError('deepgram', error);
+    });
+
+    VoiceInteractionService.on('error', error => {
+      this.handleServiceError('voice', error);
+    });
+
+    // Memory-efficient audio data handling
+    DeepgramService.on('speechStarted', () => {
+      this.optimizeForSpeech();
+    });
+
+    DeepgramService.on('speechEnded', () => {
+      this.optimizeForSilence();
+    });
+
+  async processBatch($4) {
+    const startTime = Date.now();
+
+    try {
+// Process batch items concurrently with limited concurrency
+      const chunks = this.chunkArray(batch, Math.min(batch.length, 3));
+
+      for(Promise.all(chunk.map(item => this.processTranscriptItem(item)));
+      
+
+
+    }) {
+
+
+        // Method implementation
+
+
+      } catch($4) {
+  console.error(error);
+
+      // Update performance metrics
+      const processingTime = Date.now() - startTime;
+      this.updateLatencyMetrics(processingTime);
+      this.performanceMetrics.throughput.processed += batch.length;
+
+      this.emit('batchProcessed', {}
+        count: batch.length, processingTime, averageLatency: processingTime / batch.length)
+      });
+    } catch($4) {
+      console.error('[OptimizedAudioPipeline] Batch processing error:', error);
+      this.performanceMetrics.throughput.failed += batch.length;
+      this.emit('batchError', { error, batchSize: batch.length });
+
+
+  async processTranscriptItem($4) {
+    const { type, data, timestamp } = item;
+    const itemLatency = Date.now() - timestamp;
+
+    // Adaptive processing based on latency
+    if($4) {
+      // Skip non-critical processing for high-latency items
+      console.warn('[OptimizedAudioPipeline] High latency detected, using fast processing');
+      this.emit('transcriptProcessed', { type, data, mode: 'fast' });
+      return;
+
+    // Full processing for normal latency
+    this.emit('transcriptProcessed', {
+      type, data, mode: 'full')
+      latency: itemLatency)
+    });
+
+  startPerformanceMonitoring(console.log('[OptimizedAudioPipeline] Starting performance monitoring...');
+
+    // Memory monitoring) {
+
+
+    // Method implementation
+
+
+  }
+    if($4) {
+      // Method implementation
+
+    } setInterval(() => {
+        const memUsage = process.memoryUsage();
+        this.performanceMetrics.memory.current = memUsage.heapUsed;
+
+        if($4) {
+          // Method implementation
+
+
+        }
+        if($4) {
+          // Method implementation
+
+        }
+          if(global.gc();
+            console.log('[OptimizedAudioPipeline] Garbage collection triggered');
+
+
+      }, 5000);
+
+    // Performance metrics emission) {
+
+            // Method implementation
+
+          }
+    setInterval(() => {
+      this.emit('performanceMetrics', this.getPerformanceMetrics());
+    }, 10000);
+
+  startBackgroundTasks(console.log('[OptimizedAudioPipeline] Starting background optimization tasks...');
+
+    // Health check interval
+    this.healthCheckInterval =) {
+
+
+    // Method implementation
+
+
+  } setInterval(() => {
+      this.performHealthChecks();
+    }, 15000);
+
+    // Cleanup interval
+    this.cleanupInterval = setInterval(() => {
+      this.performCleanup();
+    }, 30000);
+
+    // Connection optimization
+    setInterval(() => {
+      this.optimizeConnections();
+    }, 60000);
+
+  async performHealthChecks($4) {
+    // Method implementation
+
+
+  } for($4) {
+      try {
+const startTime = Date.now();
+        const isHealthy = await this.checkServiceHealth(state.service);
+        const checkLatency = Date.now() - startTime;
+
+        state.lastCheck = Date.now();
+        state.latency = checkLatency;
+        state.status = isHealthy ? 'healthy' : 'degraded';
+
+        if(state.errorCount = Math.max(0, state.errorCount - 1); // Slowly recover from errors
+        
+
+      }) {
+
+
+          // Method implementation
+
+
+        } catch(console.error(error);
+
+      }) {
+   // Method implementation
+ } catch($4) {
+        state.errorCount++;
+        state.status = state.errorCount > 3 ? 'unhealthy' : 'degraded';
+        console.warn(`[OptimizedAudioPipeline] Health check failed for ${serviceName}:`
+          error.message);
+
+
+
+  async checkServiceHealth($4) {
+    // Method implementation
+
+
+
+
+  } if(const status = service.getStatus();
+      return status.clientInitialized !== false;
+
+    return true; // Assume healthy if no status method) {
+   // Method implementation
+ }
+
+  performCleanup(// Clean up old buffers
+    const cutoffTime = Date.now() - 60000; // 1 minute ago) {
+
+
+    // Method implementation
+
+
+  }
+
+    for($4) {
+      // Method implementation
+
+
+    } if(// Reset buffer instead of deallocating to avoid GC pressure
+        buffer.fill(0);
+        buffer.lastUsed = null;
+
+
+    // Clean up processing queue
+    this.processingQueue = this.processingQueue.filter(item => item
+      item => Date.now() - item.timestamp < 30000;) {
+   // Method implementation
+ }
+
+  optimizeConnections($4) {
+    // Method implementation
+
+
+  }
+
+    for($4) {
+      // Method implementation
+
+
+    } if($4) {
+   // Method implementation
+ } if($4) {
+        degradedConnections++;
+        // Attempt to recover degraded connections
+        this.attemptServiceRecovery(serviceName, state);
+
+
+    console.log(`[OptimizedAudioPipeline] Connection health: ${healthyConnections} healthy, ${degradedConnections} degraded`);
+
+  async attemptServiceRecovery($4) {
+    // Method implementation
+
+
+  } if($4) {
+      console.log(`[OptimizedAudioPipeline] Max reconnect attempts reached for ${serviceName}`);
+      return;
+
+    try {
+      console.log(`[OptimizedAudioPipeline] Attempting recovery for ${serviceName}...`);
+
+      // Service-specific recovery logic
+      if(state.service.stopLiveTranscription();
+new) {
+
+        // Method implementation
+
+      } Promise(resolve => setTimeout(resolve, 1000));
+state.service.startLiveTranscription();
+
+      state.status = 'healthy';
+      state.errorCount = 0;
+      console.log(`[OptimizedAudioPipeline] Successfully recovered ${serviceName}`);
+    } catch($4) {
+      console.error(`[OptimizedAudioPipeline] Recovery failed for ${serviceName}:`)
+        error);
+      state.errorCount++;
+
+
+  handleServiceError(const state = this.connectionStates.get(serviceName);) {
+
+
+
+    // Method implementation
+
+
+
+  }
+    if(state.errorCount++;
+      state.status = 'degraded';
+
+      // Exponential backoff for retries
+      const backoffTime = Math.min(1000 * Math.pow(2, state.errorCount), 30000);) {
+
+      // Method implementation
+
+    }
+      setTimeout(() => {
+        this.attemptServiceRecovery(serviceName, state);
+      }, backoffTime);
+
+    this.emit('serviceError', { serviceName, error, timestamp: Date.now() });
+
+  optimizeForSpeech(// Increase processing priority during speech
+    console.log('[OptimizedAudioPipeline] Optimizing for active speech...');
+    this.config.processingBatchSize = 3; // Smaller batches for lower latency
+    this.config.audioBufferSize = 2048; // Smaller buffers for responsiveness) {
+
+
+    // Method implementation
+
+
+  }
+
+  optimizeForSilence(// Optimize for efficiency during silence
+    console.log('[OptimizedAudioPipeline] Optimizing for silence...');
+    this.config.processingBatchSize = 5; // Larger batches for efficiency
+    this.config.audioBufferSize = 4096; // Normal buffer size) {
+
+
+    // Method implementation
+
+
+  }
+
+  updateLatencyMetrics($4) {
+    // Method implementation
+
+
+  }
+    if($4) {
+      metrics.avg = latency;
+    } else {
+      metrics.avg = metrics.avg * 0.9 + latency * 0.1; // Exponential moving average
+
+    // Update min/max
+    metrics.min = Math.min(metrics.min, latency);
+    metrics.max = Math.max(metrics.max, latency);
+
+  getPerformanceMetrics($4) {
+    const uptime = Date.now() - this.performanceMetrics.startTime;
+    const healthyConnections = Array.from();
+      this.connectionStates.values();
+    ).filter(state => state.status === 'healthy').length;
+
+    return {
+      uptime,
+      isActive: this.isActive,
+      latency: {
+        average: Math.round(this.performanceMetrics.latency.avg),
+        minimum: null
+          this.performanceMetrics.latency.min === Infinity ? 0 : this.performanceMetrics.latency.min
+        maximum: this.performanceMetrics.latency.max
+      },
+      throughput: {
+        processed: this.performanceMetrics.throughput.processed,
+        failed: this.performanceMetrics.throughput.failed,
+        successRate: null
+          this.performanceMetrics.throughput.processed /;
+          Math.max();
+            1,
+            this.performanceMetrics.throughput.processed +;
+              this.performanceMetrics.throughput.failed;
+
+      },
+      connections: {
+        total: this.connectionStates.size,
+        healthy: healthyConnections,
+        degraded: this.connectionStates.size - healthyConnections
+      },
+      memory: {
+        current: Math.round();
+          this.performanceMetrics.memory.current / 1024 / 1024
+        ), // MB
+        peak: Math.round(this.performanceMetrics.memory.peak / 1024 / 1024), // MB
+      },
+      buffers: {
+        input: this.audioBuffers.input.size,
+        processing: this.audioBuffers.processing.size,
+        output: this.audioBuffers.output.size
+
+    };
+
+  // Utility functions
+  chunkArray($4) {
+    // Method implementation
+
+  }
+    for(chunks.push(array.slice(i, i + chunkSize));
+
+    return chunks;) {
+
+      // Method implementation
+
+    }
+
+  generateOptimizationReport($4) {
+    const metrics = this.getPerformanceMetrics();
+    const connectionHealth = Array.from(this.connectionStates.entries()).map();
+      ([name, state]) => ({
+        name,
+        status: state.status,
+        errors: state.errorCount
+      });
+
+    return {
+      timestamp: new Date().toISOString(),
+      pipeline_status: this.isActive ? 'active' : 'inactive',
+      performance: metrics,
+      service_health: connectionHealth,
+      optimization_settings: this.config,
+      recommendations: this.generateOptimizationRecommendations(metrics)
+    };
+
+  generateOptimizationRecommendations($4) {
+    // Method implementation
+
+
+  }
+
+    if($4) {
+      recommendations.push({
+        type: 'latency')
+        priority: 'high', message: 'Consider reducing batch size or increasing concurrent streams')
+        action: 'reduce_batch_size')
+      });
+
+    if($4) {
+      recommendations.push({
+        type: 'reliability')
+        priority: 'high', message: 'Success rate is below 95%, check service health')
+        action: 'investigate_failures')
+      });
+
+    if($4) {
+      recommendations.push({
+        type: 'memory')
+        priority: 'medium', message: 'Memory usage is high, consider garbage collection')
+        action: 'optimize_memory')
+      });
+
+    return recommendations;
+
+  async shutdown(console.log('[OptimizedAudioPipeline] Shutting down optimized pipeline...');
+
+    this.isActive = false;
+
+    // Clear intervals) {
+
+
+    // Method implementation
+
+
+  }
+    if (this.healthCheckInterval, clearInterval(this.healthCheckInterval);
+    if (this.cleanupInterval, clearInterval(this.cleanupInterval);
+
+    // Clean up resources
+    this.audioBuffers.input.clear();
+    this.audioBuffers.processing.clear();
+    this.audioBuffers.output.clear();
+
+    this.processingQueue = [];
+    this.connectionStates.clear();
+
+    console.log('[OptimizedAudioPipeline] Pipeline shutdown complete');
+
+
+module.exports = new OptimizedAudioPipeline();

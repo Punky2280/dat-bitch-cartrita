@@ -4,12 +4,12 @@
  */
 
 export interface VADOptions {
-  silenceThreshold?: number;     // Volume threshold for silence (0-1)
-  speechThreshold?: number;      // Volume threshold for speech (0-1)  
-  minSpeechDuration?: number;    // Min ms of speech to trigger
-  minSilenceDuration?: number;   // Min ms of silence to trigger
-  bufferSize?: number;           // Audio buffer size for analysis
-  smoothingFactor?: number;      // Smoothing for volume calculations (0-1)
+  silenceThreshold?: number; // Volume threshold for silence (0-1)
+  speechThreshold?: number; // Volume threshold for speech (0-1)
+  minSpeechDuration?: number; // Min ms of speech to trigger
+  minSilenceDuration?: number; // Min ms of silence to trigger
+  bufferSize?: number; // Audio buffer size for analysis
+  smoothingFactor?: number; // Smoothing for volume calculations (0-1)
 }
 
 export interface VADResult {
@@ -28,10 +28,10 @@ export class VoiceActivityDetector {
   private source: MediaStreamAudioSourceNode | null = null;
   private dataArray: Uint8Array | null = null;
   private animationFrame: number | null = null;
-  
+
   private options: Required<VADOptions>;
   private callback: VADCallback;
-  
+
   // State tracking
   private volumeHistory: number[] = [];
   private speechStartTime: number | null = null;
@@ -48,16 +48,17 @@ export class VoiceActivityDetector {
       minSpeechDuration: options.minSpeechDuration ?? 200,
       minSilenceDuration: options.minSilenceDuration ?? 500,
       bufferSize: options.bufferSize ?? 256,
-      smoothingFactor: options.smoothingFactor ?? 0.8
+      smoothingFactor: options.smoothingFactor ?? 0.8,
     };
   }
 
   async start(stream: MediaStream): Promise<boolean> {
     try {
       console.log('[VAD] Starting voice activity detection...');
-      
+
       // Create audio context and analyzer
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      this.audioContext = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
       this.analyser = this.audioContext.createAnalyser();
       this.source = this.audioContext.createMediaStreamSource(stream);
 
@@ -86,7 +87,6 @@ export class VoiceActivityDetector {
 
       console.log('[VAD] Voice activity detection started');
       return true;
-
     } catch (error) {
       console.error('[VAD] Failed to start voice activity detection:', error);
       this.cleanup();
@@ -136,8 +136,9 @@ export class VoiceActivityDetector {
     const rms = Math.sqrt(sum / this.dataArray.length) / 255; // Normalize to 0-1
 
     // Update running average with smoothing
-    this.runningAverage = this.runningAverage * this.options.smoothingFactor + 
-                         rms * (1 - this.options.smoothingFactor);
+    this.runningAverage =
+      this.runningAverage * this.options.smoothingFactor +
+      rms * (1 - this.options.smoothingFactor);
 
     // Store volume history for trend analysis
     this.volumeHistory.push(rms);
@@ -148,7 +149,7 @@ export class VoiceActivityDetector {
     // Determine current speech state
     const now = Date.now();
     const currentlySpeaking = this.detectSpeech(rms, this.runningAverage);
-    
+
     // Check for state transitions with duration requirements
     let finalState = this.lastState;
     let confidence = 0.5;
@@ -166,7 +167,10 @@ export class VoiceActivityDetector {
       // Potential start of silence
       if (this.silenceStartTime === null) {
         this.silenceStartTime = now;
-      } else if (now - this.silenceStartTime >= this.options.minSilenceDuration) {
+      } else if (
+        now - this.silenceStartTime >=
+        this.options.minSilenceDuration
+      ) {
         finalState = false;
         confidence = this.calculateConfidence(rms, false);
         this.speechStartTime = null;
@@ -190,7 +194,7 @@ export class VoiceActivityDetector {
       volume: rms,
       averageVolume: this.runningAverage,
       confidence,
-      timestamp: now
+      timestamp: now,
     };
 
     // Call callback
@@ -206,27 +210,34 @@ export class VoiceActivityDetector {
       this.options.silenceThreshold,
       avgVolume * 0.5
     );
-    
+
     const dynamicSpeechThreshold = Math.max(
       this.options.speechThreshold,
       avgVolume * 1.5
     );
 
     // Check if current volume indicates speech
-    return currentVolume > dynamicSpeechThreshold && 
-           currentVolume > dynamicSilenceThreshold;
+    return (
+      currentVolume > dynamicSpeechThreshold &&
+      currentVolume > dynamicSilenceThreshold
+    );
   }
 
-  private calculateConfidence(currentVolume: number, isSpeaking: boolean): number {
+  private calculateConfidence(
+    currentVolume: number,
+    isSpeaking: boolean
+  ): number {
     const avgVolume = this.runningAverage;
-    
+
     if (isSpeaking) {
       // Confidence based on how much above the threshold we are
-      const ratio = currentVolume / Math.max(this.options.speechThreshold, avgVolume * 1.5);
+      const ratio =
+        currentVolume / Math.max(this.options.speechThreshold, avgVolume * 1.5);
       return Math.min(1, Math.max(0.5, ratio - 0.5));
     } else {
       // Confidence based on how much below the threshold we are
-      const ratio = this.options.silenceThreshold / Math.max(0.001, currentVolume);
+      const ratio =
+        this.options.silenceThreshold / Math.max(0.001, currentVolume);
       return Math.min(1, Math.max(0.5, ratio - 0.5));
     }
   }
@@ -259,46 +270,46 @@ export async function analyzeAudioForSpeech(
   options: VADOptions = {}
 ): Promise<{ hasSpeech: boolean; confidence: number; volume: number }> {
   try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const audioContext = new (window.AudioContext ||
+      (window as any).webkitAudioContext)();
     const arrayBuffer = await audioBlob.arrayBuffer();
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-    
+
     const channelData = audioBuffer.getChannelData(0);
-    
+
     // Calculate RMS volume
     let sum = 0;
     for (let i = 0; i < channelData.length; i++) {
       sum += channelData[i] * channelData[i];
     }
     const rms = Math.sqrt(sum / channelData.length);
-    
+
     // Calculate peak volume
     let peak = 0;
     for (let i = 0; i < channelData.length; i++) {
       peak = Math.max(peak, Math.abs(channelData[i]));
     }
-    
+
     const speechThreshold = options.speechThreshold || 0.02;
     const hasSpeech = rms > speechThreshold || peak > speechThreshold * 2;
-    
-    const confidence = hasSpeech ? 
-      Math.min(1, rms / speechThreshold) : 
-      Math.max(0, 1 - (rms / speechThreshold));
-    
+
+    const confidence = hasSpeech
+      ? Math.min(1, rms / speechThreshold)
+      : Math.max(0, 1 - rms / speechThreshold);
+
     await audioContext.close();
-    
+
     return {
       hasSpeech,
       confidence,
-      volume: rms
+      volume: rms,
     };
-    
   } catch (error) {
     console.error('[VAD] Audio analysis failed:', error);
     return {
       hasSpeech: false,
       confidence: 0,
-      volume: 0
+      volume: 0,
     };
   }
 }

@@ -1,25 +1,106 @@
+version: '3.8'
+
 services:
-  db:
-    image: timescale/timescaledb:latest-pg16
-    container_name: cartrita_db
+  # PostgreSQL Database - Using regular PostgreSQL instead of pgvector
+  postgres:
+    image: postgres:16-alpine
+    container_name: cartrita-db
     restart: unless-stopped
-    env_file:
-      - ./.env
+    environment:
+      POSTGRES_USER: robert
+      POSTGRES_PASSWORD: punky1
+      POSTGRES_DB: dat-bitch-cartrita
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
     ports:
-      - "5434:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./packages/backend/db-init:/docker-entrypoint-initdb.d
+    networks:
+      - cartrita-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U robert -d dat-bitch-cartrita"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: cartrita-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - cartrita-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Backend API
   backend:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: cartrita_backend
+      dockerfile: packages/backend/Dockerfile
+    container_name: cartrita-backend
     restart: unless-stopped
-    env_file:
-      - ./.env
+    environment:
+      - NODE_ENV=production
+      - PORT=8000
+      - POSTGRES_USER=robert
+      - POSTGRES_PASSWORD=punky1
+      - POSTGRES_DB=dat-bitch-cartrita
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DATABASE_URL=postgresql://robert:punky1@postgres:5432/dat-bitch-cartrita
     ports:
       - "8000:8000"
+    volumes:
+      - backend_node_modules:/usr/src/app/node_modules
+    networks:
+      - cartrita-network
     depends_on:
-      - db
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend (Next.js)
+  frontend:
+    build:
+      context: .
+      dockerfile: packages/frontend/Dockerfile
+    container_name: cartrita-frontend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+    ports:
+      - "3000:3000"
+    volumes:
+      - frontend_node_modules:/usr/src/app/node_modules
+    networks:
+      - cartrita-network
+    depends_on:
+      - backend
+
 volumes:
   postgres_data:
+  redis_data:
+  backend_node_modules:
+  frontend_node_modules:
+
+networks:
+  cartrita-network:
+    driver: bridge

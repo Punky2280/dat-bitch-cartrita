@@ -26,7 +26,7 @@ class ErrorBoundary extends Component<Props, State> {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
     this.setState({
       error,
-      errorInfo
+      errorInfo,
     });
   }
 
@@ -47,7 +47,8 @@ class ErrorBoundary extends Component<Props, State> {
               Oops! Something went wrong
             </h2>
             <p className="text-gray-300 mb-6">
-              Don't worry, this happens sometimes. The error has been logged and we're working on it.
+              Don't worry, this happens sometimes. The error has been logged and
+              we're working on it.
             </p>
             <div className="space-y-3">
               <button
@@ -63,7 +64,7 @@ class ErrorBoundary extends Component<Props, State> {
                 🔧 Try Again
               </button>
             </div>
-            
+
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <details className="mt-6 text-left">
                 <summary className="cursor-pointer text-sm text-gray-400 hover:text-white">
@@ -75,12 +76,16 @@ class ErrorBoundary extends Component<Props, State> {
                   </div>
                   <div className="mb-2">
                     <strong>Stack:</strong>
-                    <pre className="whitespace-pre-wrap mt-1">{this.state.error.stack}</pre>
+                    <pre className="whitespace-pre-wrap mt-1">
+                      {this.state.error.stack}
+                    </pre>
                   </div>
                   {this.state.errorInfo && (
                     <div>
                       <strong>Component Stack:</strong>
-                      <pre className="whitespace-pre-wrap mt-1">{this.state.errorInfo.componentStack}</pre>
+                      <pre className="whitespace-pre-wrap mt-1">
+                        {this.state.errorInfo.componentStack}
+                      </pre>
                     </div>
                   )}
                 </div>

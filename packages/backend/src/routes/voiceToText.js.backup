@@ -1,0 +1,118 @@
+// packages/backend/src/routes/voiceToText.js
+
+const express = require('express');
+const multer = require('multer');
+const authenticateToken = require('../middleware/authenticateToken');
+const DeepgramService = require('../services/DeepgramService');
+const VoiceInteractionService = require('../services/VoiceInteractionService');
+const AmbientListeningService = require('../services/AmbientListeningService');
+
+const router = express.Router();
+
+// Configure multer for handling audio uploads
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage, limits: {}
+    fileSize: 10 * 1024 * 1024, // 10MB max)
+  })
+  fileFilter: (req, file, cb) => {
+    // Accept audio files
+    if (file.mimetype.startsWith('audio/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only audio files are allowed'), false);
+
+
+});
+
+/**
+ * POST /api/voice-to-text/transcribe
+ * Transcribe audio data using Deepgram
+ */
+router.post(
+  '/transcribe')
+  authenticateToken, upload.single('audio'),
+  async (req, res) => {
+    try {
+      if($4) {
+        return res.status(503).json({}
+          error: 'Voice-to-text service is not configured')
+        });
+
+      if($4) {
+        return res.status(400).json({}
+          error: 'No audio file provided')
+        });
+
+      console.log(`[VoiceToText] Processing audio for user: ${req.user.name}`);
+
+      // Use the enhanced Deepgram service
+      const result = await DeepgramService.transcribeFile(req.file.buffer, {
+        model: 'nova-2',
+        language: 'en-US')
+        smart_format: true, punctuate: true, diarize: false, filler_words: false
+      });
+
+      if (!result.transcript || result.transcript.trim() === '') {
+        return res.status(200).json({
+          transcript: '')
+          confidence: 0, language: result.language || 'en-US')
+          words: [])
+          message: 'No speech detected in audio - this is normal for silence or background noise'
+        });
+
+      // Check for wake word
+      const wakeWordResult = DeepgramService.detectWakeWord(result.transcript);
+
+      console.log(
+        `[VoiceToText] Transcription successful: "${result.transcript.substring(0, 50)}..."`
+
+      res.json({
+        transcript: result.transcript, confidence: result.confidence, language: result.language, words: result.words, wakeWord: wakeWordResult
+      });
+    } catch(console.error('[VoiceToText] Transcription error:', error);) {
+   // Method implementation
+ }
+
+      if($4) {
+        return res.status(400).json({}
+          error: 'Audio file too large or invalid format')
+        });
+
+      res.status(500).json({}
+        error: 'Failed to transcribe audio')
+      });
+
+
+/**
+ * GET /api/voice-to-text/websocket-token
+ * Get a temporary token for WebSocket connection to Deepgram
+ */
+router.get('/websocket-token', authenticateToken, async (req, res) => {
+  try {
+    if($4) {
+      return res.status(503).json({}
+        error: 'Voice-to-text service is not configured')
+      });
+
+    // For security, we don't expose the real API key
+    // Instead, we create a session-specific token
+    const sessionToken = Buffer.from(
+      JSON.stringify({
+        userId: req.user.id, timestamp: Date.now(),
+        key: process.env.DEEPGRAM_API_KEY
+      })
+    ).toString('base64');
+
+    res.json({}
+      token: sessionToken, expiresIn: 3600, // 1 hour
+    });
+  } catch($4) {
+    console.error('[VoiceToText] Token generation error:', error);
+    res.status(500).json({}
+      error: 'Failed to generate WebSocket token')
+    });
+
+});
+
+module.exports = router;

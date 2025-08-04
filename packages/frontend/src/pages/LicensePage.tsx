@@ -1,12 +1,15 @@
 import React from 'react';
-import { ArrowLeftIcon, ScaleIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import {
+  ArrowLeftIcon,
+  ScaleIcon,
+  ShieldCheckIcon,
+} from '@heroicons/react/24/outline';
 
 interface LicensePageProps {
   onBack?: () => void;
 }
 
 const LicensePage: React.FC<LicensePageProps> = ({ onBack }) => {
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-50 dark:from-gray-900 dark:to-blue-900">
       <div className="container mx-auto px-4 py-8">
@@ -19,10 +22,12 @@ const LicensePage: React.FC<LicensePageProps> = ({ onBack }) => {
             <ArrowLeftIcon className="w-5 h-5" />
             <span>Back</span>
           </button>
-          
+
           <div className="flex items-center space-x-2">
             <ScaleIcon className="w-8 h-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">License & Legal</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              License & Legal
+            </h1>
           </div>
         </div>
 
@@ -46,10 +51,10 @@ const LicensePage: React.FC<LicensePageProps> = ({ onBack }) => {
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
               Full License Text
             </h3>
-            
+
             <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 font-mono text-sm overflow-x-auto">
               <pre className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
-{`MIT License
+                {`MIT License
 
 Copyright (c) 2025 Robert Allen
 
@@ -79,7 +84,7 @@ SOFTWARE.`}
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
               What This Means for You
             </h3>
-            
+
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <h4 className="text-lg font-semibold text-green-600 dark:text-green-400 mb-3">
@@ -94,7 +99,7 @@ SOFTWARE.`}
                   <li>• Sell copies or modified versions</li>
                 </ul>
               </div>
-              
+
               <div>
                 <h4 className="text-lg font-semibold text-amber-600 dark:text-amber-400 mb-3">
                   ⚠️ You MUST:
@@ -114,41 +119,47 @@ SOFTWARE.`}
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
               Additional Legal Information
             </h3>
-            
+
             <div className="prose dark:prose-invert max-w-none">
               <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
                 Privacy & Data Usage
               </h4>
               <p className="text-gray-600 dark:text-gray-300 mb-4">
-                Cartrita is designed with privacy in mind. Your conversations and personal data are stored locally 
-                in your own database instance. While the software may integrate with third-party APIs (like OpenAI), 
-                you have full control over what data is shared and how it's used.
+                Cartrita is designed with privacy in mind. Your conversations
+                and personal data are stored locally in your own database
+                instance. While the software may integrate with third-party APIs
+                (like OpenAI), you have full control over what data is shared
+                and how it's used.
               </p>
-              
+
               <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
                 Third-Party Services
               </h4>
               <p className="text-gray-600 dark:text-gray-300 mb-4">
-                This software may integrate with various third-party services (OpenAI, Deepgram, etc.). 
-                Use of those services is subject to their respective terms of service and privacy policies. 
-                You are responsible for compliance with those terms.
+                This software may integrate with various third-party services
+                (OpenAI, Deepgram, etc.). Use of those services is subject to
+                their respective terms of service and privacy policies. You are
+                responsible for compliance with those terms.
               </p>
-              
+
               <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
                 Ethical AI Commitment
               </h4>
               <p className="text-gray-600 dark:text-gray-300 mb-4">
-                While this project uses the MIT License, we encourage all users and contributors to develop 
-                and deploy AI technology responsibly. This includes respecting user privacy, promoting fairness, 
-                avoiding harmful applications, and being transparent about AI capabilities and limitations.
+                While this project uses the MIT License, we encourage all users
+                and contributors to develop and deploy AI technology
+                responsibly. This includes respecting user privacy, promoting
+                fairness, avoiding harmful applications, and being transparent
+                about AI capabilities and limitations.
               </p>
-              
+
               <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
                 Contact & Support
               </h4>
               <p className="text-gray-600 dark:text-gray-300">
-                This is open-source software provided as-is. For questions, issues, or contributions, 
-                please visit the project repository or contact the maintainers through the appropriate channels.
+                This is open-source software provided as-is. For questions,
+                issues, or contributions, please visit the project repository or
+                contact the maintainers through the appropriate channels.
               </p>
             </div>
           </div>

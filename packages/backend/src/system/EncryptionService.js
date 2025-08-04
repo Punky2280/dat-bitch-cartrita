@@ -1,3 +1,4 @@
+/* global console */
 class EncryptionService {
   constructor() {
     this.initialized = true;
@@ -8,9 +9,9 @@ class EncryptionService {
     return {
       service: 'EncryptionService',
       initialized: this.initialized,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     };
   }
 }
 
-module.exports = new EncryptionService();
+export default new EncryptionService();

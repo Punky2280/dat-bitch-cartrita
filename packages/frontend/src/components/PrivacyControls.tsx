@@ -1,13 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { 
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Shield,
   Download,
   Trash2,
@@ -21,7 +32,7 @@ import {
   Users,
   Mail,
   Calendar,
-  Info
+  Info,
 } from 'lucide-react';
 
 interface ConsentRecord {
@@ -89,10 +100,10 @@ const PrivacyControls: React.FC = () => {
       const token = localStorage.getItem('token');
       const response = await fetch('/api/privacy/dashboard', {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setDashboard(data);
@@ -104,24 +115,30 @@ const PrivacyControls: React.FC = () => {
     }
   };
 
-  const updateConsent = async (consentType: string, consentGiven: boolean, details?: any) => {
+  const updateConsent = async (
+    consentType: string,
+    consentGiven: boolean,
+    details?: any
+  ) => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch('/api/privacy/consent', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          consent_records: [{
-            consent_type: consentType,
-            consent_given: consentGiven,
-            details
-          }]
-        })
+          consent_records: [
+            {
+              consent_type: consentType,
+              consent_given: consentGiven,
+              details,
+            },
+          ],
+        }),
       });
-      
+
       if (response.ok) {
         await fetchPrivacyDashboard();
       }
@@ -136,14 +153,14 @@ const PrivacyControls: React.FC = () => {
       const response = await fetch('/api/privacy/export', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          export_type: exportType
-        })
+          export_type: exportType,
+        }),
       });
-      
+
       if (response.ok) {
         setShowExportDialog(false);
         await fetchPrivacyDashboard();
@@ -159,16 +176,16 @@ const PrivacyControls: React.FC = () => {
       const response = await fetch('/api/privacy/delete', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           deletion_type: deletionType,
           data_types: selectedDataTypes,
-          reason: 'User requested privacy control'
-        })
+          reason: 'User requested privacy control',
+        }),
       });
-      
+
       if (response.ok) {
         setShowDeleteDialog(false);
         await fetchPrivacyDashboard();
@@ -188,34 +205,38 @@ const PrivacyControls: React.FC = () => {
     } else if (sizeMb < 1024) {
       return `${Math.round(sizeMb * 10) / 10} MB`;
     } else {
-      return `${Math.round(sizeMb / 1024 * 10) / 10} GB`;
+      return `${Math.round((sizeMb / 1024) * 10) / 10} GB`;
     }
   };
 
   const getConsentStatusColor = (consentGiven: boolean) => {
-    return consentGiven ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+    return consentGiven
+      ? 'bg-green-100 text-green-800'
+      : 'bg-red-100 text-red-800';
   };
 
   const getStatusColor = (status: string) => {
     const colors = {
-      'pending': 'bg-yellow-100 text-yellow-800',
-      'processing': 'bg-blue-100 text-blue-800',
-      'completed': 'bg-green-100 text-green-800',
-      'failed': 'bg-red-100 text-red-800'
+      pending: 'bg-yellow-100 text-yellow-800',
+      processing: 'bg-blue-100 text-blue-800',
+      completed: 'bg-green-100 text-green-800',
+      failed: 'bg-red-100 text-red-800',
     };
     return colors[status as keyof typeof colors] || colors.pending;
   };
 
   const getDataTypeIcon = (dataType: string) => {
     const icons = {
-      'calendar_events': <Calendar className="w-4 h-4" />,
-      'email_messages': <Mail className="w-4 h-4" />,
-      'contacts': <Users className="w-4 h-4" />,
-      'notifications': <Shield className="w-4 h-4" />,
-      'conversations': <Activity className="w-4 h-4" />,
-      'user_settings': <Settings className="w-4 h-4" />
+      calendar_events: <Calendar className="w-4 h-4" />,
+      email_messages: <Mail className="w-4 h-4" />,
+      contacts: <Users className="w-4 h-4" />,
+      notifications: <Shield className="w-4 h-4" />,
+      conversations: <Activity className="w-4 h-4" />,
+      user_settings: <Settings className="w-4 h-4" />,
     };
-    return icons[dataType as keyof typeof icons] || <Database className="w-4 h-4" />;
+    return (
+      icons[dataType as keyof typeof icons] || <Database className="w-4 h-4" />
+    );
   };
 
   if (loading) {
@@ -232,8 +253,12 @@ const PrivacyControls: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Privacy Control Center</h2>
-          <p className="text-gray-600">Manage your data privacy and consent preferences</p>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Privacy Control Center
+          </h2>
+          <p className="text-gray-600">
+            Manage your data privacy and consent preferences
+          </p>
         </div>
         <div className="flex space-x-2">
           <Button onClick={() => setShowExportDialog(true)} variant="outline">
@@ -255,14 +280,15 @@ const PrivacyControls: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-600">Active Consents</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {dashboard?.consent_records?.filter(c => c.consent_given).length || 0}
+                  {dashboard?.consent_records?.filter(c => c.consent_given)
+                    .length || 0}
                 </p>
               </div>
               <CheckCircle className="w-8 h-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -276,7 +302,7 @@ const PrivacyControls: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -290,14 +316,19 @@ const PrivacyControls: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total Size</p>
                 <p className="text-2xl font-bold text-orange-600">
-                  {formatFileSize(dashboard?.data_usage?.reduce((sum, d) => sum + d.size_mb, 0) || 0)}
+                  {formatFileSize(
+                    dashboard?.data_usage?.reduce(
+                      (sum, d) => sum + d.size_mb,
+                      0
+                    ) || 0
+                  )}
                 </p>
               </div>
               <FileText className="w-8 h-8 text-orange-500" />
@@ -320,35 +351,48 @@ const PrivacyControls: React.FC = () => {
             <CardHeader>
               <CardTitle>Data Processing Consent</CardTitle>
               <p className="text-sm text-gray-600">
-                Control how your data is processed and used by the Personal Life OS
+                Control how your data is processed and used by the Personal Life
+                OS
               </p>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {dashboard?.consent_records?.map((consent) => (
-                  <div key={consent.consent_type} className="border rounded-lg p-4">
+                {dashboard?.consent_records?.map(consent => (
+                  <div
+                    key={consent.consent_type}
+                    className="border rounded-lg p-4"
+                  >
                     <div className="flex items-center justify-between mb-2">
                       <div>
                         <h4 className="font-medium capitalize">
                           {consent.consent_type.replace(/_/g, ' ')}
                         </h4>
                         <p className="text-sm text-gray-500">
-                          {consent.details?.purpose || 'Core functionality and service operation'}
+                          {consent.details?.purpose ||
+                            'Core functionality and service operation'}
                         </p>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Badge className={getConsentStatusColor(consent.consent_given)}>
+                        <Badge
+                          className={getConsentStatusColor(
+                            consent.consent_given
+                          )}
+                        >
                           {consent.consent_given ? 'Granted' : 'Denied'}
                         </Badge>
                         <Switch
                           checked={consent.consent_given}
-                          onCheckedChange={(checked) => 
-                            updateConsent(consent.consent_type, checked, consent.details)
+                          onCheckedChange={checked =>
+                            updateConsent(
+                              consent.consent_type,
+                              checked,
+                              consent.details
+                            )
                           }
                         />
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
                       <div>
                         <span className="font-medium">Scope:</span>
@@ -356,7 +400,11 @@ const PrivacyControls: React.FC = () => {
                       </div>
                       <div>
                         <span className="font-medium">Retention:</span>
-                        <p>{consent.details?.retention_days ? `${consent.details.retention_days} days` : 'As needed'}</p>
+                        <p>
+                          {consent.details?.retention_days
+                            ? `${consent.details.retention_days} days`
+                            : 'As needed'}
+                        </p>
                       </div>
                       <div>
                         <span className="font-medium">Last Updated:</span>
@@ -380,7 +428,7 @@ const PrivacyControls: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {dashboard?.data_usage?.map((data) => (
+                {dashboard?.data_usage?.map(data => (
                   <div key={data.data_type} className="border rounded-lg p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex items-start space-x-3">
@@ -397,7 +445,9 @@ const PrivacyControls: React.FC = () => {
                               <p>{formatFileSize(data.size_mb)}</p>
                             </div>
                             <div>
-                              <span className="font-medium">Last Accessed:</span>
+                              <span className="font-medium">
+                                Last Accessed:
+                              </span>
                               <p>{formatDate(data.last_accessed)}</p>
                             </div>
                             <div>
@@ -429,7 +479,10 @@ const PrivacyControls: React.FC = () => {
             <CardContent>
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {dashboard?.recent_access_logs?.map((log, index) => (
-                  <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded">
+                  <div
+                    key={index}
+                    className="flex items-center space-x-3 p-3 bg-gray-50 rounded"
+                  >
                     <div className="p-1 bg-blue-100 rounded">
                       {getDataTypeIcon(log.data_type)}
                     </div>
@@ -463,10 +516,15 @@ const PrivacyControls: React.FC = () => {
                 <p className="text-gray-500">No export requests</p>
               ) : (
                 <div className="space-y-2">
-                  {dashboard?.data_exports?.map((exportReq) => (
-                    <div key={exportReq.id} className="flex items-center justify-between p-3 border rounded">
+                  {dashboard?.data_exports?.map(exportReq => (
+                    <div
+                      key={exportReq.id}
+                      className="flex items-center justify-between p-3 border rounded"
+                    >
                       <div>
-                        <span className="font-medium capitalize">{exportReq.export_type} Export</span>
+                        <span className="font-medium capitalize">
+                          {exportReq.export_type} Export
+                        </span>
                         <p className="text-sm text-gray-600">
                           Requested: {formatDate(exportReq.requested_at)}
                         </p>
@@ -475,12 +533,13 @@ const PrivacyControls: React.FC = () => {
                         <Badge className={getStatusColor(exportReq.status)}>
                           {exportReq.status}
                         </Badge>
-                        {exportReq.status === 'completed' && exportReq.download_url && (
-                          <Button size="sm" variant="outline">
-                            <Download className="w-4 h-4 mr-1" />
-                            Download
-                          </Button>
-                        )}
+                        {exportReq.status === 'completed' &&
+                          exportReq.download_url && (
+                            <Button size="sm" variant="outline">
+                              <Download className="w-4 h-4 mr-1" />
+                              Download
+                            </Button>
+                          )}
                       </div>
                     </div>
                   ))}
@@ -499,16 +558,25 @@ const PrivacyControls: React.FC = () => {
                 <p className="text-gray-500">No deletion requests</p>
               ) : (
                 <div className="space-y-2">
-                  {dashboard?.deletion_requests?.map((deleteReq) => (
-                    <div key={deleteReq.id} className="flex items-center justify-between p-3 border rounded">
+                  {dashboard?.deletion_requests?.map(deleteReq => (
+                    <div
+                      key={deleteReq.id}
+                      className="flex items-center justify-between p-3 border rounded"
+                    >
                       <div>
-                        <span className="font-medium capitalize">{deleteReq.deletion_type.replace(/_/g, ' ')}</span>
+                        <span className="font-medium capitalize">
+                          {deleteReq.deletion_type.replace(/_/g, ' ')}
+                        </span>
                         <p className="text-sm text-gray-600">
                           Requested: {formatDate(deleteReq.requested_at)}
                         </p>
                         <div className="flex space-x-1 mt-1">
                           {deleteReq.data_types.map((type, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="text-xs"
+                            >
                               {type.replace(/_/g, ' ')}
                             </Badge>
                           ))}
@@ -536,11 +604,11 @@ const PrivacyControls: React.FC = () => {
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                You can export your personal data in a machine-readable format. 
+                You can export your personal data in a machine-readable format.
                 This process may take a few minutes for large datasets.
               </AlertDescription>
             </Alert>
-            
+
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">
                 Export Type
@@ -551,15 +619,20 @@ const PrivacyControls: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="full">Full Data Export</SelectItem>
-                  <SelectItem value="calendar_only">Calendar Data Only</SelectItem>
+                  <SelectItem value="calendar_only">
+                    Calendar Data Only
+                  </SelectItem>
                   <SelectItem value="email_only">Email Data Only</SelectItem>
                   <SelectItem value="contacts_only">Contacts Only</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setShowExportDialog(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowExportDialog(false)}
+              >
                 Cancel
               </Button>
               <Button onClick={requestDataExport}>
@@ -581,11 +654,11 @@ const PrivacyControls: React.FC = () => {
             <Alert>
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription className="text-red-600">
-                <strong>Warning:</strong> Data deletion is permanent and cannot be undone. 
-                Consider exporting your data first.
+                <strong>Warning:</strong> Data deletion is permanent and cannot
+                be undone. Consider exporting your data first.
               </AlertDescription>
             </Alert>
-            
+
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">
                 Deletion Type
@@ -595,47 +668,66 @@ const PrivacyControls: React.FC = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="partial_data">Partial Data Deletion</SelectItem>
-                  <SelectItem value="full_account">Full Account Deletion</SelectItem>
+                  <SelectItem value="partial_data">
+                    Partial Data Deletion
+                  </SelectItem>
+                  <SelectItem value="full_account">
+                    Full Account Deletion
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            
+
             {deletionType === 'partial_data' && (
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-2 block">
                   Select Data Types to Delete
                 </label>
                 <div className="space-y-2">
-                  {['calendar_events', 'email_messages', 'contacts', 'notifications'].map((type) => (
+                  {[
+                    'calendar_events',
+                    'email_messages',
+                    'contacts',
+                    'notifications',
+                  ].map(type => (
                     <label key={type} className="flex items-center space-x-2">
                       <input
                         type="checkbox"
                         checked={selectedDataTypes.includes(type)}
-                        onChange={(e) => {
+                        onChange={e => {
                           if (e.target.checked) {
                             setSelectedDataTypes([...selectedDataTypes, type]);
                           } else {
-                            setSelectedDataTypes(selectedDataTypes.filter(t => t !== type));
+                            setSelectedDataTypes(
+                              selectedDataTypes.filter(t => t !== type)
+                            );
                           }
                         }}
                         className="rounded border-gray-300"
                       />
-                      <span className="capitalize">{type.replace(/_/g, ' ')}</span>
+                      <span className="capitalize">
+                        {type.replace(/_/g, ' ')}
+                      </span>
                     </label>
                   ))}
                 </div>
               </div>
             )}
-            
+
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteDialog(false)}
+              >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={requestDataDeletion}
                 variant="destructive"
-                disabled={deletionType === 'partial_data' && selectedDataTypes.length === 0}
+                disabled={
+                  deletionType === 'partial_data' &&
+                  selectedDataTypes.length === 0
+                }
               >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Request Deletion

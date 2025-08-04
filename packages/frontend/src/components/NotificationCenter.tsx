@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
   Bell,
   Settings,
   Calendar,
@@ -21,7 +27,7 @@ import {
   AlertTriangle,
   Gift,
   Briefcase,
-  RefreshCw
+  RefreshCw,
 } from 'lucide-react';
 
 interface Notification {
@@ -85,15 +91,15 @@ const NotificationCenter: React.FC = () => {
       const params = new URLSearchParams({
         limit: '50',
         ...(filter !== 'all' && { [filter]: 'true' }),
-        ...(categoryFilter !== 'all' && { category: categoryFilter })
+        ...(categoryFilter !== 'all' && { category: categoryFilter }),
       });
-      
+
       const response = await fetch(`/api/notifications?${params}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setNotifications(data.notifications || []);
@@ -110,10 +116,10 @@ const NotificationCenter: React.FC = () => {
       const token = localStorage.getItem('token');
       const response = await fetch('/api/notifications/preferences', {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setPreferences(data.preferences || []);
@@ -128,10 +134,10 @@ const NotificationCenter: React.FC = () => {
       const token = localStorage.getItem('token');
       const response = await fetch('/api/notifications/stats', {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setStats(data);
@@ -144,14 +150,16 @@ const NotificationCenter: React.FC = () => {
   const markAsRead = async (notificationIds: string[]) => {
     try {
       const token = localStorage.getItem('token');
-      await Promise.all(notificationIds.map(id => 
-        fetch(`/api/notifications/${id}/read`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-      ));
+      await Promise.all(
+        notificationIds.map(id =>
+          fetch(`/api/notifications/${id}/read`, {
+            method: 'PUT',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
+        )
+      );
       await fetchNotifications();
       await fetchStats();
     } catch (error) {
@@ -165,8 +173,8 @@ const NotificationCenter: React.FC = () => {
       await fetch(`/api/notifications/${notificationId}/dismiss`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
       await fetchNotifications();
       await fetchStats();
@@ -175,20 +183,22 @@ const NotificationCenter: React.FC = () => {
     }
   };
 
-  const updatePreferences = async (updatedPreferences: NotificationPreference[]) => {
+  const updatePreferences = async (
+    updatedPreferences: NotificationPreference[]
+  ) => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch('/api/notifications/preferences', {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          preferences: updatedPreferences
-        })
+          preferences: updatedPreferences,
+        }),
       });
-      
+
       if (response.ok) {
         setPreferences(updatedPreferences);
       }
@@ -203,15 +213,15 @@ const NotificationCenter: React.FC = () => {
       await fetch('/api/notifications/test', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           notification_type: 'test',
           title: 'Test Notification',
           message: 'This is a test notification from your Personal Life OS',
-          priority: 'normal'
-        })
+          priority: 'normal',
+        }),
       });
       await fetchNotifications();
     } catch (error) {
@@ -223,9 +233,11 @@ const NotificationCenter: React.FC = () => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-    
+
     if (diffInHours < 1) {
-      const minutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+      const minutes = Math.floor(
+        (now.getTime() - date.getTime()) / (1000 * 60)
+      );
       return `${minutes}m ago`;
     } else if (diffInHours < 24) {
       return `${Math.floor(diffInHours)}h ago`;
@@ -236,45 +248,45 @@ const NotificationCenter: React.FC = () => {
 
   const getPriorityColor = (priority: string) => {
     const colors = {
-      'low': 'bg-gray-100 text-gray-800',
-      'normal': 'bg-blue-100 text-blue-800',
-      'high': 'bg-orange-100 text-orange-800',
-      'urgent': 'bg-red-100 text-red-800'
+      low: 'bg-gray-100 text-gray-800',
+      normal: 'bg-blue-100 text-blue-800',
+      high: 'bg-orange-100 text-orange-800',
+      urgent: 'bg-red-100 text-red-800',
     };
     return colors[priority as keyof typeof colors] || colors.normal;
   };
 
   const getCategoryIcon = (category: string) => {
     const icons = {
-      'calendar': <Calendar className="w-4 h-4" />,
-      'email': <Mail className="w-4 h-4" />,
-      'contact': <Users className="w-4 h-4" />,
-      'system': <Settings className="w-4 h-4" />,
-      'reminder': <Clock className="w-4 h-4" />,
-      'birthday': <Gift className="w-4 h-4" />,
-      'work': <Briefcase className="w-4 h-4" />
+      calendar: <Calendar className="w-4 h-4" />,
+      email: <Mail className="w-4 h-4" />,
+      contact: <Users className="w-4 h-4" />,
+      system: <Settings className="w-4 h-4" />,
+      reminder: <Clock className="w-4 h-4" />,
+      birthday: <Gift className="w-4 h-4" />,
+      work: <Briefcase className="w-4 h-4" />,
     };
-    return icons[category as keyof typeof icons] || <Bell className="w-4 h-4" />;
+    return (
+      icons[category as keyof typeof icons] || <Bell className="w-4 h-4" />
+    );
   };
 
   const getCategoryColor = (category: string) => {
     const colors = {
-      'calendar': 'bg-blue-100 text-blue-800',
-      'email': 'bg-green-100 text-green-800',
-      'contact': 'bg-purple-100 text-purple-800',
-      'system': 'bg-gray-100 text-gray-800',
-      'reminder': 'bg-yellow-100 text-yellow-800',
-      'birthday': 'bg-pink-100 text-pink-800',
-      'work': 'bg-indigo-100 text-indigo-800'
+      calendar: 'bg-blue-100 text-blue-800',
+      email: 'bg-green-100 text-green-800',
+      contact: 'bg-purple-100 text-purple-800',
+      system: 'bg-gray-100 text-gray-800',
+      reminder: 'bg-yellow-100 text-yellow-800',
+      birthday: 'bg-pink-100 text-pink-800',
+      work: 'bg-indigo-100 text-indigo-800',
     };
     return colors[category as keyof typeof colors] || colors.system;
   };
 
   const updatePreference = (type: string, field: string, value: any) => {
-    const updated = preferences.map(pref => 
-      pref.notification_type === type 
-        ? { ...pref, [field]: value }
-        : pref
+    const updated = preferences.map(pref =>
+      pref.notification_type === type ? { ...pref, [field]: value } : pref
     );
     updatePreferences(updated);
   };
@@ -291,8 +303,12 @@ const NotificationCenter: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Notification Center</h2>
-          <p className="text-gray-600">Manage your alerts and notification preferences</p>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Notification Center
+          </h2>
+          <p className="text-gray-600">
+            Manage your alerts and notification preferences
+          </p>
         </div>
         <div className="flex space-x-2">
           <Button onClick={testNotification} variant="outline" size="sm">
@@ -313,43 +329,51 @@ const NotificationCenter: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Total</p>
-                  <p className="text-2xl font-bold">{stats.total_notifications}</p>
+                  <p className="text-2xl font-bold">
+                    {stats.total_notifications}
+                  </p>
                 </div>
                 <Bell className="w-8 h-8 text-blue-500" />
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Unread</p>
-                  <p className="text-2xl font-bold text-orange-600">{stats.unread_count}</p>
+                  <p className="text-2xl font-bold text-orange-600">
+                    {stats.unread_count}
+                  </p>
                 </div>
                 <AlertTriangle className="w-8 h-8 text-orange-500" />
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Today</p>
-                  <p className="text-2xl font-bold text-green-600">{stats.today_count}</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {stats.today_count}
+                  </p>
                 </div>
                 <Clock className="w-8 h-8 text-green-500" />
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Urgent</p>
-                  <p className="text-2xl font-bold text-red-600">{stats.urgent_count}</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    {stats.urgent_count}
+                  </p>
                 </div>
                 <AlertTriangle className="w-8 h-8 text-red-500" />
               </div>
@@ -381,8 +405,11 @@ const NotificationCenter: React.FC = () => {
                     <SelectItem value="today">Today</SelectItem>
                   </SelectContent>
                 </Select>
-                
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+
+                <Select
+                  value={categoryFilter}
+                  onValueChange={setCategoryFilter}
+                >
                   <SelectTrigger className="w-40">
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
@@ -417,76 +444,92 @@ const NotificationCenter: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {notifications.map((notification) => (
-                    <div 
+                  {notifications.map(notification => (
+                    <div
                       key={notification.id}
                       className={`border rounded-lg p-4 ${
-                        !notification.is_read ? 'bg-blue-50 border-blue-200' : 'bg-white'
+                        !notification.is_read
+                          ? 'bg-blue-50 border-blue-200'
+                          : 'bg-white'
                       }`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-start space-x-3 flex-1">
-                          <div className={`p-2 rounded-full ${getCategoryColor(notification.category)}`}>
+                          <div
+                            className={`p-2 rounded-full ${getCategoryColor(notification.category)}`}
+                          >
                             {getCategoryIcon(notification.category)}
                           </div>
-                          
+
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center space-x-2 mb-1">
-                              <h3 className={`font-medium ${!notification.is_read ? 'font-semibold' : ''}`}>
+                              <h3
+                                className={`font-medium ${!notification.is_read ? 'font-semibold' : ''}`}
+                              >
                                 {notification.title}
                               </h3>
-                              <Badge className={getPriorityColor(notification.priority)}>
+                              <Badge
+                                className={getPriorityColor(
+                                  notification.priority
+                                )}
+                              >
                                 {notification.priority}
                               </Badge>
                               <Badge variant="outline" className="text-xs">
                                 {notification.category}
                               </Badge>
                             </div>
-                            
+
                             <p className="text-sm text-gray-600 mb-2">
                               {notification.message}
                             </p>
-                            
+
                             <div className="flex items-center space-x-4 text-xs text-gray-500">
                               <span>{formatDate(notification.created_at)}</span>
                               {notification.scheduled_for && (
-                                <span>Scheduled for: {formatDate(notification.scheduled_for)}</span>
+                                <span>
+                                  Scheduled for:{' '}
+                                  {formatDate(notification.scheduled_for)}
+                                </span>
                               )}
                               {!notification.is_read && (
-                                <Badge variant="secondary" className="text-xs">Unread</Badge>
+                                <Badge variant="secondary" className="text-xs">
+                                  Unread
+                                </Badge>
                               )}
                             </div>
-                            
+
                             {/* Action Buttons */}
-                            {notification.actions && notification.actions.length > 0 && (
-                              <div className="flex space-x-2 mt-3">
-                                {notification.actions.map((action) => (
-                                  <Button 
-                                    key={action.id}
-                                    variant="outline" 
-                                    size="sm"
-                                    className="text-xs"
-                                  >
-                                    {action.label}
-                                  </Button>
-                                ))}
-                              </div>
-                            )}
+                            {notification.actions &&
+                              notification.actions.length > 0 && (
+                                <div className="flex space-x-2 mt-3">
+                                  {notification.actions.map(action => (
+                                    <Button
+                                      key={action.id}
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-xs"
+                                    >
+                                      {action.label}
+                                    </Button>
+                                  ))}
+                                </div>
+                              )}
                           </div>
                         </div>
-                        
+
                         <div className="flex space-x-1 ml-4">
                           {!notification.is_read && (
-                            <Button 
-                              variant="ghost" 
+                            <Button
+                              variant="ghost"
                               size="sm"
                               onClick={() => markAsRead([notification.id])}
                             >
                               <CheckCircle className="w-4 h-4" />
                             </Button>
                           )}
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
                             onClick={() => dismissNotification(notification.id)}
                           >
@@ -512,25 +555,33 @@ const NotificationCenter: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {preferences.map((pref) => (
-                  <div key={pref.notification_type} className="border rounded-lg p-4">
+                {preferences.map(pref => (
+                  <div
+                    key={pref.notification_type}
+                    className="border rounded-lg p-4"
+                  >
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h4 className="font-medium capitalize">
                           {pref.notification_type.replace(/_/g, ' ')}
                         </h4>
                         <p className="text-sm text-gray-500">
-                          Configure {pref.notification_type.replace(/_/g, ' ')} notifications
+                          Configure {pref.notification_type.replace(/_/g, ' ')}{' '}
+                          notifications
                         </p>
                       </div>
                       <Switch
                         checked={pref.enabled}
-                        onCheckedChange={(checked) => 
-                          updatePreference(pref.notification_type, 'enabled', checked)
+                        onCheckedChange={checked =>
+                          updatePreference(
+                            pref.notification_type,
+                            'enabled',
+                            checked
+                          )
                         }
                       />
                     </div>
-                    
+
                     {pref.enabled && (
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {/* Delivery Method */}
@@ -538,10 +589,14 @@ const NotificationCenter: React.FC = () => {
                           <label className="text-sm font-medium text-gray-700 mb-1 block">
                             Delivery Method
                           </label>
-                          <Select 
+                          <Select
                             value={pref.delivery_method}
-                            onValueChange={(value) => 
-                              updatePreference(pref.notification_type, 'delivery_method', value)
+                            onValueChange={value =>
+                              updatePreference(
+                                pref.notification_type,
+                                'delivery_method',
+                                value
+                              )
                             }
                           >
                             <SelectTrigger>
@@ -569,7 +624,7 @@ const NotificationCenter: React.FC = () => {
                             </SelectContent>
                           </Select>
                         </div>
-                        
+
                         {/* Sound */}
                         <div className="flex items-center space-x-2">
                           <label className="text-sm font-medium text-gray-700">
@@ -577,8 +632,12 @@ const NotificationCenter: React.FC = () => {
                           </label>
                           <Switch
                             checked={pref.sound_enabled}
-                            onCheckedChange={(checked) => 
-                              updatePreference(pref.notification_type, 'sound_enabled', checked)
+                            onCheckedChange={checked =>
+                              updatePreference(
+                                pref.notification_type,
+                                'sound_enabled',
+                                checked
+                              )
                             }
                           />
                           {pref.sound_enabled ? (
@@ -587,17 +646,21 @@ const NotificationCenter: React.FC = () => {
                             <VolumeX className="w-4 h-4 text-gray-400" />
                           )}
                         </div>
-                        
+
                         {/* Advance Minutes (for time-based notifications) */}
                         {pref.notification_type.includes('reminder') && (
                           <div>
                             <label className="text-sm font-medium text-gray-700 mb-1 block">
                               Advance Notice (minutes)
                             </label>
-                            <Select 
+                            <Select
                               value={pref.advance_minutes?.toString() || '15'}
-                              onValueChange={(value) => 
-                                updatePreference(pref.notification_type, 'advance_minutes', parseInt(value))
+                              onValueChange={value =>
+                                updatePreference(
+                                  pref.notification_type,
+                                  'advance_minutes',
+                                  parseInt(value)
+                                )
                               }
                             >
                               <SelectTrigger>

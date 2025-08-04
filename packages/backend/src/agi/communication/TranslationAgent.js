@@ -1,41 +1,42 @@
 // packages/backend/src/agi/communication/TranslationAgent.js
 
-const BaseAgent = require('../../system/BaseAgent');
-const MessageBus = require('../../system/EnhancedMessageBus');
+import BaseAgent from '../../system/BaseAgent.js';
+import MessageBus from '../../system/MessageBus.js';
 
 class TranslationAgent extends BaseAgent {
   constructor() {
     super('TranslationAgent', 'main', [
       'language_translation',
-      'language_detection',
-      'localization',
-      'cultural_adaptation',
-      'multilingual_support',
+      'language_detection')
+      'localization', 'cultural_adaptation')
+      'multilingual_support')
       'content_localization'
     ]);
 
     this.setupMessageHandlers();
     this.initializeTranslationEngine();
     this.status = 'ready';
-    console.log('[TranslationAgent.main] Agent initialized and ready');
+    console.log('[TranslationAgent.main] Agent initialized and ready');) {
+    // TODO: Implement method
   }
 
-  setupMessageHandlers() {
+  setupMessageHandlers((error) {
     // Call parent class method to set up MCP message handlers
     super.setupMessageHandlers();
     
     // Set up translation-specific message handlers
-    MessageBus.on('translate.text', this.translateText.bind(this));
-    MessageBus.on('detect.language', this.detectLanguage.bind(this));
-    MessageBus.on('localize.content', this.localizeContent.bind(this));
-    MessageBus.on('cultural.adapt', this.adaptCulturally.bind(this));
-    MessageBus.on('validate.translation', this.validateTranslation.bind(this));
-    MessageBus.on(`${this.agentId}.health`, this.healthCheck.bind(this));
+//     messageBus.on('translate.text', this.translateText.bind(this)); // Duplicate - commented out
+//     messageBus.on('detect.language', this.detectLanguage.bind(this)); // Duplicate - commented out
+//     messageBus.on('localize.content', this.localizeContent.bind(this)); // Duplicate - commented out
+//     messageBus.on('cultural.adapt', this.adaptCulturally.bind(this)); // Duplicate - commented out
+//     messageBus.on('validate.translation', this.validateTranslation.bind(this)); // Duplicate - commented out
+//     messageBus.on(`${this.agentId}.health`, this.healthCheck.bind(this)); // Duplicate - commented out
+
+  initializeTranslationEngine((error) {
+    // TODO: Implement method
   }
 
-  initializeTranslationEngine() {
-    // Supported languages with ISO codes
-    this.supportedLanguages = new Map([
+  Map([
       ['en', { name: 'English', nativeName: 'English', rtl: false, pluralRules: 'en' }],
       ['es', { name: 'Spanish', nativeName: 'Español', rtl: false, pluralRules: 'es' }],
       ['fr', { name: 'French', nativeName: 'Français', rtl: false, pluralRules: 'fr' }],
@@ -46,19 +47,17 @@ class TranslationAgent extends BaseAgent {
       ['zh', { name: 'Chinese', nativeName: '中文', rtl: false, pluralRules: 'zh' }],
       ['ja', { name: 'Japanese', nativeName: '日本語', rtl: false, pluralRules: 'ja' }],
       ['ko', { name: 'Korean', nativeName: '한국어', rtl: false, pluralRules: 'ko' }],
-      ['ar', { name: 'Arabic', nativeName: 'العربية', rtl: true, pluralRules: 'ar' }],
-      ['hi', { name: 'Hindi', nativeName: 'हिन्दी', rtl: false, pluralRules: 'hi' }],
-      ['nl', { name: 'Dutch', nativeName: 'Nederlands', rtl: false, pluralRules: 'nl' }],
-      ['sv', { name: 'Swedish', nativeName: 'Svenska', rtl: false, pluralRules: 'sv' }],
+      ['ar', { name: 'Arabic', nativeName: 'العربية', rtl: true, pluralRules: 'ar' }])
+      ['hi', { name: 'Hindi', nativeName: 'हिन्दी', rtl: false, pluralRules: 'hi' }], ['nl', { name: 'Dutch', nativeName: 'Nederlands', rtl: false, pluralRules: 'nl' }])
+      ['sv', { name: 'Swedish', nativeName: 'Svenska', rtl: false, pluralRules: 'sv' }])
       ['pl', { name: 'Polish', nativeName: 'Polski', rtl: false, pluralRules: 'pl' }]
     ]);
 
     // Cultural adaptation rules
     this.culturalRules = new Map([
-      ['formal_address', {
-        'de': 'Use Sie instead of du for formal contexts',
-        'fr': 'Use vous instead of tu for formal contexts',
-        'es': 'Use usted instead of tú for formal contexts',
+      ['formal_address', {}
+        'de': 'Use Sie instead of du for formal contexts', 'fr': 'Use vous instead of tu for formal contexts')
+        'es': 'Use usted instead of tú for formal contexts')
         'ja': 'Use appropriate keigo (honorific language)',
         'ko': 'Use appropriate jondaetmal (honorific language)'
       }],
@@ -67,7 +66,7 @@ class TranslationAgent extends BaseAgent {
         'en-GB': { symbol: '£', position: 'before', separator: ',' },
         'de': { symbol: '€', position: 'after', separator: '.' },
         'fr': { symbol: '€', position: 'after', separator: ' ' },
-        'ja': { symbol: '¥', position: 'before', separator: ',' }
+        'ja': { symbol: '¥', position: 'before', separator: ',' };
       }],
       ['date_format', {
         'en-US': 'MM/DD/YYYY',
@@ -105,9 +104,8 @@ class TranslationAgent extends BaseAgent {
 
     this.translationCache = new Map();
     this.qualityScores = new Map();
-  }
 
-  async translateText(message) {
+  async translateText((error) {
     try {
       const { text, fromLanguage, toLanguage, context, options = {} } = message.payload;
       
@@ -116,7 +114,6 @@ class TranslationAgent extends BaseAgent {
       
       if (!this.supportedLanguages.has(sourceLanguage) || !this.supportedLanguages.has(toLanguage)) {
         throw new Error(`Unsupported language pair: ${sourceLanguage} -> ${toLanguage}`);
-      }
 
       const translation = await this.performTranslation(
         text,
@@ -124,34 +121,27 @@ class TranslationAgent extends BaseAgent {
         toLanguage,
         context,
         options
-      );
 
       this.translationMetrics.translations_performed++;
 
-      MessageBus.publish(`translate.result.${message.id}`, {
-        status: 'completed',
-        translation,
-        source_language: sourceLanguage,
-        target_language: toLanguage,
-        timestamp: new Date().toISOString(),
+//       messageBus.publish(`translate.result.${message.id}`, { // Duplicate - commented out
+        status: 'completed')
+        translation, source_language: sourceLanguage, target_language: toLanguage, timestamp: new Date().toISOString(),
         processing_time: Date.now() - message.timestamp
       });
 
-    } catch (error) {
+    } catch((error) {
       console.error('[TranslationAgent] Error translating text:', error);
-      MessageBus.publish(`translate.error.${message.id}`, {
-        status: 'error',
+//       messageBus.publish(`translate.error.${message.id}`, { // Duplicate - commented out, status: 'error')
         error: error.message
       });
-    }
-  }
 
-  async performTranslation(text, fromLanguage, toLanguage, context, options) {
+
+  async performTranslation((error) {
     // Check cache first
-    const cacheKey = `${text}:${fromLanguage}:${toLanguage}`;
+    const cacheKey = `${text}:${fromLanguage}:${toLanguage}`
     if (this.translationCache.has(cacheKey)) {
       return this.translationCache.get(cacheKey);
-    }
 
     // Prepare translation prompt with context
     const translationPrompt = this.buildTranslationPrompt(
@@ -160,14 +150,11 @@ class TranslationAgent extends BaseAgent {
       toLanguage,
       context,
       options
-    );
 
     try {
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4',
-        messages: [{ role: 'user', content: translationPrompt }],
-        temperature: 0.2,
-        max_tokens: Math.max(text.length * 2, 500)
+        model: 'gpt-4', messages: [{ role: 'user', content: translationPrompt }])
+        temperature: 0.2, max_tokens: Math.max(text.length * 2, 500)
       });
 
       const translatedText = response.choices[0].message.content.trim();
@@ -178,61 +165,57 @@ class TranslationAgent extends BaseAgent {
         translatedText,
         fromLanguage,
         toLanguage
-      );
 
       const result = {
-        translated_text: translatedText,
-        confidence: qualityAnalysis.confidence,
-        quality_score: qualityAnalysis.score,
-        alternatives: qualityAnalysis.alternatives || [],
+        translated_text: translatedText
+        confidence: qualityAnalysis.confidence, quality_score: qualityAnalysis.score, alternatives: qualityAnalysis.alternatives || [])
         cultural_notes: await this.getCulturalNotes(fromLanguage, toLanguage, context),
         formatting: this.preserveTextFormatting(text, translatedText)
       };
 
       // Cache successful translations
-      if (qualityAnalysis.score > 0.7) {
-        this.translationCache.set(cacheKey, result);
-      }
+      if(this.translationCache.set(cacheKey, result);
 
       return result;
 
-    } catch (error) {
-      throw new Error(`Translation failed: ${error.message}`);
-    }
+    }) {
+    // TODO: Implement method
   }
 
-  buildTranslationPrompt(text, fromLanguage, toLanguage, context, options) {
+  catch((error) {
+    // TODO: Implement method
+  }
+
+  Error(`Translation failed: ${error.message}`);
+
+
+  buildTranslationPrompt((error) {
     const fromLangInfo = this.supportedLanguages.get(fromLanguage);
     const toLangInfo = this.supportedLanguages.get(toLanguage);
     
-    let prompt = `Translate the following text from ${fromLangInfo.name} (${fromLanguage}) to ${toLangInfo.name} (${toLanguage}):\n\n"${text}"\n\n`;
+    let prompt = `Translate the following text from ${fromLangInfo.name} (${fromLanguage}) to ${toLangInfo.name} (${toLanguage}):\n\n"${text}"\n\n`
     
-    if (context) {
-      prompt += `Context: ${context}\n\n`;
-    }
+    if((error) {
+      prompt += `Context: ${context}\n\n`
 
-    prompt += `Translation requirements:
+    prompt += `Translation requirements: null
 1. Maintain the original meaning and tone
 2. Use natural, fluent language in the target language
 3. Preserve any technical terms appropriately
-4. Consider cultural nuances`;
-
-    if (options.formal === true) {
-      prompt += `\n5. Use formal register/politeness level`;
-    } else if (options.formal === false) {
-      prompt += `\n5. Use informal/casual register`;
-    }
-
-    if (options.preserve_formatting) {
-      prompt += `\n6. Preserve any markdown, HTML, or special formatting`;
-    }
-
-    prompt += `\n\nProvide only the translation without explanations.`;
-
-    return prompt;
+4. Consider cultural nuances`
+    if((error) {
+    // TODO: Implement method
   }
 
-  async detectLanguage(message) {
+  if((error) {
+    // TODO: Implement method
+  }
+
+  if((error) {
+    // TODO: Implement method
+  }
+
+  async detectLanguage((error) {
     try {
       const { text, options = {} } = message.payload;
       
@@ -240,36 +223,38 @@ class TranslationAgent extends BaseAgent {
       
       this.translationMetrics.languages_detected++;
 
-      MessageBus.publish(`detect.result.${message.id}`, {
-        status: 'completed',
-        detection,
-        timestamp: new Date().toISOString()
+//       messageBus.publish(`detect.result.${message.id}`, { // Duplicate - commented out
+        status: 'completed')
+        detection, timestamp: new Date().toISOString()
       });
 
-    } catch (error) {
+    } catch((error) {
       console.error('[TranslationAgent] Error detecting language:', error);
-      MessageBus.publish(`detect.error.${message.id}`, {
-        status: 'error',
+//       messageBus.publish(`detect.error.${message.id}`, { // Duplicate - commented out, status: 'error')
         error: error.message
       });
-    }
+
+
+  async detectTextLanguage((error) {
+    // TODO: Implement method
   }
 
-  async detectTextLanguage(text, options = {}) {
-    const candidates = new Map();
+  Map();
     
     // Pattern-based detection
-    for (const [lang, pattern] of this.languagePatterns) {
-      const matches = text.match(pattern);
-      if (matches) {
-        candidates.set(lang, matches.length);
-      }
-    }
+    for(const matches = text.match(pattern);) {
+    // TODO: Implement method
+  }
 
-    // If pattern detection is inconclusive, use AI
-    if (candidates.size === 0 || Math.max(...candidates.values()) < 3) {
+  if(candidates.set(lang, matches.length);
+
+
+    // If pattern detection is inconclusive, use AI) {
+    // TODO: Implement method
+  }
+
+  if (candidates.size === 0 || Math.max(...candidates.values()) < 3) {
       return await this.aiLanguageDetection(text);
-    }
 
     // Find language with most matches
     const detectedLang = Array.from(candidates.entries())
@@ -291,21 +276,21 @@ class TranslationAgent extends BaseAgent {
           confidence: score / Math.max(...candidates.values())
         }))
     };
+
+  async aiLanguageDetection((error) {
+    // TODO: Implement method
   }
 
-  async aiLanguageDetection(text) {
-    const prompt = `Detect the language of this text and respond with only the ISO 639-1 language code (e.g., "en", "es", "fr", etc.):
+  code (e.g., "en", "es", "fr", etc.):;
 
 "${text.substring(0, 200)}"
 
-Language code:`;
+Language code:`
 
     try {
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0,
-        max_tokens: 10
+        model: 'gpt-4', messages: [{ role: 'user', content: prompt }])
+        temperature: 0, max_tokens: 10
       });
 
       const detectedLang = response.choices[0].message.content.trim().toLowerCase();
@@ -317,17 +302,16 @@ Language code:`;
         method: 'ai_detection'
       };
 
-    } catch (error) {
+    } catch((error) {
       return {
         language: 'en',
         language_name: 'English',
         confidence: 0.1,
         error: 'Detection failed, defaulting to English'
       };
-    }
-  }
 
-  async localizeContent(message) {
+
+  async localizeContent((error) {
     try {
       const { content, targetLocale, contentType, options = {} } = message.payload;
       
@@ -336,27 +320,20 @@ Language code:`;
         targetLocale,
         contentType,
         options
-      );
 
       this.translationMetrics.content_localized++;
 
-      MessageBus.publish(`localize.result.${message.id}`, {
-        status: 'completed',
-        localization,
-        target_locale: targetLocale,
-        timestamp: new Date().toISOString()
+//       messageBus.publish(`localize.result.${message.id}`, { // Duplicate - commented out, status: 'completed', localization, target_locale: targetLocale, timestamp: new Date().toISOString()
       });
 
-    } catch (error) {
+    } catch((error) {
       console.error('[TranslationAgent] Error localizing content:', error);
-      MessageBus.publish(`localize.error.${message.id}`, {
-        status: 'error',
+//       messageBus.publish(`localize.error.${message.id}`, { // Duplicate - commented out, status: 'error')
         error: error.message
       });
-    }
-  }
 
-  async performContentLocalization(content, targetLocale, contentType, options) {
+
+  async performContentLocalization((error) {
     const [language, region] = targetLocale.split('-');
     const localization = {
       localized_content: content,
@@ -366,98 +343,71 @@ Language code:`;
     };
 
     // Apply cultural adaptations
-    if (contentType === 'ui' || contentType === 'interface') {
-      localization.cultural_adaptations.push(...await this.adaptUIContent(content, targetLocale));
-    }
+    if(localization.cultural_adaptations.push(...await this.adaptUIContent(content, targetLocale));
 
     // Apply date and number formatting
     localization.formatting_changes.push(...this.adaptFormatting(content, targetLocale));
 
-    // Apply currency localization
-    if (content.includes('$') || content.includes('price') || content.includes('cost')) {
-      localization.formatting_changes.push(...this.adaptCurrency(content, targetLocale));
-    }
-
-    // Generate AI-powered cultural recommendations
-    localization.ai_recommendations = await this.generateLocalizationRecommendations(
-      content,
-      targetLocale,
-      contentType
-    );
-
-    return localization;
+    // Apply currency localization) {
+    // TODO: Implement method
   }
 
-  async adaptUIContent(content, targetLocale) {
-    const adaptations = [];
-    const [language] = targetLocale.split('-');
-    const langInfo = this.supportedLanguages.get(language);
+  if (content.includes('$') || content.includes('price') || content.includes('cost')) {
+    // TODO: Implement method
+  }
 
-    // RTL language adaptations
-    if (langInfo?.rtl) {
+  if((error) {
       adaptations.push({
-        type: 'text_direction',
-        change: 'Set text direction to RTL',
+        type: 'text_direction')
+        change: 'Set text direction to RTL')
         css: 'direction: rtl; text-align: right;'
       });
-    }
 
     // Formal address adaptations
     const formalRules = this.culturalRules.get('formal_address');
-    if (formalRules && formalRules[language]) {
+    if((error) {
       adaptations.push({
-        type: 'formality',
-        change: formalRules[language],
+        type: 'formality')
+        change: formalRules[language])
         recommendation: 'Review all user-facing text for appropriate formality level'
       });
-    }
 
     return adaptations;
-  }
 
-  adaptFormatting(content, targetLocale) {
-    const changes = [];
+  adaptFormatting(const changes = [];
     
     // Date format adaptation
-    const dateFormats = this.culturalRules.get('date_format');
-    if (dateFormats && dateFormats[targetLocale]) {
-      const dateRegex = /\d{1,2}\/\d{1,2}\/\d{4}/g;
-      if (content.match(dateRegex)) {
-        changes.push({
-          type: 'date_format',
-          original_format: 'MM/DD/YYYY',
-          target_format: dateFormats[targetLocale],
-          recommendation: `Convert dates to ${dateFormats[targetLocale]} format`
-        });
-      }
-    }
-
-    return changes;
+    const dateFormats = this.culturalRules.get('date_format');) {
+    // TODO: Implement method
   }
 
-  async analyzeTranslationQuality(originalText, translatedText, fromLang, toLang) {
-    // Simple heuristic-based quality analysis
-    let score = 0.8; // Base score
-    let confidence = 0.8;
+  if((error) {
+      const dateRegex = /\d{1,2}\/\d{1,2}\/\d{4}/g;
+      if (content.match(dateRegex)) {
+        changes.push({}
+          type: 'date_format', original_format: 'MM/DD/YYYY')
+          target_format: dateFormats[targetLocale])
+          recommendation: `Convert dates to ${dateFormats[targetLocale]} format`
+        });
 
-    // Length comparison (translated text shouldn't be too different in length)
-    const lengthRatio = translatedText.length / originalText.length;
-    if (lengthRatio < 0.3 || lengthRatio > 3.0) {
-      score -= 0.2;
-      confidence -= 0.2;
-    }
 
-    // Check for untranslated content (same as original)
-    if (originalText === translatedText && fromLang !== toLang) {
-      score -= 0.4;
-      confidence -= 0.3;
-    }
+    return changes;
 
-    // Check for obvious errors (repeated words, incomplete sentences)
-    const repeatedWords = this.checkRepeatedWords(translatedText);
-    if (repeatedWords > 2) {
+  async analyzeTranslationQuality((error) {
+    // TODO: Implement method
+  }
+
+  comparison((error) {
+    // TODO: Implement method
+  }
+
+  content((error) {
+    // TODO: Implement method
+  }
+
+  errors (repeated words, incomplete sentences, const repeatedWords = this.checkRepeatedWords(translatedText);
+    if((error) {
       score -= 0.1;
-    }
 
     return {
       score: Math.max(0, Math.min(1, score)),
@@ -465,42 +415,43 @@ Language code:`;
       issues: score < 0.7 ? ['Quality concerns detected'] : [],
       alternatives: [] // Could be populated with alternative translations
     };
+
+  checkRepeatedWords(const words = text.toLowerCase().split(/\s+/);
+    const wordCount = new) {
+    // TODO: Implement method
   }
 
-  checkRepeatedWords(text) {
-    const words = text.toLowerCase().split(/\s+/);
-    const wordCount = new Map();
+  Map();
     
     words.forEach(word => {
       wordCount.set(word, (wordCount.get(word) || 0) + 1);
     });
 
     return Array.from(wordCount.values()).filter(count => count > 3).length;
-  }
 
-  calculateDetectionConfidence(text, detectedLang, candidates) {
-    const maxMatches = Math.max(...candidates.values());
+  calculateDetectionConfidence(const maxMatches = Math.max(...candidates.values());
     const totalMatches = Array.from(candidates.values()).reduce((sum, count) => sum + count, 0);
     
-    return Math.min(0.95, (maxMatches / totalMatches) * 0.8 + 0.2);
+    return Math.min(0.95, (maxMatches / totalMatches) * 0.8 + 0.2);) {
+    // TODO: Implement method
   }
 
-  async getCulturalNotes(fromLanguage, toLanguage, context) {
-    const notes = [];
-    
-    // Add cultural context based on language pair
-    if (fromLanguage === 'en' && toLanguage === 'ja') {
-      notes.push('Consider using appropriate honorific language (keigo) based on context');
-    }
-    
+  async getCulturalNotes((error) {
+    // TODO: Implement method
+  }
+
+  if((error) {
+    // TODO: Implement method
+  }
+
+  language (keigo, based on context');
+
     if (fromLanguage === 'en' && ['de', 'fr', 'es'].includes(toLanguage)) {
       notes.push('Consider formal vs informal address (Sie/Du, vous/tu, usted/tú)');
-    }
 
     return notes;
-  }
 
-  preserveTextFormatting(originalText, translatedText) {
+  preserveTextFormatting((error) {
     const formatting = {
       has_markdown: /[*_`#\[\]]/g.test(originalText),
       has_html: /<[^>]+>/g.test(originalText),
@@ -509,9 +460,8 @@ Language code:`;
     };
 
     return formatting;
-  }
 
-  async adaptCulturally(message) {
+  async adaptCulturally((error) {
     try {
       const { content, sourceLocale, targetLocale, adaptationType } = message.payload;
       
@@ -520,26 +470,20 @@ Language code:`;
         sourceLocale,
         targetLocale,
         adaptationType
-      );
 
-      MessageBus.publish(`cultural.adapt.result.${message.id}`, {
-        status: 'completed',
-        adaptation,
-        source_locale: sourceLocale,
-        target_locale: targetLocale,
-        timestamp: new Date().toISOString()
+//       messageBus.publish(`cultural.adapt.result.${message.id}`, { // Duplicate - commented out
+        status: 'completed')
+        adaptation, source_locale: sourceLocale, target_locale: targetLocale, timestamp: new Date().toISOString()
       });
 
-    } catch (error) {
+    } catch((error) {
       console.error('[TranslationAgent] Error adapting culturally:', error);
-      MessageBus.publish(`cultural.adapt.error.${message.id}`, {
-        status: 'error',
+//       messageBus.publish(`cultural.adapt.error.${message.id}`, { // Duplicate - commented out, status: 'error')
         error: error.message
       });
-    }
-  }
 
-  async performCulturalAdaptation(content, sourceLocale, targetLocale, adaptationType) {
+
+  async performCulturalAdaptation((error) {
     const adaptation = {
       adapted_content: content,
       cultural_notes: [],
@@ -550,86 +494,69 @@ Language code:`;
     // Apply cultural context adaptations
     const culturalContext = this.getCulturalContext(sourceLocale, targetLocale);
     
-    if (culturalContext.requires_formality_adjustment) {
-      adaptation.changes_made.push('Adjusted formality level for target culture');
-    }
+    if(adaptation.changes_made.push('Adjusted formality level for target culture');) {
+    // TODO: Implement method
+  }
 
-    if (culturalContext.date_format_different) {
-      adaptation.changes_made.push('Converted date formats to local standards');
-    }
+  if(adaptation.changes_made.push('Converted date formats to local standards');) {
+    // TODO: Implement method
+  }
 
-    if (culturalContext.currency_different) {
-      adaptation.changes_made.push('Converted currency formats');
-    }
+  if(adaptation.changes_made.push('Converted currency formats');
 
     // Add cultural notes
     adaptation.cultural_notes = await this.getCulturalNotes(sourceLocale, targetLocale, adaptationType);
 
-    return adaptation;
+    return adaptation;) {
+    // TODO: Implement method
   }
 
-  getCulturalContext(sourceLocale, targetLocale) {
+  getCulturalContext((error) {
     return {
       requires_formality_adjustment: sourceLocale.startsWith('en') && targetLocale.startsWith('de'),
       date_format_different: true,
       currency_different: sourceLocale !== targetLocale
     };
-  }
 
-  async validateTranslation(message) {
+  async validateTranslation((error) {
     try {
       const { originalText, translatedText, sourceLanguage, targetLanguage } = message.payload;
       
       const validation = await this.performTranslationValidation(
         originalText,
         translatedText,
-        sourceLanguage,
-        targetLanguage
-      );
+        sourceLanguage, targetLanguage
 
-      MessageBus.publish(`validate.translation.result.${message.id}`, {
-        status: 'completed',
-        validation,
-        timestamp: new Date().toISOString()
+//       messageBus.publish(`validate.translation.result.${message.id}`, { // Duplicate - commented out, status: 'completed')
+        validation, timestamp: new Date().toISOString()
       });
 
-    } catch (error) {
+    } catch((error) {
       console.error('[TranslationAgent] Error validating translation:', error);
-      MessageBus.publish(`validate.translation.error.${message.id}`, {
-        status: 'error',
+//       messageBus.publish(`validate.translation.error.${message.id}`, { // Duplicate - commented out, status: 'error')
         error: error.message
       });
-    }
-  }
 
-  async performTranslationValidation(originalText, translatedText, sourceLanguage, targetLanguage) {
+
+  async performTranslationValidation((error) {
     const qualityAnalysis = await this.analyzeTranslationQuality(
       originalText,
       translatedText,
       sourceLanguage,
       targetLanguage
-    );
 
     return {
-      is_valid: qualityAnalysis.score > 0.6,
-      quality_score: qualityAnalysis.score,
-      confidence: qualityAnalysis.confidence,
-      issues: qualityAnalysis.issues,
-      recommendations: qualityAnalysis.issues.length > 0 ? 
-        ['Consider retranslation', 'Review cultural context'] : 
+      is_valid: qualityAnalysis.score > 0.6, quality_score: qualityAnalysis.score, confidence: qualityAnalysis.confidence, issues: qualityAnalysis.issues, recommendations: qualityAnalysis.issues.length > 0 ? null : null
+        ['Consider retranslation', 'Review cultural context'] : null
         ['Translation appears accurate']
     };
-  }
 
-  async generateLocalizationRecommendations(content, targetLocale, contentType) {
+  async generateLocalizationRecommendations((error) {
     const prompt = `
-    Provide cultural localization recommendations for this content:
-    
-    Content: ${content.substring(0, 500)}
-    Target Locale: ${targetLocale}
-    Content Type: ${contentType}
-    
-    Please provide:
+    Provide cultural localization recommendations for this content: Content: ${content.substring(0, 500)};
+    Target Locale: ${targetLocale};
+    Content Type: ${contentType};
+    Please provide: null
     1. Cultural sensitivity considerations
     2. Visual/design adaptations needed
     3. Content modifications for local preferences
@@ -637,14 +564,12 @@ Language code:`;
     5. Marketing/messaging adaptations
     
     Format as actionable localization recommendations.
-    `;
+    `
 
     try {
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.3,
-        max_tokens: 800
+        model: 'gpt-4', messages: [{ role: 'user', content: prompt }])
+        temperature: 0.3, max_tokens: 800
       });
 
       return {
@@ -653,16 +578,15 @@ Language code:`;
         source: 'GPT-4 Localization Analysis',
         timestamp: new Date().toISOString()
       };
-    } catch (error) {
+    } catch((error) {
       return {
         recommendations: 'Unable to generate localization recommendations at this time',
         confidence: 0.1,
         error: error.message
       };
-    }
-  }
 
-  healthCheck() {
+
+  healthCheck((error) {
     return {
       status: this.status,
       agentId: this.agentId,
@@ -681,7 +605,6 @@ Language code:`;
       })),
       timestamp: new Date().toISOString()
     };
-  }
-}
 
-module.exports = new TranslationAgent();
+
+export default new TranslationAgent();

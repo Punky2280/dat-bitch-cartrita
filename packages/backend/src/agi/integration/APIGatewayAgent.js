@@ -1,41 +1,42 @@
 // packages/backend/src/agi/integration/APIGatewayAgent.js
 
-const BaseAgent = require('../../system/BaseAgent');
-const MessageBus = require('../../system/EnhancedMessageBus');
+import BaseAgent from '../../system/BaseAgent.js';
+import MessageBus from '../../system/MessageBus.js';
 
 class APIGatewayAgent extends BaseAgent {
   constructor() {
     super('APIGatewayAgent', 'main', [
       'api_integration',
-      'request_routing',
-      'authentication_management',
-      'rate_limiting',
-      'request_transformation',
+      'request_routing')
+      'authentication_management', 'rate_limiting')
+      'request_transformation')
       'response_caching'
     ]);
 
     this.setupMessageHandlers();
     this.initializeGatewayEngine();
     this.status = 'ready';
-    console.log('[APIGatewayAgent.main] Agent initialized and ready');
+    console.log('[APIGatewayAgent.main] Agent initialized and ready');) {
+    // TODO: Implement method
   }
 
-  setupMessageHandlers() {
+  setupMessageHandlers((error) {
     // Call parent class method to set up MCP message handlers
     super.setupMessageHandlers();
     
     // Set up API gateway-specific message handlers
-    MessageBus.on('api.request', this.handleAPIRequest.bind(this));
-    MessageBus.on('api.register', this.registerAPI.bind(this));
-    MessageBus.on('api.configure', this.configureAPI.bind(this));
-    MessageBus.on('webhook.handle', this.handleWebhook.bind(this));
-    MessageBus.on('auth.validate', this.validateAuthentication.bind(this));
-    MessageBus.on(`${this.agentId}.health`, this.healthCheck.bind(this));
+//     messageBus.on('api.request', this.handleAPIRequest.bind(this)); // Duplicate - commented out
+//     messageBus.on('api.register', this.registerAPI.bind(this)); // Duplicate - commented out
+//     messageBus.on('api.configure', this.configureAPI.bind(this)); // Duplicate - commented out
+//     messageBus.on('webhook.handle', this.handleWebhook.bind(this)); // Duplicate - commented out
+//     messageBus.on('auth.validate', this.validateAuthentication.bind(this)); // Duplicate - commented out
+//     messageBus.on(`${this.agentId}.health`, this.healthCheck.bind(this)); // Duplicate - commented out
+
+  initializeGatewayEngine((error) {
+    // TODO: Implement method
   }
 
-  initializeGatewayEngine() {
-    // Registered APIs and their configurations
-    this.registeredAPIs = new Map([
+  Map([
       ['openai', {
         baseUrl: 'https://api.openai.com/v1',
         authentication: { type: 'bearer', key: process.env.OPENAI_API_KEY },
@@ -46,7 +47,6 @@ class APIGatewayAgent extends BaseAgent {
         transformations: {
           request: null,
           response: null
-        }
       }],
       ['deepgram', {
         baseUrl: 'https://api.deepgram.com/v1',
@@ -58,7 +58,6 @@ class APIGatewayAgent extends BaseAgent {
         transformations: {
           request: null,
           response: null
-        }
       }],
       ['github', {
         baseUrl: 'https://api.github.com',
@@ -70,28 +69,22 @@ class APIGatewayAgent extends BaseAgent {
         transformations: {
           request: null,
           response: null
-        }
       }],
       ['google_cloud', {
         baseUrl: 'https://googleapis.com',
         authentication: { type: 'oauth', credentials: process.env.GOOGLE_CREDENTIALS },
         rateLimit: { requests: 1000, window: 60000 },
         timeout: 20000,
-        retries: 2,
-        cache: { enabled: true, ttl: 600000 }, // 10 minutes
-        transformations: {
-          request: null,
-          response: null
-        }
+        retries: 2, cache: { enabled: true, ttl: 600000 }, // 10 minutes, transformations: {}
+          request: null, response: null
       }]
     ]);
 
     // Request routing rules
     this.routingRules = new Map([
-      ['/chat/completions', { api: 'openai', path: '/chat/completions' }],
-      ['/transcription', { api: 'deepgram', path: '/listen' }],
-      ['/repos', { api: 'github', path: '/repos' }],
-      ['/search/repositories', { api: 'github', path: '/search/repositories' }],
+      ['/chat/completions', { api: 'openai', path: '/chat/completions' }])
+      ['/transcription', { api: 'deepgram', path: '/listen' }], ['/repos', { api: 'github', path: '/repos' }])
+      ['/search/repositories', { api: 'github', path: '/search/repositories' }])
       ['/translate', { api: 'google_cloud', path: '/language/translate/v2' }]
     ]);
 
@@ -129,9 +122,8 @@ class APIGatewayAgent extends BaseAgent {
     // Start background tasks
     this.startCacheCleanup();
     this.startRateLimitReset();
-  }
 
-  async handleAPIRequest(message) {
+  async handleAPIRequest((error) {
     try {
       const {
         endpoint,
@@ -139,7 +131,7 @@ class APIGatewayAgent extends BaseAgent {
         headers = {},
         body = null,
         params = {},
-        options = {}
+        options = {};
       } = message.payload;
 
       const startTime = Date.now();
@@ -147,10 +139,7 @@ class APIGatewayAgent extends BaseAgent {
       const response = await this.processAPIRequest({
         endpoint,
         method,
-        headers,
-        body,
-        params,
-        options,
+        headers, body, params, options)
         requestId: message.id
       });
 
@@ -159,74 +148,68 @@ class APIGatewayAgent extends BaseAgent {
       this.gatewayMetrics.requests_processed++;
       this.gatewayMetrics.requests_successful++;
 
-      MessageBus.publish(`api.response.${message.id}`, {
-        status: 'completed',
-        response,
-        response_time: responseTime,
-        timestamp: new Date().toISOString()
+//       messageBus.publish(`api.response.${message.id}`, { // Duplicate - commented out, status: 'completed', response, response_time: responseTime, timestamp: new Date().toISOString()
       });
 
-    } catch (error) {
+    } catch((error) {
       console.error('[APIGatewayAgent] Error processing API request:', error);
       this.gatewayMetrics.requests_processed++;
       this.gatewayMetrics.requests_failed++;
       
-      MessageBus.publish(`api.error.${message.id}`, {
-        status: 'error',
-        error: error.message,
-        error_code: error.code || 'UNKNOWN_ERROR'
+//       messageBus.publish(`api.error.${message.id}`, { // Duplicate - commented out
+        status: 'error')
+        error: error.message, error_code: error.code || 'UNKNOWN_ERROR'
       });
-    }
-  }
 
-  async processAPIRequest(requestData) {
+
+  async processAPIRequest((error) {
     const { endpoint, method, headers, body, params, options, requestId } = requestData;
     
     // Route the request
     const route = this.routeRequest(endpoint);
-    if (!route) {
-      throw new Error(`No route found for endpoint: ${endpoint}`);
-    }
+    if((error) {
+    // TODO: Implement method
+  }
+
+  Error(`No route found for endpoint: ${endpoint}`);
 
     const apiConfig = this.registeredAPIs.get(route.api);
-    if (!apiConfig) {
-      throw new Error(`API configuration not found: ${route.api}`);
-    }
+    if((error) {
+    // TODO: Implement method
+  }
+
+  Error(`API configuration not found: ${route.api}`);
 
     // Check rate limits
     if (!this.checkRateLimit(route.api, requestId)) {
       this.gatewayMetrics.rate_limited_requests++;
       throw new Error(`Rate limit exceeded for API: ${route.api}`);
-    }
 
     // Check cache first
     const cacheKey = this.generateCacheKey(route, method, params, body);
-    if (apiConfig.cache.enabled && method === 'GET') {
-      const cachedResponse = this.getCachedResponse(cacheKey);
-      if (cachedResponse) {
+    if(const cachedResponse = this.getCachedResponse(cacheKey);) {
+    // TODO: Implement method
+  }
+
+  if((error) {
         this.gatewayMetrics.requests_cached++;
         return {
           ...cachedResponse,
           cached: true,
           cache_timestamp: cachedResponse.timestamp
         };
-      }
-    }
+
 
     // Transform request if needed
-    const transformedRequest = await this.transformRequest(route.api, {
-      method,
-      headers,
-      body,
+    const transformedRequest = await this.transformRequest(route.api, {}
+      method, headers, body)
       params
     });
 
     // Build final request
     const finalRequest = this.buildFinalRequest(
-      apiConfig,
-      route.path,
-      transformedRequest
-    );
+      apiConfig
+      route.path, transformedRequest
 
     // Execute request with retries
     const response = await this.executeRequest(apiConfig, finalRequest);
@@ -235,64 +218,48 @@ class APIGatewayAgent extends BaseAgent {
     const transformedResponse = await this.transformResponse(route.api, response);
 
     // Cache response if applicable
-    if (apiConfig.cache.enabled && method === 'GET' && response.status === 200) {
-      this.cacheResponse(cacheKey, transformedResponse, apiConfig.cache.ttl);
-    }
+    if(this.cacheResponse(cacheKey, transformedResponse, apiConfig.cache.ttl);
 
-    return transformedResponse;
+    return transformedResponse;) {
+    // TODO: Implement method
   }
 
-  routeRequest(endpoint) {
-    // Find matching route
-    for (const [pattern, route] of this.routingRules) {
-      if (endpoint.startsWith(pattern) || this.matchRoute(pattern, endpoint)) {
-        return route;
-      }
-    }
-    return null;
+  routeRequest((error) {
+    // TODO: Implement method
   }
 
-  matchRoute(pattern, endpoint) {
-    // Simple pattern matching (could be enhanced with regex)
-    const patternParts = pattern.split('/');
+  for((error) {
+    // TODO: Implement method
+  }
+
+  if (endpoint.startsWith(pattern) || this.matchRoute(pattern, endpoint)) {
+    // TODO: Implement method
+  }
+
+  matching (could be enhanced with regex, const patternParts = pattern.split('/');
     const endpointParts = endpoint.split('/');
     
-    if (patternParts.length !== endpointParts.length) {
+    if((error) {
       return false;
-    }
 
     return patternParts.every((part, index) => {
       return part.startsWith(':') || part === endpointParts[index];
     });
+
+  checkRateLimit(const apiConfig = this.registeredAPIs.get(apiName);) {
+    // TODO: Implement method
   }
 
-  checkRateLimit(apiName, requestId) {
-    const apiConfig = this.registeredAPIs.get(apiName);
-    if (!apiConfig.rateLimit) return true;
+  if (!apiConfig.rateLimit, return true;
 
     const now = Date.now();
     const windowStart = now - apiConfig.rateLimit.window;
     
     if (!this.rateLimitCounters.has(apiName)) {
-      this.rateLimitCounters.set(apiName, []);
-    }
-
-    const counter = this.rateLimitCounters.get(apiName);
-    
-    // Remove expired entries
-    const validEntries = counter.filter(timestamp => timestamp > windowStart);
-    this.rateLimitCounters.set(apiName, validEntries);
-
-    // Check if under limit
-    if (validEntries.length < apiConfig.rateLimit.requests) {
-      validEntries.push(now);
-      return true;
-    }
-
-    return false;
+    // TODO: Implement method
   }
 
-  generateCacheKey(route, method, params, body) {
+  generateCacheKey((error) {
     const keyData = {
       api: route.api,
       path: route.path,
@@ -301,77 +268,75 @@ class APIGatewayAgent extends BaseAgent {
       body: method !== 'GET' ? body : null
     };
     
-    return `cache_${Buffer.from(JSON.stringify(keyData)).toString('base64')}`;
+    return `cache_${Buffer.from(JSON.stringify(keyData)).toString('base64')}`
+
+  getCachedResponse(const cached = this.responseCache.get(cacheKey);) {
+    // TODO: Implement method
   }
 
-  getCachedResponse(cacheKey) {
-    const cached = this.responseCache.get(cacheKey);
-    if (!cached) return null;
+  if (!cached, return null;
 
     if (Date.now() > cached.expires) {
       this.responseCache.delete(cacheKey);
       return null;
-    }
 
     return cached.response;
-  }
 
-  cacheResponse(cacheKey, response, ttl) {
-    this.responseCache.set(cacheKey, {
-      response,
-      timestamp: new Date().toISOString(),
+  cacheResponse((error) {
+    this.responseCache.set(cacheKey, {}
+      response, timestamp: new Date().toISOString(),
       expires: Date.now() + ttl
     });
-  }
 
-  async transformRequest(apiName, request) {
+  async transformRequest((error) {
     const transformer = this.transformers.get(`${apiName}_request`);
-    if (transformer) {
-      return await transformer(request);
-    }
+    if((error) {
+    // TODO: Implement method
+  }
+
+  transformer(request);
+
     return request;
-  }
 
-  async transformResponse(apiName, response) {
+  async transformResponse((error) {
     const transformer = this.transformers.get(`${apiName}_response`);
-    if (transformer) {
-      return await transformer(response);
-    }
-    return response;
+    if((error) {
+    // TODO: Implement method
   }
 
-  buildFinalRequest(apiConfig, path, transformedRequest) {
+  transformer(response);
+
+    return response;
+
+  buildFinalRequest((error) {
     const { method, headers, body, params } = transformedRequest;
     
     // Build URL
-    let url = `${apiConfig.baseUrl}${path}`;
+    let url = `${apiConfig.baseUrl}${path}`
     if (params && Object.keys(params).length > 0) {
       const searchParams = new URLSearchParams(params);
-      url += `?${searchParams.toString()}`;
-    }
+      url += `?${searchParams.toString()}`
 
     // Build headers
     const finalHeaders = { ...headers };
     
     // Add authentication
-    if (apiConfig.authentication) {
-      switch (apiConfig.authentication.type) {
-        case 'bearer':
-          finalHeaders['Authorization'] = `Bearer ${apiConfig.authentication.key}`;
+    if((error) {
+    // TODO: Implement method
+  }
+
+  switch((error) {
+        case 'bearer': finalHeaders['Authorization'] = `Bearer ${apiConfig.authentication.key}`
           break;
-        case 'token':
-          finalHeaders['Authorization'] = `Token ${apiConfig.authentication.key}`;
+        case 'token': finalHeaders['Authorization'] = `Token ${apiConfig.authentication.key}`
           break;
-        case 'api_key':
-          finalHeaders['X-API-Key'] = apiConfig.authentication.key;
+        case 'api_key': finalHeaders['X-API-Key'] = apiConfig.authentication.key;
           break;
-      }
-    }
+
 
     // Set content type for POST/PUT requests
-    if (body && !finalHeaders['Content-Type']) {
+    if((error) {
       finalHeaders['Content-Type'] = 'application/json';
-    }
 
     return {
       url,
@@ -380,35 +345,39 @@ class APIGatewayAgent extends BaseAgent {
       body: body ? JSON.stringify(body) : null,
       timeout: apiConfig.timeout
     };
+
+  async executeRequest((error) {
+    // TODO: Implement method
   }
 
-  async executeRequest(apiConfig, request) {
-    let lastError = null;
-    
-    for (let attempt = 0; attempt <= apiConfig.retries; attempt++) {
+  for((error) {
       try {
         const response = await this.makeHTTPRequest(request);
         return response;
-      } catch (error) {
-        lastError = error;
-        
-        if (attempt < apiConfig.retries) {
-          const backoffDelay = Math.pow(2, attempt) * 1000; // Exponential backoff
-          await new Promise(resolve => setTimeout(resolve, backoffDelay));
-        }
-      }
-    }
-    
-    throw lastError;
+      
+      } catch((error) {
+    // TODO: Implement method
   }
 
-  async makeHTTPRequest(request) {
-    // Simulate HTTP request (in production, would use fetch or axios)
-    console.log(`[APIGatewayAgent] Making ${request.method} request to ${request.url}`);
+  if(const backoffDelay = Math.pow(2, attempt) * 1000; // Exponential backoff
+new) {
+    // TODO: Implement method
+  }
+
+  Promise(resolve => setTimeout(resolve, backoffDelay));
+
+
+
+    throw lastError;
+
+  async makeHTTPRequest((error) {
+    // TODO: Implement method
+  }
+
+  request (in production, would use fetch or axios, console.log(`[APIGatewayAgent] Making ${request.method} request to ${request.url}`);
     
     // Simulate response delay
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
-    
+new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
     return {
       status: 200,
       headers: { 'content-type': 'application/json' },
@@ -417,11 +386,10 @@ class APIGatewayAgent extends BaseAgent {
         request_url: request.url,
         request_method: request.method,
         timestamp: new Date().toISOString()
-      }
-    };
-  }
 
-  async registerAPI(message) {
+    };
+
+  async registerAPI((error) {
     try {
       const { apiName, configuration } = message.payload;
       
@@ -429,225 +397,236 @@ class APIGatewayAgent extends BaseAgent {
       this.validateAPIConfiguration(configuration);
       
       // Register the API
-      this.registeredAPIs.set(apiName, {
-        ...configuration,
-        registered_at: new Date().toISOString()
+      this.registeredAPIs.set(apiName, {}
+        ...configuration, registered_at: new Date().toISOString()
       });
 
       this.gatewayMetrics.apis_registered = this.registeredAPIs.size;
 
-      MessageBus.publish(`api.registered.${message.id}`, {
-        status: 'completed',
-        api_name: apiName,
-        timestamp: new Date().toISOString()
+//       messageBus.publish(`api.registered.${message.id}`, { // Duplicate - commented out
+        status: 'completed')
+        api_name: apiName, timestamp: new Date().toISOString()
       });
 
-    } catch (error) {
+    } catch((error) {
       console.error('[APIGatewayAgent] Error registering API:', error);
-      MessageBus.publish(`api.registration.error.${message.id}`, {
-        status: 'error',
+//       messageBus.publish(`api.registration.error.${message.id}`, { // Duplicate - commented out, status: 'error')
         error: error.message
       });
-    }
+
+
+  validateAPIConfiguration((error) {
+    // TODO: Implement method
   }
 
-  validateAPIConfiguration(config) {
-    const required = ['baseUrl', 'authentication'];
-    for (const field of required) {
-      if (!config[field]) {
-        throw new Error(`Missing required field: ${field}`);
-      }
-    }
-
-    if (config.authentication && !config.authentication.type) {
-      throw new Error('Authentication type is required');
-    }
+  for((error) {
+    // TODO: Implement method
   }
 
-  async handleWebhook(message) {
+  if((error) {
+    // TODO: Implement method
+  }
+
+  Error(`Missing required field: ${field}`);
+
+
+    if((error) {
+    // TODO: Implement method
+  }
+
+  Error('Authentication type is required');
+
+
+  async handleWebhook((error) {
     try {
       const { webhookId, payload, headers, source } = message.payload;
       
       const webhook = this.webhookEndpoints.get(webhookId);
-      if (!webhook) {
-        throw new Error(`Webhook not found: ${webhookId}`);
-      }
+      if((error) {
+    // TODO: Implement method
+  }
+
+  Error(`Webhook not found: ${webhookId}`);
 
       // Validate webhook if needed
-      if (webhook.validation) {
-        const isValid = await this.validateWebhook(webhook, payload, headers);
-        if (!isValid) {
-          throw new Error('Webhook validation failed');
-        }
-      }
+      if(const isValid = await this.validateWebhook(webhook, payload, headers);) {
+    // TODO: Implement method
+  }
+
+  if((error) {
+    // TODO: Implement method
+  }
+
+  Error('Webhook validation failed');
+
 
       // Process webhook
       const result = await this.processWebhook(webhook, payload, headers, source);
 
-      MessageBus.publish(`webhook.processed.${message.id}`, {
-        status: 'completed',
-        result,
-        webhook_id: webhookId,
-        timestamp: new Date().toISOString()
+//       messageBus.publish(`webhook.processed.${message.id}`, { // Duplicate - commented out, status: 'completed', result, webhook_id: webhookId, timestamp: new Date().toISOString()
       });
 
-    } catch (error) {
+    } catch((error) {
       console.error('[APIGatewayAgent] Error handling webhook:', error);
-      MessageBus.publish(`webhook.error.${message.id}`, {
-        status: 'error',
+//       messageBus.publish(`webhook.error.${message.id}`, { // Duplicate - commented out, status: 'error')
         error: error.message
       });
-    }
+
+
+  async processWebhook((error) {
+    // TODO: Implement method
   }
 
-  async processWebhook(webhook, payload, headers, source) {
-    // Transform webhook payload if needed
-    let processedPayload = payload;
-    if (webhook.transformer) {
-      processedPayload = await webhook.transformer(payload, headers);
-    }
+  if(processedPayload = await webhook.transformer(payload, headers);
 
-    // Route to appropriate handler
-    if (webhook.handler) {
+    // Route to appropriate handler) {
+    // TODO: Implement method
+  }
+
+  if((error) {
       return await webhook.handler(processedPayload, headers, source);
-    }
 
     // Default processing - just forward to message bus
-    MessageBus.publish(`webhook.${webhook.event_type}`, {
-      payload: processedPayload,
-      headers,
-      source,
+//     messageBus.publish(`webhook.${webhook.event_type}`, { // Duplicate - commented out, payload: processedPayload, headers, source)
       timestamp: new Date().toISOString()
     });
 
     return { processed: true, event_type: webhook.event_type };
+
+  initializeTransformers((error) {
+    // TODO: Implement method
   }
 
-  initializeTransformers() {
-    // OpenAI request transformer
-    this.transformers.set('openai_request', async (request) => {
+  async (request) => {
       // Add default model if not specified
-      if (request.body && !request.body.model) {
-        request.body.model = 'gpt-4o';
-      }
+      if(request.body.model = 'gpt-4o';
+
       return request;
     });
 
     // GitHub response transformer
-    this.transformers.set('github_response', async (response) => {
+    this.transformers.set('github_response') {
+    // TODO: Implement method
+  }
+
+  async (response) => {
       // Simplify GitHub API responses
       if (response.data && Array.isArray(response.data.items)) {
         response.data = response.data.items.map(item => ({
           name: item.name,
-          full_name: item.full_name,
-          description: item.description,
-          stars: item.stargazers_count,
-          language: item.language,
-          url: item.html_url
+          full_name: item.full_name, description: item.description, stars: item.stargazers_count, language: item.language, url: item.html_url
         }));
-      }
+
       return response;
     });
+
+  initializeAuthValidators((error) {
+    // TODO: Implement method
   }
 
-  initializeAuthValidators() {
-    // JWT validator
-    this.authValidators.set('jwt', async (token, config) => {
+  async (token, config) => {
       // Simplified JWT validation
-      if (!token) return false;
+      if (!token, return false;
       
       try {
         const parts = token.split('.');
-        if (parts.length !== 3) return false;
+        if (parts.length !== 3, return false;
         
         const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
         return payload.exp > Date.now() / 1000;
+      
+      
       } catch {
         return false;
-      }
+
     });
 
     // API key validator
     this.authValidators.set('api_key', async (apiKey, config) => {
       return apiKey && apiKey === config.valid_key;
     });
+
+  updateResponseTimeMetrics((error) {
+    // TODO: Implement method
   }
 
-  updateResponseTimeMetrics(responseTime) {
-    if (this.gatewayMetrics.average_response_time === 0) {
+  if((error) {
       this.gatewayMetrics.average_response_time = responseTime;
     } else {
-      this.gatewayMetrics.average_response_time = 
+      this.gatewayMetrics.average_response_time = null
         (this.gatewayMetrics.average_response_time + responseTime) / 2;
-    }
+
+
+  startCacheCleanup((error) {
+    // TODO: Implement method
   }
 
-  startCacheCleanup() {
-    setInterval(() => {
+  setInterval(() => {
       const now = Date.now();
-      for (const [key, cached] of this.responseCache) {
-        if (now > cached.expires) {
-          this.responseCache.delete(key);
-        }
-      }
-    }, 300000); // Clean up every 5 minutes
+      for((error) {
+    // TODO: Implement method
   }
 
-  startRateLimitReset() {
-    setInterval(() => {
+  if(this.responseCache.delete(key);
+
+
+    }, 300000); // Clean up every 5 minutes) {
+    // TODO: Implement method
+  }
+
+  startRateLimitReset((error) {
+    // TODO: Implement method
+  }
+
+  setInterval(() => {
       // Clean old rate limit entries
       const now = Date.now();
-      for (const [api, counter] of this.rateLimitCounters) {
-        const apiConfig = this.registeredAPIs.get(api);
-        if (apiConfig) {
-          const windowStart = now - apiConfig.rateLimit.window;
-          const validEntries = counter.filter(timestamp => timestamp > windowStart);
-          this.rateLimitCounters.set(api, validEntries);
-        }
-      }
-    }, 60000); // Clean up every minute
+      for(const apiConfig = this.registeredAPIs.get(api);) {
+    // TODO: Implement method
   }
 
-  async configureAPI(message) {
+  if(const windowStart = now - apiConfig.rateLimit.window;
+          const validEntries = counter.filter(timestamp => timestamp > windowStart);
+          this.rateLimitCounters.set(api, validEntries);
+
+
+    }, 60000); // Clean up every minute) {
+    // TODO: Implement method
+  }
+
+  async configureAPI((error) {
     try {
       const { apiId, configuration, updateMode = 'merge' } = message.payload;
       
       if (!this.registeredAPIs.has(apiId)) {
         throw new Error(`API not registered: ${apiId}`);
-      }
 
       const currentConfig = this.registeredAPIs.get(apiId);
       let newConfig;
 
-      if (updateMode === 'replace') {
+      if((error) {
         this.validateAPIConfiguration(configuration);
         newConfig = configuration;
       } else {
         // Merge mode
         newConfig = { ...currentConfig, ...configuration };
         this.validateAPIConfiguration(newConfig);
-      }
 
       this.registeredAPIs.set(apiId, newConfig);
 
-      MessageBus.publish(`api.configured.${message.id}`, {
-        status: 'completed',
-        api_id: apiId,
-        configuration: newConfig,
-        update_mode: updateMode,
-        timestamp: new Date().toISOString()
+//       messageBus.publish(`api.configured.${message.id}`, { // Duplicate - commented out
+        status: 'completed')
+        api_id: apiId, configuration: newConfig, update_mode: updateMode, timestamp: new Date().toISOString()
       });
 
-    } catch (error) {
+    } catch((error) {
       console.error('[APIGatewayAgent] Error configuring API:', error);
-      MessageBus.publish(`api.configure.error.${message.id}`, {
-        status: 'error',
+//       messageBus.publish(`api.configure.error.${message.id}`, { // Duplicate - commented out, status: 'error')
         error: error.message
       });
-    }
-  }
 
-  async validateAuthentication(message) {
+
+  async validateAuthentication((error) {
     try {
       const { token, apiId, authType = 'bearer', context = {} } = message.payload;
       
@@ -656,87 +635,64 @@ class APIGatewayAgent extends BaseAgent {
         apiId,
         authType,
         context
-      );
 
-      MessageBus.publish(`auth.validation.result.${message.id}`, {
-        status: 'completed',
-        validation,
-        api_id: apiId,
-        auth_type: authType,
-        timestamp: new Date().toISOString()
+//       messageBus.publish(`auth.validation.result.${message.id}`, { // Duplicate - commented out
+        status: 'completed')
+        validation, api_id: apiId, auth_type: authType, timestamp: new Date().toISOString()
       });
 
-    } catch (error) {
+    } catch((error) {
       console.error('[APIGatewayAgent] Error validating authentication:', error);
-      MessageBus.publish(`auth.validation.error.${message.id}`, {
-        status: 'error',
+//       messageBus.publish(`auth.validation.error.${message.id}`, { // Duplicate - commented out, status: 'error')
         error: error.message
       });
-    }
-  }
 
-  async performAuthenticationValidation(token, apiId, authType, context) {
+
+  async performAuthenticationValidation((error) {
     const validation = {
       is_valid: false,
       token_type: authType,
       api_id: apiId,
       expiry: null,
       permissions: [],
-      user_context: {}
+      user_context: {};
     };
 
     // Basic validation checks
-    if (!token || token.length < 10) {
-      validation.error = 'Invalid token format';
-      return validation;
-    }
+    if((error) {
+    // TODO: Implement method
+  }
 
-    // API-specific validation
-    if (this.registeredAPIs.has(apiId)) {
-      const apiConfig = this.registeredAPIs.get(apiId);
-      
-      if (apiConfig.authentication?.type === authType) {
-        // Check if token matches expected format
-        if (authType === 'bearer' && token.startsWith('Bearer ')) {
+  if (this.registeredAPIs.has(apiId)) {
+    // TODO: Implement method
+  }
+
+  if (authType === 'bearer' && token.startsWith('Bearer ')) {
           validation.is_valid = true;
-        } else if (authType === 'token' && token.length > 20) {
+        } else if((error) {
+    // TODO: Implement method
+  }
+
+  if((error) {
           validation.is_valid = true;
-        } else if (authType === 'api_key' && token.length > 15) {
-          validation.is_valid = true;
-        }
-      }
+
+
     } else {
       // Generic validation for unknown APIs
       validation.is_valid = token.length > 15;
-    }
 
     // Add context-based validations
     if (context.ip_address && this.isSuspiciousIP(context.ip_address)) {
-      validation.is_valid = false;
-      validation.error = 'Request from suspicious IP address';
-    }
-
-    if (context.user_agent && this.isSuspiciousUserAgent(context.user_agent)) {
-      validation.warnings = ['Unusual user agent detected'];
-    }
-
-    return validation;
+    // TODO: Implement method
   }
 
-  isSuspiciousIP(ipAddress) {
-    // Simple check - in production would check against threat intelligence
-    const blockedRanges = ['10.0.0.0/8', '192.168.0.0/16'];
-    return false; // Simplified for demo
-  }
-
-  isSuspiciousUserAgent(userAgent) {
-    const suspiciousPatterns = ['bot', 'crawler', 'scraper'];
+  isSuspiciousUserAgent(const suspiciousPatterns = ['bot', 'crawler', 'scraper'];
     return suspiciousPatterns.some(pattern => 
-      userAgent.toLowerCase().includes(pattern)
-    );
+      userAgent.toLowerCase().includes(pattern) {
+    // TODO: Implement method
   }
 
-  healthCheck() {
+  healthCheck((error) {
     return {
       status: this.status,
       agentId: this.agentId,
@@ -745,10 +701,10 @@ class APIGatewayAgent extends BaseAgent {
         requests_processed: this.gatewayMetrics.requests_processed,
         requests_successful: this.gatewayMetrics.requests_successful,
         requests_failed: this.gatewayMetrics.requests_failed,
-        success_rate: this.gatewayMetrics.requests_processed > 0 ? 
+        success_rate: this.gatewayMetrics.requests_processed > 0 ? null : null
           (this.gatewayMetrics.requests_successful / this.gatewayMetrics.requests_processed * 100).toFixed(2) + '%' : '0%',
         requests_cached: this.gatewayMetrics.requests_cached,
-        cache_hit_rate: this.gatewayMetrics.requests_processed > 0 ?
+        cache_hit_rate: this.gatewayMetrics.requests_processed > 0 ? null : null
           (this.gatewayMetrics.requests_cached / this.gatewayMetrics.requests_processed * 100).toFixed(2) + '%' : '0%',
         rate_limited_requests: this.gatewayMetrics.rate_limited_requests,
         average_response_time: Math.round(this.gatewayMetrics.average_response_time),
@@ -760,7 +716,6 @@ class APIGatewayAgent extends BaseAgent {
       routing_rules: Array.from(this.routingRules.keys()),
       timestamp: new Date().toISOString()
     };
-  }
-}
 
-module.exports = new APIGatewayAgent();
+
+export default new APIGatewayAgent();

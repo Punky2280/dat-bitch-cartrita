@@ -111,11 +111,14 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       try {
         const saved = localStorage.getItem('customThemeSettings');
         if (!saved) return {};
-        
+
         const parsed = JSON.parse(saved);
         return typeof parsed === 'object' && parsed !== null ? parsed : {};
       } catch (error) {
-        console.warn('Error parsing custom theme settings from localStorage:', error);
+        console.warn(
+          'Error parsing custom theme settings from localStorage:',
+          error
+        );
         // Clear corrupted data
         localStorage.removeItem('customThemeSettings');
         return {};

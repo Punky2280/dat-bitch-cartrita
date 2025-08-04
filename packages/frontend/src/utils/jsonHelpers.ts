@@ -11,7 +11,7 @@ export const safeJsonParse = <T = any>(
     if (!jsonString || typeof jsonString !== 'string') {
       return fallback;
     }
-    
+
     const parsed = JSON.parse(jsonString);
     return parsed;
   } catch (error) {
@@ -37,7 +37,7 @@ export const parseJwtPayload = (token: string): any | null => {
     // Safely decode and parse the payload
     const base64Payload = tokenParts[1];
     let decodedPayload;
-    
+
     try {
       decodedPayload = atob(base64Payload);
     } catch (decodeError) {
@@ -73,7 +73,7 @@ export const safeApiJsonResponse = async <T = any>(
     if (!response.headers.get('content-type')?.includes('application/json')) {
       throw new Error('Response is not JSON');
     }
-    
+
     const data = await response.json();
     return data;
   } catch (error) {
@@ -92,7 +92,7 @@ export const safeLocalStorageGet = <T = any>(
   try {
     const item = localStorage.getItem(key);
     if (!item) return fallback;
-    
+
     return safeJsonParse<T>(item, fallback);
   } catch (error) {
     console.warn(`localStorage get error for key "${key}":`, error);
@@ -100,7 +100,10 @@ export const safeLocalStorageGet = <T = any>(
     try {
       localStorage.removeItem(key);
     } catch (removeError) {
-      console.warn(`Failed to remove corrupted localStorage key "${key}":`, removeError);
+      console.warn(
+        `Failed to remove corrupted localStorage key "${key}":`,
+        removeError
+      );
     }
     return fallback;
   }
@@ -133,10 +136,10 @@ export const safeFetch = async <T = any>(
 }> => {
   try {
     const response = await fetch(url, options);
-    
+
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      
+
       // Try to get error details from response
       try {
         const errorData = await safeApiJsonResponse(response.clone());
@@ -148,26 +151,26 @@ export const safeFetch = async <T = any>(
       } catch {
         // Ignore JSON parsing errors for error responses
       }
-      
+
       return {
         data: null,
         response,
-        error: errorMessage
+        error: errorMessage,
       };
     }
-    
+
     const data = await safeApiJsonResponse<T>(response);
-    
+
     return {
       data,
       response,
-      error: data ? null : 'Failed to parse response JSON'
+      error: data ? null : 'Failed to parse response JSON',
     };
   } catch (error) {
     return {
       data: null,
       response: null as any,
-      error: error instanceof Error ? error.message : 'Network request failed'
+      error: error instanceof Error ? error.message : 'Network request failed',
     };
   }
 };
@@ -182,6 +185,6 @@ export const validateObjectStructure = (
   if (!obj || typeof obj !== 'object') {
     return false;
   }
-  
+
   return requiredKeys.every(key => key in obj);
 };
