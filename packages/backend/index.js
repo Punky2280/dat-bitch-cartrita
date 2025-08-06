@@ -17,7 +17,7 @@ import morgan from 'morgan';
 
 // --- AGENT & SERVICE IMPORTS ---
 import EnhancedLangChainCoreAgent from './src/agi/consciousness/EnhancedLangChainCoreAgent.js';
-import initializeAgents from './src/agi/agentInitializer.js';
+import agentInitializer from './src/agi/agentInitializer.js';
 import ServiceInitializer from './src/services/ServiceInitializer.js';
 import SensoryProcessingService from './src/system/SensoryProcessingService.js';
 import authenticateTokenSocket from './src/middleware/authenticateTokenSocket.js';
