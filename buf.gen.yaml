@@ -1,0 +1,38 @@
+version: v1
+
+managed:
+  enabled: true
+  optimize_for: SPEED
+  java_multiple_files: true
+
+plugins:
+  # Go
+  - plugin: buf.build/protocolbuffers/go
+    out: go/gen
+    opt:
+      - paths=source_relative
+  - plugin: buf.build/grpc/go
+    out: go/gen
+    opt:
+      - paths=source_relative
+
+  # Python
+  - plugin: buf.build/protocolbuffers/python
+    out: py/mcp_core/generated
+  - plugin: buf.build/grpc/python
+    out: py/mcp_core/generated
+
+  # JavaScript (classic commonjs + binary)
+  - plugin: buf.build/protocolbuffers/js
+    out: packages/mcp-core/src/generated
+    opt:
+      - import_style=commonjs
+      - binary
+
+  # Rich TypeScript (protobuf-ts)
+  - plugin: buf.build/timostamm/protobuf-ts
+    out: packages/mcp-core/src/generated-ts
+    opt:
+      - optimize_code_size
+      - long_type_string
+      - generate_dependencies

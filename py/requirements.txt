@@ -1,0 +1,45 @@
+# MCP Core Requirements
+pydantic>=2.5.0,<3.0.0
+pydantic[email]>=2.5.0,<3.0.0
+
+# Async and networking
+asyncio-mqtt>=0.14.0
+aiofiles>=23.2.1
+anyio>=4.2.0
+httpx>=0.26.0
+websockets>=12.0
+uvloop>=0.19.0
+
+# Transport and serialization
+msgpack>=1.0.7
+grpcio>=1.60.0
+grpcio-tools>=1.60.0
+protobuf>=4.25.0
+
+# OpenTelemetry
+opentelemetry-api>=1.21.0
+opentelemetry-sdk>=1.21.0
+opentelemetry-exporter-otlp-proto-grpc>=1.21.0
+opentelemetry-instrumentation-asyncio>=0.42b0
+opentelemetry-instrumentation-grpc>=0.42b0
+opentelemetry-semantic-conventions>=0.42b0
+
+# Logging and utilities
+structlog>=23.2.0
+tenacity>=8.2.3
+python-multipart>=0.0.6
+
+# Development and testing
+pytest>=7.4.3
+pytest-asyncio>=0.23.2
+pytest-cov>=4.1.0
+mypy>=1.8.0
+ruff>=0.1.8
+black>=23.12.0
+
+# FastAPI for health endpoints and metrics
+fastapi>=0.105.0
+uvicorn[standard]>=0.25.0
+
+# Redis for caching and message broker
+redis[hiredis]>=5.0.1

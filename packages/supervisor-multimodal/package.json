@@ -1,0 +1,44 @@
+{
+  "name": "@cartrita/supervisor-multimodal",
+  "version": "1.0.0",
+  "description": "MCP Multi-Modal Supervisor - Vision, Audio, and Sensor Fusion",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@cartrita/mcp-core": "workspace:*",
+    "@deepgram/sdk": "^3.4.0",
+    "@opentelemetry/api": "^1.8.0",
+    "canvas": "^2.11.2",
+    "eventemitter3": "^5.0.1",
+    "ffmpeg-static": "^5.2.0",
+    "fluent-ffmpeg": "^2.1.2",
+    "form-data": "^4.0.0",
+    "jimp": "^0.22.12",
+    "multer": "^1.4.5-lts.1",
+    "node-fetch": "^3.3.2",
+    "uuid": "^9.0.1",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/fluent-ffmpeg": "^2.1.24",
+    "@types/multer": "^1.4.11",
+    "@types/node": "^20.11.17",
+    "@types/uuid": "^9.0.8",
+    "@types/ws": "^8.5.10",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.2"
+  },
+  "peerDependencies": {
+    "redis": "^4.6.13"
+  }
+}

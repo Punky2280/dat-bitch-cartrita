@@ -1,0 +1,264 @@
+version: '3.8'
+
+services:
+  # Existing services from docker-compose.yml
+  postgres:
+    extends:
+      file: docker-compose.yml
+      service: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d
+      - ./db-init/mcp:/docker-entrypoint-initdb.d/mcp # Additional MCP schema
+
+  redis:
+    extends:
+      file: docker-compose.yml
+      service: redis
+
+  # OpenTelemetry Collector
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: cartrita-otel-collector
+    command: ["--config=/etc/otel-collector-config.yml"]
+    volumes:
+      - ./config/otel-collector-config.yml:/etc/otel-collector-config.yml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "8888:8888"   # Prometheus metrics
+      - "8889:8889"   # Prometheus exporter metrics
+    depends_on:
+      - jaeger
+    networks:
+      - cartrita-network
+
+  # Jaeger for distributed tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: cartrita-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: true
+    ports:
+      - "14268:14268"   # jaeger.thrift over HTTP
+      - "16686:16686"   # Jaeger UI
+      - "14250:14250"   # gRPC
+    networks:
+      - cartrita-network
+
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: cartrita-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - cartrita-network
+
+  # Grafana for dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cartrita-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3002:3000"
+    networks:
+      - cartrita-network
+
+  # MCP Orchestrator (Tier-0)
+  mcp-orchestrator:
+    build:
+      context: .
+      dockerfile: packages/orchestrator/Dockerfile
+    container_name: cartrita-mcp-orchestrator
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - MCP_PORT=8002
+      - MCP_HOST=0.0.0.0
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=dat-bitch-cartrita
+      - POSTGRES_USER=robert
+      - POSTGRES_PASSWORD=punky1
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET:-cartrita-mcp-jwt-secret-2025}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=cartrita-mcp-orchestrator
+      - OTEL_SERVICE_VERSION=1.0.0
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=cartrita-mcp,deployment.environment=production
+      - LOG_LEVEL=info
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./packages/orchestrator/logs:/usr/src/app/logs
+    depends_on:
+      - postgres
+      - redis
+      - otel-collector
+    networks:
+      - cartrita-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8002/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Intelligence Supervisor (Tier-1)
+  mcp-supervisor-intelligence:
+    build:
+      context: .
+      dockerfile: packages/supervisor-intelligence/Dockerfile
+    container_name: cartrita-mcp-intelligence
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - SUPERVISOR_ID=intelligence-supervisor
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_ORGANIZATION=${OPENAI_ORGANIZATION}
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=cartrita-mcp-intelligence
+      - OTEL_SERVICE_VERSION=1.0.0
+      - LOG_LEVEL=info
+    volumes:
+      - ./packages/supervisor-intelligence/logs:/usr/src/app/logs
+    depends_on:
+      - redis
+      - otel-collector
+      - mcp-orchestrator
+    networks:
+      - cartrita-network
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  # Multi-Modal Supervisor (Tier-1)
+  mcp-supervisor-multimodal:
+    build:
+      context: .
+      dockerfile: packages/supervisor-multimodal/Dockerfile
+    container_name: cartrita-mcp-multimodal
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - SUPERVISOR_ID=multimodal-supervisor
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=cartrita-mcp-multimodal
+      - OTEL_SERVICE_VERSION=1.0.0
+      - LOG_LEVEL=info
+    volumes:
+      - ./packages/supervisor-multimodal/logs:/usr/src/app/logs
+      - ./packages/supervisor-multimodal/temp:/usr/src/app/temp
+    depends_on:
+      - redis
+      - otel-collector
+      - mcp-orchestrator
+    networks:
+      - cartrita-network
+
+  # System Supervisor (Tier-1)
+  mcp-supervisor-system:
+    build:
+      context: .
+      dockerfile: packages/supervisor-system/Dockerfile
+    container_name: cartrita-mcp-system
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - SUPERVISOR_ID=system-supervisor
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=dat-bitch-cartrita
+      - POSTGRES_USER=robert
+      - POSTGRES_PASSWORD=punky1
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=cartrita-mcp-system
+      - OTEL_SERVICE_VERSION=1.0.0
+      - LOG_LEVEL=info
+    volumes:
+      - ./packages/supervisor-system/logs:/usr/src/app/logs
+      - /var/run/docker.sock:/var/run/docker.sock:ro # For health checks
+    depends_on:
+      - postgres
+      - redis
+      - otel-collector
+      - mcp-orchestrator
+    networks:
+      - cartrita-network
+
+  # Legacy Backend (maintains backward compatibility)
+  backend:
+    extends:
+      file: docker-compose.yml
+      service: backend
+    environment:
+      # Existing environment variables
+      - NODE_ENV=production
+      - PORT=8001
+      - POSTGRES_USER=robert
+      - POSTGRES_PASSWORD=punky1
+      - POSTGRES_DB=dat-bitch-cartrita
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DATABASE_URL=postgresql://robert:punky1@postgres:5432/dat-bitch-cartrita
+      # MCP Integration
+      - MCP_ORCHESTRATOR_URL=http://mcp-orchestrator:8002
+      - MCP_ENABLED=true
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=cartrita-backend-legacy
+      - OTEL_SERVICE_VERSION=1.0.0
+    depends_on:
+      - mcp-orchestrator
+
+  # Frontend (unchanged)
+  frontend:
+    extends:
+      file: docker-compose.yml
+      service: frontend
+    environment:
+      - NODE_ENV=development
+      - VITE_BACKEND_URL=http://localhost:8001
+      - VITE_MCP_URL=http://localhost:8002
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  cartrita-network:
+    driver: bridge

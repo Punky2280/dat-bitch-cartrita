@@ -1,0 +1,803 @@
+===== SCAN REPORT (2025-08-09T17:49:26Z) =====
+Symbols checked: Timestamp MyHelper AnotherThing
+
+=== Missing import/require for: Timestamp ===
+MISSING_IMPORT(Timestamp) ./packages/frontend/dist/assets/index-C183UlwG.js
+MISSING_IMPORT(Timestamp) ./packages/backend/src/agi/orchestration/AgentToolRegistry.js
+
+=== Missing import/require for: MyHelper ===
+
+=== Missing import/require for: AnotherThing ===
+
+=== Files with NO import or require ===
+NO_IMPORT_OR_REQUIRE ./packages/frontend/postcss.config.js
+NO_IMPORT_OR_REQUIRE ./packages/frontend/dist/assets/index-C183UlwG.js
+NO_IMPORT_OR_REQUIRE ./packages/frontend/dist/assets/browser-ponyfill-BhOB0TWx.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/karma.base.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/backend/examples/.eslintrc.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/backend/examples/opentracing-shim/utils.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/backend/examples/opentelemetry-web/.eslintrc.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/backend/experimental/packages/opentelemetry-instrumentation/test/common/third-party/node-semver/range-exclude.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/backend/experimental/packages/opentelemetry-instrumentation/test/common/third-party/node-semver/range-include.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/backend/experimental/packages/opentelemetry-instrumentation/test/node/fixtures/absolutePathTestFixture.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/backend/experimental/packages/opentelemetry-instrumentation-fetch/test/mockServiceWorker.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/backend/experimental/examples/opencensus-shim/utils.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/backend/prettier.config.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/backend/eslint.base.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/socket-config.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/scripts/migration/00001_create_vector_extension.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/karma.base.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/.eslintrc.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/opentracing-shim/utils.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/opentelemetry-web/.eslintrc.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-instrumentation/test/common/third-party/node-semver/range-exclude.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-instrumentation/test/common/third-party/node-semver/range-include.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-instrumentation/test/node/fixtures/absolutePathTestFixture.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-instrumentation-fetch/test/mockServiceWorker.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/examples/opencensus-shim/utils.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/prettier.config.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/eslint.base.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/karma.base.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/scripts/skip-test-if.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/prettier.config.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/webpack.node-polyfills.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/eslint.config.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/services/WorkflowNodeRegistry.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/services/HFJobsConfigurationService.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/agi/examples/agentUsageExamples.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/agi/ethics/constitution.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/system/EncryptionService.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/system/LiveChatService.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/system/ApiRateLimiter.js
+NO_IMPORT_OR_REQUIRE ./packages/backend/src/utils/fineTuningHelpers.js
+NO_IMPORT_OR_REQUIRE ./packages/backend copy/examples/.eslintrc.js
+NO_IMPORT_OR_REQUIRE ./packages/backend copy/examples/opentracing-shim/utils.js
+NO_IMPORT_OR_REQUIRE ./packages/backend copy/examples/opentelemetry-web/.eslintrc.js
+NO_IMPORT_OR_REQUIRE ./packages/backend copy/experimental/packages/opentelemetry-instrumentation/test/common/third-party/node-semver/range-exclude.js
+NO_IMPORT_OR_REQUIRE ./packages/backend copy/experimental/packages/opentelemetry-instrumentation/test/common/third-party/node-semver/range-include.js
+NO_IMPORT_OR_REQUIRE ./packages/backend copy/experimental/packages/opentelemetry-instrumentation/test/node/fixtures/absolutePathTestFixture.js
+NO_IMPORT_OR_REQUIRE ./packages/backend copy/experimental/packages/opentelemetry-instrumentation-fetch/test/mockServiceWorker.js
+NO_IMPORT_OR_REQUIRE ./packages/backend copy/experimental/examples/opencensus-shim/utils.js
+NO_IMPORT_OR_REQUIRE ./packages/backend copy/prettier.config.js
+NO_IMPORT_OR_REQUIRE ./packages/backend copy/eslint.base.js
+NO_IMPORT_OR_REQUIRE ./test-direct-agent.js
+NO_IMPORT_OR_REQUIRE ./scripts/tests/test-hierarchical-system.js
+NO_IMPORT_OR_REQUIRE ./scripts/tests/test-i18n-fix.js
+NO_IMPORT_OR_REQUIRE ./scripts/tests/test-settings-functionality.js
+NO_IMPORT_OR_REQUIRE ./scripts/tests/test-voice-permissions.js
+NO_IMPORT_OR_REQUIRE ./scripts/tests/test-api-endpoints.js
+NO_IMPORT_OR_REQUIRE ./scripts/config/postcss.config.js
+NO_IMPORT_OR_REQUIRE ./scripts/fixes/temp_fix.js
+NO_IMPORT_OR_REQUIRE ./src/audio/worklets/scripts/encoder.js
+
+=== All .js files (excluding index.js) ===
+FILE ./test-hf-inference.js
+FILE ./packages/frontend/tailwind.config.js
+FILE ./packages/frontend/postcss.config.js
+FILE ./packages/frontend/dist/assets/index-C183UlwG.js
+FILE ./packages/frontend/dist/assets/browser-ponyfill-BhOB0TWx.js
+FILE ./packages/backend/karma.base.js
+FILE ./packages/backend/tests/iterations/test-iteration-22.js
+FILE ./packages/backend/tests/telemetry-integration-test.js
+FILE ./packages/backend/tests/complete-integration-test.js
+FILE ./packages/backend/tests/test-voice-system.js
+FILE ./packages/backend/tests/test-enhanced-deepgram.js
+FILE ./packages/backend/tests/test-current-voice.js
+FILE ./packages/backend/tests/test-core-voice.js
+FILE ./packages/backend/semantic-conventions/.eslintrc.js
+FILE ./packages/backend/backend/karma.webpack.js
+FILE ./packages/backend/backend/e2e-tests/.eslintrc.js
+FILE ./packages/backend/backend/packages/opentelemetry-exporter-jaeger/.eslintrc.js
+FILE ./packages/backend/backend/packages/template/karma.conf.js
+FILE ./packages/backend/backend/packages/template/.eslintrc.js
+FILE ./packages/backend/backend/packages/opentelemetry-propagator-jaeger/karma.conf.js
+FILE ./packages/backend/backend/packages/opentelemetry-propagator-jaeger/.eslintrc.js
+FILE ./packages/backend/backend/packages/opentelemetry-propagator-b3/.eslintrc.js
+FILE ./packages/backend/backend/packages/opentelemetry-context-async-hooks/.eslintrc.js
+FILE ./packages/backend/backend/packages/opentelemetry-shim-opentracing/.eslintrc.js
+FILE ./packages/backend/backend/packages/opentelemetry-exporter-zipkin/karma.conf.js
+FILE ./packages/backend/backend/packages/opentelemetry-exporter-zipkin/.eslintrc.js
+FILE ./packages/backend/backend/packages/opentelemetry-sdk-trace-base/karma.conf.js
+FILE ./packages/backend/backend/packages/opentelemetry-sdk-trace-base/.eslintrc.js
+FILE ./packages/backend/backend/packages/opentelemetry-sdk-trace-base/test/performance/benchmark/span.js
+FILE ./packages/backend/backend/packages/opentelemetry-sdk-trace-base/test/performance/benchmark/BatchSpanProcessor.js
+FILE ./packages/backend/backend/packages/opentelemetry-sdk-trace-base/karma.worker.js
+FILE ./packages/backend/backend/packages/sdk-metrics/karma.conf.js
+FILE ./packages/backend/backend/packages/sdk-metrics/.eslintrc.js
+FILE ./packages/backend/backend/packages/opentelemetry-context-zone-peer-dep/karma.conf.js
+FILE ./packages/backend/backend/packages/opentelemetry-context-zone-peer-dep/.eslintrc.js
+FILE ./packages/backend/backend/packages/opentelemetry-sdk-trace-node/.eslintrc.js
+FILE ./packages/backend/backend/packages/opentelemetry-core/karma.conf.js
+FILE ./packages/backend/backend/packages/opentelemetry-core/.eslintrc.js
+FILE ./packages/backend/backend/packages/opentelemetry-sdk-trace-web/karma.conf.js
+FILE ./packages/backend/backend/packages/opentelemetry-sdk-trace-web/.eslintrc.js
+FILE ./packages/backend/backend/packages/opentelemetry-sdk-trace-web/karma.worker.js
+FILE ./packages/backend/backend/packages/opentelemetry-resources/karma.conf.js
+FILE ./packages/backend/backend/packages/opentelemetry-resources/.eslintrc.js
+FILE ./packages/backend/backend/packages/opentelemetry-resources/karma.worker.js
+FILE ./packages/backend/backend/packages/opentelemetry-context-zone/.eslintrc.js
+FILE ./packages/backend/backend/integration-tests/propagation-validation-server/validation-server.js
+FILE ./packages/backend/backend/integration-tests/api/.eslintrc.js
+FILE ./packages/backend/backend/integration-tests/api/test/api-entries.test.js
+FILE ./packages/backend/backend/examples/http/server.js
+FILE ./packages/backend/backend/examples/http/client.js
+FILE ./packages/backend/backend/examples/http/tracer.js
+FILE ./packages/backend/backend/examples/.eslintrc.js
+FILE ./packages/backend/backend/examples/grpc-js/helloworld_grpc_pb.js
+FILE ./packages/backend/backend/examples/grpc-js/server.js
+FILE ./packages/backend/backend/examples/grpc-js/helloworld_pb.js
+FILE ./packages/backend/backend/examples/grpc-js/client.js
+FILE ./packages/backend/backend/examples/grpc-js/tracer.js
+FILE ./packages/backend/backend/examples/otlp-exporter-node/tracing.js
+FILE ./packages/backend/backend/examples/otlp-exporter-node/metrics.js
+FILE ./packages/backend/backend/examples/opentracing-shim/utils.js
+FILE ./packages/backend/backend/examples/opentracing-shim/server.js
+FILE ./packages/backend/backend/examples/opentracing-shim/client.js
+FILE ./packages/backend/backend/examples/opentracing-shim/shim.js
+FILE ./packages/backend/backend/examples/opentelemetry-web/webpack.prod.config.js
+FILE ./packages/backend/backend/examples/opentelemetry-web/.eslintrc.js
+FILE ./packages/backend/backend/examples/opentelemetry-web/webpack.dev.config.js
+FILE ./packages/backend/backend/examples/https/server.js
+FILE ./packages/backend/backend/examples/https/client.js
+FILE ./packages/backend/backend/examples/https/tracer.js
+FILE ./packages/backend/backend/karma.worker.js
+FILE ./packages/backend/backend/experimental/packages/opentelemetry-exporter-metrics-otlp-http/karma.conf.js
+FILE ./packages/backend/backend/experimental/packages/opentelemetry-exporter-metrics-otlp-http/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/otlp-grpc-exporter-base/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/opentelemetry-instrumentation-xml-http-request/karma.conf.js
+FILE ./packages/backend/backend/experimental/packages/opentelemetry-instrumentation-xml-http-request/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/web-common/karma.conf.js
+FILE ./packages/backend/backend/experimental/packages/web-common/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/opentelemetry-instrumentation-http/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/opentelemetry-sdk-node/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/exporter-trace-otlp-grpc/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/shim-opencensus/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/exporter-logs-otlp-http/karma.conf.js
+FILE ./packages/backend/backend/experimental/packages/exporter-logs-otlp-http/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/opentelemetry-browser-detector/karma.conf.js
+FILE ./packages/backend/backend/experimental/packages/opentelemetry-browser-detector/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/opentelemetry-instrumentation/karma.conf.js
+FILE ./packages/backend/backend/experimental/packages/opentelemetry-instrumentation/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/opentelemetry-instrumentation/test/common/third-party/node-semver/range-exclude.js
+FILE ./packages/backend/backend/experimental/packages/opentelemetry-instrumentation/test/common/third-party/node-semver/range-include.js
+FILE ./packages/backend/backend/experimental/packages/opentelemetry-instrumentation/test/node/fixtures/absolutePathTestFixture.js
+FILE ./packages/backend/backend/experimental/packages/exporter-trace-otlp-proto/karma.conf.js
+FILE ./packages/backend/backend/experimental/packages/exporter-trace-otlp-proto/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/otlp-exporter-base/karma.conf.js
+FILE ./packages/backend/backend/experimental/packages/otlp-exporter-base/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/opentelemetry-exporter-metrics-otlp-grpc/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/otlp-transformer/karma.conf.js
+FILE ./packages/backend/backend/experimental/packages/otlp-transformer/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/opentelemetry-exporter-metrics-otlp-proto/karma.conf.js
+FILE ./packages/backend/backend/experimental/packages/opentelemetry-exporter-metrics-otlp-proto/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/opentelemetry-instrumentation-grpc/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/opentelemetry-instrumentation-fetch/karma.conf.js
+FILE ./packages/backend/backend/experimental/packages/opentelemetry-instrumentation-fetch/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/opentelemetry-instrumentation-fetch/test/mockServiceWorker.js
+FILE ./packages/backend/backend/experimental/packages/api-logs/karma.conf.js
+FILE ./packages/backend/backend/experimental/packages/api-logs/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/exporter-logs-otlp-proto/karma.conf.js
+FILE ./packages/backend/backend/experimental/packages/exporter-logs-otlp-proto/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/exporter-logs-otlp-grpc/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/sdk-logs/karma.conf.js
+FILE ./packages/backend/backend/experimental/packages/sdk-logs/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/exporter-trace-otlp-http/karma.conf.js
+FILE ./packages/backend/backend/experimental/packages/exporter-trace-otlp-http/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/opentelemetry-exporter-prometheus/.eslintrc.js
+FILE ./packages/backend/backend/experimental/packages/sampler-jaeger-remote/.eslintrc.js
+FILE ./packages/backend/backend/experimental/examples/.eslintrc.js
+FILE ./packages/backend/backend/experimental/examples/opencensus-shim/utils.js
+FILE ./packages/backend/backend/experimental/examples/opencensus-shim/server.js
+FILE ./packages/backend/backend/experimental/examples/opencensus-shim/client.js
+FILE ./packages/backend/backend/experimental/examples/opencensus-shim/setup.js
+FILE ./packages/backend/backend/scripts/semconv/changelog-gen.js
+FILE ./packages/backend/backend/scripts/generate-protos.js
+FILE ./packages/backend/backend/scripts/update-ts-configs-constants.js
+FILE ./packages/backend/backend/scripts/update-changelog.js
+FILE ./packages/backend/backend/scripts/get-version.js
+FILE ./packages/backend/backend/scripts/peer-api-check.js
+FILE ./packages/backend/backend/scripts/version-update.js
+FILE ./packages/backend/backend/scripts/align-api-deps.js
+FILE ./packages/backend/backend/scripts/extract-latest-release-notes.js
+FILE ./packages/backend/backend/scripts/update-ts-configs.js
+FILE ./packages/backend/backend/api/karma.conf.js
+FILE ./packages/backend/backend/api/.eslintrc.js
+FILE ./packages/backend/backend/api/karma.worker.js
+FILE ./packages/backend/backend/prettier.config.js
+FILE ./packages/backend/backend/eslint.base.js
+FILE ./packages/backend/socket-config.js
+FILE ./packages/backend/instrumentation.js
+FILE ./packages/backend/scripts/convertManualFiles.js
+FILE ./packages/backend/scripts/tests/create-test-users.js
+FILE ./packages/backend/scripts/tests/test-enhanced-agent-integration.js
+FILE ./packages/backend/scripts/tests/test-agent-compliance.js
+FILE ./packages/backend/scripts/tests/system-health-check.js
+FILE ./packages/backend/scripts/run-hf-jobs-demo.js
+FILE ./packages/backend/scripts/simple-hf-jobs-test.js
+FILE ./packages/backend/scripts/fine-tuning-example.js
+FILE ./packages/backend/scripts/populateWorkflowTools.js
+FILE ./packages/backend/scripts/migration/run_migration.js
+FILE ./packages/backend/scripts/migration/setup_vectors.js
+FILE ./packages/backend/scripts/migration/00001_create_vector_extension.js
+FILE ./packages/backend/scripts/test-fine-tuning-endpoints.js
+FILE ./packages/backend/scripts/test-hf-jobs.js
+FILE ./packages/backend/scripts/debug/debug-routes.js
+FILE ./packages/backend/scripts/test-fine-tuning.js
+FILE ./packages/backend/eslint.config.js
+FILE ./packages/backend/src/loadEnv.js
+FILE ./packages/backend/src/opentelemetry/OpenTelemetryIntegrationService.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/karma.base.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/semantic-conventions/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/karma.webpack.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/e2e-tests/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-exporter-jaeger/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/template/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/template/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-propagator-jaeger/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-propagator-jaeger/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-propagator-b3/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-context-async-hooks/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-shim-opentracing/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-exporter-zipkin/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-exporter-zipkin/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-sdk-trace-base/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-sdk-trace-base/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-sdk-trace-base/test/performance/benchmark/span.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-sdk-trace-base/test/performance/benchmark/BatchSpanProcessor.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-sdk-trace-base/karma.worker.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/sdk-metrics/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/sdk-metrics/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-context-zone-peer-dep/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-context-zone-peer-dep/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-sdk-trace-node/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-core/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-core/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-sdk-trace-web/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-sdk-trace-web/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-sdk-trace-web/karma.worker.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-resources/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-resources/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-resources/karma.worker.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/packages/opentelemetry-context-zone/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/integration-tests/propagation-validation-server/validation-server.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/integration-tests/api/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/integration-tests/api/test/api-entries.test.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/http/server.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/http/client.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/http/tracer.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/grpc-js/helloworld_grpc_pb.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/grpc-js/server.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/grpc-js/helloworld_pb.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/grpc-js/client.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/grpc-js/tracer.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/otlp-exporter-node/tracing.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/otlp-exporter-node/metrics.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/opentracing-shim/utils.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/opentracing-shim/server.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/opentracing-shim/client.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/opentracing-shim/shim.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/opentelemetry-web/webpack.prod.config.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/opentelemetry-web/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/opentelemetry-web/webpack.dev.config.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/https/server.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/https/client.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/examples/https/tracer.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/karma.worker.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-exporter-metrics-otlp-http/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-exporter-metrics-otlp-http/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/otlp-grpc-exporter-base/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-instrumentation-xml-http-request/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-instrumentation-xml-http-request/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/web-common/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/web-common/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-instrumentation-http/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-sdk-node/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/exporter-trace-otlp-grpc/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/shim-opencensus/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/exporter-logs-otlp-http/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/exporter-logs-otlp-http/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-browser-detector/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-browser-detector/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-instrumentation/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-instrumentation/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-instrumentation/test/common/third-party/node-semver/range-exclude.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-instrumentation/test/common/third-party/node-semver/range-include.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-instrumentation/test/node/fixtures/absolutePathTestFixture.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/exporter-trace-otlp-proto/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/exporter-trace-otlp-proto/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/otlp-exporter-base/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/otlp-exporter-base/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-exporter-metrics-otlp-grpc/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/otlp-transformer/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/otlp-transformer/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-exporter-metrics-otlp-proto/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-exporter-metrics-otlp-proto/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-instrumentation-grpc/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-instrumentation-fetch/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-instrumentation-fetch/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-instrumentation-fetch/test/mockServiceWorker.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/api-logs/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/api-logs/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/exporter-logs-otlp-proto/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/exporter-logs-otlp-proto/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/exporter-logs-otlp-grpc/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/sdk-logs/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/sdk-logs/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/exporter-trace-otlp-http/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/exporter-trace-otlp-http/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/opentelemetry-exporter-prometheus/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/packages/sampler-jaeger-remote/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/examples/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/examples/opencensus-shim/utils.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/examples/opencensus-shim/server.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/examples/opencensus-shim/client.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/experimental/examples/opencensus-shim/setup.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/scripts/semconv/changelog-gen.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/scripts/generate-protos.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/scripts/update-ts-configs-constants.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/scripts/update-changelog.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/scripts/get-version.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/scripts/peer-api-check.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/scripts/version-update.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/scripts/align-api-deps.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/scripts/extract-latest-release-notes.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/scripts/update-ts-configs.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/api/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/api/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/api/karma.worker.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/prettier.config.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js/eslint.base.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/incubator/opentelemetry-sampler-aws-xray/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/karma.base.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/karma.webpack.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/host-metrics/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-long-task/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-long-task/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/baggage-log-record-processor/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/redis-common/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-dataloader/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/winston-transport/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/propagator-aws-xray-lambda/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-aws-sdk/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-connect/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-aws-lambda/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-aws-lambda/test/lambda-test/sync.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-aws-lambda/test/lambda-test/async.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/id-generator-aws-xray/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/id-generator-aws-xray/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/resource-detector-container/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/auto-instrumentations-node/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/auto-instrumentations-node/test/test-app/app-server.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/auto-instrumentations-node/test/test-app/app.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-generic-pool/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-fs/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-memcached/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/baggage-span-processor/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-mysql/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-winston/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-pino/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/propagator-aws-xray/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/propagator-aws-xray/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-kafkajs/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-restify/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/auto-instrumentations-web/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/auto-instrumentations-web/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-lru-memoizer/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-koa/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-dns/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/resource-detector-alibaba-cloud/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-bunyan/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/propagator-instana/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/propagator-instana/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-document-load/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/resource-detector-azure/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/propagation-utils/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/resource-detector-instana/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-knex/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-tedious/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-graphql/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/contrib-test-utils/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-express/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-mongoose/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/sql-common/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-fastify/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-nestjs-core/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/resource-detector-gcp/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/auto-configuration-propagators/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-typeorm/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-undici/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-redis/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-ioredis/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-mongodb/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/resource-detector-aws/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-socket.io/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-amqplib/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/resource-detector-github/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-runtime-node/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-mysql2/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-cucumber/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-user-interaction/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-user-interaction/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-oracledb/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/plugin-react-load/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/plugin-react-load/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-router/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-cassandra-driver/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-hapi/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-hapi/test/fixtures/use-hapi.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-pg/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/propagator-ot-trace/karma.conf.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/propagator-ot-trace/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/instrumentation-net/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/react-load/react/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/react-load/react/src/web-tracer.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/react-load/preact/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/react-load/preact/src/components/Content.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/react-load/preact/src/components/Home.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/react-load/preact/src/components/app.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/react-load/preact/src/web-tracer.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/react-load/preact/src/sw.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/express/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/host-metrics/node.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/host-metrics/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/mysql/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/meta-node/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/meta-node/server.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/meta-node/client.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/meta-node/tracer.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/graphql/client-federation.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/graphql/schema.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/graphql/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/graphql/server-federation.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/graphql/client.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/graphql/server-apollo.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/graphql/server-express.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/graphql/tracer.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/graphql/countries-service.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/hapi/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/hapi/server.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/hapi/client.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/hapi/tracer.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/dns/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/dns/client.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/dns/tracer.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/web/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/web/webpack.config.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/memcached/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/memcached/tracer.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/mongodb/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/network/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/network/client.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/router/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/router/server.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/router/client.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/router/tracer.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/redis/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/bunyan/telemetry.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/bunyan/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/bunyan/app.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/koa/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/fastify/opentelemetry.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/fastify/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/fastify/server.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/fastify/client.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/connect/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/connect/server.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/connect/tracing.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/connect/client.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/ioredis/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/ioredis/tracer.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/grpc-census-prop/.eslintrc.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/grpc-census-prop/tracer_census.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/grpc-census-prop/capitalize_client.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/grpc-census-prop/tracer.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/examples/grpc-census-prop/capitalize_server.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/scripts/lint-readme.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/scripts/npm-run-in-examples.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/scripts/skip-test-if.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/scripts/gen-semconv-ts.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/scripts/update-otel-deps.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/scripts/peer-api-check.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/scripts/version-update.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/prettier.config.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/webpack.node-polyfills.js
+FILE ./packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/eslint.config.js
+FILE ./packages/backend/src/services/WorkflowEngine.js
+FILE ./packages/backend/src/services/ContactService.js
+FILE ./packages/backend/src/services/NotificationEngine.js
+FILE ./packages/backend/src/services/DeepgramService.js
+FILE ./packages/backend/src/services/EmailService.js
+FILE ./packages/backend/src/services/RedisService.js
+FILE ./packages/backend/src/services/EnhancedWorkflowEngine.js
+FILE ./packages/backend/src/services/DocumentationService.js
+FILE ./packages/backend/src/services/WorkflowNodeRegistry.js
+FILE ./packages/backend/src/services/GoogleAPIService.js
+FILE ./packages/backend/src/services/WolframAlphaService.js
+FILE ./packages/backend/src/services/WorkflowToolsService.js
+FILE ./packages/backend/src/services/SystemHealthMonitor.js
+FILE ./packages/backend/src/services/EnhancedKnowledgeHub.js
+FILE ./packages/backend/src/services/ServiceInitializer.js
+FILE ./packages/backend/src/services/OpenAIFineTuningService.js
+FILE ./packages/backend/src/services/PrivacyControlService.js
+FILE ./packages/backend/src/services/AdvancedAudioAnalyticsService.js
+FILE ./packages/backend/src/services/CalendarService.js
+FILE ./packages/backend/src/services/APIKeyManager.js
+FILE ./packages/backend/src/services/VisualAnalysisService.js
+FILE ./packages/backend/src/services/TextToSpeechService.js
+FILE ./packages/backend/src/services/LifeOSService.js
+FILE ./packages/backend/src/services/OptimizedAudioPipeline.js
+FILE ./packages/backend/src/services/VoiceInteractionService.js
+FILE ./packages/backend/src/services/SimpleEncryption.js
+FILE ./packages/backend/src/services/MultiModalProcessingService.js
+FILE ./packages/backend/src/services/EnhancedGoogleCalendarService.js
+FILE ./packages/backend/src/services/AmbientListeningService.js
+FILE ./packages/backend/src/services/HFJobsConfigurationService.js
+FILE ./packages/backend/src/routes/voiceChat.js
+FILE ./packages/backend/src/routes/email.js
+FILE ./packages/backend/src/routes/notifications.js
+FILE ./packages/backend/src/routes/health.js
+FILE ./packages/backend/src/routes/vault.js
+FILE ./packages/backend/src/routes/user.js
+FILE ./packages/backend/src/routes/workflowTools.js
+FILE ./packages/backend/src/routes/contact.js
+FILE ./packages/backend/src/routes/privacy.js
+FILE ./packages/backend/src/routes/hierarchy.js
+FILE ./packages/backend/src/routes/apiKeys.js
+FILE ./packages/backend/src/routes/lifeos.js
+FILE ./packages/backend/src/routes/audioAnalytics.js
+FILE ./packages/backend/src/routes/agent.js
+FILE ./packages/backend/src/routes/mcp.js
+FILE ./packages/backend/src/routes/iteration22.js
+FILE ./packages/backend/src/routes/calendar.js
+FILE ./packages/backend/src/routes/fineTuningRoutes.js
+FILE ./packages/backend/src/routes/voiceToText.js
+FILE ./packages/backend/src/routes/vision.js
+FILE ./packages/backend/src/routes/auth.js
+FILE ./packages/backend/src/routes/settings.js
+FILE ./packages/backend/src/routes/chatHistory.js
+FILE ./packages/backend/src/routes/knowledge.js
+FILE ./packages/backend/src/routes/workflows.js
+FILE ./packages/backend/src/routes/monitoring.js
+FILE ./packages/backend/src/agi/memory/ConversationStore.js
+FILE ./packages/backend/src/agi/memory/KnowledgeGraphAgent.js
+FILE ./packages/backend/src/agi/memory/UserProfile.js
+FILE ./packages/backend/src/agi/memory/LearningAdapterAgent.js
+FILE ./packages/backend/src/agi/memory/ContextMemoryAgent.js
+FILE ./packages/backend/src/agi/integration/APIGatewayAgent.js
+FILE ./packages/backend/src/agi/consciousness/DesignAgent.js
+FILE ./packages/backend/src/agi/consciousness/EnhancedLangChainCoreAgent.js
+FILE ./packages/backend/src/agi/consciousness/CoreAgent.js
+FILE ./packages/backend/src/agi/consciousness/ArtistAgent.js
+FILE ./packages/backend/src/agi/consciousness/GitHubSearchAgent.js
+FILE ./packages/backend/src/agi/consciousness/WriterAgent.js
+FILE ./packages/backend/src/agi/consciousness/TaskManagementAgent.js
+FILE ./packages/backend/src/agi/consciousness/PersonalizationAgent.js
+FILE ./packages/backend/src/agi/consciousness/SchedulerAgent.js
+FILE ./packages/backend/src/agi/consciousness/CodeWriterAgent.js
+FILE ./packages/backend/src/agi/consciousness/EmotionalIntelligenceAgent.js
+FILE ./packages/backend/src/agi/consciousness/AnalyticsAgent.js
+FILE ./packages/backend/src/agi/consciousness/ResearcherAgent.js
+FILE ./packages/backend/src/agi/consciousness/ComedianAgent.js
+FILE ./packages/backend/src/agi/consciousness/MultiModalFusionAgent.js
+FILE ./packages/backend/src/agi/consciousness/ToolAgent.js
+FILE ./packages/backend/src/agi/security/SecurityAuditAgent.js
+FILE ./packages/backend/src/agi/examples/agentUsageExamples.js
+FILE ./packages/backend/src/agi/communication/NotificationAgent.js
+FILE ./packages/backend/src/agi/communication/TranslationAgent.js
+FILE ./packages/backend/src/agi/system/MCPCoordinatorAgent.js
+FILE ./packages/backend/src/agi/system/EnhancedMCPCoordinator.js
+FILE ./packages/backend/src/agi/system/TelemetryAgent.js
+FILE ./packages/backend/src/agi/ethics/BiasDetectionAgent.js
+FILE ./packages/backend/src/agi/ethics/constitution.js
+FILE ./packages/backend/src/agi/ethics/PrivacyProtectionAgent.js
+FILE ./packages/backend/src/agi/ethics/ExistentialCheckIn.js
+FILE ./packages/backend/src/agi/ethics/ConstitutionalAI.js
+FILE ./packages/backend/src/agi/orchestration/AgentToolRegistry.js
+FILE ./packages/backend/src/agi/orchestration/Advanced2025MCPInitializer.js
+FILE ./packages/backend/src/agi/orchestration/EnhancedLangChainOrchestrator.js
+FILE ./packages/backend/src/agi/orchestration/FullyFunctionalToolRegistry.js
+FILE ./packages/backend/src/agi/orchestration/Advanced2025MCPOrchestrator.js
+FILE ./packages/backend/src/agi/orchestration/EnhancedLangChainToolRegistry.js
+FILE ./packages/backend/src/agi/agentInitializer.js
+FILE ./packages/backend/src/db.js
+FILE ./packages/backend/src/system/MessageBus.js
+FILE ./packages/backend/src/system/SupervisorRegistry.js
+FILE ./packages/backend/src/system/OpenTelemetryTracing.js
+FILE ./packages/backend/src/system/protocols/MCPMessage.js
+FILE ./packages/backend/src/system/SecureEncryptionService.js
+FILE ./packages/backend/src/system/EnhancedOpenTelemetryService.js
+FILE ./packages/backend/src/system/EncryptionService.js
+FILE ./packages/backend/src/system/LiveChatService.js
+FILE ./packages/backend/src/system/OpenAIWrapper.js
+FILE ./packages/backend/src/system/BaseAgent.js
+FILE ./packages/backend/src/system/SensoryProcessingService.js
+FILE ./packages/backend/src/system/EnhancedAgentSupervisor.js
+FILE ./packages/backend/src/system/ApiRateLimiter.js
+FILE ./packages/backend/src/middleware/cacheMiddleware.js
+FILE ./packages/backend/src/middleware/authenticateToken.js
+FILE ./packages/backend/src/middleware/authenticateTokenSocket.js
+FILE ./packages/backend/src/tools/githubSearchTool.js
+FILE ./packages/backend/src/utils/fineTuningHelpers.js
+FILE ./packages/backend copy/karma.webpack.js
+FILE ./packages/backend copy/e2e-tests/.eslintrc.js
+FILE ./packages/backend copy/packages/opentelemetry-exporter-jaeger/.eslintrc.js
+FILE ./packages/backend copy/packages/template/karma.conf.js
+FILE ./packages/backend copy/packages/template/.eslintrc.js
+FILE ./packages/backend copy/packages/opentelemetry-propagator-jaeger/karma.conf.js
+FILE ./packages/backend copy/packages/opentelemetry-propagator-jaeger/.eslintrc.js
+FILE ./packages/backend copy/packages/opentelemetry-propagator-b3/.eslintrc.js
+FILE ./packages/backend copy/packages/opentelemetry-context-async-hooks/.eslintrc.js
+FILE ./packages/backend copy/packages/opentelemetry-shim-opentracing/.eslintrc.js
+FILE ./packages/backend copy/packages/opentelemetry-exporter-zipkin/karma.conf.js
+FILE ./packages/backend copy/packages/opentelemetry-exporter-zipkin/.eslintrc.js
+FILE ./packages/backend copy/packages/opentelemetry-sdk-trace-base/karma.conf.js
+FILE ./packages/backend copy/packages/opentelemetry-sdk-trace-base/.eslintrc.js
+FILE ./packages/backend copy/packages/opentelemetry-sdk-trace-base/test/performance/benchmark/span.js
+FILE ./packages/backend copy/packages/opentelemetry-sdk-trace-base/test/performance/benchmark/BatchSpanProcessor.js
+FILE ./packages/backend copy/packages/opentelemetry-sdk-trace-base/karma.worker.js
+FILE ./packages/backend copy/packages/sdk-metrics/karma.conf.js
+FILE ./packages/backend copy/packages/sdk-metrics/.eslintrc.js
+FILE ./packages/backend copy/packages/opentelemetry-context-zone-peer-dep/karma.conf.js
+FILE ./packages/backend copy/packages/opentelemetry-context-zone-peer-dep/.eslintrc.js
+FILE ./packages/backend copy/packages/opentelemetry-sdk-trace-node/.eslintrc.js
+FILE ./packages/backend copy/packages/opentelemetry-core/karma.conf.js
+FILE ./packages/backend copy/packages/opentelemetry-core/.eslintrc.js
+FILE ./packages/backend copy/packages/opentelemetry-sdk-trace-web/karma.conf.js
+FILE ./packages/backend copy/packages/opentelemetry-sdk-trace-web/.eslintrc.js
+FILE ./packages/backend copy/packages/opentelemetry-sdk-trace-web/karma.worker.js
+FILE ./packages/backend copy/packages/opentelemetry-resources/karma.conf.js
+FILE ./packages/backend copy/packages/opentelemetry-resources/.eslintrc.js
+FILE ./packages/backend copy/packages/opentelemetry-resources/karma.worker.js
+FILE ./packages/backend copy/packages/opentelemetry-context-zone/.eslintrc.js
+FILE ./packages/backend copy/integration-tests/propagation-validation-server/validation-server.js
+FILE ./packages/backend copy/integration-tests/api/.eslintrc.js
+FILE ./packages/backend copy/integration-tests/api/test/api-entries.test.js
+FILE ./packages/backend copy/examples/http/server.js
+FILE ./packages/backend copy/examples/http/client.js
+FILE ./packages/backend copy/examples/http/tracer.js
+FILE ./packages/backend copy/examples/.eslintrc.js
+FILE ./packages/backend copy/examples/grpc-js/helloworld_grpc_pb.js
+FILE ./packages/backend copy/examples/grpc-js/server.js
+FILE ./packages/backend copy/examples/grpc-js/helloworld_pb.js
+FILE ./packages/backend copy/examples/grpc-js/client.js
+FILE ./packages/backend copy/examples/grpc-js/tracer.js
+FILE ./packages/backend copy/examples/otlp-exporter-node/tracing.js
+FILE ./packages/backend copy/examples/otlp-exporter-node/metrics.js
+FILE ./packages/backend copy/examples/opentracing-shim/utils.js
+FILE ./packages/backend copy/examples/opentracing-shim/server.js
+FILE ./packages/backend copy/examples/opentracing-shim/client.js
+FILE ./packages/backend copy/examples/opentracing-shim/shim.js
+FILE ./packages/backend copy/examples/opentelemetry-web/webpack.prod.config.js
+FILE ./packages/backend copy/examples/opentelemetry-web/.eslintrc.js
+FILE ./packages/backend copy/examples/opentelemetry-web/webpack.dev.config.js
+FILE ./packages/backend copy/examples/https/server.js
+FILE ./packages/backend copy/examples/https/client.js
+FILE ./packages/backend copy/examples/https/tracer.js
+FILE ./packages/backend copy/karma.worker.js
+FILE ./packages/backend copy/experimental/packages/opentelemetry-exporter-metrics-otlp-http/karma.conf.js
+FILE ./packages/backend copy/experimental/packages/opentelemetry-exporter-metrics-otlp-http/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/otlp-grpc-exporter-base/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/opentelemetry-instrumentation-xml-http-request/karma.conf.js
+FILE ./packages/backend copy/experimental/packages/opentelemetry-instrumentation-xml-http-request/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/web-common/karma.conf.js
+FILE ./packages/backend copy/experimental/packages/web-common/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/opentelemetry-instrumentation-http/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/opentelemetry-sdk-node/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/exporter-trace-otlp-grpc/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/shim-opencensus/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/exporter-logs-otlp-http/karma.conf.js
+FILE ./packages/backend copy/experimental/packages/exporter-logs-otlp-http/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/opentelemetry-browser-detector/karma.conf.js
+FILE ./packages/backend copy/experimental/packages/opentelemetry-browser-detector/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/opentelemetry-instrumentation/karma.conf.js
+FILE ./packages/backend copy/experimental/packages/opentelemetry-instrumentation/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/opentelemetry-instrumentation/test/common/third-party/node-semver/range-exclude.js
+FILE ./packages/backend copy/experimental/packages/opentelemetry-instrumentation/test/common/third-party/node-semver/range-include.js
+FILE ./packages/backend copy/experimental/packages/opentelemetry-instrumentation/test/node/fixtures/absolutePathTestFixture.js
+FILE ./packages/backend copy/experimental/packages/exporter-trace-otlp-proto/karma.conf.js
+FILE ./packages/backend copy/experimental/packages/exporter-trace-otlp-proto/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/otlp-exporter-base/karma.conf.js
+FILE ./packages/backend copy/experimental/packages/otlp-exporter-base/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/opentelemetry-exporter-metrics-otlp-grpc/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/otlp-transformer/karma.conf.js
+FILE ./packages/backend copy/experimental/packages/otlp-transformer/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/opentelemetry-exporter-metrics-otlp-proto/karma.conf.js
+FILE ./packages/backend copy/experimental/packages/opentelemetry-exporter-metrics-otlp-proto/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/opentelemetry-instrumentation-grpc/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/opentelemetry-instrumentation-fetch/karma.conf.js
+FILE ./packages/backend copy/experimental/packages/opentelemetry-instrumentation-fetch/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/opentelemetry-instrumentation-fetch/test/mockServiceWorker.js
+FILE ./packages/backend copy/experimental/packages/api-logs/karma.conf.js
+FILE ./packages/backend copy/experimental/packages/api-logs/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/exporter-logs-otlp-proto/karma.conf.js
+FILE ./packages/backend copy/experimental/packages/exporter-logs-otlp-proto/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/exporter-logs-otlp-grpc/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/sdk-logs/karma.conf.js
+FILE ./packages/backend copy/experimental/packages/sdk-logs/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/exporter-trace-otlp-http/karma.conf.js
+FILE ./packages/backend copy/experimental/packages/exporter-trace-otlp-http/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/opentelemetry-exporter-prometheus/.eslintrc.js
+FILE ./packages/backend copy/experimental/packages/sampler-jaeger-remote/.eslintrc.js
+FILE ./packages/backend copy/experimental/examples/.eslintrc.js
+FILE ./packages/backend copy/experimental/examples/opencensus-shim/utils.js
+FILE ./packages/backend copy/experimental/examples/opencensus-shim/server.js
+FILE ./packages/backend copy/experimental/examples/opencensus-shim/client.js
+FILE ./packages/backend copy/experimental/examples/opencensus-shim/setup.js
+FILE ./packages/backend copy/scripts/semconv/changelog-gen.js
+FILE ./packages/backend copy/scripts/generate-protos.js
+FILE ./packages/backend copy/scripts/update-ts-configs-constants.js
+FILE ./packages/backend copy/scripts/update-changelog.js
+FILE ./packages/backend copy/scripts/get-version.js
+FILE ./packages/backend copy/scripts/peer-api-check.js
+FILE ./packages/backend copy/scripts/version-update.js
+FILE ./packages/backend copy/scripts/align-api-deps.js
+FILE ./packages/backend copy/scripts/extract-latest-release-notes.js
+FILE ./packages/backend copy/scripts/update-ts-configs.js
+FILE ./packages/backend copy/api/karma.conf.js
+FILE ./packages/backend copy/api/.eslintrc.js
+FILE ./packages/backend copy/api/karma.worker.js
+FILE ./packages/backend copy/prettier.config.js
+FILE ./packages/backend copy/eslint.base.js
+FILE ./test-direct-agent.js
+FILE ./monitor-loops.js
+FILE ./integrations/huggingface/agents/LanguageMaestroAgent.js
+FILE ./integrations/huggingface/agents/VisionMasterAgent.js
+FILE ./integrations/huggingface/agents/MultiModalOracleAgent.js
+FILE ./integrations/huggingface/agents/DataSageAgent.js
+FILE ./integrations/huggingface/agents/AudioWizardAgent.js
+FILE ./integrations/huggingface/services/HuggingFaceInferenceService.js
+FILE ./integrations/huggingface/routes/huggingfaceRoutes.js
+FILE ./integrations/huggingface/scripts/demo-huggingface-agents.js
+FILE ./integrations/huggingface/scripts/test-huggingface-integration.js
+FILE ./integrations/huggingface/AgentOrchestrator.js
+FILE ./simple-chat-test.js
+FILE ./scripts/tests/test-tool-execution.js
+FILE ./scripts/tests/test-cartrita-agents-simple.js
+FILE ./scripts/tests/create-user.js
+FILE ./scripts/tests/comprehensive-backend-check.js
+FILE ./scripts/tests/test-hierarchical-system.js
+FILE ./scripts/tests/test-i18n-fix.js
+FILE ./scripts/tests/validate-lifeos-apis.js
+FILE ./scripts/tests/test-simple-langchain.js
+FILE ./scripts/tests/test-available-langchain.js
+FILE ./scripts/tests/test-settings-functionality.js
+FILE ./scripts/tests/test-voice-permissions.js
+FILE ./scripts/tests/test-lifeos-integrations.js
+FILE ./scripts/tests/test-cartrita-socket.js
+FILE ./scripts/tests/test-api-endpoints.js
+FILE ./scripts/config/tailwind.config.js
+FILE ./scripts/config/postcss.config.js
+FILE ./scripts/fixes/fix-duplicates.js
+FILE ./scripts/fixes/fix-common-issues.js
+FILE ./scripts/fixes/fix-remaining-issues.js
+FILE ./scripts/fixes/fix-case-declarations.js
+FILE ./scripts/fixes/fix-agent-constructors.js
+FILE ./scripts/fixes/fix-comment-headers.js
+FILE ./scripts/fixes/fix-all-remaining-syntax-errors.js
+FILE ./scripts/fixes/final-syntax-cleanup.js
+FILE ./scripts/fixes/fix-security-regex.js
+FILE ./scripts/fixes/fix-critical-syntax-errors.js
+FILE ./scripts/fixes/fix-all-backend-syntax-errors.js
+FILE ./scripts/fixes/fix-specific-issues.js
+FILE ./scripts/fixes/fix-remaining-syntax-errors.js
+FILE ./scripts/fixes/fix-es6-imports.js
+FILE ./scripts/fixes/final-syntax-fix.js
+FILE ./scripts/fixes/fix-eslint-issues.js
+FILE ./scripts/fixes/fix-basic-syntax.js
+FILE ./scripts/fixes/fix-all-syntax-errors.js
+FILE ./scripts/fixes/temp_fix.js
+FILE ./scripts/fixes/fix-auth-imports.js
+FILE ./scripts/fixes/fix-syntax-errors-batch.js
+FILE ./scripts/utils/restructure.js
+FILE ./scripts/utils/test-ambient.js
+FILE ./check-agent-status.js
+FILE ./debug-chat-test.js
+FILE ./test-socket-connection.js
+FILE ./final-chat-test.js
+FILE ./src/audio/worklets/scripts/encoder.js
+
+=== Files mixing ESM (import/export) and CommonJS (module.exports/exports.) ===
+
+===== END OF REPORT 
+=====
