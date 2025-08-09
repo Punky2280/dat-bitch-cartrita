@@ -1,0 +1,112 @@
+\documentclass[$if(fontsize)$$fontsize$$else$11pt$endif$,$if(lang)$$babel-lang$$endif$,$if(papersize)$$papersize$paper$endif$,$for(classoption)$$classoption$$sep$,$endfor$]{article}
+
+% Packages
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{longtable,booktabs}
+\usepackage{graphicx,grffile}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{tcolorbox}
+\usepackage{enumitem}
+
+% Font configuration
+$if(mainfont)$
+\setmainfont{$mainfont$}
+$endif$
+$if(sansfont)$
+\setsansfont{$sansfont$}
+$endif$
+$if(monofont)$
+\setmonofont[Mapping=tex-ansi]{$monofont$}
+$endif$
+
+% Colors
+\definecolor{codegray}{rgb}{0.95,0.95,0.95}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.98,0.98,0.98}
+
+% Code highlighting
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+\lstset{style=mystyle}
+
+% Headers and footers
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\leftmark}
+\lhead{Cartrita MCP Transformation Guide}
+\cfoot{\thepage}
+
+% Title page
+\title{$if(title)$$title$$else$Cartrita Hierarchical MCP Transformation Guide$endif$}
+\author{$if(author)$$for(author)$$author$$sep$, $endfor$$else$Cartrita Development Team$endif$}
+\date{$if(date)$$date$$else$\today$endif$}
+
+% Hyperlink setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={$if(title)$$title$$else$Cartrita MCP Transformation Guide$endif$},
+    pdfauthor={$if(author)$$for(author)$$author$$sep$, $endfor$$else$Cartrita Team$endif$},
+    pdfsubject={AI Architecture Transformation Guide},
+    pdfkeywords={AI, MCP, Architecture, Node.js, Python, Microservices}
+}
+
+% Document begins
+\begin{document}
+
+% Title page
+\maketitle
+\thispagestyle{empty}
+
+\newpage
+
+% Table of contents
+$if(toc)$
+\tableofcontents
+\newpage
+$endif$
+
+% Main content
+$body$
+
+% Footer
+\vfill
+\hrule
+\vspace{0.5cm}
+\begin{center}
+\footnotesize
+Generated on \today \\
+Cartrita Hierarchical MCP Transformation Project \\
+\url{https://github.com/cartrita/dat-bitch-cartrita}
+\end{center}
+
+\end{document}

@@ -20,9 +20,10 @@
 4. [Architecture & Technology Stack](#-architecture--technology-stack)
 5. [Installation & Setup](#-installation--setup)
 6. [API Documentation](#-api-documentation)
-7. [Development Status](#-development-status)
-8. [Troubleshooting](#-troubleshooting)
-9. [License](#license)
+7. [Fine-Tuning Models](#-fine-tuning-models)
+8. [Development Status](#-development-status)
+9. [Troubleshooting](#-troubleshooting)
+10. [License](#license)
 
 ---
 
@@ -628,6 +629,190 @@ GET / api / mcp / agent - hierarchy; // Agent system status
 POST / api / mcp / supervisor / override; // Master override
 GET / api / mcp / tool - registry; // Available tools
 ```
+
+---
+
+## 🎯 **Fine-Tuning Models**
+
+Cartrita includes comprehensive OpenAI fine-tuning capabilities using a dedicated API key for model customization and specialization.
+
+### 🔧 **Fine-Tuning Configuration**
+
+The system uses a separate OpenAI API key specifically for fine-tuning operations to maintain security and cost control:
+
+```bash
+# Environment Variables
+OPENAI_API_KEY=your_main_openai_key_here
+OPENAI_FINETUNING_API_KEY=your_finetuning_specific_key_here
+```
+
+### 📋 **Fine-Tuning API Endpoints**
+
+```typescript
+// File Management
+POST   /api/fine-tuning/upload                    // Upload training files (JSONL)
+POST   /api/fine-tuning/validate                  // Validate training data format
+
+// Job Management  
+POST   /api/fine-tuning/jobs                      // Create fine-tuning job
+GET    /api/fine-tuning/jobs                      // List fine-tuning jobs
+GET    /api/fine-tuning/jobs/:jobId               // Get job details
+POST   /api/fine-tuning/jobs/:jobId/cancel        // Cancel job
+GET    /api/fine-tuning/jobs/:jobId/events        // Job events/logs
+GET    /api/fine-tuning/jobs/:jobId/checkpoints   // Model checkpoints
+
+// Utilities
+POST   /api/fine-tuning/estimate-cost             // Cost estimation
+POST   /api/fine-tuning/recommendations           // Hyperparameter recommendations
+POST   /api/fine-tuning/workflow                  // Complete workflow execution
+GET    /api/fine-tuning/models                    // Supported models
+```
+
+### 🎨 **Training Data Formats**
+
+#### **Supervised Fine-Tuning (Chat Models)**
+```json
+{
+  "messages": [
+    { "role": "user", "content": "What is the weather in San Francisco?" },
+    {
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "id": "call_id",
+          "type": "function", 
+          "function": {
+            "name": "get_current_weather",
+            "arguments": "{\"location\": \"San Francisco, USA\", \"format\": \"celsius\"}"
+          }
+        }
+      ]
+    }
+  ],
+  "parallel_tool_calls": false,
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_weather",
+        "description": "Get the current weather",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "location": {
+                "type": "string",
+                "description": "The city and country, eg. San Francisco, USA"
+            },
+            "format": { "type": "string", "enum": ["celsius", "fahrenheit"] }
+          },
+          "required": ["location", "format"]
+        }
+      }
+    }
+  ]
+}
+```
+
+#### **DPO (Preference) Fine-Tuning**
+```json
+{
+  "input": {
+    "messages": [
+      { "role": "user", "content": "What is the weather in San Francisco?" }
+    ]
+  },
+  "preferred_output": [
+    {
+      "role": "assistant", 
+      "content": "The weather in San Francisco is 70 degrees Fahrenheit."
+    }
+  ],
+  "non_preferred_output": [
+    {
+      "role": "assistant",
+      "content": "The weather in San Francisco is 21 degrees Celsius."
+    }
+  ]
+}
+```
+
+#### **Reinforcement Learning (Reasoning Models)**
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Your task is to take a chemical in SMILES format and predict the number of hydrobond bond donors and acceptors according to Lipinkski's rule. CCN(CC)CCC(=O)c1sc(N)nc1C"
+    }
+  ],
+  "reference_answer": {
+    "donor_bond_counts": 5,
+    "acceptor_bond_counts": 7
+  }
+}
+```
+
+### 💰 **Supported Models & Pricing**
+
+| Model | Training Cost | Usage Cost | Best For |
+|-------|---------------|------------|----------|
+| **gpt-4o-mini** | $3.00/1M tokens | $0.30/1M tokens | Cost-effective, general use |
+| **gpt-4o** | $25.00/1M tokens | $3.75/1M tokens | Complex tasks, highest quality |
+| **gpt-3.5-turbo** | $8.00/1M tokens | $1.20/1M tokens | Fast, simple tasks |
+
+### 🚀 **Complete Workflow Example**
+
+```javascript
+// 1. Prepare training data
+const trainingData = [
+  {
+    messages: [
+      { role: "user", content: "How do I troubleshoot network issues?" },
+      { role: "assistant", content: "Start by checking your network connection..." }
+    ]
+  }
+  // ... more examples
+];
+
+// 2. Execute complete workflow
+const response = await fetch('/api/fine-tuning/workflow', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    project_name: 'customer-support-v1',
+    model: 'gpt-4o-mini',
+    training_data: trainingData,
+    hyperparameters: {
+      n_epochs: 3,
+      batch_size: 'auto',
+      learning_rate_multiplier: 'auto'
+    },
+    metadata: {
+      version: '1.0',
+      use_case: 'customer_support'
+    }
+  })
+});
+
+const result = await response.json();
+console.log('Fine-tuned model:', result.workflow_results.finalJob.fine_tuned_model);
+```
+
+### 📊 **Monitoring & Management**
+
+- **Real-time Progress Tracking**: Monitor training progress with live updates
+- **Cost Estimation**: Calculate training costs before starting jobs
+- **Hyperparameter Recommendations**: AI-powered optimization suggestions
+- **Checkpoint Management**: Access intermediate model states
+- **Event Logging**: Comprehensive training event history
+
+### 🎯 **Use Cases**
+
+- **Customer Service**: Train on support conversations for specialized assistance
+- **Code Generation**: Fine-tune on codebase patterns and best practices  
+- **Creative Writing**: Customize tone and style for content generation
+- **Domain Expertise**: Specialize models for medical, legal, or technical domains
+- **Brand Voice**: Train on company communication patterns
 
 ---
 

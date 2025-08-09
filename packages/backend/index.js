@@ -82,6 +82,8 @@ import hierarchyRoutes from './src/routes/hierarchy.js';
 import healthRoutes from './src/routes/health.js';
 import iteration22Routes from './src/routes/iteration22.js';
 import workflowToolsRoutes from './src/routes/workflowTools.js';
+import fineTuningRoutes from './src/routes/fineTuningRoutes.js';
+import huggingfaceRoutes from '../../integrations/huggingface/routes/huggingfaceRoutes.js';
 
 // --- CONFIGURATION ---
 const PORT = process.env.PORT || 8001;
@@ -245,6 +247,8 @@ app.use('/api/hierarchy', hierarchyRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/iteration22', iteration22Routes);
 app.use('/api/workflow-tools', workflowToolsRoutes);
+app.use('/api/fine-tuning', fineTuningRoutes);
+app.use('/api/huggingface', huggingfaceRoutes);
 console.log('[Route Registration] ✅ All API routes registered.');
 
 // --- DELETED a large block of code from here (the old SOCKET.IO HANDLING) ---

@@ -410,7 +410,7 @@ router.post('/bulk-import', authenticateToken, async (req, res) => {
       success: true,
       data: {
         imported: results.length,
-        errors: errors.length,
+        errorCount: errors.length,
         results,
         errors,
       },
