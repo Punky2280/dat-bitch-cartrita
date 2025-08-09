@@ -1,0 +1,360 @@
+syntax = "proto3";
+
+package cartrita.mcp.v1;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/Punky2280/dat-bitch-cartrita/go/gen/cartrita/mcp/v1;mcpv1";
+
+
+
+
+
+
+
+
+
+// MCP Message envelope - the fundamental unit of communication
+
+enum MessageType {
+  MESSAGE_TYPE_UNSPECIFIED = 0;
+  MESSAGE_TYPE_TASK_REQUEST = 1;
+  MESSAGE_TYPE_TASK_RESPONSE = 2;
+  MESSAGE_TYPE_STREAM_START = 3;
+  MESSAGE_TYPE_STREAM_CHUNK = 4;
+  MESSAGE_TYPE_STREAM_END = 5;
+  MESSAGE_TYPE_EVENT = 6;
+  MESSAGE_TYPE_ERROR = 7;
+}
+
+message MCPMessage {
+  // Message metadata
+  string id = 1;                    // Unique message identifier
+  string correlation_id = 2;        // For request-response correlation
+  string trace_id = 3;             // Distributed tracing identifier
+  string span_id = 4;              // Span identifier within trace
+  
+  // Routing information
+  string sender = 5;               // Sending agent/service identifier
+  string recipient = 6;            // Target agent/service identifier
+  MessageType message_type = 7;         // TASK_REQUEST, TASK_RESPONSE, STREAM_START, etc.
+  
+  // Message content
+  google.protobuf.Any payload = 8; // Actual message data
+  repeated string tags = 9;        // Optional message tags
+  
+  // Context and metadata
+  MCPContext context = 10;         // Execution context
+  DeliveryOptions delivery = 11;   // Delivery guarantees and options
+  
+  // Timestamps
+  google.protobuf.Timestamp created_at = 12;
+  google.protobuf.Timestamp expires_at = 13;
+  
+  // Security
+  string security_token = 14;      // JWT or similar auth token
+  repeated string permissions = 15; // Required permissions
+}
+
+// Execution context propagated with messages
+message MCPContext {
+  // Distributed tracing context
+  string trace_id = 1;
+  string span_id = 2;
+  string parent_span_id = 3;
+  map<string, string> baggage = 4;
+  
+  // User and session context
+  string user_id = 5;
+  string session_id = 6;
+  string workspace_id = 7;
+  
+  // Request context
+  string request_id = 8;
+  int64 timeout_ms = 9;
+  map<string, string> metadata = 10;
+  
+  // Budget and limits
+  CostBudget budget = 11;
+  ResourceLimits limits = 12;
+}
+
+// Cost and budget management
+message CostBudget {
+  double max_usd = 1;              // Maximum USD spend
+  int32 max_tokens = 2;            // Maximum token usage
+  double used_usd = 3;             // Current USD spent
+  int32 used_tokens = 4;           // Current tokens used
+  map<string, double> model_costs = 5; // Per-model cost tracking
+}
+
+// Resource limits
+message ResourceLimits {
+  int32 max_cpu_percent = 1;       // Maximum CPU utilization
+  int64 max_memory_mb = 2;         // Maximum memory usage
+  int32 max_concurrent_requests = 3; // Request concurrency limit
+  int64 max_processing_time_ms = 4; // Maximum processing time
+}
+
+// Delivery options for message transport
+message DeliveryOptions {
+  DeliveryGuarantee guarantee = 1;
+  int32 retry_count = 2;
+  int64 retry_delay_ms = 3;
+  bool require_ack = 4;
+  int32 priority = 5;              // Higher numbers = higher priority
+}
+
+enum DeliveryGuarantee {
+  DELIVERY_GUARANTEE_UNSPECIFIED = 0;
+  DELIVERY_GUARANTEE_AT_MOST_ONCE = 1;
+  DELIVERY_GUARANTEE_AT_LEAST_ONCE = 2;
+  DELIVERY_GUARANTEE_EXACTLY_ONCE = 3;
+}
+
+// Task request payload
+message TaskRequest {
+  string task_type = 1;            // e.g., "huggingface.vision.classify"
+  string task_id = 2;              // Unique task identifier
+  google.protobuf.Any parameters = 3; // Task-specific parameters
+  map<string, string> metadata = 4;
+  string preferred_agent = 5;      // Optional agent preference
+  int32 priority = 6;              // Task priority
+  google.protobuf.Timestamp deadline = 7; // Task deadline
+}
+
+// Task response payload
+message TaskResponse {
+  string task_id = 1;
+  TaskStatus status = 2;
+  google.protobuf.Any result = 3;  // Task result data
+  string error_message = 4;        // Error description if failed
+  string error_code = 5;           // Machine-readable error code
+  TaskMetrics metrics = 6;         // Task execution metrics
+  repeated string warnings = 7;    // Non-fatal warnings
+}
+
+enum TaskStatus {
+  TASK_STATUS_UNSPECIFIED = 0;
+  TASK_STATUS_PENDING = 1;
+  TASK_STATUS_RUNNING = 2;
+  TASK_STATUS_COMPLETED = 3;
+  TASK_STATUS_FAILED = 4;
+  TASK_STATUS_CANCELLED = 5;
+  TASK_STATUS_TIMEOUT = 6;
+}
+
+// Task execution metrics
+message TaskMetrics {
+  int64 processing_time_ms = 1;
+  int64 queue_time_ms = 2;
+  int32 retry_count = 3;
+  double cost_usd = 4;
+  int32 tokens_used = 5;
+  string model_used = 6;
+  map<string, double> custom_metrics = 7;
+}
+
+// Streaming message payloads
+message StreamStart {
+  string stream_id = 1;
+  string content_type = 2;         // e.g., "audio/pcm", "application/json"
+  map<string, string> metadata = 3;
+  int64 estimated_size = 4;        // Estimated total size in bytes
+}
+
+message StreamData {
+  string stream_id = 1;
+  int32 sequence = 2;              // Sequence number for ordering
+  bytes data = 3;                  // Chunk data
+  bool is_final = 4;               // True for last chunk
+}
+
+message StreamEnd {
+  string stream_id = 1;
+  StreamStatus status = 2;
+  string error_message = 3;
+  int64 total_bytes = 4;           // Actual total bytes transmitted
+}
+
+enum StreamStatus {
+  STREAM_STATUS_UNSPECIFIED = 0;
+  STREAM_STATUS_COMPLETED = 1;
+  STREAM_STATUS_CANCELLED = 2;
+  STREAM_STATUS_FAILED = 3;
+}
+
+// Agent registration and discovery
+message AgentRegistration {
+  string agent_id = 1;
+  string agent_name = 2;
+  AgentType type = 3;
+  string version = 4;
+  repeated string capabilities = 5; // Supported task types
+  map<string, string> metadata = 6;
+  HealthStatus health = 7;
+  google.protobuf.Timestamp registered_at = 8;
+}
+
+enum AgentType {
+  AGENT_TYPE_UNSPECIFIED = 0;
+  AGENT_TYPE_ORCHESTRATOR = 1;
+  AGENT_TYPE_SUPERVISOR = 2;
+  AGENT_TYPE_SUB_AGENT = 3;
+}
+
+message HealthStatus {
+  bool healthy = 1;
+  string status_message = 2;
+  double cpu_usage = 3;
+  int64 memory_mb = 4;
+  int32 active_tasks = 5;
+  google.protobuf.Timestamp last_heartbeat = 6;
+}
+
+// System control messages
+message SystemCommand {
+  CommandType type = 1;
+  google.protobuf.Any payload = 2;
+  string reason = 3;
+}
+
+enum CommandType {
+  COMMAND_TYPE_UNSPECIFIED = 0;
+  COMMAND_TYPE_SHUTDOWN = 1;
+  COMMAND_TYPE_RESTART = 2;
+  COMMAND_TYPE_SCALE_UP = 3;
+  COMMAND_TYPE_SCALE_DOWN = 4;
+  COMMAND_TYPE_HEALTH_CHECK = 5;
+  COMMAND_TYPE_CONFIG_UPDATE = 6;
+}
+
+// Service definitions
+service MCPOrchestratorService {
+  // Message routing
+  rpc RouteMessage(RouteMessageRequest) returns (RouteMessageResponse);
+  rpc StreamMessages(stream StreamMessagesRequest) returns (stream StreamMessagesResponse);
+  
+  // Agent management
+  rpc RegisterAgent(RegisterAgentRequest) returns (RegisterAgentResponse);
+  rpc GetAgentHealth(GetAgentHealthRequest) returns (GetAgentHealthResponse);
+  
+  // System control
+  rpc ExecuteCommand(ExecuteCommandRequest) returns (ExecuteCommandResponse);
+}
+
+service MCPSupervisorService {
+  // Task processing
+  rpc ProcessTask(ProcessTaskRequest) returns (ProcessTaskResponse);
+  rpc StreamTask(stream StreamTaskRequest) returns (stream StreamTaskResponse);
+  
+  // Agent coordination
+  rpc DelegateTask(DelegateTaskRequest) returns (DelegateTaskResponse);
+  rpc GetCapabilities(GetCapabilitiesRequest) returns (GetCapabilitiesResponse);
+}
+
+service MCPAgentService {
+  // Core agent operations
+  rpc ExecuteTask(ExecuteTaskRequest) returns (ExecuteTaskResponse);
+  rpc GetStatus(GetStatusRequest) returns (GetStatusResponse);
+  rpc UpdateConfig(UpdateConfigRequest) returns (UpdateConfigResponse);
+}
+
+// Supporting message types
+message HealthCheckRequest {
+  string agent_id = 1;
+}
+
+message SystemCommandResponse {
+  bool success = 1;
+  string message = 2;
+  google.protobuf.Any result = 3;
+}
+
+message CapabilitiesRequest {
+  string supervisor_id = 1;
+}
+
+message CapabilitiesResponse {
+  repeated string task_types = 1;
+  repeated AgentCapability agent_capabilities = 2;
+}
+
+message AgentCapability {
+  string agent_id = 1;
+  string agent_name = 2;
+  repeated string task_types = 3;
+  ResourceLimits limits = 4;
+  map<string, string> metadata = 5;
+}
+
+message StatusRequest {
+  string agent_id = 1;
+  bool include_metrics = 2;
+}
+
+message AgentStatus {
+  string agent_id = 1;
+  bool healthy = 2;
+  string status_message = 3;
+  TaskMetrics current_metrics = 4;
+  int32 queue_depth = 5;
+  google.protobuf.Timestamp last_activity = 6;
+}
+
+message ConfigUpdate {
+  string agent_id = 1;
+  map<string, string> config_changes = 2;
+  bool restart_required = 3;
+}
+
+message ConfigUpdateResponse {
+  bool success = 1;
+  string message = 2;
+  bool restart_scheduled = 3;
+}
+
+/* ===== Added wrapper RPC request/response messages for lint compliance ===== */
+
+/* Orchestrator */
+message RouteMessageRequest { MCPMessage message = 1; }
+message RouteMessageResponse { MCPMessage message = 1; }
+
+message StreamMessagesRequest { MCPMessage subscription = 1; }
+message StreamMessagesResponse { MCPMessage message = 1; }
+
+message RegisterAgentRequest { AgentRegistration registration = 1; }
+message RegisterAgentResponse { AgentRegistration registration = 1; }
+
+message GetAgentHealthRequest { string agent_id = 1; }
+message GetAgentHealthResponse { HealthStatus status = 1; }
+
+message ExecuteCommandRequest { SystemCommand command = 1; }
+message ExecuteCommandResponse { SystemCommandResponse result = 1; }
+
+/* Supervisor */
+message ProcessTaskRequest { TaskRequest task = 1; }
+message ProcessTaskResponse { TaskResponse result = 1; }
+
+message StreamTaskRequest { TaskRequest task = 1; }
+message StreamTaskResponse { TaskResponse chunk = 1; }
+
+message DelegateTaskRequest { TaskRequest task = 1; string target_agent_id = 2; }
+message DelegateTaskResponse { TaskResponse result = 1; }
+
+message GetCapabilitiesRequest { string agent_id = 1; }
+message GetCapabilitiesResponse { CapabilitiesResponse capabilities = 1; }
+
+/* Agent */
+message ExecuteTaskRequest { TaskRequest task = 1; }
+message ExecuteTaskResponse { TaskResponse result = 1; }
+
+message GetStatusRequest { string agent_id = 1; }
+message GetStatusResponse { AgentStatus status = 1; }
+
+message UpdateConfigRequest { ConfigUpdate update = 1; }
+message UpdateConfigResponse { ConfigUpdateResponse result = 1; }
+
+
+/* ===== Automatically added wrapper request/response messages ===== */
