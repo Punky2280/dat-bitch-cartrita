@@ -7,8 +7,11 @@
   bottom: 0;
   opacity: 0.1;
   pointer-events: none;
-  background-image:
-    radial-gradient(circle at 20% 50%, #f97316 0%, transparent 50%),
+  background-image: radial-gradient(
+      circle at 20% 50%,
+      #f97316 0%,
+      transparent 50%
+    ),
     radial-gradient(circle at 80% 80%, #ec4899 0%, transparent 50%),
     radial-gradient(circle at 40% 20%, #a855f7 0%, transparent 50%),
     radial-gradient(circle at 60% 60%, #22c55e 0%, transparent 50%);
@@ -17,7 +20,6 @@
 
 /* Confetti cursor effect */
 .confetti-cursor {
-  cursor:
-    url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><text y="28" font-size="28">🌈</text></svg>'),
+  cursor: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><text y="28" font-size="28">🌈</text></svg>'),
     auto;
 }

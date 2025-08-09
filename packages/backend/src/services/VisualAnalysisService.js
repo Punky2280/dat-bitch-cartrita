@@ -1,30 +1,37 @@
 /* global process, console */
 import OpenAI from 'openai';
+import EventEmitter from 'events';
 
-class VisualAnalysisService {
+class VisualAnalysisService extends EventEmitter {
   constructor() {
+    super();
     this.client = null;
     this.initialized = false;
-    
+
     console.log('👁️ VisualAnalysisService initialized');
     this.initializeClient();
   }
 
   initializeClient() {
     if (!process.env.OPENAI_API_KEY) {
-      console.warn('[VisualAnalysisService] OpenAI API key not configured - service will be limited');
+      console.warn(
+        '[VisualAnalysisService] OpenAI API key not configured - service will be limited'
+      );
       return;
     }
 
     try {
       this.client = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY
+        apiKey: process.env.OPENAI_API_KEY,
       });
-      
+
       this.initialized = true;
       console.log('[VisualAnalysisService] ✅ Client initialized');
     } catch (error) {
-      console.error('[VisualAnalysisService] ❌ Failed to initialize client:', error);
+      console.error(
+        '[VisualAnalysisService] ❌ Failed to initialize client:',
+        error
+      );
     }
   }
 
@@ -32,7 +39,7 @@ class VisualAnalysisService {
     if (!this.client) {
       return {
         success: false,
-        error: 'OpenAI client not initialized'
+        error: 'OpenAI client not initialized',
       };
     }
 
@@ -40,7 +47,7 @@ class VisualAnalysisService {
       const {
         prompt = 'What do you see in this image?',
         maxTokens = 300,
-        detail = 'auto'
+        detail = 'auto',
       } = options;
 
       // Convert buffer to base64
@@ -58,27 +65,26 @@ class VisualAnalysisService {
                 type: 'image_url',
                 image_url: {
                   url: `data:${mimeType};base64,${base64Image}`,
-                  detail: detail
-                }
-              }
-            ]
-          }
+                  detail: detail,
+                },
+              },
+            ],
+          },
         ],
-        max_tokens: maxTokens
+        max_tokens: maxTokens,
       });
 
       return {
         success: true,
         analysis: response.choices[0].message.content,
         usage: response.usage,
-        model: response.model
+        model: response.model,
       };
-
     } catch (error) {
       console.error('[VisualAnalysisService] ❌ Image analysis failed:', error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -86,7 +92,7 @@ class VisualAnalysisService {
   detectMimeType(buffer) {
     // Simple MIME type detection based on file headers
     const header = buffer.toString('hex', 0, 4).toUpperCase();
-    
+
     if (header.startsWith('FFD8FF')) {
       return 'image/jpeg';
     } else if (header.startsWith('89504E47')) {
@@ -94,7 +100,7 @@ class VisualAnalysisService {
     } else if (header.startsWith('47494638')) {
       return 'image/gif';
     }
-    
+
     return 'image/jpeg'; // Default fallback
   }
 
@@ -103,7 +109,7 @@ class VisualAnalysisService {
       service: 'VisualAnalysisService',
       initialized: this.initialized,
       hasClient: !!this.client,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 }

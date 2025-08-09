@@ -4,9 +4,9 @@ import React, {
   useState,
   useEffect,
   ReactNode,
-} from 'react';
+} from "react";
 
-export type Theme = 'dark' | 'light' | 'cyberpunk' | 'neon' | 'minimal';
+export type Theme = "dark" | "light" | "cyberpunk" | "neon" | "minimal";
 
 type ThemeSettings = {
   primaryColor: string;
@@ -23,64 +23,64 @@ type ThemeSettings = {
 
 const themePresets: Record<Theme, ThemeSettings> = {
   dark: {
-    primaryColor: '#0a0e1a',
-    secondaryColor: '#111827',
-    backgroundColor: '#0f172a',
-    surfaceColor: 'rgba(17, 24, 39, 0.8)',
-    textColor: '#f9fafb',
-    accentColor: '#06b6d4',
+    primaryColor: "#0a0e1a",
+    secondaryColor: "#111827",
+    backgroundColor: "#0f172a",
+    surfaceColor: "rgba(17, 24, 39, 0.8)",
+    textColor: "#f9fafb",
+    accentColor: "#06b6d4",
     glassOpacity: 0.6,
-    animationSpeed: '300ms',
-    borderRadius: '12px',
-    fontSize: '16px',
+    animationSpeed: "300ms",
+    borderRadius: "12px",
+    fontSize: "16px",
   },
   light: {
-    primaryColor: '#ffffff',
-    secondaryColor: '#f8fafc',
-    backgroundColor: '#f1f5f9',
-    surfaceColor: 'rgba(255, 255, 255, 0.9)',
-    textColor: '#1e293b',
-    accentColor: '#3b82f6',
+    primaryColor: "#ffffff",
+    secondaryColor: "#f8fafc",
+    backgroundColor: "#f1f5f9",
+    surfaceColor: "rgba(255, 255, 255, 0.9)",
+    textColor: "#1e293b",
+    accentColor: "#3b82f6",
     glassOpacity: 0.8,
-    animationSpeed: '300ms',
-    borderRadius: '12px',
-    fontSize: '16px',
+    animationSpeed: "300ms",
+    borderRadius: "12px",
+    fontSize: "16px",
   },
   cyberpunk: {
-    primaryColor: '#0d1117',
-    secondaryColor: '#161b22',
-    backgroundColor: '#0a0a0a',
-    surfaceColor: 'rgba(13, 17, 23, 0.9)',
-    textColor: '#00ff41',
-    accentColor: '#ff0080',
+    primaryColor: "#0d1117",
+    secondaryColor: "#161b22",
+    backgroundColor: "#0a0a0a",
+    surfaceColor: "rgba(13, 17, 23, 0.9)",
+    textColor: "#00ff41",
+    accentColor: "#ff0080",
     glassOpacity: 0.4,
-    animationSpeed: '200ms',
-    borderRadius: '4px',
-    fontSize: '14px',
+    animationSpeed: "200ms",
+    borderRadius: "4px",
+    fontSize: "14px",
   },
   neon: {
-    primaryColor: '#1a0033',
-    secondaryColor: '#2d1b4e',
-    backgroundColor: '#0f051f',
-    surfaceColor: 'rgba(26, 0, 51, 0.7)',
-    textColor: '#ffffff',
-    accentColor: '#ff0080',
+    primaryColor: "#1a0033",
+    secondaryColor: "#2d1b4e",
+    backgroundColor: "#0f051f",
+    surfaceColor: "rgba(26, 0, 51, 0.7)",
+    textColor: "#ffffff",
+    accentColor: "#ff0080",
     glassOpacity: 0.5,
-    animationSpeed: '400ms',
-    borderRadius: '20px',
-    fontSize: '16px',
+    animationSpeed: "400ms",
+    borderRadius: "20px",
+    fontSize: "16px",
   },
   minimal: {
-    primaryColor: '#ffffff',
-    secondaryColor: '#f5f5f5',
-    backgroundColor: '#fafafa',
-    surfaceColor: 'rgba(255, 255, 255, 0.95)',
-    textColor: '#333333',
-    accentColor: '#000000',
+    primaryColor: "#ffffff",
+    secondaryColor: "#f5f5f5",
+    backgroundColor: "#fafafa",
+    surfaceColor: "rgba(255, 255, 255, 0.95)",
+    textColor: "#333333",
+    accentColor: "#000000",
     glassOpacity: 0.9,
-    animationSpeed: '150ms',
-    borderRadius: '8px',
-    fontSize: '15px',
+    animationSpeed: "150ms",
+    borderRadius: "8px",
+    fontSize: "15px",
   },
 };
 
@@ -102,28 +102,28 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
-    const saved = localStorage.getItem('theme');
-    return (saved as Theme) || 'dark';
+    const saved = localStorage.getItem("theme");
+    return (saved as Theme) || "dark";
   });
 
   const [customSettings, setCustomSettings] = useState<Partial<ThemeSettings>>(
     () => {
       try {
-        const saved = localStorage.getItem('customThemeSettings');
+        const saved = localStorage.getItem("customThemeSettings");
         if (!saved) return {};
 
         const parsed = JSON.parse(saved);
-        return typeof parsed === 'object' && parsed !== null ? parsed : {};
+        return typeof parsed === "object" && parsed !== null ? parsed : {};
       } catch (error) {
         console.warn(
-          'Error parsing custom theme settings from localStorage:',
-          error
+          "Error parsing custom theme settings from localStorage:",
+          error,
         );
         // Clear corrupted data
-        localStorage.removeItem('customThemeSettings');
+        localStorage.removeItem("customThemeSettings");
         return {};
       }
-    }
+    },
   );
 
   const themeSettings: ThemeSettings = {
@@ -135,18 +135,18 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem('theme', newTheme);
+    localStorage.setItem("theme", newTheme);
   };
 
   const updateCustomSettings = (settings: Partial<ThemeSettings>) => {
     const newSettings = { ...customSettings, ...settings };
     setCustomSettings(newSettings);
-    localStorage.setItem('customThemeSettings', JSON.stringify(newSettings));
+    localStorage.setItem("customThemeSettings", JSON.stringify(newSettings));
   };
 
   const resetToPreset = () => {
     setCustomSettings({});
-    localStorage.removeItem('customThemeSettings');
+    localStorage.removeItem("customThemeSettings");
   };
 
   useEffect(() => {
@@ -154,26 +154,26 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
     // Apply CSS custom properties
     Object.entries(themeSettings).forEach(([key, value]) => {
-      const cssVar = `--theme-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
+      const cssVar = `--theme-${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`;
       root.style.setProperty(cssVar, value.toString());
     });
 
     // Apply theme class
-    root.className = root.className.replace(/theme-\w+/g, '');
+    root.className = root.className.replace(/theme-\w+/g, "");
     root.classList.add(`theme-${theme}`);
 
     // Special handling for different themes
-    if (theme === 'cyberpunk') {
-      root.style.setProperty('--glow-color', '#00ff41');
-      root.style.setProperty('--shadow-color', 'rgba(0, 255, 65, 0.5)');
-    } else if (theme === 'neon') {
-      root.style.setProperty('--glow-color', '#ff0080');
-      root.style.setProperty('--shadow-color', 'rgba(255, 0, 128, 0.5)');
+    if (theme === "cyberpunk") {
+      root.style.setProperty("--glow-color", "#00ff41");
+      root.style.setProperty("--shadow-color", "rgba(0, 255, 65, 0.5)");
+    } else if (theme === "neon") {
+      root.style.setProperty("--glow-color", "#ff0080");
+      root.style.setProperty("--shadow-color", "rgba(255, 0, 128, 0.5)");
     } else {
-      root.style.setProperty('--glow-color', themeSettings.accentColor);
+      root.style.setProperty("--glow-color", themeSettings.accentColor);
       root.style.setProperty(
-        '--shadow-color',
-        `${themeSettings.accentColor}50`
+        "--shadow-color",
+        `${themeSettings.accentColor}50`,
       );
     }
   }, [theme, themeSettings]);
@@ -198,7 +198,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 export const useThemeContext = (): ThemeContextType => {
   const context = useContext(ThemeContext);
   if (context === undefined) {
-    throw new Error('useThemeContext must be used within a ThemeProvider');
+    throw new Error("useThemeContext must be used within a ThemeProvider");
   }
   return context;
 };
@@ -209,8 +209,8 @@ export const useThemedStyles = () => {
 
   const getGlassStyle = (opacity?: number) => ({
     backgroundColor: themeSettings.surfaceColor,
-    backdropFilter: 'blur(16px)',
-    WebkitBackdropFilter: 'blur(16px)',
+    backdropFilter: "blur(16px)",
+    WebkitBackdropFilter: "blur(16px)",
     border: `1px solid ${themeSettings.accentColor}30`,
     borderRadius: themeSettings.borderRadius,
     opacity: opacity || themeSettings.glassOpacity,

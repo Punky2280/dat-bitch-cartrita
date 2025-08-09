@@ -12,7 +12,7 @@ class VoiceInteractionService extends EventEmitter {
     this.currentConversation = null;
     this.wakeWord = 'cartrita';
     this.initialized = false;
-    
+
     console.log('🎙️ VoiceInteractionService initialized');
     this.initialize();
   }
@@ -21,24 +21,34 @@ class VoiceInteractionService extends EventEmitter {
     try {
       // Set up wake word detection
       this.setupWakeWordDetection();
-      
+
       // Subscribe to message bus events
-      messageBus.subscribe('voice:start-listening', this.startListening.bind(this));
-      messageBus.subscribe('voice:stop-listening', this.stopListening.bind(this));
+      messageBus.subscribe(
+        'voice:start-listening',
+        this.startListening.bind(this)
+      );
+      messageBus.subscribe(
+        'voice:stop-listening',
+        this.stopListening.bind(this)
+      );
       messageBus.subscribe('voice:process-audio', this.processAudio.bind(this));
-      
+
       this.initialized = true;
       console.log('[VoiceInteractionService] ✅ Service initialized');
     } catch (error) {
-      console.error('[VoiceInteractionService] ❌ Initialization failed:', error);
+      console.error(
+        '[VoiceInteractionService] ❌ Initialization failed:',
+        error
+      );
     }
   }
 
   setupWakeWordDetection() {
     // Simple wake word detection based on transcription
-    DeepgramService.on('transcript', (data) => {
-      const transcript = data.channel?.alternatives?.[0]?.transcript?.toLowerCase() || '';
-      
+    DeepgramService.on('transcript', data => {
+      const transcript =
+        data.channel?.alternatives?.[0]?.transcript?.toLowerCase() || '';
+
       if (transcript.includes(this.wakeWord)) {
         console.log('[VoiceInteractionService] 👂 Wake word detected!');
         this.emit('wake-word-detected', { transcript });
@@ -57,16 +67,19 @@ class VoiceInteractionService extends EventEmitter {
       await DeepgramService.startLiveTranscription({
         interim_results: true,
         smart_format: true,
-        model: 'nova-2'
+        model: 'nova-2',
       });
 
       this.emit('listening-started');
       console.log('[VoiceInteractionService] 🎤 Started listening');
-      
+
       return { success: true, message: 'Voice listening started' };
     } catch (error) {
       this.isListening = false;
-      console.error('[VoiceInteractionService] ❌ Failed to start listening:', error);
+      console.error(
+        '[VoiceInteractionService] ❌ Failed to start listening:',
+        error
+      );
       return { success: false, error: error.message };
     }
   }
@@ -80,7 +93,7 @@ class VoiceInteractionService extends EventEmitter {
     DeepgramService.stopLiveTranscription();
     this.emit('listening-stopped');
     console.log('[VoiceInteractionService] 🔇 Stopped listening');
-    
+
     return { success: true, message: 'Voice listening stopped' };
   }
 
@@ -93,24 +106,32 @@ class VoiceInteractionService extends EventEmitter {
       this.isProcessing = true;
       this.emit('processing-started');
 
-      const transcription = await DeepgramService.transcribeAudio(audioBuffer, options);
-      
+      const transcription = await DeepgramService.transcribeAudio(
+        audioBuffer,
+        options
+      );
+
       if (transcription.success) {
         this.emit('transcript-ready', {
           transcript: transcription.transcript,
-          confidence: transcription.confidence
+          confidence: transcription.confidence,
         });
 
         // Send to AI for processing if confidence is high enough
         if (transcription.confidence > 0.7) {
-          const response = await this.processTranscript(transcription.transcript);
+          const response = await this.processTranscript(
+            transcription.transcript
+          );
           return response;
         }
       }
 
       return transcription;
     } catch (error) {
-      console.error('[VoiceInteractionService] ❌ Audio processing failed:', error);
+      console.error(
+        '[VoiceInteractionService] ❌ Audio processing failed:',
+        error
+      );
       return { success: false, error: error.message };
     } finally {
       this.isProcessing = false;
@@ -124,16 +145,19 @@ class VoiceInteractionService extends EventEmitter {
       messageBus.publish('ai:process-voice-input', {
         text: transcript,
         source: 'voice',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       return {
         success: true,
         transcript,
-        message: 'Transcript sent for AI processing'
+        message: 'Transcript sent for AI processing',
       };
     } catch (error) {
-      console.error('[VoiceInteractionService] ❌ Transcript processing failed:', error);
+      console.error(
+        '[VoiceInteractionService] ❌ Transcript processing failed:',
+        error
+      );
       return { success: false, error: error.message };
     }
   }
@@ -141,7 +165,7 @@ class VoiceInteractionService extends EventEmitter {
   activateListening() {
     // Activate listening mode after wake word detection
     this.emit('wake-word-activated');
-    
+
     // Start a focused listening session
     setTimeout(() => {
       this.startListening();
@@ -153,7 +177,7 @@ class VoiceInteractionService extends EventEmitter {
       const audioResponse = await TextToSpeechService.synthesizeSpeech(text, {
         voice: 'nova',
         model: 'tts-1',
-        ...options
+        ...options,
       });
 
       if (audioResponse.success) {
@@ -163,7 +187,10 @@ class VoiceInteractionService extends EventEmitter {
 
       return audioResponse;
     } catch (error) {
-      console.error('[VoiceInteractionService] ❌ Speech synthesis failed:', error);
+      console.error(
+        '[VoiceInteractionService] ❌ Speech synthesis failed:',
+        error
+      );
       return { success: false, error: error.message };
     }
   }
@@ -175,7 +202,7 @@ class VoiceInteractionService extends EventEmitter {
       isListening: this.isListening,
       isProcessing: this.isProcessing,
       deepgramConnected: DeepgramService.isConnected,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -189,4 +216,39 @@ class VoiceInteractionService extends EventEmitter {
   }
 }
 
-export default new VoiceInteractionService();
+// Export the class to avoid instantiation issues during import
+let voiceInteractionServiceInstance = null;
+
+export default {
+  getInstance() {
+    if (!voiceInteractionServiceInstance) {
+      voiceInteractionServiceInstance = new VoiceInteractionService();
+    }
+    return voiceInteractionServiceInstance;
+  },
+  // Proxy common methods for backward compatibility
+  startListening() {
+    return this.getInstance().startListening();
+  },
+  stopListening() {
+    return this.getInstance().stopListening();
+  },
+  processAudio(audioBuffer, options) {
+    return this.getInstance().processAudio(audioBuffer, options);
+  },
+  speakResponse(text, options) {
+    return this.getInstance().speakResponse(text, options);
+  },
+  getStatus() {
+    return this.getInstance().getStatus();
+  },
+  destroy() {
+    return this.getInstance().destroy();
+  },
+  on(event, listener) {
+    return this.getInstance().on(event, listener);
+  },
+  emit(event, ...args) {
+    return this.getInstance().emit(event, ...args);
+  },
+};

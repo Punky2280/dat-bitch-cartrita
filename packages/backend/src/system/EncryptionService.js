@@ -9,7 +9,7 @@ class EncryptionService {
     return {
       service: 'EncryptionService',
       initialized: this.initialized,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 }

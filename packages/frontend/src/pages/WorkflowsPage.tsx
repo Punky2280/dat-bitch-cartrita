@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import ReactFlow, {
   Node,
   Edge,
@@ -13,8 +13,8 @@ import ReactFlow, {
   Panel,
   ReactFlowProvider,
   useReactFlow,
-} from 'reactflow';
-import 'reactflow/dist/style.css';
+} from "reactflow";
+import "reactflow/dist/style.css";
 
 interface WorkflowsPageProps {
   token: string;
@@ -56,10 +56,10 @@ const WorkflowBuilder: React.FC<{
 }> = ({ workflow, onSave, token, nodeTypes }) => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(
-    workflow?.workflow_data.nodes || []
+    workflow?.workflow_data.nodes || [],
   );
   const [edges, setEdges, onEdgesChange] = useEdgesState(
-    workflow?.workflow_data.edges || []
+    workflow?.workflow_data.edges || [],
   );
   const [showNodePalette, setShowNodePalette] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
@@ -68,13 +68,13 @@ const WorkflowBuilder: React.FC<{
   const { project } = useReactFlow();
 
   const onConnect = useCallback(
-    (params: Edge | Connection) => setEdges(eds => addEdge(params, eds)),
-    [setEdges]
+    (params: Edge | Connection) => setEdges((eds) => addEdge(params, eds)),
+    [setEdges],
   );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
+    event.dataTransfer.dropEffect = "move";
   }, []);
 
   const onDrop = useCallback(
@@ -82,7 +82,7 @@ const WorkflowBuilder: React.FC<{
       event.preventDefault();
 
       const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
-      const nodeTypeData = event.dataTransfer.getData('application/reactflow');
+      const nodeTypeData = event.dataTransfer.getData("application/reactflow");
 
       if (nodeTypeData && reactFlowBounds) {
         const nodeType: NodeType = JSON.parse(nodeTypeData);
@@ -93,7 +93,7 @@ const WorkflowBuilder: React.FC<{
 
         const newNode: Node = {
           id: `${nodeType.type}_${Date.now()}`,
-          type: 'default',
+          type: "default",
           position,
           data: {
             label: nodeType.name,
@@ -104,66 +104,66 @@ const WorkflowBuilder: React.FC<{
           },
           style: {
             background: getNodeColor(nodeType.type),
-            border: '2px solid #1a1a1a',
-            borderRadius: '12px',
-            fontSize: '12px',
-            fontWeight: 'bold',
-            color: '#ffffff',
+            border: "2px solid #1a1a1a",
+            borderRadius: "12px",
+            fontSize: "12px",
+            fontWeight: "bold",
+            color: "#ffffff",
             width: 180,
             height: 80,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
           },
         };
 
-        setNodes(nds => nds.concat(newNode));
+        setNodes((nds) => nds.concat(newNode));
       }
     },
-    [project, setNodes]
+    [project, setNodes],
   );
 
   const getNodeColor = (nodeType: string): string => {
-    if (nodeType.startsWith('trigger'))
-      return 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-    if (nodeType.startsWith('ai-'))
-      return 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
-    if (nodeType.startsWith('rag-'))
-      return 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)';
-    if (nodeType.startsWith('mcp-'))
-      return 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)';
-    if (nodeType.startsWith('http-') || nodeType.includes('integration'))
-      return 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)';
-    if (nodeType.startsWith('logic-'))
-      return 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)';
-    if (nodeType.startsWith('data-'))
-      return 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)';
-    return 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    if (nodeType.startsWith("trigger"))
+      return "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
+    if (nodeType.startsWith("ai-"))
+      return "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)";
+    if (nodeType.startsWith("rag-"))
+      return "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)";
+    if (nodeType.startsWith("mcp-"))
+      return "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)";
+    if (nodeType.startsWith("http-") || nodeType.includes("integration"))
+      return "linear-gradient(135deg, #fa709a 0%, #fee140 100%)";
+    if (nodeType.startsWith("logic-"))
+      return "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)";
+    if (nodeType.startsWith("data-"))
+      return "linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)";
+    return "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
   };
 
   const getDefaultConfig = (nodeType: string): any => {
     const configs: { [key: string]: any } = {
-      'ai-gpt4': {
-        model: 'gpt-4',
-        prompt: 'You are a helpful assistant. Please respond to: {{input}}',
+      "ai-gpt4": {
+        model: "gpt-4",
+        prompt: "You are a helpful assistant. Please respond to: {{input}}",
         temperature: 0.7,
       },
-      'ai-claude': {
-        model: 'claude-3-sonnet',
-        prompt: 'You are a helpful assistant. Please respond to: {{input}}',
+      "ai-claude": {
+        model: "claude-3-sonnet",
+        prompt: "You are a helpful assistant. Please respond to: {{input}}",
         temperature: 0.7,
       },
-      'http-request': {
-        method: 'GET',
-        url: 'https://api.example.com',
+      "http-request": {
+        method: "GET",
+        url: "https://api.example.com",
         headers: {},
       },
-      'rag-search': { query: '{{input}}', top_k: 5 },
-      'logic-condition': {
-        condition: 'data.value > 0',
-        true_value: 'positive',
-        false_value: 'negative',
+      "rag-search": { query: "{{input}}", top_k: 5 },
+      "logic-condition": {
+        condition: "data.value > 0",
+        true_value: "positive",
+        false_value: "negative",
       },
     };
     return configs[nodeType] || {};
@@ -171,10 +171,10 @@ const WorkflowBuilder: React.FC<{
 
   const handleSave = async () => {
     const workflowData = {
-      name: workflow?.name || 'New Workflow',
-      description: workflow?.description || '',
+      name: workflow?.name || "New Workflow",
+      description: workflow?.description || "",
       workflow_data: { nodes, edges },
-      category: workflow?.category || 'custom',
+      category: workflow?.category || "custom",
       tags: workflow?.tags || [],
     };
 
@@ -190,12 +190,12 @@ const WorkflowBuilder: React.FC<{
 
     try {
       const response = await fetch(`/api/workflows/${workflow.id}/execute`, {
-        method: 'POST',
+        method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ input_data: { message: 'Test execution' } }),
+        body: JSON.stringify({ input_data: { message: "Test execution" } }),
       });
 
       const result = await response.json();
@@ -221,7 +221,7 @@ const WorkflowBuilder: React.FC<{
       if (result.success) {
         const execution = result.execution;
 
-        if (execution.status === 'running') {
+        if (execution.status === "running") {
           // Continue polling
           setTimeout(() => pollExecutionStatus(executionId), 1000);
         } else {
@@ -241,7 +241,7 @@ const WorkflowBuilder: React.FC<{
       {/* Node Palette */}
       <div
         className={`bg-gray-800 border-r border-gray-700 transition-all duration-300 ${
-          showNodePalette ? 'w-80' : 'w-16'
+          showNodePalette ? "w-80" : "w-16"
         }`}
       >
         <div className="p-4">
@@ -264,16 +264,16 @@ const WorkflowBuilder: React.FC<{
                   {category}
                 </h3>
                 <div className="space-y-2">
-                  {types.map(nodeType => (
+                  {types.map((nodeType) => (
                     <div
                       key={nodeType.type}
                       draggable
-                      onDragStart={event => {
+                      onDragStart={(event) => {
                         event.dataTransfer.setData(
-                          'application/reactflow',
-                          JSON.stringify(nodeType)
+                          "application/reactflow",
+                          JSON.stringify(nodeType),
                         );
-                        event.dataTransfer.effectAllowed = 'move';
+                        event.dataTransfer.effectAllowed = "move";
                       }}
                       className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg cursor-grab active:cursor-grabbing transition-colors border border-gray-600 hover:border-blue-400"
                     >
@@ -310,21 +310,21 @@ const WorkflowBuilder: React.FC<{
             onDragOver={onDragOver}
             connectionMode={ConnectionMode.Loose}
             fitView
-            style={{ background: '#111827' }}
+            style={{ background: "#111827" }}
           >
             <Background
               color="#374151"
               gap={20}
               size={1}
-              style={{ backgroundColor: '#111827' }}
+              style={{ backgroundColor: "#111827" }}
             />
             <Controls />
             <MiniMap
               style={{
-                backgroundColor: '#1F2937',
-                border: '1px solid #374151',
+                backgroundColor: "#1F2937",
+                border: "1px solid #374151",
               }}
-              nodeColor={() => '#3B82F6'}
+              nodeColor={() => "#3B82F6"}
             />
 
             {/* Top Toolbar */}
@@ -342,8 +342,8 @@ const WorkflowBuilder: React.FC<{
                 disabled={isExecuting || !workflow?.id}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
               >
-                <span>{isExecuting ? '⏳' : '▶️'}</span>
-                <span>{isExecuting ? 'Executing...' : 'Execute'}</span>
+                <span>{isExecuting ? "⏳" : "▶️"}</span>
+                <span>{isExecuting ? "Executing..." : "Execute"}</span>
               </button>
 
               <button
@@ -376,11 +376,11 @@ const WorkflowBuilder: React.FC<{
                 <div
                   key={index}
                   className={`p-2 rounded text-sm ${
-                    log.level === 'error'
-                      ? 'bg-red-900/50 text-red-200'
-                      : log.level === 'success'
-                        ? 'bg-green-900/50 text-green-200'
-                        : 'bg-gray-700 text-gray-200'
+                    log.level === "error"
+                      ? "bg-red-900/50 text-red-200"
+                      : log.level === "success"
+                        ? "bg-green-900/50 text-green-200"
+                        : "bg-gray-700 text-gray-200"
                   }`}
                 >
                   <span className="text-gray-400 text-xs">{log.timestamp}</span>
@@ -413,12 +413,12 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
   const [templates, setTemplates] = useState<Workflow[]>([]);
   const [nodeTypes, setNodeTypes] = useState<NodeCategories>({});
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(
-    null
+    null,
   );
   const [showBuilder, setShowBuilder] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
 
   useEffect(() => {
     loadData();
@@ -428,13 +428,13 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
     setLoading(true);
     try {
       const [workflowsRes, templatesRes, nodeTypesRes] = await Promise.all([
-        fetch('/api/workflows', {
+        fetch("/api/workflows", {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('/api/workflows/templates', {
+        fetch("/api/workflows/templates", {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('/api/workflows/node-types', {
+        fetch("/api/workflows/node-types", {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -449,7 +449,7 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
       if (templatesData.success) setTemplates(templatesData.templates);
       if (nodeTypesData.success) setNodeTypes(nodeTypesData.nodeTypes);
     } catch (error) {
-      console.error('Failed to load data:', error);
+      console.error("Failed to load data:", error);
     } finally {
       setLoading(false);
     }
@@ -458,10 +458,10 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
   const handleCreateWorkflow = () => {
     const newWorkflow: Workflow = {
       id: 0,
-      name: 'New Workflow',
-      description: 'A new workflow',
+      name: "New Workflow",
+      description: "A new workflow",
       workflow_data: { nodes: [], edges: [] },
-      category: 'custom',
+      category: "custom",
       tags: [],
       is_active: true,
       created_at: new Date().toISOString(),
@@ -486,14 +486,14 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
     try {
       const url = selectedWorkflow?.id
         ? `/api/workflows/${selectedWorkflow.id}`
-        : '/api/workflows';
-      const method = selectedWorkflow?.id ? 'PUT' : 'POST';
+        : "/api/workflows";
+      const method = selectedWorkflow?.id ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method,
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(workflowData),
       });
@@ -506,16 +506,16 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
         setSelectedWorkflow(null);
       }
     } catch (error) {
-      console.error('Failed to save workflow:', error);
+      console.error("Failed to save workflow:", error);
     }
   };
 
   const handleDeleteWorkflow = async (workflowId: number) => {
-    if (!confirm('Are you sure you want to delete this workflow?')) return;
+    if (!confirm("Are you sure you want to delete this workflow?")) return;
 
     try {
       const response = await fetch(`/api/workflows/${workflowId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -523,20 +523,20 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
         loadData();
       }
     } catch (error) {
-      console.error('Failed to delete workflow:', error);
+      console.error("Failed to delete workflow:", error);
     }
   };
 
-  const filteredWorkflows = workflows.filter(workflow => {
+  const filteredWorkflows = workflows.filter((workflow) => {
     const matchesSearch =
       workflow.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       workflow.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory =
-      selectedCategory === 'all' || workflow.category === selectedCategory;
+      selectedCategory === "all" || workflow.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const categories = [...new Set(workflows.map(w => w.category)), 'all'];
+  const categories = [...new Set(workflows.map((w) => w.category)), "all"];
 
   if (loading) {
     return (
@@ -602,19 +602,19 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
               type="text"
               placeholder="Search workflows..."
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
             />
           </div>
           <select
             value={selectedCategory}
-            onChange={e => setSelectedCategory(e.target.value)}
+            onChange={(e) => setSelectedCategory(e.target.value)}
             className="px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
           >
             <option value="all">All Categories</option>
             {categories
-              .filter(c => c !== 'all')
-              .map(category => (
+              .filter((c) => c !== "all")
+              .map((category) => (
                 <option key={category} value={category}>
                   {category}
                 </option>
@@ -630,7 +630,7 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
               <span>Workflow Templates</span>
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {templates.map(template => (
+              {templates.map((template) => (
                 <div
                   key={template.id}
                   className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-blue-500 transition-colors"
@@ -650,7 +650,7 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
                   </div>
 
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {template.tags.map(tag => (
+                    {template.tags.map((tag) => (
                       <span
                         key={tag}
                         className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs"
@@ -685,9 +685,9 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
           {filteredWorkflows.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-gray-400 text-lg mb-4">
-                {searchTerm || selectedCategory !== 'all'
-                  ? 'No workflows match your filters'
-                  : 'No workflows yet'}
+                {searchTerm || selectedCategory !== "all"
+                  ? "No workflows match your filters"
+                  : "No workflows yet"}
               </div>
               <button
                 onClick={handleCreateWorkflow}
@@ -698,7 +698,7 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredWorkflows.map(workflow => (
+              {filteredWorkflows.map((workflow) => (
                 <div
                   key={workflow.id}
                   className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-blue-500 transition-colors"
@@ -715,7 +715,7 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
                     <div className="flex items-center space-x-2">
                       <span
                         className={`w-3 h-3 rounded-full ${
-                          workflow.is_active ? 'bg-green-400' : 'bg-red-400'
+                          workflow.is_active ? "bg-green-400" : "bg-red-400"
                         }`}
                       ></span>
                       <span className="px-3 py-1 bg-purple-600 text-purple-100 rounded-full text-xs font-medium">
@@ -725,7 +725,7 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
                   </div>
 
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {workflow.tags.map(tag => (
+                    {workflow.tags.map((tag) => (
                       <span
                         key={tag}
                         className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs"
@@ -740,7 +740,7 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
                       Nodes: {workflow.workflow_data.nodes?.length || 0}
                     </div>
                     <div>
-                      Updated:{' '}
+                      Updated:{" "}
                       {new Date(workflow.updated_at).toLocaleDateString()}
                     </div>
                   </div>

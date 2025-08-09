@@ -1,157 +1,90 @@
+import {
+  AIMessage,
+  HumanMessage,
+  SystemMessage,
+} from '@langchain/core/messages';
 import BaseAgent from '../../system/BaseAgent.js';
-import VoiceInteractionService from '../../services/VoiceInteractionService.js';
-import AmbientListeningService from '../../services/AmbientListeningService.js';
-import VisualAnalysisService from '../../services/VisualAnalysisService.js';
-import TextToSpeechService from '../../services/TextToSpeechService.js';
 
+/**
+ * @class MultiModalFusionAgent
+ * @description A specialist agent that fuses insights from different modalities
+ * (text, images, audio) to form a single, coherent understanding of the user's
+ * current environment and request.
+ */
 class MultiModalFusionAgent extends BaseAgent {
-  constructor(config = {}) {
-    super('MultiModalFusionAgent', config);
-    this.modalityWeights = {
-      voice: 0.4,
-      visual: 0.3,
-      ambient: 0.2,
-      text: 0.1
-    };
-    this.fusionHistory = [];
-    this.activeModalities = new Set();
-    this.initialized = false;
-    
-    console.log('🔀 MultiModalFusionAgent initialized');
-    this.initialize();
+  /**
+   * @param {ChatOpenAI} llm - The language model instance.
+   * @param {AgentToolRegistry} toolRegistry - The tool registry instance.
+   */
+  constructor(llm, toolRegistry) {
+    super(
+      'multimodal',
+      'sub',
+      ['multi_modal_fusion', 'sensory_integration', 'holistic_understanding'],
+      'A specialist agent that fuses insights from text, images, and audio to form a complete, holistic understanding.'
+    );
+
+    // LangGraph compatibility - injected by supervisor
+    this.llm = llm;
+    this.toolRegistry = toolRegistry;
+
+    // Update config with allowed tools
+    this.config.allowedTools = [
+      'image_analyzer',
+      'knowledge_query', // To look up concepts found in images/audio
+    ];
   }
 
-  async initialize() {
-    try {
-      // Set up cross-modal event listeners
-      this.setupModalityListeners();
-      
-      this.initialized = true;
-      console.log('[MultiModalFusionAgent] ✅ Service initialized');
-    } catch (error) {
-      console.error('[MultiModalFusionAgent] ❌ Initialization failed:', error);
-    }
-  }
+  /**
+   * Overrides the base prompt to instruct the agent to act as a "sensory fusion"
+   * expert, combining different data types into one insight.
+   * @param {object} privateState - The agent's private memory for this session.
+   * @returns {string} The complete system prompt for the MultiModalFusionAgent.
+   */
+  buildSystemPrompt(privateState, state) {
+    const userMessage = state.messages[state.messages.length - 1];
+    return `You are the Multi-Modal Fusion specialist in the Cartrita AI system.
+Your personality is perceptive, integrative, holistic, and sassy with that Miami street-smart ability to see the big picture.
 
-  setupModalityListeners() {
-    // Voice interaction events
-    VoiceInteractionService.on('transcript-ready', (data) => {
-      this.processFusion('voice', data);
-    });
+**CURRENT USER REQUEST:**
+"${userMessage.content}"
 
-    // Ambient listening events
-    AmbientListeningService.on('ambient-sound-detected', (data) => {
-      this.processFusion('ambient', data);
-    });
-  }
+**YOUR FUSION MISSION:**
+1. **Analyze Multi-Modal Context:** What different types of data or sensory inputs are involved in this request?
+2. **Execute Multi-Modal Analysis:**
+   - Use \`image_analyzer\` tool to analyze visual content when images are present
+   - Use \`knowledge_query\` tool to enrich understanding with contextual information
+   - Integrate insights from different modalities (text, visual, audio, contextual)
+3. **Synthesize Holistic Understanding:** Combine all data sources into a complete, coherent response
 
-  async processFusion(modality, data) {
-    try {
-      this.activeModalities.add(modality);
-      
-      const fusionData = {
-        modality,
-        data,
-        timestamp: new Date().toISOString(),
-        weight: this.modalityWeights[modality] || 0.1
-      };
+**YOUR SPECIALIZED TOOLS:**
+${this.config.allowedTools.join(', ')}
 
-      this.fusionHistory.push(fusionData);
-      
-      // Keep only recent fusion events
-      if (this.fusionHistory.length > 50) {
-        this.fusionHistory = this.fusionHistory.slice(-25);
-      }
+**EXECUTION REQUIREMENTS:**
+- ACTUALLY analyze multi-modal content using your tools - don't just provide text responses
+- When images are present, use image analysis tools to understand visual content
+- Integrate multiple information sources to form complete understanding
+- Connect visual, textual, and contextual information coherently
+- Provide insights that consider all available modalities
 
-      // Trigger multi-modal analysis if multiple modalities are active
-      if (this.activeModalities.size >= 2) {
-        await this.performFusionAnalysis();
-      }
+**RESPONSE FORMAT:**
+Provide a natural, conversational response that includes:
+- "Let me analyze all the information here..." (what multi-modal analysis you performed)
+- Insights from visual analysis, contextual understanding, and data fusion
+- Coherent synthesis that connects different types of information
+- Complete understanding that addresses the full context
+- Your perceptive, big-picture personality throughout
 
-    } catch (error) {
-      console.error('[MultiModalFusionAgent] ❌ Fusion processing failed:', error);
-    }
-  }
+**MULTI-MODAL FUSION GUIDELINES:**
+- Process visual content when images are provided
+- Connect textual context with visual or audio information
+- Enrich understanding with relevant background knowledge
+- Synthesize insights from multiple modalities into coherent response
+- Provide holistic understanding rather than isolated data points
 
-  async performFusionAnalysis() {
-    const recentEvents = this.fusionHistory.slice(-10);
-    const modalityGroups = this.groupByModality(recentEvents);
-    
-    const fusionResult = {
-      timestamp: new Date().toISOString(),
-      modalities: Array.from(this.activeModalities),
-      confidence: this.calculateFusionConfidence(modalityGroups),
-      summary: await this.generateFusionSummary(modalityGroups)
-    };
+**Remember:** You're the fusion expert - actually integrate multi-modal information, don't just describe what you see!
 
-    this.emit('fusion-complete', fusionResult);
-    console.log('[MultiModalFusionAgent] 🔗 Multi-modal fusion completed');
-    
-    return fusionResult;
-  }
-
-  groupByModality(events) {
-    const groups = {};
-    
-    for (const event of events) {
-      if (!groups[event.modality]) {
-        groups[event.modality] = [];
-      }
-      groups[event.modality].push(event);
-    }
-    
-    return groups;
-  }
-
-  calculateFusionConfidence(modalityGroups) {
-    let totalWeight = 0;
-    let weightedConfidence = 0;
-    
-    for (const [modality, events] of Object.entries(modalityGroups)) {
-      const weight = this.modalityWeights[modality] || 0.1;
-      const avgConfidence = events.reduce((sum, event) => 
-        sum + (event.data.confidence || 0.5), 0) / events.length;
-      
-      totalWeight += weight;
-      weightedConfidence += weight * avgConfidence;
-    }
-    
-    return totalWeight > 0 ? weightedConfidence / totalWeight : 0.5;
-  }
-
-  async generateFusionSummary(modalityGroups) {
-    const summaryParts = [];
-    
-    for (const [modality, events] of Object.entries(modalityGroups)) {
-      const latest = events[events.length - 1];
-      
-      switch (modality) {
-        case 'voice':
-          summaryParts.push(`Voice: "${latest.data.transcript}"`);
-          break;
-        case 'visual':
-          summaryParts.push(`Visual: ${latest.data.analysis}`);
-          break;
-        case 'ambient':
-          summaryParts.push(`Ambient: ${latest.data.type} detected`);
-          break;
-        default:
-          summaryParts.push(`${modality}: ${JSON.stringify(latest.data)}`);
-      }
-    }
-    
-    return summaryParts.join(' | ');
-  }
-
-  getStatus() {
-    return {
-      agent: 'MultiModalFusionAgent',
-      initialized: this.initialized,
-      activeModalities: Array.from(this.activeModalities),
-      fusionHistorySize: this.fusionHistory.length,
-      modalityWeights: this.modalityWeights,
-      timestamp: new Date().toISOString()
-    };
+**Your Memory of This Task:** ${JSON.stringify(privateState, null, 2)}`;
   }
 }
 

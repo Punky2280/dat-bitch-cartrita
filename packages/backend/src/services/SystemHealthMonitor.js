@@ -11,7 +11,7 @@ class SystemHealthMonitor {
     this.healthChecks = new Map();
     this.lastHealthReport = null;
     this.monitoringActive = false;
-    
+
     // Initialize health check registry
     this.registerHealthChecks();
   }
@@ -20,25 +20,55 @@ class SystemHealthMonitor {
     // Core System Checks
     this.healthChecks.set('database', this.checkDatabase.bind(this));
     this.healthChecks.set('openai_api', this.checkOpenAIAPI.bind(this));
-    
+
     // API Endpoint Checks
     this.healthChecks.set('auth_endpoints', this.checkAuthEndpoints.bind(this));
     this.healthChecks.set('chat_endpoints', this.checkChatEndpoints.bind(this));
-    this.healthChecks.set('agent_endpoints', this.checkAgentEndpoints.bind(this));
-    this.healthChecks.set('voice_endpoints', this.checkVoiceEndpoints.bind(this));
-    this.healthChecks.set('knowledge_endpoints', this.checkKnowledgeEndpoints.bind(this));
-    this.healthChecks.set('calendar_endpoints', this.checkCalendarEndpoints.bind(this));
-    this.healthChecks.set('email_endpoints', this.checkEmailEndpoints.bind(this));
-    this.healthChecks.set('vault_endpoints', this.checkVaultEndpoints.bind(this));
-    
+    this.healthChecks.set(
+      'agent_endpoints',
+      this.checkAgentEndpoints.bind(this)
+    );
+    this.healthChecks.set(
+      'voice_endpoints',
+      this.checkVoiceEndpoints.bind(this)
+    );
+    this.healthChecks.set(
+      'knowledge_endpoints',
+      this.checkKnowledgeEndpoints.bind(this)
+    );
+    this.healthChecks.set(
+      'calendar_endpoints',
+      this.checkCalendarEndpoints.bind(this)
+    );
+    this.healthChecks.set(
+      'email_endpoints',
+      this.checkEmailEndpoints.bind(this)
+    );
+    this.healthChecks.set(
+      'vault_endpoints',
+      this.checkVaultEndpoints.bind(this)
+    );
+
     // External Service Checks
-    this.healthChecks.set('deepgram_service', this.checkDeepgramService.bind(this));
-    this.healthChecks.set('google_services', this.checkGoogleServices.bind(this));
-    
+    this.healthChecks.set(
+      'deepgram_service',
+      this.checkDeepgramService.bind(this)
+    );
+    this.healthChecks.set(
+      'google_services',
+      this.checkGoogleServices.bind(this)
+    );
+
     // Agent System Checks
-    this.healthChecks.set('hierarchical_agents', this.checkHierarchicalAgents.bind(this));
+    this.healthChecks.set(
+      'hierarchical_agents',
+      this.checkHierarchicalAgents.bind(this)
+    );
     this.healthChecks.set('tool_registry', this.checkToolRegistry.bind(this));
-    this.healthChecks.set('langchain_integration', this.checkLangChainIntegration.bind(this));
+    this.healthChecks.set(
+      'langchain_integration',
+      this.checkLangChainIntegration.bind(this)
+    );
   }
 
   async runAllHealthChecks() {
@@ -51,43 +81,45 @@ class SystemHealthMonitor {
         total: this.healthChecks.size,
         healthy: 0,
         unhealthy: 0,
-        checking: 0
-      }
+        checking: 0,
+      },
     };
 
-    const checkPromises = Array.from(this.healthChecks.entries()).map(async ([name, checkFn]) => {
-      try {
-        console.log(`🔍 Checking ${name}...`);
-        const result = await checkFn();
-        healthReport.checks[name] = {
-          status: result.status,
-          message: result.message,
-          details: result.details || {},
-          response_time: result.response_time || null,
-          last_checked: new Date().toISOString()
-        };
-        
-        if (result.status === 'healthy') {
-          healthReport.summary.healthy++;
-        } else {
+    const checkPromises = Array.from(this.healthChecks.entries()).map(
+      async ([name, checkFn]) => {
+        try {
+          console.log(`🔍 Checking ${name}...`);
+          const result = await checkFn();
+          healthReport.checks[name] = {
+            status: result.status,
+            message: result.message,
+            details: result.details || {},
+            response_time: result.response_time || null,
+            last_checked: new Date().toISOString(),
+          };
+
+          if (result.status === 'healthy') {
+            healthReport.summary.healthy++;
+          } else {
+            healthReport.summary.unhealthy++;
+            healthReport.overall_status = 'degraded';
+          }
+        } catch (error) {
+          console.error(`❌ Health check failed for ${name}:`, error);
+          healthReport.checks[name] = {
+            status: 'unhealthy',
+            message: `Check failed: ${error.message}`,
+            details: { error: error.stack },
+            last_checked: new Date().toISOString(),
+          };
           healthReport.summary.unhealthy++;
           healthReport.overall_status = 'degraded';
         }
-      } catch (error) {
-        console.error(`❌ Health check failed for ${name}:`, error);
-        healthReport.checks[name] = {
-          status: 'unhealthy',
-          message: `Check failed: ${error.message}`,
-          details: { error: error.stack },
-          last_checked: new Date().toISOString()
-        };
-        healthReport.summary.unhealthy++;
-        healthReport.overall_status = 'degraded';
       }
-    });
+    );
 
     await Promise.all(checkPromises);
-    
+
     // Determine overall status
     if (healthReport.summary.unhealthy > healthReport.summary.total * 0.5) {
       healthReport.overall_status = 'critical';
@@ -106,22 +138,24 @@ class SystemHealthMonitor {
     try {
       await db.query('SELECT 1 as health_check');
       const users = await db.query('SELECT COUNT(*) FROM users');
-      const conversations = await db.query('SELECT COUNT(*) FROM conversations');
-      
+      const conversations = await db.query(
+        'SELECT COUNT(*) FROM conversations'
+      );
+
       return {
         status: 'healthy',
         message: 'Database connection successful',
         response_time: Date.now() - startTime,
         details: {
           users_count: parseInt(users.rows[0].count),
-          conversations_count: parseInt(conversations.rows[0].count)
-        }
+          conversations_count: parseInt(conversations.rows[0].count),
+        },
       };
     } catch (error) {
       return {
         status: 'unhealthy',
         message: `Database connection failed: ${error.message}`,
-        response_time: Date.now() - startTime
+        response_time: Date.now() - startTime,
       };
     }
   }
@@ -133,27 +167,27 @@ class SystemHealthMonitor {
         return {
           status: 'unhealthy',
           message: 'OpenAI API key not configured',
-          response_time: Date.now() - startTime
+          response_time: Date.now() - startTime,
         };
       }
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
       const models = await openai.models.list();
-      
+
       return {
         status: 'healthy',
         message: 'OpenAI API accessible',
         response_time: Date.now() - startTime,
         details: {
           models_available: models.data.length,
-          has_gpt4: models.data.some(m => m.id.includes('gpt-4'))
-        }
+          has_gpt4: models.data.some(m => m.id.includes('gpt-4')),
+        },
       };
     } catch (error) {
       return {
         status: 'unhealthy',
         message: `OpenAI API check failed: ${error.message}`,
-        response_time: Date.now() - startTime
+        response_time: Date.now() - startTime,
       };
     }
   }
@@ -162,18 +196,18 @@ class SystemHealthMonitor {
   async checkAuthEndpoints() {
     const endpoints = [
       { path: '/api/auth/register', method: 'POST' },
-      { path: '/api/auth/login', method: 'POST' }
+      { path: '/api/auth/login', method: 'POST' },
     ];
-    
+
     return this.checkEndpointGroup('Authentication', endpoints);
   }
 
   async checkChatEndpoints() {
     const endpoints = [
       { path: '/api/chat/history', method: 'GET', requiresAuth: true },
-      { path: '/api/chat/stats', method: 'GET', requiresAuth: true }
+      { path: '/api/chat/stats', method: 'GET', requiresAuth: true },
     ];
-    
+
     return this.checkEndpointGroup('Chat', endpoints);
   }
 
@@ -181,61 +215,61 @@ class SystemHealthMonitor {
     const endpoints = [
       { path: '/api/agent/metrics', method: 'GET', requiresAuth: true },
       { path: '/api/agent/tools', method: 'GET', requiresAuth: true },
-      { path: '/api/agent/status', method: 'GET', requiresAuth: true }
+      { path: '/api/agent/status', method: 'GET', requiresAuth: true },
     ];
-    
+
     return this.checkEndpointGroup('Agent System', endpoints);
   }
 
   async checkVoiceEndpoints() {
     const endpoints = [
       { path: '/api/voice-to-text/test', method: 'GET', requiresAuth: true },
-      { path: '/api/voice-chat/test', method: 'GET', requiresAuth: true }
+      { path: '/api/voice-chat/test', method: 'GET', requiresAuth: true },
     ];
-    
+
     return this.checkEndpointGroup('Voice System', endpoints);
   }
 
   async checkKnowledgeEndpoints() {
     const endpoints = [
       { path: '/api/knowledge/search', method: 'GET', requiresAuth: true },
-      { path: '/api/knowledge/entries', method: 'GET', requiresAuth: true }
+      { path: '/api/knowledge/entries', method: 'GET', requiresAuth: true },
     ];
-    
+
     return this.checkEndpointGroup('Knowledge Hub', endpoints);
   }
 
   async checkCalendarEndpoints() {
     const endpoints = [
       { path: '/api/calendar/events', method: 'GET', requiresAuth: true },
-      { path: '/api/calendar/sync', method: 'POST', requiresAuth: true }
+      { path: '/api/calendar/sync', method: 'POST', requiresAuth: true },
     ];
-    
+
     return this.checkEndpointGroup('Calendar Integration', endpoints);
   }
 
   async checkEmailEndpoints() {
     const endpoints = [
       { path: '/api/email/messages', method: 'GET', requiresAuth: true },
-      { path: '/api/email/sync', method: 'POST', requiresAuth: true }
+      { path: '/api/email/sync', method: 'POST', requiresAuth: true },
     ];
-    
+
     return this.checkEndpointGroup('Email Processing', endpoints);
   }
 
   async checkVaultEndpoints() {
     const endpoints = [
       { path: '/api/vault/providers', method: 'GET', requiresAuth: true },
-      { path: '/api/vault/keys', method: 'GET', requiresAuth: true }
+      { path: '/api/vault/keys', method: 'GET', requiresAuth: true },
     ];
-    
+
     return this.checkEndpointGroup('API Key Vault', endpoints);
   }
 
   async checkEndpointGroup(groupName, endpoints) {
     const startTime = Date.now();
     const results = [];
-    
+
     for (const endpoint of endpoints) {
       try {
         // For now, we'll check if the route exists by attempting a request
@@ -243,25 +277,27 @@ class SystemHealthMonitor {
         results.push({
           path: endpoint.path,
           method: endpoint.method,
-          status: 'available' // Simplified for this implementation
+          status: 'available', // Simplified for this implementation
         });
       } catch (error) {
         results.push({
           path: endpoint.path,
           method: endpoint.method,
           status: 'error',
-          error: error.message
+          error: error.message,
         });
       }
     }
-    
+
     const allHealthy = results.every(r => r.status === 'available');
-    
+
     return {
       status: allHealthy ? 'healthy' : 'unhealthy',
-      message: `${groupName} endpoints: ${results.filter(r => r.status === 'available').length}/${results.length} available`,
+      message: `${groupName} endpoints: ${
+        results.filter(r => r.status === 'available').length
+      }/${results.length} available`,
       response_time: Date.now() - startTime,
-      details: { endpoints: results }
+      details: { endpoints: results },
     };
   }
 
@@ -273,7 +309,7 @@ class SystemHealthMonitor {
         return {
           status: 'unhealthy',
           message: 'Deepgram API key not configured',
-          response_time: Date.now() - startTime
+          response_time: Date.now() - startTime,
         };
       }
 
@@ -282,13 +318,13 @@ class SystemHealthMonitor {
         status: 'healthy',
         message: 'Deepgram service configured',
         response_time: Date.now() - startTime,
-        details: { api_key_configured: true }
+        details: { api_key_configured: true },
       };
     } catch (error) {
       return {
         status: 'unhealthy',
         message: `Deepgram service check failed: ${error.message}`,
-        response_time: Date.now() - startTime
+        response_time: Date.now() - startTime,
       };
     }
   }
@@ -297,21 +333,23 @@ class SystemHealthMonitor {
     const startTime = Date.now();
     try {
       const hasGoogleKey = !!process.env.GOOGLE_API_KEY;
-      
+
       return {
         status: hasGoogleKey ? 'healthy' : 'degraded',
-        message: hasGoogleKey ? 'Google services configured' : 'Google API key not configured',
+        message: hasGoogleKey
+          ? 'Google services configured'
+          : 'Google API key not configured',
         response_time: Date.now() - startTime,
-        details: { 
+        details: {
           api_key_configured: hasGoogleKey,
-          services: ['Calendar', 'Gmail', 'Contacts']
-        }
+          services: ['Calendar', 'Gmail', 'Contacts'],
+        },
       };
     } catch (error) {
       return {
         status: 'unhealthy',
         message: `Google services check failed: ${error.message}`,
-        response_time: Date.now() - startTime
+        response_time: Date.now() - startTime,
       };
     }
   }
@@ -328,14 +366,14 @@ class SystemHealthMonitor {
         details: {
           supervisor_active: true,
           specialized_agents: 11,
-          langchain_integration: true
-        }
+          langchain_integration: true,
+        },
       };
     } catch (error) {
       return {
         status: 'unhealthy',
         message: `Agent system check failed: ${error.message}`,
-        response_time: Date.now() - startTime
+        response_time: Date.now() - startTime,
       };
     }
   }
@@ -350,14 +388,14 @@ class SystemHealthMonitor {
         details: {
           total_tools: 40,
           real_implementations: true,
-          mock_tools: 0
-        }
+          mock_tools: 0,
+        },
       };
     } catch (error) {
       return {
         status: 'unhealthy',
         message: `Tool registry check failed: ${error.message}`,
-        response_time: Date.now() - startTime
+        response_time: Date.now() - startTime,
       };
     }
   }
@@ -372,14 +410,14 @@ class SystemHealthMonitor {
         details: {
           state_graph_active: true,
           command_pattern: true,
-          agent_coordination: true
-        }
+          agent_coordination: true,
+        },
       };
     } catch (error) {
       return {
         status: 'unhealthy',
         message: `LangChain integration check failed: ${error.message}`,
-        response_time: Date.now() - startTime
+        response_time: Date.now() - startTime,
       };
     }
   }
@@ -393,16 +431,16 @@ class SystemHealthMonitor {
 
     this.monitoringActive = true;
     console.log('🏥 Starting continuous health monitoring...');
-    
+
     const monitoringLoop = async () => {
       if (!this.monitoringActive) return;
-      
+
       try {
         await this.runAllHealthChecks();
       } catch (error) {
         console.error('❌ Health monitoring error:', error);
       }
-      
+
       setTimeout(monitoringLoop, intervalMs);
     };
 
@@ -419,10 +457,13 @@ class SystemHealthMonitor {
   }
 
   getHealthStatus(componentName) {
-    if (!this.lastHealthReport || !this.lastHealthReport.checks[componentName]) {
+    if (
+      !this.lastHealthReport ||
+      !this.lastHealthReport.checks[componentName]
+    ) {
       return { status: 'unknown', message: 'Health check not available' };
     }
-    
+
     return this.lastHealthReport.checks[componentName];
   }
 }

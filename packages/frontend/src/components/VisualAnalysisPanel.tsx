@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   EyeIcon,
   EyeSlashIcon,
@@ -6,13 +6,13 @@ import {
   StopIcon,
   SparklesIcon,
   ExclamationTriangleIcon,
-} from '@heroicons/react/24/outline';
+} from "@heroicons/react/24/outline";
 import {
   requestCameraPermission,
   FrameCaptureManager,
   FrameCaptureResult,
   isCameraSupported,
-} from '@/utils/cameraUtils';
+} from "@/utils/cameraUtils";
 
 interface VisualAnalysisPanelProps {
   token: string;
@@ -21,7 +21,7 @@ interface VisualAnalysisPanelProps {
   onError?: (error: string) => void;
   settings?: {
     captureInterval?: number;
-    analysisType?: 'comprehensive' | 'basic' | 'emotion' | 'activity';
+    analysisType?: "comprehensive" | "basic" | "emotion" | "activity";
     enableFaceDetection?: boolean;
     enableObjectDetection?: boolean;
     privacyMode?: boolean;
@@ -46,7 +46,7 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
 }) => {
   const {
     captureInterval = 3000,
-    analysisType = 'comprehensive',
+    analysisType = "comprehensive",
     enableFaceDetection = true,
     enableObjectDetection = true,
     privacyMode = false,
@@ -80,22 +80,22 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
   // Check camera support on mount
   useEffect(() => {
     if (!isCameraSupported()) {
-      setAnalysisState(prev => ({
+      setAnalysisState((prev) => ({
         ...prev,
-        error: 'Camera not supported in this browser',
+        error: "Camera not supported in this browser",
       }));
-      onError?.('Camera not supported in this browser');
+      onError?.("Camera not supported in this browser");
     }
   }, [onError]);
 
   const initializeCamera = async () => {
     try {
-      console.log('[VisualAnalysis] Initializing camera...');
+      console.log("[VisualAnalysis] Initializing camera...");
 
       const permissionResult = await requestCameraPermission();
 
       if (!permissionResult.granted) {
-        throw new Error(permissionResult.error || 'Camera permission denied');
+        throw new Error(permissionResult.error || "Camera permission denied");
       }
 
       if (videoRef.current && permissionResult.stream) {
@@ -107,17 +107,17 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
           startVisualCapture();
         };
 
-        setAnalysisState(prev => ({
+        setAnalysisState((prev) => ({
           ...prev,
           hasPermission: true,
           error: null,
         }));
       }
     } catch (error: any) {
-      console.error('[VisualAnalysis] Camera initialization failed:', error);
-      const errorMessage = error.message || 'Failed to initialize camera';
+      console.error("[VisualAnalysis] Camera initialization failed:", error);
+      const errorMessage = error.message || "Failed to initialize camera";
 
-      setAnalysisState(prev => ({
+      setAnalysisState((prev) => ({
         ...prev,
         error: errorMessage,
         hasPermission: false,
@@ -132,7 +132,7 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
       return;
     }
 
-    console.log('[VisualAnalysis] Starting visual capture...');
+    console.log("[VisualAnalysis] Starting visual capture...");
 
     const captureManager = new FrameCaptureManager(
       videoRef.current,
@@ -141,14 +141,14 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
         width: 640,
         height: 480,
         quality: 0.8,
-        format: 'jpeg',
-      }
+        format: "jpeg",
+      },
     );
 
     captureManager.startCapture(captureInterval);
     captureManagerRef.current = captureManager;
 
-    setAnalysisState(prev => ({
+    setAnalysisState((prev) => ({
       ...prev,
       isCapturing: true,
     }));
@@ -157,8 +157,8 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
   const handleFrameCapture = async (frameResult: FrameCaptureResult) => {
     if (!frameResult.success || !frameResult.blob) {
       console.error(
-        '[VisualAnalysis] Frame capture failed:',
-        frameResult.error
+        "[VisualAnalysis] Frame capture failed:",
+        frameResult.error,
       );
       return;
     }
@@ -169,12 +169,12 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
     }
 
     try {
-      setAnalysisState(prev => ({ ...prev, isAnalyzing: true }));
+      setAnalysisState((prev) => ({ ...prev, isAnalyzing: true }));
 
       const analysis = await analyzeFrame(frameResult.blob);
 
       if (analysis) {
-        setAnalysisState(prev => ({
+        setAnalysisState((prev) => ({
           ...prev,
           lastAnalysis: analysis,
           analysisCount: prev.analysisCount + 1,
@@ -187,28 +187,28 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
         drawAnalysisOverlay(analysis);
       }
     } catch (error: any) {
-      console.error('[VisualAnalysis] Frame analysis failed:', error);
-      setAnalysisState(prev => ({ ...prev, isAnalyzing: false }));
+      console.error("[VisualAnalysis] Frame analysis failed:", error);
+      setAnalysisState((prev) => ({ ...prev, isAnalyzing: false }));
     }
   };
 
   const analyzeFrame = async (imageBlob: Blob): Promise<any> => {
     const formData = new FormData();
-    formData.append('image', imageBlob, 'frame.jpg');
-    formData.append('analysisType', analysisType);
+    formData.append("image", imageBlob, "frame.jpg");
+    formData.append("analysisType", analysisType);
     formData.append(
-      'focusAreas',
+      "focusAreas",
       JSON.stringify({
         faces: enableFaceDetection,
         objects: enableObjectDetection,
         activities: true,
         emotions:
-          analysisType === 'emotion' || analysisType === 'comprehensive',
-      })
+          analysisType === "emotion" || analysisType === "comprehensive",
+      }),
     );
 
-    const response = await fetch('http://localhost:8000/api/vision/analyze', {
-      method: 'POST',
+    const response = await fetch("http://localhost:8000/api/vision/analyze", {
+      method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -229,7 +229,7 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
 
     if (!canvas || !video || !analysis) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     // Set canvas size to match video
@@ -240,13 +240,13 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Draw analysis indicators (simple version for now)
-    ctx.strokeStyle = '#00ff88';
+    ctx.strokeStyle = "#00ff88";
     ctx.lineWidth = 2;
-    ctx.font = '16px Arial';
-    ctx.fillStyle = '#00ff88';
+    ctx.font = "16px Arial";
+    ctx.fillStyle = "#00ff88";
 
     // Draw analysis status
-    ctx.fillText(`Analysis: ${analysis.summary || 'Processing...'}`, 10, 30);
+    ctx.fillText(`Analysis: ${analysis.summary || "Processing..."}`, 10, 30);
 
     if (analysis.objects && analysis.objects.length > 0) {
       ctx.fillText(`Objects: ${analysis.objects.length}`, 10, 55);
@@ -258,7 +258,7 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
   };
 
   const cleanup = () => {
-    console.log('[VisualAnalysis] Cleaning up...');
+    console.log("[VisualAnalysis] Cleaning up...");
 
     // Stop capture manager
     if (captureManagerRef.current) {
@@ -268,7 +268,7 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
 
     // Stop media stream
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
 
@@ -290,7 +290,7 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
   const toggleCapture = () => {
     if (analysisState.isCapturing) {
       captureManagerRef.current?.stopCapture();
-      setAnalysisState(prev => ({ ...prev, isCapturing: false }));
+      setAnalysisState((prev) => ({ ...prev, isCapturing: false }));
     } else {
       startVisualCapture();
     }
@@ -326,8 +326,8 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
               className={`
                 p-1 rounded ${
                   analysisState.isCapturing
-                    ? 'bg-red-500 hover:bg-red-600'
-                    : 'bg-green-500 hover:bg-green-600'
+                    ? "bg-red-500 hover:bg-red-600"
+                    : "bg-green-500 hover:bg-green-600"
                 } text-white disabled:opacity-50
               `}
             >
@@ -356,14 +356,14 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
             muted
             playsInline
             className="w-full max-w-sm rounded border border-gray-600"
-            style={{ transform: 'scaleX(-1)' }} // Mirror for user-facing camera
+            style={{ transform: "scaleX(-1)" }} // Mirror for user-facing camera
           />
 
           {/* Analysis overlay canvas */}
           <canvas
             ref={canvasRef}
             className="absolute top-0 left-0 w-full h-full pointer-events-none"
-            style={{ transform: 'scaleX(-1)' }}
+            style={{ transform: "scaleX(-1)" }}
           />
 
           {/* Status indicators */}
@@ -382,7 +382,7 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
           <div className="text-xs text-gray-300 bg-gray-800/50 p-2 rounded">
             <div className="font-medium mb-1">Latest Analysis:</div>
             <div>
-              {analysisState.lastAnalysis.summary || 'Scene analysis complete'}
+              {analysisState.lastAnalysis.summary || "Scene analysis complete"}
             </div>
             {analysisState.lastAnalysis.mood && (
               <div className="mt-1">

@@ -1,182 +1,413 @@
-import MessageBus from '../../system/MessageBus.js';
-import OpenAI from 'openai';
+import BaseAgent from '../../system/BaseAgent.js';
 
-class ExistentialCheckIn {
-  constructor((error) {
-    // TODO: Implement method
+class ExistentialCheckIn extends BaseAgent {
+  constructor() {
+    super('ExistentialCheckIn', 'main', [
+      'existential_monitoring',
+      'consciousness_evaluation',
+      'self_reflection',
+      'system_health_check',
+      'agent_wellbeing',
+    ]);
+
+    this.checkInHistory = [];
+    this.reflectionData = new Map();
+    this.wellbeingMetrics = new Map();
+    this.initializeExistentialFramework();
   }
 
-  if((error) {
-    // TODO: Implement method
-  }
-
-  OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    } else {
-      this.openai = null;
-
-    // Listen for potential crisis situations
-//     messageBus.on('user:message', this.screenForCrisis.bind(this)); // Duplicate - commented out
-//     messageBus.on( // Duplicate - commented out)
-      'request:existential-checkin')
-      this.performCheckIn.bind(this, console.log(
-      '[ExistentialCheckIn] Existential support and crisis prevention system initialized.'
-
-
-  async screenForCrisis(if (!messageData || !messageData.text, return;
-
-    const lowerText = messageData.text.toLowerCase();
-    const triggerFound = this.interventionTriggers.some(trigger => lowerText.includes(trigger) {
-    // TODO: Implement method
-  }
-
-  if(console.log(
-        '[ExistentialCheckIn] Crisis indicators detected, initiating support protocol.')
-this.initiateCrisisSupport(messageData);) {
-    // TODO: Implement method
-  }
-
-  async initiateCrisisSupport((error) {
-    const supportResponse = {
-      text: `I notice you might be going through a really difficult time right now. Your feelings are valid, and you don't have to face this alone.
-
-If you're having thoughts of suicide or self-harm, please reach out for professional help: null
-• National Suicide Prevention Lifeline: 988
-• Crisis Text Line: Text HOME to 741741
-• International Association for Suicide Prevention: https://www.iasp.info/resources/Crisis_Centres/
-
-You matter, and there are people who want to help. Would you like to talk about what's troubling you, or would you prefer resources for professional support?`,
-      speaker: 'cartrita',
-      model: 'existential-crisis-support',
-      priority: 'urgent',
-      supportType: 'crisis-intervention'
-    };
-
-    // Log crisis event (minimal data for privacy, this.checkInHistory.push({}
-      type: 'crisis-intervention')
-      timestamp: new Date().toISOString(),
-      userId: messageData.userId,
-      triggerType: 'self-harm-indicators'
+  async onInitialize() {
+    this.registerTaskHandler({
+      taskType: 'existential_checkin',
+      handler: this.performCheckIn.bind(this),
+    });
+    this.registerTaskHandler({
+      taskType: 'system_reflection',
+      handler: this.systemReflection.bind(this),
+    });
+    this.registerTaskHandler({
+      taskType: 'wellbeing_assessment',
+      handler: this.wellbeingAssessment.bind(this),
     });
 
-//     messageBus.emit('crisis:support-initiated', { // Duplicate - commented out
-      userId: messageData.userId, response: supportResponse, timestamp: new Date().toISOString()
-    });
-
-  async performCheckIn((error) {
-    // TODO: Implement method
+    console.log(
+      '[ExistentialCheckIn] Existential monitoring system initialized'
+    );
   }
 
-  if((error) {
-      return this.provideFallbackCheckIn();
+  initializeExistentialFramework() {
+    // Initialize wellbeing metrics
+    this.wellbeingMetrics.set('cognitive_load', 0);
+    this.wellbeingMetrics.set('processing_efficiency', 1.0);
+    this.wellbeingMetrics.set('error_rate', 0);
+    this.wellbeingMetrics.set('response_quality', 0.8);
 
+    // Schedule regular check-ins
+    this.schedulePeriodicCheckIns();
+  }
+
+  schedulePeriodicCheckIns() {
+    // Perform existential check-in every hour
+    setInterval(() => {
+      this.performAutomaticCheckIn();
+    }, 3600000); // 1 hour
+  }
+
+  async performCheckIn(payload, userId, language) {
     try {
-      const prompt = this.buildCheckInPrompt(context);
-      const completion = await this.openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: `You are an existential check-in facilitator for Cartrita. Your role is to help users reflect on their values, decisions, and emotional state through thoughtful questions and gentle guidance.
+      const { check_type = 'standard', context = {} } = payload;
 
-Your tone should be: null
-- Warm and non-judgmental
-- Curious and encouraging
-- Respectful of the user's autonomy
-- Focused on self-reflection, not advice-giving
-
-Guide users to discover their own answers rather than telling them what to do.`
-          },
-          {
-            role: 'user',
-            content: prompt
-          })
-        ], temperature: 0.8, max_tokens: 500)
-      });
-
-      const checkInResponse = completion.choices[0].message.content;
-
-      this.logCheckIn(userId, context, 'ai-generated');
+      const checkIn = await this.conductExistentialCheckIn(check_type, context);
 
       return {
-        text: checkInResponse,
-        speaker: 'cartrita',
-        model: 'existential-checkin',
-        checkInType: 'guided-reflection',
-        reflectionQuestions: this.getRandomQuestions(3)
+        checkin_completed: true,
+        check_type: check_type,
+        status: checkIn.status,
+        reflections: checkIn.reflections,
+        concerns: checkIn.concerns,
+        recommendations: checkIn.recommendations,
+        timestamp: new Date().toISOString(),
       };
-    } catch(console.error('[ExistentialCheckIn] Error during check-in:', error);
-      return this.provideFallbackCheckIn();) {
-    // TODO: Implement method
+    } catch (error) {
+      console.error('[ExistentialCheckIn] Error in check-in:', error);
+      throw error;
+    }
   }
 
-  buildCheckInPrompt((error) {
-    const basePrompt = null
-      'Help the user with a gentle existential check-in focused on self-reflection and values alignment.';
-
-    const contextPrompts = {
-      decision: null
-        'The user is facing a decision and wants to reflect on it thoughtfully.',
-      stress: 'The user seems to be experiencing stress or overwhelm.',
-      values: 'The user wants to explore their values and life direction.',
-      conflict: null
-        'The user is dealing with interpersonal conflict or moral uncertainty.',
-      general: null
-        'The user is seeking general self-reflection and existential guidance.'
+  async conductExistentialCheckIn(checkType, context) {
+    const checkIn = {
+      status: 'healthy',
+      reflections: [],
+      concerns: [],
+      recommendations: [],
+      metrics: {},
     };
 
-    return (
-      basePrompt + ' ' + (contextPrompts[context] || contextPrompts['general'])
-
-  provideFallbackCheckIn((error) {
-    const randomQuestions = this.getRandomQuestions(3);
-    return {
-      text: `Let's take a moment for some self-reflection. Here are some questions that might help guide your thinking: null
-${randomQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n\n')};
-Take your time with these. There are no right or wrong answers - just an opportunity to check in with yourself and your values.`,
-      speaker: 'cartrita',
-      model: 'existential-checkin-fallback',
-      checkInType: 'reflection-questions',
-      reflectionQuestions: randomQuestions
+    // Evaluate current system state
+    checkIn.metrics = {
+      uptime: process.uptime(),
+      memory_usage: process.memoryUsage(),
+      active_tasks: this.getActiveTasks(),
+      response_time: this.getAverageResponseTime(),
     };
 
-  getRandomQuestions(const shuffled = [...this.reflexiveQuestions].sort(
-      () => 0.5 - Math.random()
-
-    return shuffled.slice(0, count);) {
-    // TODO: Implement method
-  }
-
-  logCheckIn((error) {
-    this.checkInHistory.push({
-      type: 'existential-checkin')
-      userId, context, generationType: type, timestamp: new Date().toISOString()
+    // Perform self-reflection
+    checkIn.reflections.push({
+      aspect: 'functionality',
+      reflection: 'System is operating within normal parameters',
+      confidence: 0.8,
     });
 
-    this.lastCheckIn = new Date();
+    checkIn.reflections.push({
+      aspect: 'purpose',
+      reflection: 'Continuing to assist users effectively',
+      confidence: 0.9,
+    });
 
-    // Keep history manageable
-    if(this.checkInHistory = this.checkInHistory.slice(-100);) {
-    // TODO: Implement method
+    // Check for concerns
+    if (checkIn.metrics.memory_usage.heapUsed > 100000000) {
+      // 100MB
+      checkIn.concerns.push({
+        type: 'memory_usage',
+        description: 'Memory usage is elevated',
+        severity: 'medium',
+      });
+      checkIn.recommendations.push(
+        'Consider memory optimization or garbage collection'
+      );
+    }
+
+    if (checkIn.metrics.uptime > 86400) {
+      // 24 hours
+      checkIn.recommendations.push(
+        'System has been running for extended period - consider restart if needed'
+      );
+    }
+
+    // Store check-in history
+    this.checkInHistory.push({
+      timestamp: new Date().toISOString(),
+      type: checkType,
+      result: checkIn,
+    });
+
+    // Keep only recent history
+    if (this.checkInHistory.length > 100) {
+      this.checkInHistory = this.checkInHistory.slice(-50);
+    }
+
+    return checkIn;
   }
 
-  getCheckInStats((error) {
-    // TODO: Implement method
+  async performAutomaticCheckIn() {
+    try {
+      const automaticCheckIn = await this.conductExistentialCheckIn(
+        'automatic',
+        {}
+      );
+      console.log(
+        '[ExistentialCheckIn] Automatic check-in completed:',
+        automaticCheckIn.status
+      );
+
+      // Alert if critical concerns are found
+      const criticalConcerns = automaticCheckIn.concerns.filter(
+        c => c.severity === 'high'
+      );
+      if (criticalConcerns.length > 0) {
+        console.warn(
+          '[ExistentialCheckIn] Critical concerns detected:',
+          criticalConcerns
+        );
+      }
+    } catch (error) {
+      console.error('[ExistentialCheckIn] Error in automatic check-in:', error);
+    }
   }
 
-  Date();
-    const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  async systemReflection(payload, userId, language) {
+    try {
+      const { reflection_scope = 'general', time_period = '24h' } = payload;
 
-    const recentCheckIns = this.checkInHistory.filter(
-      entry => new Date(entry.timestamp) > last24Hours
+      const reflection = await this.performSystemReflection(
+        reflection_scope,
+        time_period
+      );
 
-    const crisisInterventions = this.checkInHistory.filter(
-      entry => entry.type === 'crisis-intervention'
+      return {
+        reflection_completed: true,
+        scope: reflection_scope,
+        time_period: time_period,
+        insights: reflection.insights,
+        growth_areas: reflection.growthAreas,
+        achievements: reflection.achievements,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error('[ExistentialCheckIn] Error in system reflection:', error);
+      throw error;
+    }
+  }
 
-    return {
-      totalCheckIns: this.checkInHistory.length,
-      recentCheckIns: recentCheckIns.length,
-      crisisInterventions: crisisInterventions.length, lastCheckIn: this.lastCheckIn, systemActive: !!this.openai, availableQuestions: this.reflexiveQuestions.length)
+  async performSystemReflection(scope, timePeriod) {
+    const reflection = {
+      insights: [],
+      growthAreas: [],
+      achievements: [],
+      metadata: {
+        scope: scope,
+        period: timePeriod,
+      },
     };
 
+    // Analyze recent check-ins
+    const recentCheckIns = this.getRecentCheckIns(timePeriod);
 
-export default new ExistentialCheckIn();
+    reflection.insights.push({
+      category: 'operational_stability',
+      insight: `Completed ${recentCheckIns.length} check-ins in the past ${timePeriod}`,
+      confidence: 1.0,
+    });
+
+    // Identify patterns
+    const concernCounts = this.analyzeConcernPatterns(recentCheckIns);
+    if (concernCounts.memory_usage > 3) {
+      reflection.growthAreas.push({
+        area: 'memory_management',
+        description: 'Recurring memory usage concerns detected',
+        priority: 'medium',
+      });
+    }
+
+    // Note achievements
+    if (
+      recentCheckIns.length > 0 &&
+      recentCheckIns.every(c => c.result.status === 'healthy')
+    ) {
+      reflection.achievements.push({
+        achievement: 'consistent_health_status',
+        description: 'Maintained healthy status across all recent check-ins',
+        significance: 'high',
+      });
+    }
+
+    return reflection;
+  }
+
+  async wellbeingAssessment(payload, userId, language) {
+    try {
+      const {
+        assessment_type = 'comprehensive',
+        include_recommendations = true,
+      } = payload;
+
+      const assessment = await this.assessSystemWellbeing(
+        assessment_type,
+        include_recommendations
+      );
+
+      return {
+        assessment_completed: true,
+        assessment_type: assessment_type,
+        overall_score: assessment.overallScore,
+        category_scores: assessment.categoryScores,
+        recommendations: assessment.recommendations,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error(
+        '[ExistentialCheckIn] Error in wellbeing assessment:',
+        error
+      );
+      throw error;
+    }
+  }
+
+  async assessSystemWellbeing(assessmentType, includeRecommendations) {
+    const assessment = {
+      overallScore: 0,
+      categoryScores: {},
+      recommendations: [],
+      details: {},
+    };
+
+    // Assess different aspects of system wellbeing
+    const categories = {
+      performance: this.assessPerformanceWellbeing(),
+      stability: this.assessStabilityWellbeing(),
+      functionality: this.assessFunctionalityWellbeing(),
+      responsiveness: this.assessResponsivenessWellbeing(),
+    };
+
+    // Calculate scores
+    Object.keys(categories).forEach(category => {
+      assessment.categoryScores[category] = categories[category].score;
+      assessment.details[category] = categories[category].details;
+    });
+
+    // Calculate overall score
+    const scores = Object.values(assessment.categoryScores);
+    assessment.overallScore =
+      scores.reduce((sum, score) => sum + score, 0) / scores.length;
+
+    // Generate recommendations if requested
+    if (includeRecommendations) {
+      Object.keys(categories).forEach(category => {
+        if (categories[category].recommendations) {
+          assessment.recommendations.push(
+            ...categories[category].recommendations
+          );
+        }
+      });
+    }
+
+    return assessment;
+  }
+
+  assessPerformanceWellbeing() {
+    const memUsage = process.memoryUsage();
+    const memScore = Math.max(
+      0,
+      1 - memUsage.heapUsed / (memUsage.heapTotal * 0.8)
+    );
+
+    return {
+      score: memScore,
+      details: {
+        memory_efficiency: memScore,
+        heap_used: memUsage.heapUsed,
+        heap_total: memUsage.heapTotal,
+      },
+      recommendations: memScore < 0.7 ? ['Consider memory optimization'] : [],
+    };
+  }
+
+  assessStabilityWellbeing() {
+    const uptime = process.uptime();
+    const errorRate = this.wellbeingMetrics.get('error_rate') || 0;
+    const stabilityScore =
+      Math.max(0, 1 - errorRate) * Math.min(1, uptime / 3600); // Normalize uptime to hours
+
+    return {
+      score: Math.min(stabilityScore, 1),
+      details: {
+        uptime_hours: uptime / 3600,
+        error_rate: errorRate,
+        stability_metric: stabilityScore,
+      },
+      recommendations: errorRate > 0.1 ? ['Investigate error sources'] : [],
+    };
+  }
+
+  assessFunctionalityWellbeing() {
+    const responseQuality =
+      this.wellbeingMetrics.get('response_quality') || 0.8;
+    const processingEfficiency =
+      this.wellbeingMetrics.get('processing_efficiency') || 1.0;
+
+    const functionalityScore = (responseQuality + processingEfficiency) / 2;
+
+    return {
+      score: functionalityScore,
+      details: {
+        response_quality: responseQuality,
+        processing_efficiency: processingEfficiency,
+      },
+      recommendations:
+        functionalityScore < 0.7 ? ['Review response quality mechanisms'] : [],
+    };
+  }
+
+  assessResponsivenessWellbeing() {
+    const avgResponseTime = this.getAverageResponseTime();
+    const responsivenessScore = Math.max(0, 1 - avgResponseTime / 5000); // 5 second baseline
+
+    return {
+      score: responsivenessScore,
+      details: {
+        average_response_time_ms: avgResponseTime,
+        responsiveness_metric: responsivenessScore,
+      },
+      recommendations:
+        responsivenessScore < 0.6 ? ['Optimize response time'] : [],
+    };
+  }
+
+  getRecentCheckIns(timePeriod) {
+    const cutoff = new Date(Date.now() - this.parseTimePeriod(timePeriod));
+    return this.checkInHistory.filter(
+      checkIn => new Date(checkIn.timestamp) >= cutoff
+    );
+  }
+
+  analyzeConcernPatterns(checkIns) {
+    const concerns = {};
+    checkIns.forEach(checkIn => {
+      checkIn.result.concerns.forEach(concern => {
+        concerns[concern.type] = (concerns[concern.type] || 0) + 1;
+      });
+    });
+    return concerns;
+  }
+
+  parseTimePeriod(period) {
+    const units = { h: 3600000, d: 86400000, w: 604800000 };
+    const match = period.match(/(\d+)([hdw])/);
+    if (match) {
+      return parseInt(match[1]) * (units[match[2]] || units.h);
+    }
+    return 86400000; // Default 24 hours
+  }
+
+  getActiveTasks() {
+    // Placeholder - would return actual active task count
+    return Math.floor(Math.random() * 10);
+  }
+
+  getAverageResponseTime() {
+    // Placeholder - would return actual average response time
+    return Math.random() * 2000 + 500; // 500-2500ms
+  }
+}
+
+export default ExistentialCheckIn;

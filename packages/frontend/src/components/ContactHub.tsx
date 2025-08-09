@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Users,
   RefreshCw,
@@ -37,7 +37,7 @@ import {
   Activity,
   Gift,
   Tag,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface Contact {
   id: string;
@@ -87,25 +87,25 @@ const ContactHub: React.FC = () => {
   const [stats, setStats] = useState<ContactStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [interactions, setInteractions] = useState<ContactInteraction[]>([]);
   const [showContactModal, setShowContactModal] = useState(false);
   const [showInteractionModal, setShowInteractionModal] = useState(false);
   const [newInteraction, setNewInteraction] = useState({
-    type: 'email',
-    description: '',
-    date: new Date().toISOString().split('T')[0],
+    type: "email",
+    description: "",
+    date: new Date().toISOString().split("T")[0],
   });
 
   // New contact form state
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newContact, setNewContact] = useState({
-    first_name: '',
-    last_name: '',
-    email_addresses: [{ email: '', type: 'personal', primary: true }],
-    phone_numbers: [{ number: '', type: 'mobile', primary: true }],
-    notes: '',
+    first_name: "",
+    last_name: "",
+    email_addresses: [{ email: "", type: "personal", primary: true }],
+    phone_numbers: [{ number: "", type: "mobile", primary: true }],
+    notes: "",
   });
 
   useEffect(() => {
@@ -115,8 +115,8 @@ const ContactHub: React.FC = () => {
 
   const fetchContactStats = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/contacts/stats', {
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/contacts/stats", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -127,20 +127,20 @@ const ContactHub: React.FC = () => {
         setStats(data);
       }
     } catch (error) {
-      console.error('Failed to fetch contact stats:', error);
+      console.error("Failed to fetch contact stats:", error);
     }
   };
 
   const fetchContacts = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       const params = new URLSearchParams({
-        limit: '100',
+        limit: "100",
         ...(searchQuery && { query: searchQuery }),
       });
 
-      const endpoint = searchQuery ? '/api/contacts/search' : '/api/contacts';
+      const endpoint = searchQuery ? "/api/contacts/search" : "/api/contacts";
       const response = await fetch(`${endpoint}?${params}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -151,10 +151,10 @@ const ContactHub: React.FC = () => {
         const data = await response.json();
         setContacts(data.contacts || data.results || []);
       } else {
-        console.error('Failed to fetch contacts:', response.statusText);
+        console.error("Failed to fetch contacts:", response.statusText);
       }
     } catch (error) {
-      console.error('Failed to fetch contacts:', error);
+      console.error("Failed to fetch contacts:", error);
     } finally {
       setLoading(false);
     }
@@ -163,15 +163,15 @@ const ContactHub: React.FC = () => {
   const syncContacts = async () => {
     try {
       setSyncing(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/contacts/sync', {
-        method: 'POST',
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/contacts/sync", {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          providers: ['google'],
+          providers: ["google"],
           max_contacts: 500,
         }),
       });
@@ -181,10 +181,10 @@ const ContactHub: React.FC = () => {
         await fetchContactStats();
       } else {
         const error = await response.json();
-        console.error('Sync failed:', error);
+        console.error("Sync failed:", error);
       }
     } catch (error) {
-      console.error('Failed to sync contacts:', error);
+      console.error("Failed to sync contacts:", error);
     } finally {
       setSyncing(false);
     }
@@ -192,7 +192,7 @@ const ContactHub: React.FC = () => {
 
   const fetchContactInteractions = async (contactId: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       const response = await fetch(`/api/contacts/${contactId}/interactions`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -204,7 +204,7 @@ const ContactHub: React.FC = () => {
         setInteractions(data.interactions || []);
       }
     } catch (error) {
-      console.error('Failed to fetch interactions:', error);
+      console.error("Failed to fetch interactions:", error);
     }
   };
 
@@ -212,45 +212,45 @@ const ContactHub: React.FC = () => {
     if (!selectedContact) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       const response = await fetch(
         `/api/contacts/${selectedContact.id}/interactions`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             interaction_type: newInteraction.type,
             interaction_date: new Date(newInteraction.date).toISOString(),
             description: newInteraction.description,
           }),
-        }
+        },
       );
 
       if (response.ok) {
         await fetchContactInteractions(selectedContact.id);
         setNewInteraction({
-          type: 'email',
-          description: '',
-          date: new Date().toISOString().split('T')[0],
+          type: "email",
+          description: "",
+          date: new Date().toISOString().split("T")[0],
         });
         setShowInteractionModal(false);
       }
     } catch (error) {
-      console.error('Failed to add interaction:', error);
+      console.error("Failed to add interaction:", error);
     }
   };
 
   const createContact = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/contacts', {
-        method: 'POST',
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/contacts", {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           ...newContact,
@@ -264,40 +264,40 @@ const ContactHub: React.FC = () => {
         if (result.success) {
           await fetchContacts();
           setNewContact({
-            first_name: '',
-            last_name: '',
-            email_addresses: [{ email: '', type: 'personal', primary: true }],
-            phone_numbers: [{ number: '', type: 'mobile', primary: true }],
-            notes: '',
+            first_name: "",
+            last_name: "",
+            email_addresses: [{ email: "", type: "personal", primary: true }],
+            phone_numbers: [{ number: "", type: "mobile", primary: true }],
+            notes: "",
           });
           setShowCreateForm(false);
         } else {
-          alert('Failed to create contact: ' + result.error);
+          alert("Failed to create contact: " + result.error);
         }
       } else {
-        alert('Failed to create contact. Please try again.');
+        alert("Failed to create contact. Please try again.");
       }
     } catch (error) {
-      console.error('Failed to create contact:', error);
-      alert('Failed to create contact. Please check your connection.');
+      console.error("Failed to create contact:", error);
+      alert("Failed to create contact. Please check your connection.");
     }
   };
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString();
   };
 
   const formatLastInteraction = (dateString: string) => {
-    if (!dateString) return 'Never';
+    if (!dateString) return "Never";
     const date = new Date(dateString);
     const now = new Date();
     const diffInDays = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
     );
 
-    if (diffInDays === 0) return 'Today';
-    if (diffInDays === 1) return 'Yesterday';
+    if (diffInDays === 0) return "Today";
+    if (diffInDays === 1) return "Yesterday";
     if (diffInDays < 7) return `${diffInDays} days ago`;
     if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`;
     return `${Math.floor(diffInDays / 30)} months ago`;
@@ -305,13 +305,13 @@ const ContactHub: React.FC = () => {
 
   const getInteractionIcon = (type: string) => {
     switch (type) {
-      case 'email':
+      case "email":
         return <Mail className="w-4 h-4" />;
-      case 'phone':
+      case "phone":
         return <Phone className="w-4 h-4" />;
-      case 'meeting':
+      case "meeting":
         return <Calendar className="w-4 h-4" />;
-      case 'message':
+      case "message":
         return <MessageCircle className="w-4 h-4" />;
       default:
         return <Activity className="w-4 h-4" />;
@@ -320,21 +320,21 @@ const ContactHub: React.FC = () => {
 
   const getInteractionColor = (type: string) => {
     const colors = {
-      email: 'bg-blue-100 text-blue-800',
-      phone: 'bg-green-100 text-green-800',
-      meeting: 'bg-purple-100 text-purple-800',
-      message: 'bg-yellow-100 text-yellow-800',
+      email: "bg-blue-100 text-blue-800",
+      phone: "bg-green-100 text-green-800",
+      meeting: "bg-purple-100 text-purple-800",
+      message: "bg-yellow-100 text-yellow-800",
     };
-    return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+    return colors[type as keyof typeof colors] || "bg-gray-100 text-gray-800";
   };
 
   const getInitials = (contact: Contact) => {
-    const first = contact.first_name?.charAt(0) || '';
-    const last = contact.last_name?.charAt(0) || '';
+    const first = contact.first_name?.charAt(0) || "";
+    const last = contact.last_name?.charAt(0) || "";
     return (
       (first + last).toUpperCase() ||
       contact.display_name?.charAt(0)?.toUpperCase() ||
-      '?'
+      "?"
     );
   };
 
@@ -361,9 +361,9 @@ const ContactHub: React.FC = () => {
         <div className="flex space-x-2">
           <Button onClick={syncContacts} disabled={syncing} variant="outline">
             <RefreshCw
-              className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`}
+              className={`w-4 h-4 mr-2 ${syncing ? "animate-spin" : ""}`}
             />
-            {syncing ? 'Syncing...' : 'Sync Contacts'}
+            {syncing ? "Syncing..." : "Sync Contacts"}
           </Button>
           <Button onClick={() => setShowCreateForm(true)}>
             <Plus className="w-4 h-4 mr-2" />
@@ -438,8 +438,8 @@ const ContactHub: React.FC = () => {
             <Input
               placeholder="Search contacts..."
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onKeyPress={e => e.key === 'Enter' && handleSearch()}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={(e) => e.key === "Enter" && handleSearch()}
               className="flex-1"
             />
             <Button onClick={handleSearch} variant="outline">
@@ -459,11 +459,11 @@ const ContactHub: React.FC = () => {
         ) : contacts.length === 0 ? (
           <div className="col-span-full text-center py-8 text-gray-500">
             {searchQuery
-              ? 'No contacts match your search'
-              : 'No contacts found'}
+              ? "No contacts match your search"
+              : "No contacts found"}
           </div>
         ) : (
-          contacts.map(contact => (
+          contacts.map((contact) => (
             <Card
               key={contact.id}
               className="hover:shadow-md transition-shadow cursor-pointer"
@@ -494,21 +494,24 @@ const ContactHub: React.FC = () => {
                     </h3>
 
                     {/* Primary Email */}
-                    {contact.email_addresses?.find(e => e.primary)?.email && (
+                    {contact.email_addresses?.find((e) => e.primary)?.email && (
                       <div className="flex items-center text-sm text-gray-600 mt-1">
                         <Mail className="w-3 h-3 mr-1" />
                         <span className="truncate">
-                          {contact.email_addresses.find(e => e.primary)?.email}
+                          {
+                            contact.email_addresses.find((e) => e.primary)
+                              ?.email
+                          }
                         </span>
                       </div>
                     )}
 
                     {/* Primary Phone */}
-                    {contact.phone_numbers?.find(p => p.primary)?.number && (
+                    {contact.phone_numbers?.find((p) => p.primary)?.number && (
                       <div className="flex items-center text-sm text-gray-600 mt-1">
                         <Phone className="w-3 h-3 mr-1" />
                         <span className="truncate">
-                          {contact.phone_numbers.find(p => p.primary)?.number}
+                          {contact.phone_numbers.find((p) => p.primary)?.number}
                         </span>
                       </div>
                     )}
@@ -583,7 +586,7 @@ const ContactHub: React.FC = () => {
                     `${selectedContact?.first_name} ${selectedContact?.last_name}`}
                 </h3>
                 <p className="text-sm text-gray-600">
-                  {selectedContact?.organizations?.[0]?.title} at{' '}
+                  {selectedContact?.organizations?.[0]?.title} at{" "}
                   {selectedContact?.organizations?.[0]?.company}
                 </p>
               </div>
@@ -707,14 +710,14 @@ const ContactHub: React.FC = () => {
                   </p>
                 ) : (
                   <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {interactions.map(interaction => (
+                    {interactions.map((interaction) => (
                       <div
                         key={interaction.id}
                         className="flex items-start space-x-3 p-2 bg-gray-50 rounded"
                       >
                         <Badge
                           className={getInteractionColor(
-                            interaction.interaction_type
+                            interaction.interaction_type,
                           )}
                         >
                           {getInteractionIcon(interaction.interaction_type)}
@@ -754,7 +757,7 @@ const ContactHub: React.FC = () => {
               <label className="text-sm font-medium text-gray-700">Type</label>
               <Select
                 value={newInteraction.type}
-                onValueChange={value =>
+                onValueChange={(value) =>
                   setNewInteraction({ ...newInteraction, type: value })
                 }
               >
@@ -775,7 +778,7 @@ const ContactHub: React.FC = () => {
               <Input
                 type="date"
                 value={newInteraction.date}
-                onChange={e =>
+                onChange={(e) =>
                   setNewInteraction({ ...newInteraction, date: e.target.value })
                 }
               />
@@ -787,7 +790,7 @@ const ContactHub: React.FC = () => {
               </label>
               <Textarea
                 value={newInteraction.description}
-                onChange={e =>
+                onChange={(e) =>
                   setNewInteraction({
                     ...newInteraction,
                     description: e.target.value,
@@ -830,7 +833,7 @@ const ContactHub: React.FC = () => {
                 </label>
                 <Input
                   value={newContact.first_name}
-                  onChange={e =>
+                  onChange={(e) =>
                     setNewContact({ ...newContact, first_name: e.target.value })
                   }
                   placeholder="John"
@@ -843,7 +846,7 @@ const ContactHub: React.FC = () => {
                 </label>
                 <Input
                   value={newContact.last_name}
-                  onChange={e =>
+                  onChange={(e) =>
                     setNewContact({ ...newContact, last_name: e.target.value })
                   }
                   placeholder="Doe"
@@ -858,8 +861,8 @@ const ContactHub: React.FC = () => {
               </label>
               <Input
                 type="email"
-                value={newContact.email_addresses[0]?.email || ''}
-                onChange={e =>
+                value={newContact.email_addresses[0]?.email || ""}
+                onChange={(e) =>
                   setNewContact({
                     ...newContact,
                     email_addresses: [
@@ -881,8 +884,8 @@ const ContactHub: React.FC = () => {
               </label>
               <Input
                 type="tel"
-                value={newContact.phone_numbers[0]?.number || ''}
-                onChange={e =>
+                value={newContact.phone_numbers[0]?.number || ""}
+                onChange={(e) =>
                   setNewContact({
                     ...newContact,
                     phone_numbers: [
@@ -904,7 +907,7 @@ const ContactHub: React.FC = () => {
               </label>
               <Textarea
                 value={newContact.notes}
-                onChange={e =>
+                onChange={(e) =>
                   setNewContact({ ...newContact, notes: e.target.value })
                 }
                 placeholder="Additional notes..."

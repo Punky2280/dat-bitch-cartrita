@@ -2,572 +2,398 @@
 > backend@1.0.0 start
 > node .
 
+[dotenv@17.2.1] injecting env (37) from .env -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
+[loadEnv] ✅ Environment loaded from: /home/robbie/development/dat-bitch-cartrita/packages/backend/.env
+🎤 DeepgramService initialized
+[DeepgramService] ✅ Client initialized
+🗣️ TextToSpeechService initialized
+[TextToSpeechService] ✅ Client initialized
+✅ Hybrid MessageBus with MCP initialized
+🌊 AmbientListeningService initialized
+[AmbientListeningService] Ambient monitoring setup completed
+👁️ VisualAnalysisService initialized
+[VisualAnalysisService] ✅ Client initialized
+[APIKeyManager] 🔐 Secure API key manager initialized
+🔐 SecureEncryptionService initialized with AES-256-GCM
+🧠 MultiModalProcessingService initialized
+[ServiceInitializer] Constructor initialized
+[EnhancedWorkflowEngine] ⚠️ Handler handleWebhookTrigger not implemented for webhook-trigger, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleScheduleTrigger not implemented for schedule-trigger, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleMCPResearcherNode not implemented for mcp-researcher, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleMCPAnalystNode not implemented for mcp-analyst, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleRAGSearchNode not implemented for rag-search, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleDataTransformNode not implemented for data-transform, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleDataFilterNode not implemented for data-filter, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleSplitNode not implemented for logic-split, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleLoopNode not implemented for logic-loop, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleEmailNode not implemented for email-send, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleWebhookSendNode not implemented for webhook-send, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleDatabaseQueryNode not implemented for database-query, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleWolframPlotNode not implemented for wolfram-plot, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleImageAnalysisNode not implemented for image-analysis, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleAudioTranscriptionNode not implemented for audio-transcription, using fallback
+[EnhancedWorkflowEngine] ✅ Initialized 24 node handlers
+[EnhancedWorkflowEngine] ⏰ Scheduler initialized
+[EnhancedWorkflowEngine] 🚀 Real execution system initialized
+[WorkflowNodeRegistry] ✅ Registered 28 nodes across 10 categories
+[WorkflowNodeRegistry] 🎯 Comprehensive node registry initialized
+[EnhancedKnowledgeHub] 🧠 Advanced RAG system initialized
+[SupervisorRegistry] Hierarchical structure initialized
+[SupervisorRegistry] Supervisors: 5
+[SupervisorRegistry] Subordinates: 24
+[SupervisorRegistry] Coordination graph compiled
 [Index] 🚀 Starting Cartrita backend...
-[dotenv@17.2.1] injecting env (13) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
-[Index] 🚀 Loading route modules...
-[Index] ✅ Auth routes loaded
-[Index] ✅ User routes loaded successfully
-[Index] ✅ Chat history routes loaded
-[Index] ✅ Knowledge routes loaded
-[Index] ✅ Vault routes loaded
-[ApiRateLimiter] Initialized with limits: { requestsPerMinute: 60, tokensPerMinute: 90000, concurrent: 10 }
-[DeepgramService] Client initialized
-[TextToSpeechService] OpenAI client initialized
-✅ Enhanced MessageBus with MCP initialized
-[MCP] Agent registered: MessageBus.system
-[VoiceInteractionService] Initializing voice interaction service...
-[VoiceInteractionService] Service initialized
-[AmbientListeningService] Sound classification patterns initialized
-[VisualAnalysisService] Service initialized
-🔑 GoogleAPIService initialized with API key
-📅 CalendarService initialized with enhanced Google API integration
-📧 EmailService initialized with enhanced Google API integration
-👥 ContactService initialized with enhanced Google API integration
-🔔 NotificationEngine initialized
-🔒 PrivacyControlService initialized
-[MCP] Agent registered: CoreAgent.master
-[MCP] Broadcast message 4e4cbfd1 to 1 agents
-[CoreAgent] Master controller initializing...
-[CoreAgent] Master controller ready for orchestration
-[MCP] Agent CoreAgent.master already registered, updating metadata
-[CoreAgent] Master controller initializing...
-[CoreAgent] Master controller ready for orchestration
-[SensoryService] Initialized with audio and video processing capabilities.
-[Agent Initializer] 🚀 Activating Cartrita Iteration 20: 25-Agent System...
-[Agent Initializer] 🎯 Initializing System Coordination...
-[MCP] Agent registered: MCPCoordinatorAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: MCPCoordinatorAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: MCPCoordinatorAgent.main
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: MCPCoordinatorAgent.main with capabilities: agent_orchestration, message_routing, load_balancing, agent_health_monitoring, system_coordination, workflow_management
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: MCPCoordinatorAgent.main with capabilities: agent_orchestration, message_routing, load_balancing, agent_health_monitoring, system_coordination, workflow_management
-[MCP] Broadcast message aecbffe0 to 2 agents
-[MCPCoordinatorAgent.main] Agent initialized and ready
-[Agent Initializer] 🧠 Initializing Consciousness Agents...
-[MCP] Agent registered: CodeWriterAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: CodeWriterAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: CodeWriterAgent.main
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: CodeWriterAgent.main with capabilities: coding, debugging, code_review, architecture
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: CodeWriterAgent.main with capabilities: coding, debugging, code_review, architecture
-[MCPCoordinatorAgent] Registering agent: CodeWriterAgent.main
-[MCP] Broadcast message 42d67f73 to 3 agents
-[CodeWriterAgent] Listening for coding tasks...
-[MCP] Agent registered: SchedulerAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: SchedulerAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: SchedulerAgent.main
-[CodeWriterAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[CodeWriterAgent.main] New agent registered: SchedulerAgent.main
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: SchedulerAgent.main with capabilities: schedule, calendar, time_management
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: SchedulerAgent.main with capabilities: schedule, calendar, time_management
-[MCPCoordinatorAgent] Registering agent: SchedulerAgent.main
-[CodeWriterAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[MCP] Broadcast message 9ce26b3c to 4 agents
-[SchedulerAgent] Listening for schedule tasks...
-[MCP] Agent registered: ArtistAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: ArtistAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: ArtistAgent.main
-[CodeWriterAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[CodeWriterAgent.main] New agent registered: ArtistAgent.main
-[SchedulerAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[SchedulerAgent.main] New agent registered: ArtistAgent.main
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: ArtistAgent.main with capabilities: art, image_generation, visual_creation
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: ArtistAgent.main with capabilities: art, image_generation, visual_creation
-[MCPCoordinatorAgent] Registering agent: ArtistAgent.main
-[CodeWriterAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[SchedulerAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[MCP] Broadcast message f9a852b0 to 5 agents
-[ArtistAgent] Listening for art tasks...
-[MCP] Agent registered: WriterAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: WriterAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: WriterAgent.main
-[CodeWriterAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[CodeWriterAgent.main] New agent registered: WriterAgent.main
-[SchedulerAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[SchedulerAgent.main] New agent registered: WriterAgent.main
-[ArtistAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[ArtistAgent.main] New agent registered: WriterAgent.main
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: WriterAgent.main with capabilities: write, creative_writing, content_generation
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: WriterAgent.main with capabilities: write, creative_writing, content_generation
-[MCPCoordinatorAgent] Registering agent: WriterAgent.main
-[CodeWriterAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[SchedulerAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[ArtistAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[MCP] Broadcast message 3e38a57b to 6 agents
-[WriterAgent] Listening for writing tasks...
-[MCP] Agent registered: ComedianAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: ComedianAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: ComedianAgent.main
-[CodeWriterAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[CodeWriterAgent.main] New agent registered: ComedianAgent.main
-[SchedulerAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[SchedulerAgent.main] New agent registered: ComedianAgent.main
-[ArtistAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[ArtistAgent.main] New agent registered: ComedianAgent.main
-[WriterAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[WriterAgent.main] New agent registered: ComedianAgent.main
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: ComedianAgent.main with capabilities: joke, humor, comedy
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: ComedianAgent.main with capabilities: joke, humor, comedy
-[MCPCoordinatorAgent] Registering agent: ComedianAgent.main
-[CodeWriterAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[SchedulerAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[ArtistAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[WriterAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[MCP] Broadcast message 6c1a4a49 to 7 agents
-[ComedianAgent] Comedy central is online and ready to deliver laughs.
-[MCP] Agent registered: EmotionalIntelligenceAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: EmotionalIntelligenceAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: EmotionalIntelligenceAgent.main
-[CodeWriterAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[CodeWriterAgent.main] New agent registered: EmotionalIntelligenceAgent.main
-[SchedulerAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[SchedulerAgent.main] New agent registered: EmotionalIntelligenceAgent.main
-[ArtistAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[ArtistAgent.main] New agent registered: EmotionalIntelligenceAgent.main
-[WriterAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[WriterAgent.main] New agent registered: EmotionalIntelligenceAgent.main
-[ComedianAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[ComedianAgent.main] New agent registered: EmotionalIntelligenceAgent.main
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: EmotionalIntelligenceAgent.main with capabilities: emotional_support, empathy, wellness, counseling
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: EmotionalIntelligenceAgent.main with capabilities: emotional_support, empathy, wellness, counseling
-[MCPCoordinatorAgent] Registering agent: EmotionalIntelligenceAgent.main
-[CodeWriterAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[SchedulerAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[ArtistAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[WriterAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[ComedianAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[MCP] Broadcast message 1477bbb9 to 8 agents
-[EmotionalIntelligenceAgent] Emotional support system initialized.
-[MCP] Agent registered: TaskManagementAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: TaskManagementAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: TaskManagementAgent.main
-[CodeWriterAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[CodeWriterAgent.main] New agent registered: TaskManagementAgent.main
-[SchedulerAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[SchedulerAgent.main] New agent registered: TaskManagementAgent.main
-[ArtistAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[ArtistAgent.main] New agent registered: TaskManagementAgent.main
-[WriterAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[WriterAgent.main] New agent registered: TaskManagementAgent.main
-[ComedianAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[ComedianAgent.main] New agent registered: TaskManagementAgent.main
-[EmotionalIntelligenceAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[EmotionalIntelligenceAgent.main] New agent registered: TaskManagementAgent.main
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: TaskManagementAgent.main with capabilities: task_management, productivity, project_planning, organization
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: TaskManagementAgent.main with capabilities: task_management, productivity, project_planning, organization
-[MCPCoordinatorAgent] Registering agent: TaskManagementAgent.main
-[CodeWriterAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[SchedulerAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[ArtistAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[WriterAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[ComedianAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[EmotionalIntelligenceAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[MCP] Broadcast message 75dabeb8 to 9 agents
-[TaskManagementAgent] Productivity and task management system initialized.
-[MCP] Agent registered: AnalyticsAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: AnalyticsAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: AnalyticsAgent.main
-[CodeWriterAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[CodeWriterAgent.main] New agent registered: AnalyticsAgent.main
-[SchedulerAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[SchedulerAgent.main] New agent registered: AnalyticsAgent.main
-[ArtistAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[ArtistAgent.main] New agent registered: AnalyticsAgent.main
-[WriterAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[WriterAgent.main] New agent registered: AnalyticsAgent.main
-[ComedianAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[ComedianAgent.main] New agent registered: AnalyticsAgent.main
-[EmotionalIntelligenceAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[EmotionalIntelligenceAgent.main] New agent registered: AnalyticsAgent.main
-[TaskManagementAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[TaskManagementAgent.main] New agent registered: AnalyticsAgent.main
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: AnalyticsAgent.main with capabilities: data_analysis, metrics_generation, trend_identification, statistical_analysis, data_visualization
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: AnalyticsAgent.main with capabilities: data_analysis, metrics_generation, trend_identification, statistical_analysis, data_visualization
-[MCPCoordinatorAgent] Registering agent: AnalyticsAgent.main
-[CodeWriterAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[SchedulerAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[ArtistAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[WriterAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[ComedianAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[EmotionalIntelligenceAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[TaskManagementAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[MCP] Broadcast message 6cdb0a56 to 10 agents
-[AnalyticsAgent.main] Agent initialized and ready
-[MCP] Agent registered: DesignAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: DesignAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: DesignAgent.main
-[CodeWriterAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[CodeWriterAgent.main] New agent registered: DesignAgent.main
-[SchedulerAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[SchedulerAgent.main] New agent registered: DesignAgent.main
-[ArtistAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[ArtistAgent.main] New agent registered: DesignAgent.main
-[WriterAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[WriterAgent.main] New agent registered: DesignAgent.main
-[ComedianAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[ComedianAgent.main] New agent registered: DesignAgent.main
-[EmotionalIntelligenceAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[EmotionalIntelligenceAgent.main] New agent registered: DesignAgent.main
-[TaskManagementAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[TaskManagementAgent.main] New agent registered: DesignAgent.main
-[AnalyticsAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[AnalyticsAgent.main] New agent registered: DesignAgent.main
-[AnalyticsAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[AnalyticsAgent.main] New agent registered: DesignAgent.main
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: DesignAgent.main with capabilities: ui_design, ux_optimization, accessibility_compliance, visual_hierarchy, color_theory, typography, layout_optimization
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: DesignAgent.main with capabilities: ui_design, ux_optimization, accessibility_compliance, visual_hierarchy, color_theory, typography, layout_optimization
-[MCPCoordinatorAgent] Registering agent: DesignAgent.main
-[CodeWriterAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[SchedulerAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[ArtistAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[WriterAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[ComedianAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[EmotionalIntelligenceAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[TaskManagementAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[AnalyticsAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[AnalyticsAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[MCP] Broadcast message 79e4e12d to 11 agents
-[DesignAgent.main] Agent initialized and ready
-[Agent Initializer] 🛡️ Initializing Ethics & Safety Systems...
-✅ MessageBus ready
-[ConstitutionalAI] Ethical analysis system initialized and listening.
-[ExistentialCheckIn] Existential support and crisis prevention system initialized.
-[MCP] Agent registered: SecurityAuditAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: SecurityAuditAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: SecurityAuditAgent.main
-[CodeWriterAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[CodeWriterAgent.main] New agent registered: SecurityAuditAgent.main
-[SchedulerAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[SchedulerAgent.main] New agent registered: SecurityAuditAgent.main
-[ArtistAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[ArtistAgent.main] New agent registered: SecurityAuditAgent.main
-[WriterAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[WriterAgent.main] New agent registered: SecurityAuditAgent.main
-[ComedianAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[ComedianAgent.main] New agent registered: SecurityAuditAgent.main
-[EmotionalIntelligenceAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[EmotionalIntelligenceAgent.main] New agent registered: SecurityAuditAgent.main
-[TaskManagementAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[TaskManagementAgent.main] New agent registered: SecurityAuditAgent.main
-[AnalyticsAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[AnalyticsAgent.main] New agent registered: SecurityAuditAgent.main
-[AnalyticsAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[AnalyticsAgent.main] New agent registered: SecurityAuditAgent.main
-[DesignAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[DesignAgent.main] New agent registered: SecurityAuditAgent.main
-[DesignAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[DesignAgent.main] New agent registered: SecurityAuditAgent.main
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: SecurityAuditAgent.main with capabilities: threat_assessment, vulnerability_scanning, security_monitoring, access_control, incident_detection, compliance_checking
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: SecurityAuditAgent.main with capabilities: threat_assessment, vulnerability_scanning, security_monitoring, access_control, incident_detection, compliance_checking
-[MCPCoordinatorAgent] Registering agent: SecurityAuditAgent.main
-[CodeWriterAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[SchedulerAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[ArtistAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[WriterAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[ComedianAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[EmotionalIntelligenceAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[TaskManagementAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[AnalyticsAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[AnalyticsAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[DesignAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[DesignAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[MCP] Broadcast message 6d050dd1 to 12 agents
-[SecurityAuditAgent.main] Agent initialized and ready
-[Agent Initializer] 🧠 Initializing Memory & Learning Systems...
-[ConversationStore] Advanced conversation memory system initialized.
-[UserProfile] Advanced user profiling and learning system initialized.
-[Agent Initializer] 🌐 Initializing Communication & Integration...
-[MCP] Agent registered: NotificationAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: NotificationAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: NotificationAgent.main
-[CodeWriterAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[CodeWriterAgent.main] New agent registered: NotificationAgent.main
-[SchedulerAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[SchedulerAgent.main] New agent registered: NotificationAgent.main
-[ArtistAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[ArtistAgent.main] New agent registered: NotificationAgent.main
-[WriterAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[WriterAgent.main] New agent registered: NotificationAgent.main
-[ComedianAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[ComedianAgent.main] New agent registered: NotificationAgent.main
-[EmotionalIntelligenceAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[EmotionalIntelligenceAgent.main] New agent registered: NotificationAgent.main
-[TaskManagementAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[TaskManagementAgent.main] New agent registered: NotificationAgent.main
-[AnalyticsAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[AnalyticsAgent.main] New agent registered: NotificationAgent.main
-[AnalyticsAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[AnalyticsAgent.main] New agent registered: NotificationAgent.main
-[DesignAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[DesignAgent.main] New agent registered: NotificationAgent.main
-[DesignAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[DesignAgent.main] New agent registered: NotificationAgent.main
-[SecurityAuditAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[SecurityAuditAgent.main] New agent registered: NotificationAgent.main
-[SecurityAuditAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[SecurityAuditAgent.main] New agent registered: NotificationAgent.main
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: NotificationAgent.main with capabilities: notification_management, alert_prioritization, multi_channel_delivery, notification_scheduling, user_preference_handling, escalation_management
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: NotificationAgent.main with capabilities: notification_management, alert_prioritization, multi_channel_delivery, notification_scheduling, user_preference_handling, escalation_management
-[MCPCoordinatorAgent] Registering agent: NotificationAgent.main
-[CodeWriterAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[SchedulerAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[ArtistAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[WriterAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[ComedianAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[EmotionalIntelligenceAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[TaskManagementAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[AnalyticsAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[AnalyticsAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[DesignAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[DesignAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[SecurityAuditAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[SecurityAuditAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[MCP] Broadcast message 1500923d to 13 agents
-[NotificationAgent.main] Agent initialized and ready
-[MCP] Agent registered: TranslationAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: TranslationAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: TranslationAgent.main
-[CodeWriterAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[CodeWriterAgent.main] New agent registered: TranslationAgent.main
-[SchedulerAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[SchedulerAgent.main] New agent registered: TranslationAgent.main
-[ArtistAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[ArtistAgent.main] New agent registered: TranslationAgent.main
-[WriterAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[WriterAgent.main] New agent registered: TranslationAgent.main
-[ComedianAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[ComedianAgent.main] New agent registered: TranslationAgent.main
-[EmotionalIntelligenceAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[EmotionalIntelligenceAgent.main] New agent registered: TranslationAgent.main
-[TaskManagementAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[TaskManagementAgent.main] New agent registered: TranslationAgent.main
-[AnalyticsAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[AnalyticsAgent.main] New agent registered: TranslationAgent.main
-[AnalyticsAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[AnalyticsAgent.main] New agent registered: TranslationAgent.main
-[DesignAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[DesignAgent.main] New agent registered: TranslationAgent.main
-[DesignAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[DesignAgent.main] New agent registered: TranslationAgent.main
-[SecurityAuditAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[SecurityAuditAgent.main] New agent registered: TranslationAgent.main
-[SecurityAuditAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[SecurityAuditAgent.main] New agent registered: TranslationAgent.main
-[NotificationAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[NotificationAgent.main] New agent registered: TranslationAgent.main
-[NotificationAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[NotificationAgent.main] New agent registered: TranslationAgent.main
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: TranslationAgent.main with capabilities: language_translation, language_detection, localization, cultural_adaptation, multilingual_support, content_localization
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: TranslationAgent.main with capabilities: language_translation, language_detection, localization, cultural_adaptation, multilingual_support, content_localization
-[MCPCoordinatorAgent] Registering agent: TranslationAgent.main
-[CodeWriterAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[SchedulerAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[ArtistAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[WriterAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[ComedianAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[EmotionalIntelligenceAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[TaskManagementAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[AnalyticsAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[AnalyticsAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[DesignAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[DesignAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[SecurityAuditAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[SecurityAuditAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[NotificationAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[NotificationAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[MCP] Broadcast message 7ba88fb7 to 14 agents
-[TranslationAgent.main] Agent initialized and ready
-[MCP] Agent registered: APIGatewayAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: APIGatewayAgent.main
-[CoreAgent.master] Received AGENT_REGISTER message from MessageBus.system
-[CoreAgent.master] New agent registered: APIGatewayAgent.main
-[CodeWriterAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[CodeWriterAgent.main] New agent registered: APIGatewayAgent.main
-[SchedulerAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[SchedulerAgent.main] New agent registered: APIGatewayAgent.main
-[ArtistAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[ArtistAgent.main] New agent registered: APIGatewayAgent.main
-[WriterAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[WriterAgent.main] New agent registered: APIGatewayAgent.main
-[ComedianAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[ComedianAgent.main] New agent registered: APIGatewayAgent.main
-[EmotionalIntelligenceAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[EmotionalIntelligenceAgent.main] New agent registered: APIGatewayAgent.main
-[TaskManagementAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[TaskManagementAgent.main] New agent registered: APIGatewayAgent.main
-[AnalyticsAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[AnalyticsAgent.main] New agent registered: APIGatewayAgent.main
-[AnalyticsAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[AnalyticsAgent.main] New agent registered: APIGatewayAgent.main
-[DesignAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[DesignAgent.main] New agent registered: APIGatewayAgent.main
-[DesignAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[DesignAgent.main] New agent registered: APIGatewayAgent.main
-[SecurityAuditAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[SecurityAuditAgent.main] New agent registered: APIGatewayAgent.main
-[SecurityAuditAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[SecurityAuditAgent.main] New agent registered: APIGatewayAgent.main
-[NotificationAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[NotificationAgent.main] New agent registered: APIGatewayAgent.main
-[NotificationAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[NotificationAgent.main] New agent registered: APIGatewayAgent.main
-[TranslationAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[TranslationAgent.main] New agent registered: APIGatewayAgent.main
-[TranslationAgent.main] Received AGENT_REGISTER message from MessageBus.system
-[TranslationAgent.main] New agent registered: APIGatewayAgent.main
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: APIGatewayAgent.main with capabilities: api_integration, request_routing, authentication_management, rate_limiting, request_transformation, response_caching
-[CoreAgent.master] Received broadcast: AGENT_REGISTER from MessageBus.system
-[CoreAgent] New agent available: APIGatewayAgent.main with capabilities: api_integration, request_routing, authentication_management, rate_limiting, request_transformation, response_caching
-[MCPCoordinatorAgent] Registering agent: APIGatewayAgent.main
-[CodeWriterAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[SchedulerAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[ArtistAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[WriterAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[ComedianAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[EmotionalIntelligenceAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[TaskManagementAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[AnalyticsAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[AnalyticsAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[DesignAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[DesignAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[SecurityAuditAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[SecurityAuditAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[NotificationAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[NotificationAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[TranslationAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[TranslationAgent.main] Received broadcast: AGENT_REGISTER from MessageBus.system
-[MCP] Broadcast message 66785ae0 to 15 agents
-[APIGatewayAgent.main] Agent initialized and ready
-
-[Agent Initializer] ✨ Cartrita Iteration 20 System Fully Activated!
-┌─────────────────────────────────────────────────────────────┐
-│                 🎯 AGENT DISTRIBUTION SUMMARY                │
-├─────────────────────────────────────────────────────────────┤
-│  🧠 Consciousness Agents: 11/11                            │
-│     ├─ CodeWriter, Scheduler, Artist, Writer               │
-│     ├─ Researcher, Comedian, EmotionalIntelligence         │
-│     ├─ TaskManagement, Analytics                           │
-│     └─ Design, Personalization                             │
-│                                                             │
-│  🛡️ Ethics & Safety: 5/5                                   │
-│     ├─ ConstitutionalAI, ExistentialCheckIn               │
-│     ├─ PrivacyProtection, BiasDetection                    │
-│     └─ SecurityAudit                                       │
-│                                                             │
-│  🧠 Memory & Learning: 5/5                                 │
-│     ├─ ConversationStore, UserProfile                     │
-│     ├─ KnowledgeGraph, LearningAdapter                    │
-│     └─ ContextMemory                                       │
-│                                                             │
-│  🌐 Communication & Integration: 4/4                       │
-│     ├─ MCPCoordinator, Notification                       │
-│     ├─ Translation, APIGateway                            │
-│     └─ [All integrated via MCP Protocol]                  │
-├─────────────────────────────────────────────────────────────┤
-│  🚀 TOTAL AGENTS: 25/25 ACTIVE                             │
-│  ⚡ MCP Protocol: ENABLED                                   │
-│  🔄 Agent Coordination: ACTIVE                             │
-│  🎯 System Status: FULLY OPERATIONAL                       │
-└─────────────────────────────────────────────────────────────┘
-
-[Agent Initializer] 🎉 All agents connected to MessageBus and MCP Protocol
-[Agent Initializer] 📡 Ready for multi-agent task coordination and execution
-[Index] 🚀 Starting route registration...
-[Index] ✅ Auth routes registered at /api/auth
-[Index] ✅ User routes registered at /api/user
-[Index] ✅ Chat routes registered at /api/chat
-[Index] ✅ MCP routes registered at /api/mcp
-[Index] ✅ Voice chat routes registered at /api/voice-chat
-[Index] ✅ Vision routes registered at /api/vision
-[Index] ✅ Calendar routes registered at /api/calendar
-[Index] ✅ Email routes registered at /api/email
-[Index] ✅ Contact routes registered at /api/contacts
-[Index] ✅ Notification routes registered at /api/notifications
-[Index] ✅ Privacy routes registered at /api/privacy
-(node:212741) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 mcp:broadcast listeners added to [EnhancedMessageBus]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
-(Use `node --trace-warnings ...` to show where the warning was created)
-node:events:496
-      throw er; // Unhandled 'error' event
-      ^
-
-Error: listen EADDRINUSE: address already in use :::8000
+[SensoryProcessingService] 🧠 Sensory processing service initialized
+[Route Registration] Starting route registration...
+[Route Registration] ✅ All API routes registered.
+🚀 Initializing Cartrita backend...
+[AmbientListeningService] ✅ Service initialized successfully
+🔴 Initializing Redis cache...
+[Redis] Attempting connection to: redis://localhost:6379
+[Redis] Client error: Error: connect ECONNREFUSED 127.0.0.1:6379
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 6379
+}
+[Redis] Client error: Error: connect ECONNREFUSED 127.0.0.1:6379
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 6379
+}
+[Redis] Client error: Error: connect ECONNREFUSED 127.0.0.1:6379
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 6379
+}
+[Redis] Client error: Error: connect ECONNREFUSED 127.0.0.1:6379
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 6379
+}
+[EnhancedKnowledgeHub] ❌ Initialization failed: Error: getaddrinfo EAI_AGAIN db
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async EnhancedKnowledgeHub.ensureDatabaseSchema (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/services/EnhancedKnowledgeHub.js:151:7)
+    at async EnhancedKnowledgeHub.initialize (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/services/EnhancedKnowledgeHub.js:66:7) {
+  errno: -3001,
+  code: 'EAI_AGAIN',
+  syscall: 'getaddrinfo',
+  hostname: 'db'
+}
+[Knowledge] ❌ Enhanced Knowledge Hub initialization failed
+[Redis] Client error: Error: connect ECONNREFUSED 127.0.0.1:6379
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 6379
+}
+[Redis] Client error: Error: connect ECONNREFUSED 127.0.0.1:6379
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 6379
+}
+[EnhancedWorkflowEngine] Error processing scheduled workflows: Error: getaddrinfo EAI_AGAIN db
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async EnhancedWorkflowEngine.processScheduledWorkflows (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/services/EnhancedWorkflowEngine.js:630:31)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/services/EnhancedWorkflowEngine.js:106:9
+    at async Timeout._onTimeout (/home/robbie/development/dat-bitch-cartrita/node_modules/node-cron/dist/esm/scheduler/runner.js:70:44) {
+  errno: -3001,
+  code: 'EAI_AGAIN',
+  syscall: 'getaddrinfo',
+  hostname: 'db'
+}
+[Redis] Max reconnection retries reached
+[Redis] Client error: Error: connect ECONNREFUSED 127.0.0.1:6379
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 6379
+}
+[Redis] ❌ Failed to initialize: Error: connect ECONNREFUSED 127.0.0.1:6379
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 6379
+}
+⚠️ Redis initialization failed, continuing without cache
+🧠 Initializing Hierarchical Supervisor Agent...
+[CartritaSupervisor] 🚀 Initializing hierarchical multi-agent system...
+[AgentToolRegistry] 🛠️ Initializing tool registry...
+[AgentToolRegistry] ✅ Registered tool: getCurrentDateTime (system)
+[AgentToolRegistry] ✅ Registered tool: getSystemStatus (system)
+[AgentToolRegistry] ✅ Registered tool: agent_role_call (system)
+[AgentToolRegistry] ✅ Registered tool: dalle_3 (image_generation)
+[AgentToolRegistry] ✅ Registered tool: image_analyzer (image_generation)
+[AgentToolRegistry] ✅ Registered tool: visual_editor (image_generation)
+[AgentToolRegistry] ✅ Registered tool: tavily_search (research) with configured API key
+[AgentToolRegistry] ✅ Registered tool: wikipedia_search (research)
+[AgentToolRegistry] ✅ Registered tool: serp_search (research) with configured API key
+[AgentToolRegistry] ✅ Registered tool: duckduckgo_search (research)
+[AgentToolRegistry] ✅ Registered tool: web_browser (research)
+[AgentToolRegistry] ✅ Registered tool: url_scraper (research)
+[AgentToolRegistry] ✅ Registered tool: arxiv_search (research)
+[AgentToolRegistry] ✅ Registered tool: news_search (research)
+[AgentToolRegistry] ✅ Registered tool: calculator (coding)
+[AgentToolRegistry] ✅ Registered tool: code_executor (coding)
+[AgentToolRegistry] ✅ Registered tool: github_search (coding)
+[AgentToolRegistry] ✅ Registered tool: code_reviewer (coding)
+[AgentToolRegistry] ✅ Registered tool: doc_generator (coding)
+[AgentToolRegistry] ⚠️ Google Calendar tools unavailable: Missing GOOGLE_API_KEY
+[AgentToolRegistry] ✅ Registered tool: calendar_api (scheduling)
+[AgentToolRegistry] ✅ Registered tool: timezone_converter (scheduling)
+[AgentToolRegistry] ✅ Registered tool: meeting_scheduler (scheduling)
+[AgentToolRegistry] ✅ Registered tool: grammar_checker (writing)
+[AgentToolRegistry] ✅ Registered tool: style_analyzer (writing)
+[AgentToolRegistry] ✅ Registered tool: content_optimizer (writing)
+[AgentToolRegistry] ✅ Registered tool: plagiarism_checker (writing)
+[AgentToolRegistry] ✅ Registered tool: task_tracker (task_management)
+[AgentToolRegistry] ✅ Registered tool: workflow_engine (task_management)
+[AgentToolRegistry] ✅ Registered tool: priority_analyzer (task_management)
+[AgentToolRegistry] ✅ Registered tool: data_analyzer (analytics)
+[AgentToolRegistry] ✅ Registered tool: chart_generator (analytics)
+[AgentToolRegistry] ✅ Registered tool: statistics_engine (analytics)
+[AgentToolRegistry] ✅ Registered tool: joke_generator (humor)
+[AgentToolRegistry] ✅ Registered tool: meme_creator (humor)
+[AgentToolRegistry] ✅ Registered tool: humor_analyzer (humor)
+[AgentToolRegistry] ✅ Registered tool: design_tools (design)
+[AgentToolRegistry] ✅ Registered tool: mockup_generator (design)
+[AgentToolRegistry] ✅ Registered tool: ux_analyzer (design)
+[AgentToolRegistry] ✅ Registered tool: security_scanner (security)
+[AgentToolRegistry] ✅ Registered tool: knowledge_query (knowledge)
+[AgentToolRegistry] ✅ Registered tool: file_analyzer (utility)
+[AgentToolRegistry] ✅ Successfully registered 41 tools
+[AgentToolRegistry] 📋 Available tool categories:
+  ✅ system: 3 tools
+  ✅ image_generation: 3 tools
+  ✅ research: 8 tools
+  ✅ coding: 5 tools
+  ✅ scheduling: 3 tools
+  ✅ writing: 4 tools
+  ✅ task_management: 3 tools
+  ✅ analytics: 3 tools
+  ✅ humor: 3 tools
+  ✅ design: 3 tools
+  ✅ security: 1 tools
+  ✅ knowledge: 1 tools
+  ✅ utility: 1 tools
+[CartritaSupervisor] 📝 Registering sub-agents...
+[APIKeyManager] 🔑 Provided 2 API keys to codewriter_1754589075020 (codewriter)
+🤖 BaseAgent codewriter created with ID: codewriter_1754589075020
+[CartritaSupervisor] ✅ Instantiated CodeWriterAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: codewriter
+[APIKeyManager] 🔑 Provided 4 API keys to researcher_1754589075022 (researcher)
+[researcher] ⚠️ No OpenAI API key available
+🤖 BaseAgent researcher created with ID: researcher_1754589075022
+[ResearcherAgent] ✅ Initialized with 9 tools
+[CartritaSupervisor] ✅ Instantiated ResearcherAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: researcher
+[APIKeyManager] 🔑 Provided 1 API keys to artist_1754589075024 (artist)
+🤖 BaseAgent artist created with ID: artist_1754589075024
+[CartritaSupervisor] ✅ Instantiated ArtistAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: artist
+[APIKeyManager] 🔑 Provided 1 API keys to writer_1754589075026 (writer)
+🤖 BaseAgent writer created with ID: writer_1754589075026
+[CartritaSupervisor] ✅ Instantiated WriterAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: writer
+[APIKeyManager] 🔑 Provided 4 API keys to scheduler_1754589075029 (scheduler)
+🤖 BaseAgent scheduler created with ID: scheduler_1754589075029
+[SchedulerAgent] In-memory scheduling engine initialized
+[CartritaSupervisor] ✅ Instantiated SchedulerAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: scheduler
+[APIKeyManager] 🔑 Provided 1 API keys to taskmanager_1754589075030 (taskmanager)
+🤖 BaseAgent taskmanager created with ID: taskmanager_1754589075030
+[CartritaSupervisor] ✅ Instantiated TaskManagementAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: taskmanager
+[CartritaSupervisor] ❌ Failed to load ComedianAgent.js: Invalid or unexpected token
+[APIKeyManager] 🔑 Provided 4 API keys to analyst_1754589075032 (analyst)
+🤖 BaseAgent analyst created with ID: analyst_1754589075032
+[CartritaSupervisor] ✅ Instantiated AnalyticsAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: analyst
+[APIKeyManager] 🔑 Provided 1 API keys to designer_1754589075033 (designer)
+🤖 BaseAgent designer created with ID: designer_1754589075033
+[CartritaSupervisor] ✅ Instantiated DesignAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: designer
+[APIKeyManager] 🔑 Provided 1 API keys to tool_1754589075035 (tool)
+🤖 BaseAgent tool created with ID: tool_1754589075035
+[CartritaSupervisor] ✅ Instantiated ToolAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: tool
+[APIKeyManager] 🔑 Provided 1 API keys to emotional_1754589075036 (emotional)
+🤖 BaseAgent emotional created with ID: emotional_1754589075036
+[CartritaSupervisor] ✅ Instantiated EmotionalIntelligenceAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: emotional
+[APIKeyManager] 🔑 Provided 1 API keys to multimodal_1754589075037 (multimodal)
+🤖 BaseAgent multimodal created with ID: multimodal_1754589075037
+[CartritaSupervisor] ✅ Instantiated MultiModalFusionAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: multimodal
+[CartritaSupervisor] ❌ Failed to load PersonalizationAgent.js: Invalid or unexpected token
+[APIKeyManager] 🔑 Provided 1 API keys to github_1754589075051 (github)
+🤖 BaseAgent github created with ID: github_1754589075051
+[CartritaSupervisor] ✅ Instantiated GitHubSearchAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: github
+[APIKeyManager] 🔑 Provided 1 API keys to notification_1754589075053 (notification)
+🤖 BaseAgent notification created with ID: notification_1754589075053
+[CartritaSupervisor] ✅ Instantiated ../communication/NotificationAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: notification
+[APIKeyManager] 🔑 Provided 1 API keys to translation_1754589075054 (translation)
+🤖 BaseAgent translation created with ID: translation_1754589075054
+[CartritaSupervisor] ✅ Instantiated ../communication/TranslationAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: translation
+[APIKeyManager] 🔑 Provided 1 API keys to bias_detector_1754589075056 (bias_detector)
+🤖 BaseAgent bias_detector created with ID: bias_detector_1754589075056
+[CartritaSupervisor] ✅ Instantiated ../ethics/BiasDetectionAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: bias_detector
+[APIKeyManager] 🔑 Provided 1 API keys to privacy_1754589075057 (privacy)
+🤖 BaseAgent privacy created with ID: privacy_1754589075057
+[CartritaSupervisor] ✅ Instantiated ../ethics/PrivacyProtectionAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: privacy
+[CartritaSupervisor] ❌ Failed to load ../ethics/ConstitutionalAI.js: capabilities.join is not a function
+[APIKeyManager] 🔑 Provided 1 API keys to api_gateway_1754589075060 (api_gateway)
+🤖 BaseAgent api_gateway created with ID: api_gateway_1754589075060
+[CartritaSupervisor] ✅ Instantiated ../integration/APIGatewayAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: api_gateway
+[APIKeyManager] 🔑 Provided 1 API keys to context_memory_1754589075061 (context_memory)
+🤖 BaseAgent context_memory created with ID: context_memory_1754589075061
+[CartritaSupervisor] ✅ Instantiated ../memory/ContextMemoryAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: context_memory
+[APIKeyManager] 🔑 Provided 1 API keys to knowledge_graph_1754589075063 (knowledge_graph)
+🤖 BaseAgent knowledge_graph created with ID: knowledge_graph_1754589075063
+[CartritaSupervisor] ✅ Instantiated ../memory/KnowledgeGraphAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: knowledge_graph
+[APIKeyManager] 🔑 Provided 1 API keys to learning_adapter_1754589075064 (learning_adapter)
+🤖 BaseAgent learning_adapter created with ID: learning_adapter_1754589075064
+[CartritaSupervisor] ✅ Instantiated ../memory/LearningAdapterAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: learning_adapter
+[APIKeyManager] 🔑 Provided 1 API keys to user_profile_1754589075065 (user_profile)
+🤖 BaseAgent user_profile created with ID: user_profile_1754589075065
+[CartritaSupervisor] ✅ Instantiated ../memory/UserProfile.js as class
+[CartritaSupervisor] 🎯 Registered agent: user_profile
+[CartritaSupervisor] ❌ Failed to load ../security/SecurityAuditAgent.js: capabilities.join is not a function
+[APIKeyManager] 🔑 Provided 1 API keys to mcp_coordinator_1754589075067 (mcp_coordinator)
+🤖 BaseAgent mcp_coordinator created with ID: mcp_coordinator_1754589075067
+[CartritaSupervisor] ✅ Instantiated ../system/MCPCoordinatorAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: mcp_coordinator
+[CartritaSupervisor] 📊 Successfully registered 22 sub-agents
+[CartritaSupervisor] 🗺️ State graph built with termination controls and recursion limit
+[CartritaSupervisor] ✅ Successfully initialized with 22 sub-agents.
+✅ Hierarchical Supervisor Agent initialized
+🔧 Initializing services...
+[ServiceInitializer] Starting Cartrita Iteration 21 service initialization...
+[ServiceInitializer] Initializing core services...
+[ServiceInitializer] ✓ Deepgram service available
+[ServiceInitializer] ✓ Visual analysis service available
+[ServiceInitializer] ✓ Text-to-speech service available
+[ServiceInitializer] ✓ Voice interaction service available
+[ServiceInitializer] ✓ Ambient listening service available
+[ServiceInitializer] Initializing multi-modal services...
+✅ WorkflowEngine v2.1 initialized with LangChain StateGraph support
+[ServiceInitializer] ✓ WorkflowEngine initialized
+[ServiceInitializer] Setting up cross-service event listeners...
+🎙️ VoiceInteractionService initialized
+[VoiceInteractionService] ✅ Service initialized
+[ServiceInitializer] ✓ Cross-service event listeners configured
+[ServiceInitializer] ✓ MultiModal Fusion Agent initialized
+[MultiModalProcessingService] Failed to load existing data: getaddrinfo EAI_AGAIN db
+✅ MultiModalProcessingService fully initialized
+[ServiceInitializer] ✓ MultiModal Processing Service initialized (Iteration 22)
+[WolframAlphaService] 🧮 Initializing comprehensive Wolfram Alpha service...
+[APIKeyManager] 🚫 Agent wolfram-service-1754589085146 (general) denied access to wolfram API
+[WolframAlphaService] 🔍 Querying: "2+2..."
+[WolframAlphaService] ❌ Query failed: Request failed with status code 401
+[WolframAlphaService] ❌ Initialization failed: testQuery.includes is not a function
+[WorkflowToolsService] 🛠️ Initializing workflow tools service...
+[WorkflowToolsService] ✅ Service initialized successfully
+[ServiceInitializer] ✓ Workflow Tools Service initialized with 1000+ automation tools
+[ServiceInitializer] 🎉 Cartrita services initialized successfully! (Iterations 18-22 + Workflow Tools)
+[ServiceInitializer] Available features:
+  • Speech-to-text with Deepgram
+  • Wake word detection ("Cartrita!")
+  • Feminine urban voice synthesis
+  • Live voice chat mode
+  • Ambient listening and environmental sound analysis
+  • Visual analysis with OpenAI Vision
+  • Multi-modal sensory fusion
+  • Context-aware personality adaptation
+  • Workflow automation engine
+  • Enhanced LangChain agent orchestration
+  • Wolfram Alpha computational intelligence
+  • 1000+ Workflow automation tools with semantic search
+  • AI-powered knowledge management and documentation system
+🔌 Setting up Socket.IO event handlers...
+✅ Socket.IO event handlers are now active.
+🎉 All systems initialized successfully!
+💥 Uncaught Exception: Error: listen EADDRINUSE: address already in use :::8000
     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
     at listenInCluster (node:net:1997:12)
     at Server.listen (node:net:2102:7)
-    at Object.<anonymous> (/home/robbie/development/dat-bitch-cartrita/packages/backend/index.js:251:8)
-    at Module._compile (node:internal/modules/cjs/loader:1730:14)
-    at Object..js (node:internal/modules/cjs/loader:1895:10)
-    at Module.load (node:internal/modules/cjs/loader:1465:32)
-    at Function._load (node:internal/modules/cjs/loader:1282:12)
-    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
-Emitted 'error' event on Server instance at:
-    at emitErrorNT (node:net:1976:8)
-    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+    at startServer (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/index.js:361:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
   code: 'EADDRINUSE',
   errno: -98,
   syscall: 'listen',
   address: '::',
   port: 8000
 }
-
-Node.js v22.17.1
-npm error Lifecycle script `start` failed with error:
-npm error code 1
-npm error path /home/robbie/development/dat-bitch-cartrita/packages/backend
-npm error workspace backend@1.0.0
-npm error location /home/robbie/development/dat-bitch-cartrita/packages/backend
-npm error command failed
-npm error command sh -c node .
+🔄 Graceful shutdown initiated (uncaughtException)
+🔴 Cleaning up Redis connection...
+[Redis] Cleanup error: ClientClosedError: The client is closed
+    at RedisSocket.quit (/home/robbie/development/dat-bitch-cartrita/node_modules/@redis/client/dist/lib/client/socket.js:234:19)
+    at Class.QUIT (/home/robbie/development/dat-bitch-cartrita/node_modules/@redis/client/dist/lib/client/index.js:781:35)
+    at RedisService.cleanup (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/services/RedisService.js:208:27)
+    at Object.cleanup (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/index.js:43:26)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async gracefulShutdown (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/index.js:397:9)
+🗄️ Closing database connections...
+🔌 Closing HTTP server...
+✅ Cartrita backend shutdown complete
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   [2025-08-07T17:51:09.161Z] GET /api/workflow-tools/categories
+[WorkflowTools] Error fetching categories: Error: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/services/WorkflowToolsService.js:402:32
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/workflowTools.js:11:28
+[0mGET /api/workflow-tools/categories [31m500[0m 8.605 ms - 56[0m
+[EnhancedWorkflowEngine] Error processing scheduled workflows: Error: getaddrinfo EAI_AGAIN db
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async EnhancedWorkflowEngine.processScheduledWorkflows (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/services/EnhancedWorkflowEngine.js:630:31)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/services/EnhancedWorkflowEngine.js:106:9
+    at async Timeout._onTimeout (/home/robbie/development/dat-bitch-cartrita/node_modules/node-cron/dist/esm/scheduler/runner.js:70:44) {
+  errno: -3001,
+  code: 'EAI_AGAIN',
+  syscall: 'getaddrinfo',
+  hostname: 'db'
+}
+🔄 Graceful shutdown initiated (SIGTERM)
+🔴 Cleaning up Redis connection...
+[Redis] Cleanup error: ClientClosedError: The client is closed
+    at RedisSocket.quit (/home/robbie/development/dat-bitch-cartrita/node_modules/@redis/client/dist/lib/client/socket.js:234:19)
+    at Class.QUIT (/home/robbie/development/dat-bitch-cartrita/node_modules/@redis/client/dist/lib/client/index.js:781:35)
+    at RedisService.cleanup (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/services/RedisService.js:208:27)
+    at Object.cleanup (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/index.js:43:26)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async gracefulShutdown (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/index.js:397:9)
+🗄️ Closing database connections...
+🔌 Closing HTTP server...
+✅ Cartrita backend shutdown complete

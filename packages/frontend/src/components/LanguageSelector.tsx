@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 interface Language {
   code: string;
@@ -13,13 +13,13 @@ export const LanguageSelector: React.FC = () => {
   const { i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [availableLanguages, setAvailableLanguages] = useState<string[]>([
-    'en',
+    "en",
   ]);
 
   // Check which translation files are available by testing HTTP requests
   useEffect(() => {
     const checkLanguageAvailability = async () => {
-      const languagesToCheck = ['en', 'es', 'en-US'];
+      const languagesToCheck = ["en", "es", "en-US"];
       const available: string[] = [];
 
       for (const lang of languagesToCheck) {
@@ -33,120 +33,122 @@ export const LanguageSelector: React.FC = () => {
         }
       }
 
-      setAvailableLanguages(available.length > 0 ? available : ['en']);
+      setAvailableLanguages(available.length > 0 ? available : ["en"]);
     };
 
-    checkLanguageAvailability().catch(error => {
-      console.error('Error checking language availability:', error);
-      setAvailableLanguages(['en']); // Fallback to English
+    checkLanguageAvailability().catch((error) => {
+      console.error("Error checking language availability:", error);
+      setAvailableLanguages(["en"]); // Fallback to English
     });
   }, []);
 
   const allLanguages: Language[] = [
     {
-      code: 'en',
-      name: 'English',
-      nativeName: 'English',
-      flag: '🇺🇸',
+      code: "en",
+      name: "English",
+      nativeName: "English",
+      flag: "🇺🇸",
       available: true,
     },
     {
-      code: 'en-US',
-      name: 'English (US)',
-      nativeName: 'English (US)',
-      flag: '🇺🇸',
+      code: "en-US",
+      name: "English (US)",
+      nativeName: "English (US)",
+      flag: "🇺🇸",
       available: true,
     },
     {
-      code: 'es',
-      name: 'Spanish',
-      nativeName: 'Español',
-      flag: '🇪🇸',
+      code: "es",
+      name: "Spanish",
+      nativeName: "Español",
+      flag: "🇪🇸",
       available: true,
     },
     {
-      code: 'fr',
-      name: 'French',
-      nativeName: 'Français',
-      flag: '🇫🇷',
+      code: "fr",
+      name: "French",
+      nativeName: "Français",
+      flag: "🇫🇷",
       available: false,
     },
     {
-      code: 'de',
-      name: 'German',
-      nativeName: 'Deutsch',
-      flag: '🇩🇪',
+      code: "de",
+      name: "German",
+      nativeName: "Deutsch",
+      flag: "🇩🇪",
       available: false,
     },
     {
-      code: 'it',
-      name: 'Italian',
-      nativeName: 'Italiano',
-      flag: '🇮🇹',
+      code: "it",
+      name: "Italian",
+      nativeName: "Italiano",
+      flag: "🇮🇹",
       available: false,
     },
     {
-      code: 'pt',
-      name: 'Portuguese',
-      nativeName: 'Português',
-      flag: '🇵🇹',
+      code: "pt",
+      name: "Portuguese",
+      nativeName: "Português",
+      flag: "🇵🇹",
       available: false,
     },
     {
-      code: 'ru',
-      name: 'Russian',
-      nativeName: 'Русский',
-      flag: '🇷🇺',
+      code: "ru",
+      name: "Russian",
+      nativeName: "Русский",
+      flag: "🇷🇺",
       available: false,
     },
     {
-      code: 'ja',
-      name: 'Japanese',
-      nativeName: '日本語',
-      flag: '🇯🇵',
+      code: "ja",
+      name: "Japanese",
+      nativeName: "日本語",
+      flag: "🇯🇵",
       available: false,
     },
     {
-      code: 'ko',
-      name: 'Korean',
-      nativeName: '한국어',
-      flag: '🇰🇷',
+      code: "ko",
+      name: "Korean",
+      nativeName: "한국어",
+      flag: "🇰🇷",
       available: false,
     },
     {
-      code: 'zh-CN',
-      name: 'Chinese (Simplified)',
-      nativeName: '简体中文',
-      flag: '🇨🇳',
+      code: "zh-CN",
+      name: "Chinese (Simplified)",
+      nativeName: "简体中文",
+      flag: "🇨🇳",
       available: false,
     },
     {
-      code: 'ar',
-      name: 'Arabic',
-      nativeName: 'العربية',
-      flag: '🇸🇦',
+      code: "ar",
+      name: "Arabic",
+      nativeName: "العربية",
+      flag: "🇸🇦",
       available: false,
     },
     {
-      code: 'hi',
-      name: 'Hindi',
-      nativeName: 'हिन्दी',
-      flag: '🇮🇳',
+      code: "hi",
+      name: "Hindi",
+      nativeName: "हिन्दी",
+      flag: "🇮🇳",
       available: false,
     },
   ];
 
   // Filter languages based on what's actually available
-  const languages = allLanguages.map(lang => ({
+  const languages = allLanguages.map((lang) => ({
     ...lang,
     available: availableLanguages.includes(lang.code),
   }));
 
   const currentLanguage =
-    languages.find(lang => lang.code === i18n.language) || languages[0];
+    languages.find((lang) => lang.code === i18n.language) || languages[0];
 
   const handleLanguageChange = async (languageCode: string) => {
-    const selectedLanguage = languages.find(lang => lang.code === languageCode);
+    const selectedLanguage = languages.find(
+      (lang) => lang.code === languageCode,
+    );
 
     if (!selectedLanguage?.available) {
       console.warn(`Language ${languageCode} is not available`);
@@ -155,13 +157,13 @@ export const LanguageSelector: React.FC = () => {
 
     try {
       await i18n.changeLanguage(languageCode);
-      localStorage.setItem('preferredLanguage', languageCode);
+      localStorage.setItem("preferredLanguage", languageCode);
       setIsOpen(false);
 
       // Optional: Show success notification
       console.log(`Language changed to ${selectedLanguage.nativeName}`);
     } catch (error) {
-      console.error('Failed to change language:', error);
+      console.error("Failed to change language:", error);
       // Optional: Show error notification
     }
   };
@@ -182,7 +184,9 @@ export const LanguageSelector: React.FC = () => {
           </div>
         </div>
         <div
-          className={`transform transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          className={`transform transition-transform duration-200 ${
+            isOpen ? "rotate-180" : ""
+          }`}
         >
           <svg
             className="w-5 h-5 text-gray-400"
@@ -202,23 +206,25 @@ export const LanguageSelector: React.FC = () => {
 
       {isOpen && (
         <div className="absolute top-full left-0 right-0 mt-2 glass-card border border-gray-600/50 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto">
-          {languages.map(language => (
+          {languages.map((language) => (
             <button
               key={language.code}
               onClick={() => handleLanguageChange(language.code)}
               disabled={!language.available}
               className={`w-full flex items-center space-x-3 p-3 text-left transition-colors duration-200 first:rounded-t-lg last:rounded-b-lg ${
                 language.code === currentLanguage.code
-                  ? 'bg-blue-600/20 text-blue-300'
+                  ? "bg-blue-600/20 text-blue-300"
                   : language.available
-                    ? 'hover:bg-gray-800/50 text-white'
-                    : 'text-gray-500 cursor-not-allowed'
+                    ? "hover:bg-gray-800/50 text-white"
+                    : "text-gray-500 cursor-not-allowed"
               }`}
             >
               <span className="text-2xl">{language.flag}</span>
               <div className="flex-1">
                 <div
-                  className={`font-medium ${language.available ? 'text-white' : 'text-gray-500'}`}
+                  className={`font-medium ${
+                    language.available ? "text-white" : "text-gray-500"
+                  }`}
                 >
                   {language.nativeName}
                 </div>

@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   ArrowLeftIcon,
   BookOpenIcon,
   MagnifyingGlassIcon,
-} from '@heroicons/react/24/outline';
+} from "@heroicons/react/24/outline";
 
 interface UserManualPageProps {
   onBack?: () => void;
 }
 
 const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSection, setSelectedSection] = useState('');
-  const [manualContent, setManualContent] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedSection, setSelectedSection] = useState("");
+  const [manualContent, setManualContent] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,16 +21,16 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
     const loadManual = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/USER_MANUAL.md');
+        const response = await fetch("/USER_MANUAL.md");
         if (!response.ok) {
-          throw new Error('Failed to load user manual');
+          throw new Error("Failed to load user manual");
         }
         const content = await response.text();
         setManualContent(content);
         setError(null);
       } catch (err) {
-        console.error('Error loading manual:', err);
-        setError('Failed to load user manual. Please try again later.');
+        console.error("Error loading manual:", err);
+        setError("Failed to load user manual. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -43,14 +43,14 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
   const sections = React.useMemo(() => {
     if (!manualContent) return [];
 
-    const lines = manualContent.split('\n');
+    const lines = manualContent.split("\n");
     const parsedSections: Array<{ id: string; title: string; icon: string }> =
       [];
 
     // Find table of contents to extract sections
     let tocStartIndex = -1;
     for (let i = 0; i < lines.length; i++) {
-      if (lines[i].includes('## Table of Contents')) {
+      if (lines[i].includes("## Table of Contents")) {
         tocStartIndex = i;
         break;
       }
@@ -60,46 +60,46 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
       for (let i = tocStartIndex + 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (
-          line.startsWith('1.') ||
-          line.startsWith('2.') ||
-          line.startsWith('3.') ||
-          line.startsWith('4.') ||
-          line.startsWith('5.') ||
-          line.startsWith('6.') ||
-          line.startsWith('7.')
+          line.startsWith("1.") ||
+          line.startsWith("2.") ||
+          line.startsWith("3.") ||
+          line.startsWith("4.") ||
+          line.startsWith("5.") ||
+          line.startsWith("6.") ||
+          line.startsWith("7.")
         ) {
           const match = line.match(/\[([^\]]+)\]/);
           if (match) {
             const title = match[1];
             const id = title
               .toLowerCase()
-              .replace(/[^a-z0-9\s&]/g, '')
-              .replace(/\s+/g, '-')
-              .replace(/&/g, '');
+              .replace(/[^a-z0-9\s&]/g, "")
+              .replace(/\s+/g, "-")
+              .replace(/&/g, "");
 
             // Assign icons based on content
-            let icon = '📄';
-            if (title.includes('Getting Started')) icon = '🚀';
-            else if (title.includes('Dashboard')) icon = '📊';
+            let icon = "📄";
+            if (title.includes("Getting Started")) icon = "🚀";
+            else if (title.includes("Dashboard")) icon = "📊";
             else if (
-              title.includes('Knowledge Hub') ||
-              title.includes('Memory Palace')
+              title.includes("Knowledge Hub") ||
+              title.includes("Memory Palace")
             )
-              icon = '🧠';
-            else if (title.includes('API Key') || title.includes('Vault'))
-              icon = '🔐';
-            else if (title.includes('Chat')) icon = '💬';
+              icon = "🧠";
+            else if (title.includes("API Key") || title.includes("Vault"))
+              icon = "🔐";
+            else if (title.includes("Chat")) icon = "💬";
             else if (
-              title.includes('Settings') ||
-              title.includes('Personalization')
+              title.includes("Settings") ||
+              title.includes("Personalization")
             )
-              icon = '⚙️';
-            else if (title.includes('Troubleshooting')) icon = '🔧';
+              icon = "⚙️";
+            else if (title.includes("Troubleshooting")) icon = "🔧";
 
             parsedSections.push({ id, title, icon });
           }
         }
-        if (line.startsWith('---') || line.startsWith('##')) break;
+        if (line.startsWith("---") || line.startsWith("##")) break;
       }
     }
 
@@ -111,33 +111,33 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
     if (!manualContent) return {};
 
     const sections: Record<string, { title: string; content: string }> = {};
-    const lines = manualContent.split('\n');
-    let currentSection = '';
-    let currentTitle = '';
+    const lines = manualContent.split("\n");
+    let currentSection = "";
+    let currentTitle = "";
     let currentContent: string[] = [];
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
 
       // Check for section headers (## Section Name)
-      if (line.startsWith('## ') && !line.includes('Table of Contents')) {
+      if (line.startsWith("## ") && !line.includes("Table of Contents")) {
         // Save previous section if exists
         if (currentSection && currentContent.length > 0) {
           sections[currentSection] = {
             title: currentTitle,
-            content: currentContent.join('\n').trim(),
+            content: currentContent.join("\n").trim(),
           };
         }
 
         // Start new section
-        currentTitle = line.replace('## ', '').trim();
+        currentTitle = line.replace("## ", "").trim();
         currentSection = currentTitle
           .toLowerCase()
-          .replace(/[^a-z0-9\s&]/g, '')
-          .replace(/\s+/g, '-')
-          .replace(/&/g, '');
+          .replace(/[^a-z0-9\s&]/g, "")
+          .replace(/\s+/g, "-")
+          .replace(/&/g, "");
         currentContent = [];
-      } else if (currentSection && !line.startsWith('---')) {
+      } else if (currentSection && !line.startsWith("---")) {
         // Add content to current section
         currentContent.push(line);
       }
@@ -147,7 +147,7 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
     if (currentSection && currentContent.length > 0) {
       sections[currentSection] = {
         title: currentTitle,
-        content: currentContent.join('\n').trim(),
+        content: currentContent.join("\n").trim(),
       };
     }
 
@@ -155,11 +155,11 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
   }, [manualContent]);
 
   const filteredSections = sections.filter(
-    section =>
+    (section) =>
       section.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (parsedContent[section.id]?.content || '')
+      (parsedContent[section.id]?.content || "")
         .toLowerCase()
-        .includes(searchTerm.toLowerCase())
+        .includes(searchTerm.toLowerCase()),
   );
 
   const currentContent = selectedSection
@@ -196,7 +196,7 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
                 type="text"
                 placeholder="Search the manual..."
                 value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -211,14 +211,14 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
                 </h2>
 
                 <nav className="space-y-2">
-                  {filteredSections.map(section => (
+                  {filteredSections.map((section) => (
                     <button
                       key={section.id}
                       onClick={() => setSelectedSection(section.id)}
                       className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                         selectedSection === section.id
-                          ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100'
-                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                          ? "bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100"
+                          : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                       }`}
                     >
                       <div className="flex items-center space-x-3">
@@ -274,14 +274,14 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
 
                   <div className="prose dark:prose-invert max-w-none">
                     {currentContent.content
-                      .split('\n\n')
+                      .split("\n\n")
                       .map((paragraph, index) => {
                         const trimmedParagraph = paragraph.trim();
 
                         if (!trimmedParagraph) return null;
 
                         // Handle markdown headers
-                        if (trimmedParagraph.startsWith('### ')) {
+                        if (trimmedParagraph.startsWith("### ")) {
                           return (
                             <h3
                               key={index}
@@ -294,8 +294,8 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
 
                         // Handle bold text headers
                         if (
-                          trimmedParagraph.startsWith('**') &&
-                          trimmedParagraph.endsWith('**')
+                          trimmedParagraph.startsWith("**") &&
+                          trimmedParagraph.endsWith("**")
                         ) {
                           return (
                             <h3
@@ -309,13 +309,13 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
 
                         // Handle unordered lists (bullet points)
                         if (
-                          trimmedParagraph.includes('\n- ') ||
-                          trimmedParagraph.startsWith('- ')
+                          trimmedParagraph.includes("\n- ") ||
+                          trimmedParagraph.startsWith("- ")
                         ) {
                           const items = trimmedParagraph
-                            .split('\n- ')
-                            .filter(item => item.trim());
-                          const firstItem = items[0].startsWith('- ')
+                            .split("\n- ")
+                            .filter((item) => item.trim());
+                          const firstItem = items[0].startsWith("- ")
                             ? items[0].slice(2)
                             : items[0];
                           const allItems = [firstItem, ...items.slice(1)];
@@ -338,10 +338,10 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
                         }
 
                         // Handle bullet points (•)
-                        if (trimmedParagraph.includes('•')) {
+                        if (trimmedParagraph.includes("•")) {
                           const items = trimmedParagraph
-                            .split('•')
-                            .filter(item => item.trim());
+                            .split("•")
+                            .filter((item) => item.trim());
                           return (
                             <ul
                               key={index}
@@ -363,7 +363,7 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
                         if (trimmedParagraph.match(/^\d+\./)) {
                           const items = trimmedParagraph
                             .split(/\d+\./)
-                            .filter(item => item.trim());
+                            .filter((item) => item.trim());
                           return (
                             <ol
                               key={index}
@@ -383,8 +383,8 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
 
                         // Handle code blocks
                         if (
-                          trimmedParagraph.startsWith('```') &&
-                          trimmedParagraph.endsWith('```')
+                          trimmedParagraph.startsWith("```") &&
+                          trimmedParagraph.endsWith("```")
                         ) {
                           const code = trimmedParagraph.slice(3, -3).trim();
                           return (

@@ -141,7 +141,9 @@ async function testCombinedAccess() {
 
     console.log('✅ Combined access granted');
     console.log(
-      `🎬 Total tracks: ${stream.getTracks().length} (${stream.getAudioTracks().length} audio, ${stream.getVideoTracks().length} video)`
+      `🎬 Total tracks: ${stream.getTracks().length} (${
+        stream.getAudioTracks().length
+      } audio, ${stream.getVideoTracks().length} video)`
     );
 
     // Clean up

@@ -43,7 +43,7 @@ export class WakeWordDetector {
       sensitivity: options.sensitivity ?? 0.7,
       bufferDuration: options.bufferDuration ?? 3,
       analysisInterval: options.analysisInterval ?? 1000,
-      wakeWords: options.wakeWords ?? ['cartrita', 'hey cartrita', 'cartrita!'],
+      wakeWords: options.wakeWords ?? ["cartrita", "hey cartrita", "cartrita!"],
       minConfidence: options.minConfidence ?? 0.6,
       debounceMs: options.debounceMs ?? 2000,
     };
@@ -51,7 +51,7 @@ export class WakeWordDetector {
 
   async start(audioStream: MediaStream): Promise<boolean> {
     try {
-      console.log('[WakeWordDetector] Starting wake word detection...');
+      console.log("[WakeWordDetector] Starting wake word detection...");
 
       this.setupAudioAnalysis(audioStream);
       this.setupRecording(audioStream);
@@ -59,17 +59,17 @@ export class WakeWordDetector {
       this.isListening = true;
       this.startAnalysisLoop();
 
-      console.log('[WakeWordDetector] Wake word detection started');
+      console.log("[WakeWordDetector] Wake word detection started");
       return true;
     } catch (error) {
-      console.error('[WakeWordDetector] Failed to start:', error);
+      console.error("[WakeWordDetector] Failed to start:", error);
       this.cleanup();
       return false;
     }
   }
 
   stop(): void {
-    console.log('[WakeWordDetector] Stopping wake word detection...');
+    console.log("[WakeWordDetector] Stopping wake word detection...");
     this.isListening = false;
     this.cleanup();
   }
@@ -87,21 +87,21 @@ export class WakeWordDetector {
 
       this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
     } catch (error) {
-      console.error('[WakeWordDetector] Audio analysis setup failed:', error);
+      console.error("[WakeWordDetector] Audio analysis setup failed:", error);
     }
   }
 
   private setupRecording(stream: MediaStream): void {
     try {
       const options = {
-        mimeType: 'audio/webm;codecs=opus',
+        mimeType: "audio/webm;codecs=opus",
         audioBitsPerSecond: 16000,
       };
 
       this.mediaRecorder = new MediaRecorder(stream, options);
       this.audioChunks = [];
 
-      this.mediaRecorder.ondataavailable = event => {
+      this.mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           this.audioChunks.push(event.data);
 
@@ -115,7 +115,7 @@ export class WakeWordDetector {
 
       this.mediaRecorder.start(1000); // Collect data every second
     } catch (error) {
-      console.error('[WakeWordDetector] Recording setup failed:', error);
+      console.error("[WakeWordDetector] Recording setup failed:", error);
     }
   }
 
@@ -150,13 +150,13 @@ export class WakeWordDetector {
       }
 
       // Create audio blob from recent chunks
-      const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+      const audioBlob = new Blob(this.audioChunks, { type: "audio/webm" });
 
       // Analyze for wake words
       const result = await this.detectWakeWord(audioBlob, audioLevel);
       this.sendResult(result);
     } catch (error) {
-      console.error('[WakeWordDetector] Analysis error:', error);
+      console.error("[WakeWordDetector] Analysis error:", error);
     }
   }
 
@@ -176,7 +176,7 @@ export class WakeWordDetector {
 
   private async detectWakeWord(
     _audioBlob: Blob,
-    audioLevel: number
+    audioLevel: number,
   ): Promise<WakeWordResult> {
     try {
       // For now, we'll use a simplified detection method
@@ -200,7 +200,7 @@ export class WakeWordDetector {
 
       if (detected) {
         this.lastDetectionTime = now;
-        console.log('[WakeWordDetector] Wake word detected!', {
+        console.log("[WakeWordDetector] Wake word detected!", {
           confidence,
           audioLevel,
         });
@@ -214,7 +214,7 @@ export class WakeWordDetector {
         audioLevel,
       };
     } catch (error) {
-      console.error('[WakeWordDetector] Detection error:', error);
+      console.error("[WakeWordDetector] Detection error:", error);
       return {
         detected: false,
         word: null,
@@ -232,7 +232,7 @@ export class WakeWordDetector {
     // Base confidence on audio level and sensitivity
     const baseConfidence = Math.min(
       1,
-      audioLevel * 8 * this.options.sensitivity
+      audioLevel * 8 * this.options.sensitivity,
     );
 
     // Apply sigmoid function for more realistic confidence distribution
@@ -249,7 +249,7 @@ export class WakeWordDetector {
     try {
       this.callback(result);
     } catch (error) {
-      console.error('[WakeWordDetector] Callback error:', error);
+      console.error("[WakeWordDetector] Callback error:", error);
     }
   }
 
@@ -259,23 +259,23 @@ export class WakeWordDetector {
       this.analysisTimer = null;
     }
 
-    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+    if (this.mediaRecorder && this.mediaRecorder.state !== "inactive") {
       try {
         this.mediaRecorder.stop();
       } catch (error) {
         console.warn(
-          '[WakeWordDetector] Error stopping media recorder:',
-          error
+          "[WakeWordDetector] Error stopping media recorder:",
+          error,
         );
       }
     }
     this.mediaRecorder = null;
 
-    if (this.audioContext && this.audioContext.state !== 'closed') {
+    if (this.audioContext && this.audioContext.state !== "closed") {
       try {
         this.audioContext.close();
       } catch (error) {
-        console.warn('[WakeWordDetector] Error closing audio context:', error);
+        console.warn("[WakeWordDetector] Error closing audio context:", error);
       }
     }
     this.audioContext = null;
@@ -298,7 +298,7 @@ export class WakeWordDetector {
   // Update settings dynamically
   updateOptions(newOptions: Partial<WakeWordOptions>): void {
     this.options = { ...this.options, ...newOptions };
-    console.log('[WakeWordDetector] Options updated:', this.options);
+    console.log("[WakeWordDetector] Options updated:", this.options);
   }
 }
 
@@ -318,7 +318,7 @@ export class SpeechRecognitionWakeWordDetector {
       sensitivity: options.sensitivity ?? 0.7,
       bufferDuration: options.bufferDuration ?? 3,
       analysisInterval: options.analysisInterval ?? 1000,
-      wakeWords: options.wakeWords ?? ['cartrita', 'hey cartrita'],
+      wakeWords: options.wakeWords ?? ["cartrita", "hey cartrita"],
       minConfidence: options.minConfidence ?? 0.6,
       debounceMs: options.debounceMs ?? 2000,
     };
@@ -332,14 +332,14 @@ export class SpeechRecognitionWakeWordDetector {
         (window as any).webkitSpeechRecognition;
 
       if (!SpeechRecognition) {
-        console.warn('[SpeechWakeWordDetector] Web Speech API not available');
+        console.warn("[SpeechWakeWordDetector] Web Speech API not available");
         return false;
       }
 
       this.recognition = new SpeechRecognition();
       this.recognition.continuous = true;
       this.recognition.interimResults = true;
-      this.recognition.lang = 'en-US';
+      this.recognition.lang = "en-US";
 
       this.recognition.onresult = (event: any) => {
         const results = event.results;
@@ -348,8 +348,8 @@ export class SpeechRecognitionWakeWordDetector {
           const confidence = results[i][0].confidence || 0.5;
 
           // Check for wake words
-          const detectedWord = this.options.wakeWords.find(word =>
-            transcript.includes(word.toLowerCase())
+          const detectedWord = this.options.wakeWords.find((word) =>
+            transcript.includes(word.toLowerCase()),
           );
 
           if (detectedWord && confidence >= this.options.minConfidence) {
@@ -371,8 +371,8 @@ export class SpeechRecognitionWakeWordDetector {
 
       this.recognition.onerror = (event: any) => {
         console.error(
-          '[SpeechWakeWordDetector] Recognition error:',
-          event.error
+          "[SpeechWakeWordDetector] Recognition error:",
+          event.error,
         );
       };
 
@@ -380,11 +380,11 @@ export class SpeechRecognitionWakeWordDetector {
       this.isListening = true;
 
       console.log(
-        '[SpeechWakeWordDetector] Speech recognition wake word detection started'
+        "[SpeechWakeWordDetector] Speech recognition wake word detection started",
       );
       return true;
     } catch (error) {
-      console.error('[SpeechWakeWordDetector] Failed to start:', error);
+      console.error("[SpeechWakeWordDetector] Failed to start:", error);
       return false;
     }
   }
@@ -395,7 +395,7 @@ export class SpeechRecognitionWakeWordDetector {
       this.recognition = null;
     }
     this.isListening = false;
-    console.log('[SpeechWakeWordDetector] Stopped');
+    console.log("[SpeechWakeWordDetector] Stopped");
   }
 
   get isActive(): boolean {
@@ -408,7 +408,7 @@ export class SpeechRecognitionWakeWordDetector {
  */
 export function createWakeWordDetector(
   callback: WakeWordCallback,
-  options: WakeWordOptions = {}
+  options: WakeWordOptions = {},
 ): WakeWordDetector | SpeechRecognitionWakeWordDetector {
   // Check for Web Speech API support
   const SpeechRecognition =
@@ -418,13 +418,13 @@ export function createWakeWordDetector(
   // Use Speech Recognition for higher sensitivity settings (more accurate)
   if (SpeechRecognition && (options.sensitivity ?? 0.7) > 0.8) {
     console.log(
-      '[WakeWordDetector] Using Speech Recognition detector (high sensitivity)'
+      "[WakeWordDetector] Using Speech Recognition detector (high sensitivity)",
     );
     return new SpeechRecognitionWakeWordDetector(callback, options);
   }
   // Fallback to audio analysis detector
   else {
-    console.log('[WakeWordDetector] Using audio analysis detector');
+    console.log("[WakeWordDetector] Using audio analysis detector");
     return new WakeWordDetector(callback, options);
   }
 }

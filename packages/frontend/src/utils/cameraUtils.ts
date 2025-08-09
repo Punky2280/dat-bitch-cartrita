@@ -6,7 +6,7 @@ export interface CameraFrameOptions {
   width?: number;
   height?: number;
   quality?: number; // 0.1 to 1.0
-  format?: 'jpeg' | 'png' | 'webp';
+  format?: "jpeg" | "png" | "webp";
 }
 
 export interface CameraPermissionResult {
@@ -28,28 +28,28 @@ export interface FrameCaptureResult {
  */
 export async function requestCameraPermission(): Promise<CameraPermissionResult> {
   try {
-    console.log('[CameraUtils] Requesting camera permission...');
+    console.log("[CameraUtils] Requesting camera permission...");
 
     const constraints: MediaStreamConstraints = {
       video: {
         width: { ideal: 1280, max: 1920 },
         height: { ideal: 720, max: 1080 },
         frameRate: { ideal: 30, max: 60 },
-        facingMode: 'user', // Prefer front camera
+        facingMode: "user", // Prefer front camera
       },
       audio: false, // Only video for visual analysis
     };
 
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
-    console.log('[CameraUtils] Camera permission granted');
-    console.log('[CameraUtils] Video tracks:', stream.getVideoTracks().length);
+    console.log("[CameraUtils] Camera permission granted");
+    console.log("[CameraUtils] Video tracks:", stream.getVideoTracks().length);
 
     // Log camera settings
     const videoTrack = stream.getVideoTracks()[0];
     if (videoTrack) {
       const settings = videoTrack.getSettings();
-      console.log('[CameraUtils] Camera settings:', {
+      console.log("[CameraUtils] Camera settings:", {
         width: settings.width,
         height: settings.height,
         frameRate: settings.frameRate,
@@ -62,16 +62,16 @@ export async function requestCameraPermission(): Promise<CameraPermissionResult>
       stream,
     };
   } catch (error: any) {
-    console.error('[CameraUtils] Camera permission denied:', error);
+    console.error("[CameraUtils] Camera permission denied:", error);
 
-    let errorMessage = 'Camera access denied';
-    if (error.name === 'NotAllowedError') {
+    let errorMessage = "Camera access denied";
+    if (error.name === "NotAllowedError") {
       errorMessage =
-        'Camera permission was denied. Please allow camera access and try again.';
-    } else if (error.name === 'NotFoundError') {
-      errorMessage = 'No camera device found.';
-    } else if (error.name === 'NotReadableError') {
-      errorMessage = 'Camera is already in use by another application.';
+        "Camera permission was denied. Please allow camera access and try again.";
+    } else if (error.name === "NotFoundError") {
+      errorMessage = "No camera device found.";
+    } else if (error.name === "NotReadableError") {
+      errorMessage = "Camera is already in use by another application.";
     }
 
     return {
@@ -86,22 +86,22 @@ export async function requestCameraPermission(): Promise<CameraPermissionResult>
  */
 export function captureFrame(
   videoElement: HTMLVideoElement,
-  options: CameraFrameOptions = {}
+  options: CameraFrameOptions = {},
 ): FrameCaptureResult {
   try {
     const {
       width = videoElement.videoWidth,
       height = videoElement.videoHeight,
       quality = 0.8,
-      format = 'jpeg',
+      format = "jpeg",
     } = options;
 
     // Create canvas for frame capture
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
 
     if (!ctx) {
-      throw new Error('Failed to get canvas context');
+      throw new Error("Failed to get canvas context");
     }
 
     canvas.width = width;
@@ -121,7 +121,7 @@ export function captureFrame(
       timestamp: Date.now(),
     };
   } catch (error: any) {
-    console.error('[CameraUtils] Frame capture failed:', error);
+    console.error("[CameraUtils] Frame capture failed:", error);
     return {
       success: false,
       error: error.message,
@@ -135,24 +135,24 @@ export function captureFrame(
  */
 export async function captureFrameAsync(
   videoElement: HTMLVideoElement,
-  options: CameraFrameOptions = {}
+  options: CameraFrameOptions = {},
 ): Promise<FrameCaptureResult> {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     try {
       const {
         width = videoElement.videoWidth,
         height = videoElement.videoHeight,
         quality = 0.8,
-        format = 'jpeg',
+        format = "jpeg",
       } = options;
 
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
 
       if (!ctx) {
         resolve({
           success: false,
-          error: 'Failed to get canvas context',
+          error: "Failed to get canvas context",
           timestamp: Date.now(),
         });
         return;
@@ -166,7 +166,7 @@ export async function captureFrameAsync(
       const imageData = canvas.toDataURL(mimeType, quality);
 
       canvas.toBlob(
-        blob => {
+        (blob) => {
           resolve({
             success: true,
             imageData,
@@ -175,7 +175,7 @@ export async function captureFrameAsync(
           });
         },
         mimeType,
-        quality
+        quality,
       );
     } catch (error: any) {
       resolve({
@@ -200,7 +200,7 @@ export class FrameCaptureManager {
   constructor(
     videoElement: HTMLVideoElement,
     captureCallback: (result: FrameCaptureResult) => void,
-    options: CameraFrameOptions = {}
+    options: CameraFrameOptions = {},
   ) {
     this.videoElement = videoElement;
     this.captureCallback = captureCallback;
@@ -209,12 +209,12 @@ export class FrameCaptureManager {
 
   startCapture(intervalMs: number = 2000) {
     if (this.isCapturing) {
-      console.warn('[FrameCaptureManager] Already capturing frames');
+      console.warn("[FrameCaptureManager] Already capturing frames");
       return;
     }
 
     console.log(
-      `[FrameCaptureManager] Starting frame capture every ${intervalMs}ms`
+      `[FrameCaptureManager] Starting frame capture every ${intervalMs}ms`,
     );
     this.isCapturing = true;
 
@@ -231,7 +231,7 @@ export class FrameCaptureManager {
         const result = await captureFrameAsync(this.videoElement, this.options);
         this.captureCallback(result);
       } catch (error) {
-        console.error('[FrameCaptureManager] Frame capture error:', error);
+        console.error("[FrameCaptureManager] Frame capture error:", error);
       }
     }, intervalMs);
   }
@@ -241,7 +241,7 @@ export class FrameCaptureManager {
       return;
     }
 
-    console.log('[FrameCaptureManager] Stopping frame capture');
+    console.log("[FrameCaptureManager] Stopping frame capture");
     this.isCapturing = false;
 
     if (this.intervalId) {
@@ -261,9 +261,9 @@ export class FrameCaptureManager {
 export async function getCameraDevices(): Promise<MediaDeviceInfo[]> {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices();
-    return devices.filter(device => device.kind === 'videoinput');
+    return devices.filter((device) => device.kind === "videoinput");
   } catch (error) {
-    console.error('[CameraUtils] Failed to enumerate camera devices:', error);
+    console.error("[CameraUtils] Failed to enumerate camera devices:", error);
     return [];
   }
 }
@@ -274,9 +274,9 @@ export async function getCameraDevices(): Promise<MediaDeviceInfo[]> {
 export function isCameraSupported(): boolean {
   return !!(
     navigator.mediaDevices &&
-    typeof navigator.mediaDevices.getUserMedia === 'function' &&
-    typeof HTMLCanvasElement !== 'undefined' &&
-    typeof HTMLCanvasElement.prototype.toDataURL === 'function' &&
-    typeof HTMLCanvasElement.prototype.toBlob === 'function'
+    typeof navigator.mediaDevices.getUserMedia === "function" &&
+    typeof HTMLCanvasElement !== "undefined" &&
+    typeof HTMLCanvasElement.prototype.toDataURL === "function" &&
+    typeof HTMLCanvasElement.prototype.toBlob === "function"
   );
 }

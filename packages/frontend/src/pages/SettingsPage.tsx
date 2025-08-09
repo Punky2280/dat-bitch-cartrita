@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { ThemeCustomizer } from '@/components/ThemeCustomizer';
-import { LanguageSelector } from '@/components/LanguageSelector';
-import SystemHealthIndicator from '@/components/SystemHealthIndicator';
-import { useThemeContext, Theme } from '@/context/ThemeContext';
+import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { ThemeCustomizer } from "@/components/ThemeCustomizer";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import SystemHealthIndicator from "@/components/SystemHealthIndicator";
+import { useThemeContext, Theme } from "@/context/ThemeContext";
 
 interface SettingsPageProps {
   token: string;
@@ -30,8 +30,8 @@ interface PasswordFormData {
 
 interface PersonalityFormData {
   sarcasm: number;
-  verbosity: 'concise' | 'normal' | 'detailed';
-  humor: 'dry' | 'playful' | 'dark' | 'none';
+  verbosity: "concise" | "normal" | "detailed";
+  humor: "dry" | "playful" | "dark" | "none";
 }
 
 interface AudioFormData {
@@ -45,18 +45,18 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
   const { t } = useTranslation();
   const [user, setUser] = useState<User | null>(null);
   const [profileForm, setProfileForm] = useState<ProfileFormData>({
-    name: '',
-    email: '',
+    name: "",
+    email: "",
   });
   const [passwordForm, setPasswordForm] = useState<PasswordFormData>({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
   const [personalityForm, setPersonalityForm] = useState<PersonalityFormData>({
     sarcasm: 5,
-    verbosity: 'normal',
-    humor: 'playful',
+    verbosity: "normal",
+    humor: "playful",
   });
   const [audioForm, setAudioForm] = useState<AudioFormData>({
     voice_responses: false,
@@ -70,11 +70,11 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [personalityLoading, setPersonalityLoading] = useState(false);
   const [audioLoading, setAudioLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<
-    'profile' | 'password' | 'preferences' | 'health'
-  >('profile');
+    "profile" | "password" | "preferences" | "health"
+  >("profile");
   const [showThemeCustomizer, setShowThemeCustomizer] = useState(false);
   const { theme, setTheme } = useThemeContext();
 
@@ -82,14 +82,14 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      setError(''); // Clear previous errors
+      setError(""); // Clear previous errors
       try {
         // Fetch both user profile and settings in parallel
         const [userResponse, settingsResponse] = await Promise.all([
-          fetch('http://localhost:8000/api/user/me', {
+          fetch("http://localhost:8000/api/user/me", {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch('http://localhost:8000/api/settings', {
+          fetch("http://localhost:8000/api/settings", {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -99,13 +99,13 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
         if (!userResponse.ok) {
           const errorText = await userResponse.text();
           throw new Error(
-            `Failed to fetch user profile (${userResponse.status}): ${errorText}`
+            `Failed to fetch user profile (${userResponse.status}): ${errorText}`,
           );
         }
         if (!settingsResponse.ok) {
           const errorText = await settingsResponse.text();
           throw new Error(
-            `Failed to fetch user settings (${settingsResponse.status}): ${errorText}`
+            `Failed to fetch user settings (${settingsResponse.status}): ${errorText}`,
           );
         }
 
@@ -117,8 +117,8 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
         // Set personality settings with fallbacks
         setPersonalityForm({
           sarcasm: settingsData.sarcasm ?? 5,
-          verbosity: settingsData.verbosity || 'normal',
-          humor: settingsData.humor || 'playful',
+          verbosity: settingsData.verbosity || "normal",
+          humor: settingsData.humor || "playful",
         });
 
         // Set audio settings with fallbacks
@@ -129,15 +129,15 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
           camera_enabled: settingsData.camera_enabled ?? false,
         });
       } catch (err: any) {
-        console.error('Error during settings page data fetch:', err); // Log the full error
+        console.error("Error during settings page data fetch:", err); // Log the full error
 
         // Use default settings as fallback when backend fails
-        console.warn('Backend unavailable, using default settings');
+        console.warn("Backend unavailable, using default settings");
 
         const defaultSettings = {
           sarcasm: 5,
-          verbosity: 'normal' as const,
-          humor: 'playful' as const,
+          verbosity: "normal" as const,
+          humor: "playful" as const,
           voice_responses: false,
           ambient_listening: false,
           sound_effects: true,
@@ -148,11 +148,11 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
         if (!user) {
           setUser({
             id: 1,
-            name: 'User',
-            email: 'user@example.com',
+            name: "User",
+            email: "user@example.com",
             created_at: new Date().toISOString(),
           });
-          setProfileForm({ name: 'User', email: 'user@example.com' });
+          setProfileForm({ name: "User", email: "user@example.com" });
         }
 
         // Set default settings
@@ -170,24 +170,24 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
         });
 
         // Handle specific error cases with better messages
-        if (err.message.includes('Failed to fetch')) {
+        if (err.message.includes("Failed to fetch")) {
           setError(
-            '⚠️ Backend temporarily unavailable. Using default settings. Please check that the backend is running on port 8000.'
+            "⚠️ Backend temporarily unavailable. Using default settings. Please check that the backend is running on port 8000.",
           );
         } else if (
-          err.message.includes('403') ||
-          err.message.includes('Forbidden')
+          err.message.includes("403") ||
+          err.message.includes("Forbidden")
         ) {
           setError(
-            '🔐 Authentication failed. Please try logging out and logging back in.'
+            "🔐 Authentication failed. Please try logging out and logging back in.",
           );
-        } else if (err.message.includes('500')) {
+        } else if (err.message.includes("500")) {
           setError(
-            '🚨 Server error detected. Using default settings. Check backend logs for details.'
+            "🚨 Server error detected. Using default settings. Check backend logs for details.",
           );
         } else {
           setError(
-            `⚡ Settings loading failed: ${err.message}. Using defaults.`
+            `⚡ Settings loading failed: ${err.message}. Using defaults.`,
           );
         }
       } finally {
@@ -204,26 +204,26 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setProfileLoading(true);
-    setMessage('');
-    setError('');
+    setMessage("");
+    setError("");
 
     try {
-      const response = await fetch('http://localhost:8000/api/user/me', {
-        method: 'PUT',
+      const response = await fetch("http://localhost:8000/api/user/me", {
+        method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(profileForm),
       });
 
       const data = await response.json();
       if (!response.ok)
-        throw new Error(data.message || 'Failed to update profile');
+        throw new Error(data.message || "Failed to update profile");
 
       setUser(data.user);
-      setMessage(t('settings.profileUpdated'));
-      setTimeout(() => setMessage(''), 3000);
+      setMessage(t("settings.profileUpdated"));
+      setTimeout(() => setMessage(""), 3000);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -235,47 +235,47 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordLoading(true);
-    setMessage('');
-    setError('');
+    setMessage("");
+    setError("");
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setError(t('auth.passwordsNoMatch'));
+      setError(t("auth.passwordsNoMatch"));
       setPasswordLoading(false);
       return;
     }
     if (passwordForm.newPassword.length < 6) {
-      setError(t('settings.passwordMinLength'));
+      setError(t("settings.passwordMinLength"));
       setPasswordLoading(false);
       return;
     }
 
     try {
       const response = await fetch(
-        'http://localhost:8000/api/user/me/password',
+        "http://localhost:8000/api/user/me/password",
         {
-          method: 'PUT',
+          method: "PUT",
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             currentPassword: passwordForm.currentPassword,
             newPassword: passwordForm.newPassword,
           }),
-        }
+        },
       );
 
       const data = await response.json();
       if (!response.ok)
-        throw new Error(data.message || 'Failed to update password');
+        throw new Error(data.message || "Failed to update password");
 
-      setMessage(t('settings.passwordUpdated'));
+      setMessage(t("settings.passwordUpdated"));
       setPasswordForm({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
       });
-      setTimeout(() => setMessage(''), 3000);
+      setTimeout(() => setMessage(""), 3000);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -287,15 +287,15 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
   const handlePersonalitySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPersonalityLoading(true);
-    setMessage('');
-    setError('');
+    setMessage("");
+    setError("");
 
     try {
-      const response = await fetch('http://localhost:8000/api/settings', {
-        method: 'PUT',
+      const response = await fetch("http://localhost:8000/api/settings", {
+        method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           sarcasm: Number(personalityForm.sarcasm), // Ensure sarcasm is a number
@@ -307,11 +307,11 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
       const data = await response.json();
       if (!response.ok)
         throw new Error(
-          data.message || 'Failed to update personality settings'
+          data.message || "Failed to update personality settings",
         );
 
-      setMessage('Personality settings updated successfully.');
-      setTimeout(() => setMessage(''), 3000);
+      setMessage("Personality settings updated successfully.");
+      setTimeout(() => setMessage(""), 3000);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -321,50 +321,50 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
 
   // Handle input changes
   const handleProfileChange = (field: keyof ProfileFormData, value: string) => {
-    setProfileForm(prev => ({ ...prev, [field]: value }));
+    setProfileForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handlePasswordChange = (
     field: keyof PasswordFormData,
-    value: string
+    value: string,
   ) => {
-    setPasswordForm(prev => ({ ...prev, [field]: value }));
+    setPasswordForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handlePersonalityChange = (
     field: keyof PersonalityFormData,
-    value: string | number
+    value: string | number,
   ) => {
-    setPersonalityForm(prev => ({ ...prev, [field]: value }));
+    setPersonalityForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleAudioChange = (field: keyof AudioFormData, value: boolean) => {
-    setAudioForm(prev => ({ ...prev, [field]: value }));
+    setAudioForm((prev) => ({ ...prev, [field]: value }));
   };
 
   // Handle audio settings form submission
   const handleAudioSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAudioLoading(true);
-    setMessage('');
-    setError('');
+    setMessage("");
+    setError("");
 
     try {
-      const response = await fetch('http://localhost:8000/api/settings', {
-        method: 'PUT',
+      const response = await fetch("http://localhost:8000/api/settings", {
+        method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(audioForm),
       });
 
       const data = await response.json();
       if (!response.ok)
-        throw new Error(data.message || 'Failed to update audio settings');
+        throw new Error(data.message || "Failed to update audio settings");
 
-      setMessage('Audio settings updated successfully.');
-      setTimeout(() => setMessage(''), 3000);
+      setMessage("Audio settings updated successfully.");
+      setTimeout(() => setMessage(""), 3000);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -377,16 +377,16 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     setTheme(newTheme as Theme);
 
     try {
-      await fetch('http://localhost:8000/api/settings', {
-        method: 'PUT',
+      await fetch("http://localhost:8000/api/settings", {
+        method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ theme: newTheme }),
       });
     } catch (err) {
-      console.error('Failed to save theme to backend:', err);
+      console.error("Failed to save theme to backend:", err);
     }
   };
 
@@ -394,7 +394,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
   const handleClearChatHistory = async () => {
     if (
       !confirm(
-        'Are you sure you want to clear all your chat history? This cannot be undone.'
+        "Are you sure you want to clear all your chat history? This cannot be undone.",
       )
     ) {
       return;
@@ -402,21 +402,21 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
 
     try {
       const response = await fetch(
-        'http://localhost:8000/api/settings/clear-chat-history',
+        "http://localhost:8000/api/settings/clear-chat-history",
         {
-          method: 'POST',
+          method: "POST",
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
 
       const data = await response.json();
       if (!response.ok)
-        throw new Error(data.error || 'Failed to clear chat history');
+        throw new Error(data.error || "Failed to clear chat history");
 
       setMessage(
-        `Chat history cleared successfully. ${data.deletedCount} messages deleted.`
+        `Chat history cleared successfully. ${data.deletedCount} messages deleted.`,
       );
-      setTimeout(() => setMessage(''), 5000);
+      setTimeout(() => setMessage(""), 5000);
     } catch (err: any) {
       setError(err.message);
     }
@@ -425,21 +425,21 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
   const handleExportData = async () => {
     try {
       const response = await fetch(
-        'http://localhost:8000/api/settings/export-data',
+        "http://localhost:8000/api/settings/export-data",
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to export data');
+        throw new Error(errorData.error || "Failed to export data");
       }
 
       // Trigger download
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = `cartrita-data-${Date.now()}.json`;
       document.body.appendChild(a);
@@ -447,20 +447,20 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
 
-      setMessage('Data exported successfully.');
-      setTimeout(() => setMessage(''), 3000);
+      setMessage("Data exported successfully.");
+      setTimeout(() => setMessage(""), 3000);
     } catch (err: any) {
       setError(err.message);
     }
   };
 
   const handleDeleteAccount = async () => {
-    const password = prompt('Enter your password to confirm account deletion:');
+    const password = prompt("Enter your password to confirm account deletion:");
     if (!password) return;
 
     if (
       !confirm(
-        'Are you absolutely sure you want to delete your account? This action cannot be undone and will permanently delete all your data.'
+        "Are you absolutely sure you want to delete your account? This action cannot be undone and will permanently delete all your data.",
       )
     ) {
       return;
@@ -468,24 +468,24 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
 
     try {
       const response = await fetch(
-        'http://localhost:8000/api/settings/delete-account',
+        "http://localhost:8000/api/settings/delete-account",
         {
-          method: 'DELETE',
+          method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({ confirmPassword: password }),
-        }
+        },
       );
 
       const data = await response.json();
       if (!response.ok)
-        throw new Error(data.error || 'Failed to delete account');
+        throw new Error(data.error || "Failed to delete account");
 
-      alert('Account deleted successfully. You will be logged out.');
+      alert("Account deleted successfully. You will be logged out.");
       // Redirect to login or home page
-      window.location.href = '/';
+      window.location.href = "/";
     } catch (err: any) {
       setError(err.message);
     }
@@ -550,18 +550,18 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
         <div className="mb-8">
           <nav className="flex space-x-1 glass-card p-1 rounded-xl w-fit">
             {[
-              { key: 'profile', label: 'Profile', icon: '👤' },
-              { key: 'password', label: 'Password', icon: '🔒' },
-              { key: 'preferences', label: 'Preferences', icon: '⚙️' },
-              { key: 'health', label: 'System Health', icon: '🏥' },
-            ].map(tab => (
+              { key: "profile", label: "Profile", icon: "👤" },
+              { key: "password", label: "Password", icon: "🔒" },
+              { key: "preferences", label: "Preferences", icon: "⚙️" },
+              { key: "health", label: "System Health", icon: "🏥" },
+            ].map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key as any)}
                 className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 ${
                   activeTab === tab.key
-                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                    ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg"
+                    : "text-gray-400 hover:text-white hover:bg-gray-800/50"
                 }`}
               >
                 <span>{tab.icon}</span>
@@ -575,7 +575,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2">
-            {activeTab === 'profile' && (
+            {activeTab === "profile" && (
               <div className="glass-card p-6 rounded-xl">
                 <h2 className="text-xl font-semibold mb-6 flex items-center space-x-2">
                   <span>👤</span>
@@ -590,8 +590,8 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                     <input
                       type="text"
                       value={profileForm.name}
-                      onChange={e =>
-                        handleProfileChange('name', e.target.value)
+                      onChange={(e) =>
+                        handleProfileChange("name", e.target.value)
                       }
                       className="w-full input-enhanced px-4 py-3 rounded-lg"
                       placeholder="Enter your full name"
@@ -606,8 +606,8 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                     <input
                       type="email"
                       value={profileForm.email}
-                      onChange={e =>
-                        handleProfileChange('email', e.target.value)
+                      onChange={(e) =>
+                        handleProfileChange("email", e.target.value)
                       }
                       className="w-full input-enhanced px-4 py-3 rounded-lg"
                       placeholder="Enter your email address"
@@ -636,7 +636,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
               </div>
             )}
 
-            {activeTab === 'password' && (
+            {activeTab === "password" && (
               <div className="glass-card p-6 rounded-xl">
                 <h2 className="text-xl font-semibold mb-6 flex items-center space-x-2">
                   <span>🔒</span>
@@ -651,8 +651,8 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                     <input
                       type="password"
                       value={passwordForm.currentPassword}
-                      onChange={e =>
-                        handlePasswordChange('currentPassword', e.target.value)
+                      onChange={(e) =>
+                        handlePasswordChange("currentPassword", e.target.value)
                       }
                       className="w-full input-enhanced px-4 py-3 rounded-lg"
                       placeholder="Enter your current password"
@@ -667,8 +667,8 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                     <input
                       type="password"
                       value={passwordForm.newPassword}
-                      onChange={e =>
-                        handlePasswordChange('newPassword', e.target.value)
+                      onChange={(e) =>
+                        handlePasswordChange("newPassword", e.target.value)
                       }
                       className="w-full input-enhanced px-4 py-3 rounded-lg"
                       placeholder="Enter your new password"
@@ -687,8 +687,8 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                     <input
                       type="password"
                       value={passwordForm.confirmPassword}
-                      onChange={e =>
-                        handlePasswordChange('confirmPassword', e.target.value)
+                      onChange={(e) =>
+                        handlePasswordChange("confirmPassword", e.target.value)
                       }
                       className="w-full input-enhanced px-4 py-3 rounded-lg"
                       placeholder="Confirm your new password"
@@ -718,7 +718,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
               </div>
             )}
 
-            {activeTab === 'preferences' && (
+            {activeTab === "preferences" && (
               <div className="space-y-6">
                 {/* --- NEW: Personality Settings Form --- */}
                 <form
@@ -733,7 +733,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                     {/* Sarcasm Slider */}
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Sarcasm Level:{' '}
+                        Sarcasm Level:{" "}
                         <span className="font-bold text-white">
                           {personalityForm.sarcasm}
                         </span>
@@ -743,10 +743,10 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                         min="0"
                         max="10"
                         value={personalityForm.sarcasm}
-                        onChange={e =>
+                        onChange={(e) =>
                           handlePersonalityChange(
-                            'sarcasm',
-                            parseInt(e.target.value, 10)
+                            "sarcasm",
+                            parseInt(e.target.value, 10),
                           )
                         }
                         className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
@@ -765,8 +765,8 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                       </label>
                       <select
                         value={personalityForm.verbosity}
-                        onChange={e =>
-                          handlePersonalityChange('verbosity', e.target.value)
+                        onChange={(e) =>
+                          handlePersonalityChange("verbosity", e.target.value)
                         }
                         className="w-full input-enhanced px-4 py-3 rounded-lg"
                       >
@@ -783,8 +783,8 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                       </label>
                       <select
                         value={personalityForm.humor}
-                        onChange={e =>
-                          handlePersonalityChange('humor', e.target.value)
+                        onChange={(e) =>
+                          handlePersonalityChange("humor", e.target.value)
                         }
                         className="w-full input-enhanced px-4 py-3 rounded-lg"
                       >
@@ -841,8 +841,8 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                             type="radio"
                             name="theme"
                             value="dark"
-                            checked={theme === 'dark'}
-                            onChange={() => handleThemeChange('dark')}
+                            checked={theme === "dark"}
+                            onChange={() => handleThemeChange("dark")}
                             className="text-blue-600"
                           />
                           <span>Dark Mode</span>
@@ -852,8 +852,8 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                             type="radio"
                             name="theme"
                             value="light"
-                            checked={theme === 'light'}
-                            onChange={() => handleThemeChange('light')}
+                            checked={theme === "light"}
+                            onChange={() => handleThemeChange("light")}
                             className="text-blue-600"
                           />
                           <span>Light Mode</span>
@@ -863,8 +863,8 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                             type="radio"
                             name="theme"
                             value="cyberpunk"
-                            checked={theme === 'cyberpunk'}
-                            onChange={() => handleThemeChange('cyberpunk')}
+                            checked={theme === "cyberpunk"}
+                            onChange={() => handleThemeChange("cyberpunk")}
                             className="text-blue-600"
                           />
                           <span>Cyberpunk</span>
@@ -874,8 +874,8 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                             type="radio"
                             name="theme"
                             value="neon"
-                            checked={theme === 'neon'}
-                            onChange={() => handleThemeChange('neon')}
+                            checked={theme === "neon"}
+                            onChange={() => handleThemeChange("neon")}
                             className="text-blue-600"
                           />
                           <span>Neon</span>
@@ -885,8 +885,8 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                             type="radio"
                             name="theme"
                             value="minimal"
-                            checked={theme === 'minimal'}
-                            onChange={() => handleThemeChange('minimal')}
+                            checked={theme === "minimal"}
+                            onChange={() => handleThemeChange("minimal")}
                             className="text-blue-600"
                           />
                           <span>Minimal</span>
@@ -896,10 +896,10 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
 
                     <div className="p-4 border border-gray-600/50 rounded-lg">
                       <h3 className="font-medium mb-2">
-                        🌐 {t('settings.languageSettings')}
+                        🌐 {t("settings.languageSettings")}
                       </h3>
                       <p className="text-sm text-gray-400 mb-4">
-                        {t('settings.chooseLanguage')}
+                        {t("settings.chooseLanguage")}
                       </p>
                       <LanguageSelector />
                     </div>
@@ -909,42 +909,42 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                       className="p-4 border border-gray-600/50 rounded-lg"
                     >
                       <h3 className="font-medium mb-2 flex items-center justify-between">
-                        <span>🔊 {t('settings.audioSettings')}</span>
+                        <span>🔊 {t("settings.audioSettings")}</span>
                         <button
                           type="submit"
                           disabled={audioLoading}
                           className="text-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-3 py-1 rounded transition-colors"
                         >
-                          {audioLoading ? 'Saving...' : 'Save'}
+                          {audioLoading ? "Saving..." : "Save"}
                         </button>
                       </h3>
                       <p className="text-sm text-gray-400 mb-4">
-                        {t('settings.configureAudio')}
+                        {t("settings.configureAudio")}
                       </p>
                       <div className="space-y-3">
                         <label className="flex items-center justify-between">
-                          <span>{t('settings.voiceResponses')}</span>
+                          <span>{t("settings.voiceResponses")}</span>
                           <input
                             type="checkbox"
                             checked={audioForm.voice_responses}
-                            onChange={e =>
+                            onChange={(e) =>
                               handleAudioChange(
-                                'voice_responses',
-                                e.target.checked
+                                "voice_responses",
+                                e.target.checked,
                               )
                             }
                             className="toggle"
                           />
                         </label>
                         <label className="flex items-center justify-between">
-                          <span>{t('settings.ambientListening')}</span>
+                          <span>{t("settings.ambientListening")}</span>
                           <input
                             type="checkbox"
                             checked={audioForm.ambient_listening}
-                            onChange={e =>
+                            onChange={(e) =>
                               handleAudioChange(
-                                'ambient_listening',
-                                e.target.checked
+                                "ambient_listening",
+                                e.target.checked,
                               )
                             }
                             className="toggle"
@@ -955,24 +955,24 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                           <input
                             type="checkbox"
                             checked={audioForm.camera_enabled}
-                            onChange={e =>
+                            onChange={(e) =>
                               handleAudioChange(
-                                'camera_enabled',
-                                e.target.checked
+                                "camera_enabled",
+                                e.target.checked,
                               )
                             }
                             className="toggle"
                           />
                         </label>
                         <label className="flex items-center justify-between">
-                          <span>{t('settings.soundEffects')}</span>
+                          <span>{t("settings.soundEffects")}</span>
                           <input
                             type="checkbox"
                             checked={audioForm.sound_effects}
-                            onChange={e =>
+                            onChange={(e) =>
                               handleAudioChange(
-                                'sound_effects',
-                                e.target.checked
+                                "sound_effects",
+                                e.target.checked,
                               )
                             }
                             className="toggle"
@@ -985,7 +985,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
               </div>
             )}
 
-            {activeTab === 'health' && (
+            {activeTab === "health" && (
               <div className="space-y-6">
                 <SystemHealthIndicator token={token} />
               </div>

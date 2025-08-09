@@ -10,8 +10,10 @@ class SensoryProcessingService extends EventEmitter {
     this.visualBuffer = [];
     this.textBuffer = [];
     this.isProcessing = false;
-    
-    console.log('[SensoryProcessingService] 🧠 Sensory processing service initialized');
+
+    console.log(
+      '[SensoryProcessingService] 🧠 Sensory processing service initialized'
+    );
   }
 
   // Process audio input
@@ -20,13 +22,16 @@ class SensoryProcessingService extends EventEmitter {
       this.audioBuffer.push({
         data: audioData,
         timestamp: Date.now(),
-        type: 'audio'
+        type: 'audio',
       });
-      
+
       this.emit('audioProcessed', audioData);
       console.log('[SensoryProcessingService] 🎵 Audio processed');
     } catch (error) {
-      console.error('[SensoryProcessingService] ❌ Audio processing error:', error);
+      console.error(
+        '[SensoryProcessingService] ❌ Audio processing error:',
+        error
+      );
     }
   }
 
@@ -36,13 +41,16 @@ class SensoryProcessingService extends EventEmitter {
       this.visualBuffer.push({
         data: visualData,
         timestamp: Date.now(),
-        type: 'visual'
+        type: 'visual',
       });
-      
+
       this.emit('visualProcessed', visualData);
       console.log('[SensoryProcessingService] 👁️ Visual processed');
     } catch (error) {
-      console.error('[SensoryProcessingService] ❌ Visual processing error:', error);
+      console.error(
+        '[SensoryProcessingService] ❌ Visual processing error:',
+        error
+      );
     }
   }
 
@@ -52,13 +60,16 @@ class SensoryProcessingService extends EventEmitter {
       this.textBuffer.push({
         data: textData,
         timestamp: Date.now(),
-        type: 'text'
+        type: 'text',
       });
-      
+
       this.emit('textProcessed', textData);
       console.log('[SensoryProcessingService] 📝 Text processed');
     } catch (error) {
-      console.error('[SensoryProcessingService] ❌ Text processing error:', error);
+      console.error(
+        '[SensoryProcessingService] ❌ Text processing error:',
+        error
+      );
     }
   }
 
@@ -66,7 +77,7 @@ class SensoryProcessingService extends EventEmitter {
   getRecentData(type = 'all', limit = 10) {
     try {
       let data = [];
-      
+
       if (type === 'all' || type === 'audio') {
         data = data.concat(this.audioBuffer.slice(-limit));
       }
@@ -76,10 +87,13 @@ class SensoryProcessingService extends EventEmitter {
       if (type === 'all' || type === 'text') {
         data = data.concat(this.textBuffer.slice(-limit));
       }
-      
+
       return data.sort((a, b) => b.timestamp - a.timestamp).slice(0, limit);
     } catch (error) {
-      console.error('[SensoryProcessingService] ❌ Error getting recent data:', error);
+      console.error(
+        '[SensoryProcessingService] ❌ Error getting recent data:',
+        error
+      );
       return [];
     }
   }

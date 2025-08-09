@@ -1,4 +1,4 @@
-import React, { useState, createContext, useContext } from 'react';
+import React, { useState, createContext, useContext } from "react";
 
 interface DialogContextType {
   open: boolean;
@@ -48,7 +48,7 @@ export const Dialog: React.FC<DialogProps> = ({
 export const DialogTrigger: React.FC<DialogTriggerProps> = ({ children }) => {
   const context = useContext(DialogContext);
   if (!context) {
-    throw new Error('DialogTrigger must be used within a Dialog component');
+    throw new Error("DialogTrigger must be used within a Dialog component");
   }
 
   const { onOpenChange } = context;
@@ -58,11 +58,11 @@ export const DialogTrigger: React.FC<DialogTriggerProps> = ({ children }) => {
 
 export const DialogContent: React.FC<DialogContentProps> = ({
   children,
-  className = '',
+  className = "",
 }) => {
   const context = useContext(DialogContext);
   if (!context) {
-    throw new Error('DialogContent must be used within a Dialog component');
+    throw new Error("DialogContent must be used within a Dialog component");
   }
 
   const { open, onOpenChange } = context;
@@ -109,7 +109,7 @@ export const DialogContent: React.FC<DialogContentProps> = ({
 
 export const DialogHeader: React.FC<DialogHeaderProps> = ({
   children,
-  className = '',
+  className = "",
 }) => {
   return (
     <div className={`px-6 py-4 border-b border-gray-600/50 ${className}`}>
@@ -120,7 +120,7 @@ export const DialogHeader: React.FC<DialogHeaderProps> = ({
 
 export const DialogTitle: React.FC<DialogTitleProps> = ({
   children,
-  className = '',
+  className = "",
 }) => {
   return (
     <h2 className={`text-lg font-semibold text-white ${className}`}>

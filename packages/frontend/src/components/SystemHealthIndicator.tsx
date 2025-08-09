@@ -1,8 +1,20 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { AlertCircle, CheckCircle, Clock, Activity, Database, Brain, Headphones, Calendar, Mail, Shield, Settings } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  Activity,
+  Database,
+  Brain,
+  Headphones,
+  Calendar,
+  Mail,
+  Shield,
+  Settings,
+} from "lucide-react";
 
 interface HealthStatus {
-  status: 'healthy' | 'unhealthy' | 'degraded' | 'checking' | 'unknown';
+  status: "healthy" | "unhealthy" | "degraded" | "checking" | "unknown";
   message: string;
   details?: any;
   response_time?: number;
@@ -25,7 +37,9 @@ interface SystemHealthIndicatorProps {
   token: string;
 }
 
-const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({ token }) => {
+const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({
+  token,
+}) => {
   const [healthReport, setHealthReport] = useState<HealthReport | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
@@ -34,31 +48,33 @@ const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({ token }) 
 
   const fetchHealthStatus = useCallback(async () => {
     if (!token) return;
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      console.log('🏥 Fetching system health status...');
-      const response = await fetch('/api/health/system', {
+      console.log("🏥 Fetching system health status...");
+      const response = await fetch("/api/health/system", {
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
       if (!response.ok) {
-        throw new Error(`Health check failed: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Health check failed: ${response.status} ${response.statusText}`,
+        );
       }
 
       const data = await response.json();
-      console.log('🏥 Health data received:', data);
-      
+      console.log("🏥 Health data received:", data);
+
       setHealthReport(data);
       setLastUpdate(new Date());
     } catch (err) {
-      console.error('❌ Health check error:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      console.error("❌ Health check error:", err);
+      setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setIsLoading(false);
     }
@@ -82,13 +98,13 @@ const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({ token }) 
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'healthy':
+      case "healthy":
         return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'unhealthy':
+      case "unhealthy":
         return <AlertCircle className="w-4 h-4 text-red-500" />;
-      case 'degraded':
+      case "degraded":
         return <AlertCircle className="w-4 h-4 text-yellow-500" />;
-      case 'checking':
+      case "checking":
         return <Clock className="w-4 h-4 text-blue-500 animate-spin" />;
       default:
         return <AlertCircle className="w-4 h-4 text-gray-400" />;
@@ -97,38 +113,38 @@ const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({ token }) 
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'healthy':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'unhealthy':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'degraded':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'checking':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case "healthy":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "unhealthy":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "degraded":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "checking":
+        return "bg-blue-100 text-blue-800 border-blue-200";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'database':
+      case "database":
         return <Database className="w-5 h-5" />;
-      case 'openai_api':
+      case "openai_api":
         return <Brain className="w-5 h-5" />;
-      case 'voice_endpoints':
-      case 'deepgram_service':
+      case "voice_endpoints":
+      case "deepgram_service":
         return <Headphones className="w-5 h-5" />;
-      case 'calendar_endpoints':
+      case "calendar_endpoints":
         return <Calendar className="w-5 h-5" />;
-      case 'email_endpoints':
+      case "email_endpoints":
         return <Mail className="w-5 h-5" />;
-      case 'auth_endpoints':
-      case 'vault_endpoints':
+      case "auth_endpoints":
+      case "vault_endpoints":
         return <Shield className="w-5 h-5" />;
-      case 'hierarchical_agents':
-      case 'tool_registry':
-      case 'langchain_integration':
+      case "hierarchical_agents":
+      case "tool_registry":
+      case "langchain_integration":
         return <Activity className="w-5 h-5" />;
       default:
         return <Settings className="w-5 h-5" />;
@@ -137,9 +153,9 @@ const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({ token }) 
 
   const formatCategoryName = (category: string) => {
     return category
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   };
 
   const getOverallHealthPercentage = () => {
@@ -153,7 +169,9 @@ const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({ token }) 
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
         <div className="flex items-center gap-2 mb-2">
           <AlertCircle className="w-5 h-5 text-red-500" />
-          <h3 className="text-sm font-medium text-red-800">System Health Check Failed</h3>
+          <h3 className="text-sm font-medium text-red-800">
+            System Health Check Failed
+          </h3>
         </div>
         <p className="text-sm text-red-600">{error}</p>
         <button
@@ -171,15 +189,23 @@ const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({ token }) 
       {/* Header with overall status */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h3 className="text-lg font-semibold text-gray-900">System Health Status</h3>
+          <h3 className="text-lg font-semibold text-gray-900">
+            System Health Status
+          </h3>
           {healthReport && (
-            <div className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(healthReport.overall_status)}`}>
+            <div
+              className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(
+                healthReport.overall_status,
+              )}`}
+            >
               {getStatusIcon(healthReport.overall_status)}
-              <span className="ml-2">{getOverallHealthPercentage()}% Healthy</span>
+              <span className="ml-2">
+                {getOverallHealthPercentage()}% Healthy
+              </span>
             </div>
           )}
         </div>
-        
+
         <div className="flex items-center gap-2">
           <label className="flex items-center gap-2 text-sm text-gray-600">
             <input
@@ -190,13 +216,13 @@ const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({ token }) 
             />
             Auto-refresh
           </label>
-          
+
           <button
             onClick={fetchHealthStatus}
             disabled={isLoading}
             className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 disabled:opacity-50 transition-colors"
           >
-            {isLoading ? 'Checking...' : 'Refresh'}
+            {isLoading ? "Checking..." : "Refresh"}
           </button>
         </div>
       </div>
@@ -214,25 +240,31 @@ const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({ token }) 
           {Object.entries(healthReport.checks).map(([category, health]) => (
             <div
               key={category}
-              className={`p-4 rounded-lg border ${getStatusColor(health.status)} transition-all hover:shadow-md`}
+              className={`p-4 rounded-lg border ${getStatusColor(
+                health.status,
+              )} transition-all hover:shadow-md`}
             >
               <div className="flex items-center gap-3 mb-2">
                 {getCategoryIcon(category)}
-                <h4 className="font-medium text-sm">{formatCategoryName(category)}</h4>
+                <h4 className="font-medium text-sm">
+                  {formatCategoryName(category)}
+                </h4>
                 {getStatusIcon(health.status)}
               </div>
-              
+
               <p className="text-xs mb-2">{health.message}</p>
-              
+
               {health.response_time && (
                 <div className="text-xs opacity-75">
                   Response: {health.response_time}ms
                 </div>
               )}
-              
+
               {health.details && Object.keys(health.details).length > 0 && (
                 <details className="mt-2">
-                  <summary className="text-xs cursor-pointer hover:underline">Details</summary>
+                  <summary className="text-xs cursor-pointer hover:underline">
+                    Details
+                  </summary>
                   <div className="mt-1 text-xs opacity-75">
                     {Object.entries(health.details).map(([key, value]) => (
                       <div key={key} className="flex justify-between">
@@ -254,19 +286,27 @@ const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({ token }) 
           <h4 className="font-medium text-gray-900 mb-2">Health Summary</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div className="text-center">
-              <div className="text-lg font-bold text-green-600">{healthReport.summary.healthy}</div>
+              <div className="text-lg font-bold text-green-600">
+                {healthReport.summary.healthy}
+              </div>
               <div className="text-gray-600">Healthy</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-red-600">{healthReport.summary.unhealthy}</div>
+              <div className="text-lg font-bold text-red-600">
+                {healthReport.summary.unhealthy}
+              </div>
               <div className="text-gray-600">Unhealthy</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-blue-600">{healthReport.summary.checking}</div>
+              <div className="text-lg font-bold text-blue-600">
+                {healthReport.summary.checking}
+              </div>
               <div className="text-gray-600">Checking</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-gray-600">{healthReport.summary.total}</div>
+              <div className="text-lg font-bold text-gray-600">
+                {healthReport.summary.total}
+              </div>
               <div className="text-gray-600">Total</div>
             </div>
           </div>

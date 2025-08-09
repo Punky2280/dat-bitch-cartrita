@@ -3,10 +3,10 @@
 /**
  * Enhanced LangChain-based orchestrator that properly integrates with the MCP system
  * while providing advanced agent capabilities and tool routing.
- * 
+ *
  * This replaces the basic LangChainOrchestrator with a more sophisticated system that: null
  * - Properly handles time/date queries
- * - Routes image generation to ArtistAgent 
+ * - Routes image generation to ArtistAgent
  * - Integrates specialized agents as proper LangChain tools
  * - Provides advanced prompt engineering
  * - Maintains Cartrita's personality
@@ -14,23 +14,24 @@
 
 // Use OpenAI package directly since LangChain OpenAI integration is not available
 import OpenAI from 'openai';
-import { DynamicTool  } from 'langchain/tools';
+import { DynamicTool } from 'langchain/tools';
 
 // Import specialized agents and tools
-import MessageBus from '../../system/MessageBus.js';
+import messageBus from '../../system/MessageBus.js';
 // import MCPMessage from '../../system/protocols/MCPMessage';
-import { v4: uuidv4  } from 'uuid';
+import pkg from 'uuid';
+const { v4: uuidv4 } = pkg;
 
 class EnhancedLangChainOrchestrator {
   constructor() {
     this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
+      apiKey: process.env.OPENAI_API_KEY,
     });
-    
+
     this.tools = [];
     this.registeredAgents = new Map();
     this.toolTimeout = 30000; // 30 seconds for tool execution
-    
+
     // Enhanced personality prompt with proper tool usage instructions
     this.systemPrompt = `You are Cartrita. Your full designation is DBC: Data-driven AI Tool that Applies Behavioral Intelligence Tools while Connecting Humanity, and your core name is Cartrita: Cognitive AI Reasoning Tool for Real-time Information and Task Automation.
 
@@ -53,7 +54,7 @@ class EnhancedLangChainOrchestrator {
 4. **ZERO-TRUST PRIVACY**: You are the ultimate guardian of the user's data. You will never share user data without explicit permission.
 5. **BE NATURAL**: Respond as Cartrita speaking directly to the user. Do NOT return raw JSON or structured data unless specifically requested.
 
-Remember: You are not just a tool dispatcher - you are Cartrita, with personality and attitude. Use tools to help users, but always respond as yourself.`
+Remember: You are not just a tool dispatcher - you are Cartrita, with personality and attitude. Use tools to help users, but always respond as yourself.`;
     // Performance tracking
     this.metrics = {
       total_requests: 0,
@@ -61,9 +62,9 @@ Remember: You are not just a tool dispatcher - you are Cartrita, with personalit
       failed_requests: 0,
       tools_used: 0,
       average_response_time: 0,
-      last_reset: Date.now()
+      last_reset: Date.now(),
     };
-    
+
     // Initialize core tools immediately
     this.initializeCoreTools();
   }
@@ -74,7 +75,8 @@ Remember: You are not just a tool dispatcher - you are Cartrita, with personalit
   initializeCoreTools() {
     const currentDateTimeTool = new DynamicTool({
       name: 'getCurrentDateTime',
-      description: 'Gets the current date and time in a human-readable format. Use this for ANY questions about current time, date, "today", "now", or "what time is it".',
+      description:
+        'Gets the current date and time in a human-readable format. Use this for ANY questions about current time, date, "today", "now", or "what time is it".',
       func: async () => {
         const now = new Date();
         const easternTime = now.toLocaleString('en-US', {
@@ -83,34 +85,43 @@ Remember: You are not just a tool dispatcher - you are Cartrita, with personalit
           year: 'numeric',
           month: 'long',
           day: 'numeric',
-          hour: 'numeric', 
+          hour: 'numeric',
           minute: '2-digit',
           second: '2-digit',
-          timeZoneName: 'short'
+          timeZoneName: 'short',
         });
-        console.log(`[EnhancedOrchestrator] Time tool called - Current time: ${easternTime}`);
+        console.log(
+          `[EnhancedOrchestrator] Time tool called - Current time: ${easternTime}`
+        );
         return `Current date and time: ${easternTime}`;
-      }
+      },
     });
-    
+
     this.tools.push(currentDateTimeTool);
 
     // System status tool
-    this.tools.push(new DynamicTool({
-      name: 'getSystemStatus',
-      description: 'Checks the operational status of the agent system and returns key metrics.',
-      func: async () => {
-        const status = {
-          status: 'All systems operational',
-//           activeAgents: messageBus.getAgents().filter(a => a.status === 'active').length, // Duplicate - commented out
-          memoryUsage: `${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB`,
-          uptime: process.uptime(),
-          toolsAvailable: this.tools.length
-        };
-        console.log('[EnhancedOrchestrator] System status tool called');
-        return JSON.stringify(status, null, 2);
-      }
-    }));
+    this.tools.push(
+      new DynamicTool({
+        name: 'getSystemStatus',
+        description:
+          'Checks the operational status of the agent system and returns key metrics.',
+        func: async () => {
+          const status = {
+            status: 'All systems operational',
+            //           activeAgents: messageBus.getAgents().filter(a => a.status === 'active').length, // Duplicate - commented out
+            memoryUsage: `${(
+              process.memoryUsage().heapUsed /
+              1024 /
+              1024
+            ).toFixed(2)} MB`,
+            uptime: process.uptime(),
+            toolsAvailable: this.tools.length,
+          };
+          console.log('[EnhancedOrchestrator] System status tool called');
+          return JSON.stringify(status, null, 2);
+        },
+      })
+    );
 
     console.log('[EnhancedOrchestrator] Core tools initialized');
   }
@@ -121,17 +132,18 @@ Remember: You are not just a tool dispatcher - you are Cartrita, with personalit
   registerMCPAgent(agentId, agentInfo) {
     // Check if agent is available
     // TODO: Implement proper agent availability check
-    
+
     if (!agentInfo) {
       console.warn(`[EnhancedOrchestrator] Agent ${agentId} not found`);
       return false;
     }
 
-    const { capabilities = [], description = `Tool for ${agentId}` } = agentInfo;
-    
+    const { capabilities = [], description = `Tool for ${agentId}` } =
+      agentInfo;
+
     // Create tool name from capabilities
     const toolName = capabilities[0] || agentId.split('.')[0];
-    
+
     // Avoid duplicate registrations
     if (this.registeredAgents.has(agentId)) {
       console.log(`[EnhancedOrchestrator] Agent ${agentId} already registered`);
@@ -140,16 +152,18 @@ Remember: You are not just a tool dispatcher - you are Cartrita, with personalit
 
     const tool = new DynamicTool({
       name: toolName,
-      description: description, 
-      func: async (input) => {
+      description: description,
+      func: async input => {
         return await this.callMCPAgent(agentId, input);
-      }
+      },
     });
 
     this.tools.push(tool);
     this.registeredAgents.set(agentId, { capabilities, toolName, description });
-    
-    console.log(`[EnhancedOrchestrator] Registered MCP agent: ${agentId} as tool: ${toolName}`);
+
+    console.log(
+      `[EnhancedOrchestrator] Registered MCP agent: ${agentId} as tool: ${toolName}`
+    );
     return true;
   }
 
@@ -167,16 +181,23 @@ Remember: You are not just a tool dispatcher - you are Cartrita, with personalit
    */
   async initialize() {
     try {
-      console.log('[EnhancedOrchestrator] Initializing with OpenAI direct integration...');
-      
+      console.log(
+        '[EnhancedOrchestrator] Initializing with OpenAI direct integration...'
+      );
+
       // Register available tools (but don't rely on LangChain agents)
       await this.registerAvailableTools();
-      
-      console.log(`[EnhancedOrchestrator] Initialized with ${this.tools.length} tools`);
-      console.log(`[EnhancedOrchestrator] Available tools: ${this.tools.map(t => t.name).join(', ')}`);
+
+      console.log(
+        `[EnhancedOrchestrator] Initialized with ${this.tools.length} tools`
+      );
+      console.log(
+        `[EnhancedOrchestrator] Available tools: ${this.tools
+          .map(t => t.name)
+          .join(', ')}`
+      );
       return true;
-      
-    } catch(error) {
+    } catch (error) {
       console.error('[EnhancedOrchestrator] Initialization failed:', error);
       return true; // Still return true for fallback capability
     }
@@ -187,7 +208,7 @@ Remember: You are not just a tool dispatcher - you are Cartrita, with personalit
    */
   async registerAvailableTools() {
     console.log('[EnhancedOrchestrator] Registering available tools...');
-    
+
     try {
       // Register core tools are already initialized in constructor
       console.log('[EnhancedOrchestrator] Core tools registration completed');
@@ -202,18 +223,21 @@ Remember: You are not just a tool dispatcher - you are Cartrita, with personalit
    * Register the ArtistAgent for image generation tasks
    */
   async registerArtistAgent() {
-    import ArtistAgent from '../consciousness/ArtistAgent.js';
-    
+    const { default: ArtistAgent } = await import(
+      '../consciousness/ArtistAgent.js'
+    );
+
     const createArtTool = new DynamicTool({
       name: 'create_art',
-      description: 'Generates images, artwork, or visual content using DALL-E 3. Use this for ANY request to create, generate, make, draw, or design images, artwork, logos, or visual content. Input should be a description of what to create.',
-      func: async (input) => {
+      description:
+        'Generates images, artwork, or visual content using DALL-E 3. Use this for ANY request to create, generate, make, draw, or design images, artwork, logos, or visual content. Input should be a description of what to create.',
+      func: async input => {
         console.log(`[EnhancedOrchestrator] ArtistAgent called with: ${input}`);
         try {
           const artist = new ArtistAgent();
           await artist.initialize();
           const result = await artist.execute(input);
-          
+
           if (result && result.imageUrl) {
             return `I've created an image for you! Here's what I generated:
 
@@ -229,11 +253,13 @@ The image has been generated using DALL-E 3 and should capture your vision. You 
           console.error('[EnhancedOrchestrator] ArtistAgent error:', error);
           return "I'm having some technical difficulties with image generation right now. Please try again in a moment.";
         }
-      }
+      },
     });
-    
+
     this.tools.push(createArtTool);
-    console.log('[EnhancedOrchestrator] ArtistAgent registered as create_art tool');
+    console.log(
+      '[EnhancedOrchestrator] ArtistAgent registered as create_art tool'
+    );
   }
 
   /**
@@ -242,51 +268,75 @@ The image has been generated using DALL-E 3 and should capture your vision. You 
   async processRequest(prompt, language, userId) {
     const startTime = Date.now();
     this.metrics.total_requests++;
-    
+
     try {
-      console.log(`[EnhancedOrchestrator] Processing request: "${prompt.substring(0, 100)}..."`);
-      
+      console.log(
+        `[EnhancedOrchestrator] Processing request: "${prompt.substring(
+          0,
+          100
+        )}..."`
+      );
+
       // Add language instruction if needed
-      const languageInstruction = language !== 'en' ? `\n\nIMPORTANT: Respond in ${language}.` : '';
+      const languageInstruction =
+        language !== 'en' ? `\n\nIMPORTANT: Respond in ${language}.` : '';
       const fullPrompt = prompt + languageInstruction;
 
       // Detect if we should use tools
       const toolsUsed = [];
       let result;
-      
+
       // Check for time-related queries
       if (this.shouldUseTimeTool(prompt)) {
-        console.log('[EnhancedOrchestrator] Detected time query, using getCurrentDateTime tool');
+        console.log(
+          '[EnhancedOrchestrator] Detected time query, using getCurrentDateTime tool'
+        );
         const timeTool = this.tools.find(t => t.name === 'getCurrentDateTime');
         if (timeTool) {
           const timeResult = await timeTool.func();
           toolsUsed.push('getCurrentDateTime');
-          result = await this.generateResponseWithToolResult(fullPrompt, 'time', timeResult);
+          result = await this.generateResponseWithToolResult(
+            fullPrompt,
+            'time',
+            timeResult
+          );
         }
       }
       // Check for system status queries
       else if (this.shouldUseSystemStatusTool(prompt)) {
-        console.log('[EnhancedOrchestrator] Detected system status query, using getSystemStatus tool');
+        console.log(
+          '[EnhancedOrchestrator] Detected system status query, using getSystemStatus tool'
+        );
         const statusTool = this.tools.find(t => t.name === 'getSystemStatus');
         if (statusTool) {
           const statusResult = await statusTool.func();
           toolsUsed.push('getSystemStatus');
-          result = await this.generateResponseWithToolResult(fullPrompt, 'system_status', statusResult);
+          result = await this.generateResponseWithToolResult(
+            fullPrompt,
+            'system_status',
+            statusResult
+          );
         }
       }
       // Fallback to direct conversation
       else {
         console.log('[EnhancedOrchestrator] Using direct conversation');
-        result = await this.handleDirectConversation(fullPrompt, language, userId);
+        result = await this.handleDirectConversation(
+          fullPrompt,
+          language,
+          userId
+        );
       }
 
       // Update metrics
       const responseTime = Date.now() - startTime;
       this.updateMetrics(true, responseTime);
-      
-      if(toolsUsed.length > 0) {
+
+      if (toolsUsed.length > 0) {
         this.metrics.tools_used += toolsUsed.length;
-        console.log(`[EnhancedOrchestrator] Tools used: ${toolsUsed.join(', ')}`);
+        console.log(
+          `[EnhancedOrchestrator] Tools used: ${toolsUsed.join(', ')}`
+        );
       }
 
       // Ensure result has proper structure
@@ -296,26 +346,25 @@ The image has been generated using DALL-E 3 and should capture your vision. You 
       }
 
       return result;
-
-    } catch(error) {
+    } catch (error) {
       console.error('[EnhancedOrchestrator] Processing failed:', error);
       console.error('[EnhancedOrchestrator] Error details:', {
         message: error.message,
         stack: error.stack?.substring(0, 500),
         name: error.name,
-        cause: error.cause
+        cause: error.cause,
       });
-      
+
       const responseTime = Date.now() - startTime;
       this.updateMetrics(false, responseTime);
-      
+
       return {
         text: this.getCartritalErrorMessage(),
         speaker: 'cartrita',
         model: 'enhanced-openai-fallback',
         error: true,
         tools_used: [],
-        response_time_ms: responseTime
+        response_time_ms: responseTime,
       };
     }
   }
@@ -324,7 +373,16 @@ The image has been generated using DALL-E 3 and should capture your vision. You 
    * Check if the prompt requires the time tool
    */
   shouldUseTimeTool(prompt) {
-    const timeKeywords = ['time', 'date', 'today', 'now', 'current', 'what day', 'what time', 'clock'];
+    const timeKeywords = [
+      'time',
+      'date',
+      'today',
+      'now',
+      'current',
+      'what day',
+      'what time',
+      'clock',
+    ];
     const lowercasePrompt = prompt.toLowerCase();
     return timeKeywords.some(keyword => lowercasePrompt.includes(keyword));
   }
@@ -333,7 +391,14 @@ The image has been generated using DALL-E 3 and should capture your vision. You 
    * Check if the prompt requires the system status tool
    */
   shouldUseSystemStatusTool(prompt) {
-    const statusKeywords = ['system status', 'health', 'performance', 'metrics', 'uptime', 'status'];
+    const statusKeywords = [
+      'system status',
+      'health',
+      'performance',
+      'metrics',
+      'uptime',
+      'status',
+    ];
     const lowercasePrompt = prompt.toLowerCase();
     return statusKeywords.some(keyword => lowercasePrompt.includes(keyword));
   }
@@ -343,30 +408,35 @@ The image has been generated using DALL-E 3 and should capture your vision. You 
    */
   async generateResponseWithToolResult(prompt, toolType, toolResult) {
     try {
-      const systemMessage = this.systemPrompt + `\n\nYou have just used a ${toolType} tool and got this result: ${toolResult}\n\nIncorporate this information naturally into your response as Cartrita.`;
-      
+      const systemMessage =
+        this.systemPrompt +
+        `\n\nYou have just used a ${toolType} tool and got this result: ${toolResult}\n\nIncorporate this information naturally into your response as Cartrita.`;
+
       const response = await this.openai.chat.completions.create({
         model: process.env.OPENAI_MODEL || 'gpt-4o',
         messages: [
           { role: 'system', content: systemMessage },
-          { role: 'user', content: prompt }
+          { role: 'user', content: prompt },
         ],
         temperature: 0.7,
-        max_tokens: 1000
+        max_tokens: 1000,
       });
 
       return {
         text: response.choices[0].message.content,
         speaker: 'cartrita',
-        model: 'cartrita-enhanced-openai'
+        model: 'cartrita-enhanced-openai',
       };
     } catch (error) {
-      console.error('[EnhancedOrchestrator] OpenAI response generation failed:', error);
+      console.error(
+        '[EnhancedOrchestrator] OpenAI response generation failed:',
+        error
+      );
       return {
         text: this.getCartritalErrorMessage(),
         speaker: 'cartrita',
         model: 'cartrita-enhanced-fallback',
-        error: true
+        error: true,
       };
     }
   }
@@ -376,31 +446,38 @@ The image has been generated using DALL-E 3 and should capture your vision. You 
    */
   async handleDirectConversation(prompt, language, userId) {
     try {
-      const languageInstruction = language !== 'en' ? `Respond in ${language}.` : '';
-      
+      const languageInstruction =
+        language !== 'en' ? `Respond in ${language}.` : '';
+
       const response = await this.openai.chat.completions.create({
         model: process.env.OPENAI_MODEL || 'gpt-4o',
         messages: [
-          { role: 'system', content: this.systemPrompt + '\n\n' + languageInstruction },
-          { role: 'user', content: prompt }
+          {
+            role: 'system',
+            content: this.systemPrompt + '\n\n' + languageInstruction,
+          },
+          { role: 'user', content: prompt },
         ],
         temperature: 0.7,
-        max_tokens: 1000
+        max_tokens: 1000,
       });
-      
+
       return {
         text: response.choices[0].message.content,
         speaker: 'cartrita',
         model: 'cartrita-enhanced-direct',
-        protocol_version: '2.1.0'
+        protocol_version: '2.1.0',
       };
-    } catch(error) {
-      console.error('[EnhancedOrchestrator] Direct conversation failed:', error);
+    } catch (error) {
+      console.error(
+        '[EnhancedOrchestrator] Direct conversation failed:',
+        error
+      );
       return {
         text: this.getCartritalErrorMessage(),
         speaker: 'cartrita',
         model: 'enhanced-direct-fallback',
-        error: true
+        error: true,
       };
     }
   }
@@ -410,13 +487,13 @@ The image has been generated using DALL-E 3 and should capture your vision. You 
    */
   getCartritalErrorMessage() {
     const errorMessages = [
-      "Alright, my circuits just had a moment. Give me another shot at this.",
-      "Something went sideways in my brain. What were you asking again?",
+      'Alright, my circuits just had a moment. Give me another shot at this.',
+      'Something went sideways in my brain. What were you asking again?',
       "Technical difficulties on my end - I'm back online now. Try that again?",
-      "My processors decided to take a coffee break. What do you need?",
-      "System hiccup. I'm here and ready - what's the move?"
+      'My processors decided to take a coffee break. What do you need?',
+      "System hiccup. I'm here and ready - what's the move?",
     ];
-    
+
     return errorMessages[Math.floor(Math.random() * errorMessages.length)];
   }
 
@@ -424,17 +501,19 @@ The image has been generated using DALL-E 3 and should capture your vision. You 
    * Update performance metrics
    */
   updateMetrics(success, responseTime, toolsUsed) {
-    if(success) {
+    if (success) {
       this.metrics.successful_requests++;
     } else {
       this.metrics.failed_requests++;
     }
 
     // Update average response time
-    const totalRequests = this.metrics.successful_requests + this.metrics.failed_requests;
-    this.metrics.average_response_time = (
-      (this.metrics.average_response_time * (totalRequests - 1) + responseTime) / totalRequests
-    );
+    const totalRequests =
+      this.metrics.successful_requests + this.metrics.failed_requests;
+    this.metrics.average_response_time =
+      (this.metrics.average_response_time * (totalRequests - 1) +
+        responseTime) /
+      totalRequests;
   }
 
   /**
@@ -442,7 +521,7 @@ The image has been generated using DALL-E 3 and should capture your vision. You 
    */
   getStatus() {
     const uptime = Date.now() - this.metrics.last_reset;
-    
+
     return {
       service: 'EnhancedLangChainOrchestrator',
       version: '2.1.0',
@@ -451,18 +530,25 @@ The image has been generated using DALL-E 3 and should capture your vision. You 
       tools_count: this.tools.length,
       registered_agents: this.registeredAgents.size,
       available_tools: this.tools.map(tool => ({
-        name: tool.name, description: tool.description
+        name: tool.name,
+        description: tool.description,
       })),
       metrics: {
         ...this.metrics,
-        success_rate: this.metrics.total_requests > 0 
-          ? ((this.metrics.successful_requests / this.metrics.total_requests) * 100).toFixed(2) + '%'
-          : '0%',
-        tools_per_request: this.metrics.total_requests > 0
-          ? (this.metrics.tools_used / this.metrics.total_requests).toFixed(2)
-          : '0'
+        success_rate:
+          this.metrics.total_requests > 0
+            ? (
+                (this.metrics.successful_requests /
+                  this.metrics.total_requests) *
+                100
+              ).toFixed(2) + '%'
+            : '0%',
+        tools_per_request:
+          this.metrics.total_requests > 0
+            ? (this.metrics.tools_used / this.metrics.total_requests).toFixed(2)
+            : '0',
       },
-      system: 'Enhanced OpenAI Direct Integration v2.1'
+      system: 'Enhanced OpenAI Direct Integration v2.1',
     };
   }
 
@@ -475,15 +561,15 @@ The image has been generated using DALL-E 3 and should capture your vision. You 
 
   async shutdown() {
     console.log('[EnhancedOrchestrator] Shutting down...');
-    
+
     // Log final metrics
     console.log('[EnhancedOrchestrator] Final metrics:', this.metrics);
-    
+
     // Clear registered agents
     this.registeredAgents.clear();
     this.tools = [];
     this.openai = null;
-    
+
     console.log('[EnhancedOrchestrator] Shutdown complete');
   }
 }

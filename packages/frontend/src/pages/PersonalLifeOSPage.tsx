@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Calendar,
   Mail,
@@ -14,12 +14,12 @@ import {
   CheckCircle,
   AlertCircle,
   Clock,
-} from 'lucide-react';
-import CalendarManager from '../components/CalendarManager';
-import EmailProcessor from '../components/EmailProcessor';
-import ContactHub from '../components/ContactHub';
-import NotificationCenter from '../components/NotificationCenter';
-import PrivacyControls from '../components/PrivacyControls';
+} from "lucide-react";
+import CalendarManager from "../components/CalendarManager";
+import EmailProcessor from "../components/EmailProcessor";
+import ContactHub from "../components/ContactHub";
+import NotificationCenter from "../components/NotificationCenter";
+import PrivacyControls from "../components/PrivacyControls";
 
 interface PersonalLifeOSPageProps {
   token: string;
@@ -32,7 +32,7 @@ const PersonalLifeOSPage: React.FC<PersonalLifeOSPageProps> = ({
 }) => {
   const [systemStatus, setSystemStatus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     fetchSystemStatus();
@@ -41,9 +41,9 @@ const PersonalLifeOSPage: React.FC<PersonalLifeOSPageProps> = ({
   const fetchSystemStatus = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
 
-      const response = await fetch('/api/status', {
+      const response = await fetch("/api/status", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -54,7 +54,7 @@ const PersonalLifeOSPage: React.FC<PersonalLifeOSPageProps> = ({
         setSystemStatus(data);
       }
     } catch (error) {
-      console.error('Failed to fetch system status:', error);
+      console.error("Failed to fetch system status:", error);
     } finally {
       setLoading(false);
     }
@@ -62,9 +62,9 @@ const PersonalLifeOSPage: React.FC<PersonalLifeOSPageProps> = ({
 
   const getServiceStatusIcon = (status: string) => {
     switch (status) {
-      case 'ready':
+      case "ready":
         return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'error':
+      case "error":
         return <AlertCircle className="w-4 h-4 text-red-500" />;
       default:
         return <Clock className="w-4 h-4 text-yellow-500" />;
@@ -137,10 +137,10 @@ const PersonalLifeOSPage: React.FC<PersonalLifeOSPageProps> = ({
                       >
                         {getServiceStatusIcon(status.status)}
                         <span className="text-sm font-medium capitalize">
-                          {service.replace(/([A-Z])/g, ' $1').trim()}
+                          {service.replace(/([A-Z])/g, " $1").trim()}
                         </span>
                       </div>
-                    )
+                    ),
                   )}
               </div>
             </CardContent>
@@ -188,7 +188,7 @@ const PersonalLifeOSPage: React.FC<PersonalLifeOSPageProps> = ({
                     Manage your events and schedule
                   </p>
                   <Button
-                    onClick={() => setActiveTab('calendar')}
+                    onClick={() => setActiveTab("calendar")}
                     className="w-full"
                     variant="outline"
                   >
@@ -210,7 +210,7 @@ const PersonalLifeOSPage: React.FC<PersonalLifeOSPageProps> = ({
                     Process and categorize your emails
                   </p>
                   <Button
-                    onClick={() => setActiveTab('email')}
+                    onClick={() => setActiveTab("email")}
                     className="w-full"
                     variant="outline"
                   >
@@ -232,7 +232,7 @@ const PersonalLifeOSPage: React.FC<PersonalLifeOSPageProps> = ({
                     Sync and manage your contacts
                   </p>
                   <Button
-                    onClick={() => setActiveTab('contacts')}
+                    onClick={() => setActiveTab("contacts")}
                     className="w-full"
                     variant="outline"
                   >
@@ -254,7 +254,7 @@ const PersonalLifeOSPage: React.FC<PersonalLifeOSPageProps> = ({
                     Smart alerts and reminders
                   </p>
                   <Button
-                    onClick={() => setActiveTab('notifications')}
+                    onClick={() => setActiveTab("notifications")}
                     className="w-full"
                     variant="outline"
                   >
@@ -276,7 +276,7 @@ const PersonalLifeOSPage: React.FC<PersonalLifeOSPageProps> = ({
                     Control your data and privacy
                   </p>
                   <Button
-                    onClick={() => setActiveTab('privacy')}
+                    onClick={() => setActiveTab("privacy")}
                     className="w-full"
                     variant="outline"
                   >

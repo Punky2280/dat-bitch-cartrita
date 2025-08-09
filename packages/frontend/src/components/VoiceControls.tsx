@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   MicrophoneIcon,
   StopIcon,
   SpeakerWaveIcon,
   EyeIcon,
-} from '@heroicons/react/24/outline';
+} from "@heroicons/react/24/outline";
 
 interface VoiceControlsProps {
   onVoiceStart?: () => void;
@@ -31,7 +31,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   onToggleVisual,
   onToggleAmbient,
   token,
-  className = '',
+  className = "",
 }) => {
   const [voiceState, setVoiceState] = useState<VoiceState>({
     isListening: false,
@@ -43,24 +43,24 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
     wakeWordActive: false,
   });
 
-  const [status, setStatus] = useState<string>('Ready');
-  const [lastResponse, setLastResponse] = useState<string>('');
+  const [status, setStatus] = useState<string>("Ready");
+  const [lastResponse, setLastResponse] = useState<string>("");
 
   const handleStartVoice = async () => {
     try {
-      setVoiceState(prev => ({ ...prev, isProcessing: true }));
-      setStatus('Starting voice session...');
+      setVoiceState((prev) => ({ ...prev, isProcessing: true }));
+      setStatus("Starting voice session...");
 
       // Call the voice chat API to start session
-      const response = await fetch('/api/voice-chat/start-session', {
-        method: 'POST',
+      const response = await fetch("/api/voice-chat/start-session", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           settings: {
-            wakeWords: ['cartrita', 'hey cartrita'],
+            wakeWords: ["cartrita", "hey cartrita"],
             ambientMode: voiceState.ambientEnabled,
             visualMode: voiceState.visualEnabled,
           },
@@ -68,7 +68,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
       });
 
       if (response.ok) {
-        setVoiceState(prev => ({
+        setVoiceState((prev) => ({
           ...prev,
           sessionActive: true,
           isListening: true,
@@ -78,23 +78,23 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
         setStatus('Voice session active - say "Cartrita!" to start');
         onVoiceStart?.();
       } else {
-        throw new Error('Failed to start voice session');
+        throw new Error("Failed to start voice session");
       }
     } catch (error) {
-      console.error('Voice start error:', error);
-      setStatus('Error starting voice session');
-      setVoiceState(prev => ({ ...prev, isProcessing: false }));
+      console.error("Voice start error:", error);
+      setStatus("Error starting voice session");
+      setVoiceState((prev) => ({ ...prev, isProcessing: false }));
     }
   };
 
   const handleStopVoice = async () => {
     try {
-      setVoiceState(prev => ({ ...prev, isProcessing: true }));
-      setStatus('Stopping voice session...');
+      setVoiceState((prev) => ({ ...prev, isProcessing: true }));
+      setStatus("Stopping voice session...");
 
       // Call the voice chat API to stop session
-      await fetch('/api/voice-chat/stop-session', {
-        method: 'POST',
+      await fetch("/api/voice-chat/stop-session", {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -109,44 +109,44 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
         sessionActive: false,
         wakeWordActive: false,
       });
-      setStatus('Voice session stopped');
+      setStatus("Voice session stopped");
       onVoiceStop?.();
     } catch (error) {
-      console.error('Voice stop error:', error);
-      setStatus('Error stopping voice session');
-      setVoiceState(prev => ({ ...prev, isProcessing: false }));
+      console.error("Voice stop error:", error);
+      setStatus("Error stopping voice session");
+      setVoiceState((prev) => ({ ...prev, isProcessing: false }));
     }
   };
 
   const handleToggleVisual = () => {
     const newState = !voiceState.visualEnabled;
-    setVoiceState(prev => ({ ...prev, visualEnabled: newState }));
-    setStatus(newState ? 'Visual mode enabled' : 'Visual mode disabled');
+    setVoiceState((prev) => ({ ...prev, visualEnabled: newState }));
+    setStatus(newState ? "Visual mode enabled" : "Visual mode disabled");
     onToggleVisual?.();
   };
 
   const handleToggleAmbient = () => {
     const newState = !voiceState.ambientEnabled;
-    setVoiceState(prev => ({ ...prev, ambientEnabled: newState }));
+    setVoiceState((prev) => ({ ...prev, ambientEnabled: newState }));
     setStatus(
-      newState ? 'Ambient listening enabled' : 'Ambient listening disabled'
+      newState ? "Ambient listening enabled" : "Ambient listening disabled",
     );
     onToggleAmbient?.();
   };
 
   const getStatusColor = () => {
-    if (voiceState.isProcessing) return 'text-yellow-600';
-    if (voiceState.isSpeaking) return 'text-blue-600';
-    if (voiceState.isListening) return 'text-green-600';
-    if (voiceState.sessionActive) return 'text-purple-600';
-    return 'text-gray-600';
+    if (voiceState.isProcessing) return "text-yellow-600";
+    if (voiceState.isSpeaking) return "text-blue-600";
+    if (voiceState.isListening) return "text-green-600";
+    if (voiceState.sessionActive) return "text-purple-600";
+    return "text-gray-600";
   };
 
   const getMainButtonColor = () => {
-    if (voiceState.isProcessing) return 'bg-yellow-500 hover:bg-yellow-600';
-    if (voiceState.wakeWordActive) return 'bg-purple-500 hover:bg-purple-600';
-    if (voiceState.sessionActive) return 'bg-red-500 hover:bg-red-600';
-    return 'bg-blue-500 hover:bg-blue-600';
+    if (voiceState.isProcessing) return "bg-yellow-500 hover:bg-yellow-600";
+    if (voiceState.wakeWordActive) return "bg-purple-500 hover:bg-purple-600";
+    if (voiceState.sessionActive) return "bg-red-500 hover:bg-red-600";
+    return "bg-blue-500 hover:bg-blue-600";
   };
 
   return (
@@ -201,14 +201,14 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
             ${getMainButtonColor()}
             ${
               voiceState.isProcessing
-                ? 'opacity-50 cursor-not-allowed'
-                : 'transform hover:scale-105 shadow-lg'
+                ? "opacity-50 cursor-not-allowed"
+                : "transform hover:scale-105 shadow-lg"
             }
           `}
           title={
             voiceState.sessionActive
-              ? 'Stop Voice Session'
-              : 'Start Voice Session'
+              ? "Stop Voice Session"
+              : "Start Voice Session"
           }
         >
           {voiceState.isProcessing ? (
@@ -235,8 +235,8 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
             p-2 rounded-lg transition-colors text-sm flex items-center space-x-1
             ${
               voiceState.visualEnabled
-                ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
             }
           `}
           title="Toggle Visual Analysis"
@@ -252,8 +252,8 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
             p-2 rounded-lg transition-colors text-sm flex items-center space-x-1
             ${
               voiceState.ambientEnabled
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
             }
           `}
           title="Toggle Ambient Listening"
@@ -277,7 +277,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
         <div className="text-center">
           <button
             onClick={() =>
-              setLastResponse('Voice system ready for Iteration 21!')
+              setLastResponse("Voice system ready for Iteration 21!")
             }
             className="text-sm text-purple-600 hover:text-purple-700 underline"
           >

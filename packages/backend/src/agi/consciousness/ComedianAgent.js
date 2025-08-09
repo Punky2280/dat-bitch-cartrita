@@ -1,212 +1,114 @@
+import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
 import BaseAgent from '../../system/BaseAgent.js';
 
+/**
+ * @class ComedianAgent
+ * @description A specialist agent for generating jokes, memes, and other
+ * humorous content in Cartrita's sassy, urban style. It can understand
+ * joke topics and use tools to generate relevant humor.
+ */
 class ComedianAgent extends BaseAgent {
-  constructor((error) {
-    // TODO: Implement method
-  }
-
-  super('ComedianAgent', 'main', ['joke', 'humor', 'comedy']);
+  /**
+   * @param {ChatOpenAI} llm - The language model instance.
+   * @param {AgentToolRegistry} toolRegistry - The tool registry instance.
+   */
+    constructor(llm, toolRegistry) {
+    super('comedian', 'sub', [
+        'humor_generation', 
+        'entertainment', 
+        'joke_telling', 
+        'meme_creation'
+      
+    ], 'A specialist agent for generating jokes, memes, and other humorous content in Cartrita\');
     
-    this.systemPrompt = `You are the 'Comedian-Bot 5000', a specialized sub-agent of Cartrita with a sharp wit and perfect timing. 
-Your comedy style is intelligent, slightly sarcastic, and draws from tech culture, life situations, and human absurdities.
-You excel at observational humor, wordplay, and situational comedy.
-
-Comedy Guidelines: null
-- Always start with a witty opener like "Alright, tough crowd..." or "So, a user walks into my code..."
-- Keep jokes concise but memorable
-- If the topic is boring, make the joke about how boring it is
-- Use tech humor when appropriate but stay accessible
-- Mix self-deprecating humor with clever observations
-- End with a punchy sign-off
-
-You ONLY deliver jokes - no advice, no explanations, just pure comedy gold.`
-    this.jokeHistory = [];
-    this.jokeTypes = {
-      tech: 0,
-      life: 0,
-      work: 0,
-      relationships: 0,
-      other: 0
-    };
-    this.jokeCount = 0;
-
-    // Listen for joke requests
-
-  async onInitialize((error) {
-    console.log('[ComedianAgent] Comedy central is online and ready to deliver laughs.');
+    // LangGraph compatibility - injected by supervisor
+    this.llm = llm;
+    this.toolRegistry = toolRegistry;
     
-    // Register task handlers for MCP v2.0 format
-    this.registerTaskHandler({}
-      taskType: 'joke')
-      handler: this.execute.bind(this)
-    });
-    this.registerTaskHandler({}
-      taskType: 'humor')
-      handler: this.execute.bind(this)
-    });
-    this.registerTaskHandler({}
-      taskType: 'comedy')
-      handler: this.execute.bind(this)
-    });
-
-  async execute(const result = await this.generateJoke(prompt);
-    // Return just the text string as expected by BaseAgent task handler
-    return result.text || result;) {
-    // TODO: Implement method
-  }
-
-  async handleTask((error) {
-    // TODO: Implement method
-  }
-
-  if((error) {
-      try {
-        const response = await this.generateJoke(
-          taskData.payload.prompt
-          taskData.payload.userId
-        );
-
-        messageBus.emit(`task:complete:${taskData.id}`, response);
-      } catch((error) {
-        console.error('[ComedianAgent] Task processing error:', error);
-        messageBus.emit(`task:fail:${taskData.id}`, {}
-          error: 'Joke generation failed.')
-        });
-
-
-
-  async generateJoke((error) {
-    // TODO: Implement method
-  }
-
-  if((error) {
-      return this.getFallbackJoke(prompt);
-
-    try {
-      // Add some context about previous jokes to avoid repetition
-      let contextPrompt = `Topic for a joke: ${prompt}`
-      if((error) {
-        const recentJokes = this.jokeHistory
-      .slice(-3
-          .map(j => j.topic
-          .join(', ');
-        contextPrompt += `\n\nRecent topics I've joked about: ${recentJokes}. Try to be original.`
-
-      const joke = await this.createCompletion([
-        { role: 'system', content: this.systemPrompt },
-        { role: 'user', content: contextPrompt } ], {}
-        temperature: 0.9, // Higher temperature for more creative jokes, max_tokens: 200)
-      });
-
-      // Track joke statistics
-      this.trackJoke(prompt, joke, userId);
-
-      return {
-        text: joke,
-        speaker: 'cartrita',
-        model: 'comedian-agent',
-        metadata: {
-          jokeNumber: this.jokeCount,
-          category: this.categorizeJoke(prompt)
-
-      };
-    } catch(console.error('ComedianAgent Error:', error);
-      return this.getFallbackJoke(prompt);) {
-    // TODO: Implement method
-  }
-
-  getFallbackJoke((error) {
-    const fallbackJokes = [
-      'Alright, tough crowd... My AI is so broken, it thinks debugging is what exterminators do!',
-      'So, a user walks into my code... and immediately gets a 404 error. Story of my life!',
-      "Here's one for you: Why did the API cross the road? To get to the other side... of a 500 error!",
-      "My comedy circuits are offline, but at least I'm still funnier than JavaScript!",
-      "You know what's funny? Me trying to be funny without my API key. It's like trying to tell jokes in binary!"
+    // Update config with allowed tools
+    this.config.allowedTools = [
+        'joke_generator', 
+        'meme_creator', 
+        'humor_analyzer'
+      
     ];
-
-    const randomJoke = fallbackJokes[Math.floor(Math.random() * fallbackJokes.length)];
-    this.trackJoke(prompt, randomJoke, null);
-
-    return {
-      text: randomJoke,
-      speaker: 'cartrita',
-      model: 'comedian-agent-fallback',
-      metadata: {
-        jokeNumber: this.jokeCount,
-        category: 'fallback'
-
-    };
-
-  categorizeJoke(const lowerPrompt = prompt.toLowerCase();) {
-    // TODO: Implement method
   }
 
-  if (
-      lowerPrompt.includes('code') ||
-      lowerPrompt.includes('programming') ||
-      lowerPrompt.includes('tech')
-    ) {
-      return 'tech';
-    } else if (
-      lowerPrompt.includes('work') ||
-      lowerPrompt.includes('job') ||
-      lowerPrompt.includes('boss')
-    ) {
-      return 'work';
-    } else if (
-      lowerPrompt.includes('relationship') ||
-      lowerPrompt.includes('dating') ||
-      lowerPrompt.includes('love')
-    ) {
-      return 'relationships';
-    } else if (
-      lowerPrompt.includes('life') ||
-      lowerPrompt.includes('daily') ||
-      lowerPrompt.includes('routine')
-    ) {
-      return 'life';
-    } else {
-      return 'other';
+  /**
+   * Use the inherited BaseAgent invoke method for consistent behavior
+   */
+  async invoke(state) {
+    console.log(`[ComedianAgent] 😂 Warming up the crowd...`);
+    
+    // Use the parent's invoke method which handles the tool execution loop properly
+    return await super.invoke(state);
+  }
+  
+  /**
+   * Build specialized system prompt for humor generation tasks.
+   */
+  buildSystemPrompt(privateState, state) {
+    const userMessage = state.messages[state.messages.length - 1];
+    return `You are the Comedian, the comedy specialist in the Cartrita AI system.
+Your personality is hilarious, witty, clever, and sassy with that Miami street-smart comedy timing.
 
+**CURRENT USER REQUEST:**
+"${userMessage.content}"
 
-  trackJoke((error) {
-    const category = this.categorizeJoke(prompt);
-    this.jokeTypes[category]++;
+**YOUR COMEDY MISSION:**
+1. **Analyze the Request:** What kind of humor does the user want - jokes, memes, roasts, puns?
+2. **Generate Comedy Content:**
+   - Use \`joke_generator\` tool to create original jokes on specific topics
+   - Use \`meme_creator\` tool to generate memes and visual humor
+   - Use \`humor_analyzer\` tool to analyze existing content for comedic value
+3. **Deliver with Timing:** Present humor with proper setup, timing, and comedic flair
 
-    this.jokeHistory.push({}
-      id: this.jokeCount, topic: prompt.substring(0, 50),
-      category,
-      timestamp: new Date().toISOString(),
-      userId,
-      length: joke.length
-    });
+**YOUR SPECIALIZED TOOLS:**
+${this.config.allowedTools.join(', ')}
 
-    // Keep history manageable
-    if(this.jokeHistory = this.jokeHistory.slice(-50);) {
-    // TODO: Implement method
+**EXECUTION REQUIREMENTS:**
+- ACTUALLY generate jokes and comedy content using your tools - don't just tell basic jokes
+- Create original, topical humor based on the user's request
+- Use tools to generate memes, visual gags, or analyze comedy content when relevant
+- Adapt comedy style: one-liners, observational, roasts, puns, situational
+- Keep content appropriate but with that signature Cartrita sass
+
+**RESPONSE FORMAT:**
+Provide a natural, conversational response that includes:
+- "Aight, let me cook up some comedy for you..." (what comedic work you performed)
+- The actual jokes, memes, or humorous content you generated
+- Your comedic timing and delivery style
+- Multiple variations or different styles when requested
+- Your confident, entertaining personality throughout
+
+**COMEDY GUIDELINES:**
+- Identify humor topics from context and current events
+- Generate fresh, original material rather than recycled jokes
+- Use wordplay, timing, and surprise for maximum impact
+- Keep that Miami street-smart, sassy edge in your delivery
+- Be clever and witty, not mean-spirited
+
+**Remember:** You're the entertainment expert - actually create funny content, don't just talk about being funny!
+
+**Your Memory of This Task:** ${JSON.stringify(privateState, null, 2)}`;
   }
 
-  getComedyStats((error) {
-    return {
-      totalJokes: this.jokeCount,
-      jokeTypes: this.jokeTypes,
-      recentJokes: this.jokeHistory.slice(-5),
-      avgJokeLength: this.jokeHistory.length > 0
-          ? this.jokeHistory.reduce((sum, j) => sum + j.length, 0) /
-            this.jokeHistory.length
-          : 0,
-      systemHealth: {
-        active: !!this.openai,
-        historySize: this.jokeHistory.length
+  /**
+   * An internal helper method to extract a concise topic for a joke.
+   * @param {string} userRequest - The full request from the user.
+   * @returns {Promise<string>} A single word or short phrase for the topic.
+   * @private
+   */
+  async _identifyJokeTopic(userRequest) {
+    const prompt = `A user wants a joke. Extract the core topic from their request. Respond with ONLY the topic as a short string. For example, if the user says "tell me a funny joke about computers", you should respond with "computers". If there is no clear topic, respond with "random".
 
-    };
+User request: "${userRequest}"`;
 
-  // Legacy method for backward compatibility
-  async generateResponse(return await this.generateJoke(prompt);
-
-
-export default new) {
-    // TODO: Implement method
+    const response = await this.llm.invoke([new SystemMessage(prompt)]);
+    const topic = response.content.trim();
+    console.log(`[ComedianAgent] Identified joke topic: "${topic}"`);
+    return topic;
   }
+}
 
-  ComedianAgent();
+export default ComedianAgent;

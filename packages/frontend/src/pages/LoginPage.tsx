@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent } from "react";
 interface LoginPageProps {
   onLoginSuccess: (token: string) => void;
   onSwitchToRegister: () => void;
@@ -7,18 +7,18 @@ export const LoginPage = ({
   onLoginSuccess,
   onSwitchToRegister,
 }: LoginPageProps) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("http://localhost:8000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
@@ -26,12 +26,12 @@ export const LoginPage = ({
       try {
         data = await res.json();
       } catch (jsonError) {
-        throw new Error('Invalid response from server');
+        throw new Error("Invalid response from server");
       }
 
-      if (res.status === 401) throw new Error('Invalid email or password.');
-      if (!res.ok) throw new Error(data?.message || 'Login failed.');
-      if (!data?.token) throw new Error('No authentication token received.');
+      if (res.status === 401) throw new Error("Invalid email or password.");
+      if (!res.ok) throw new Error(data?.message || "Login failed.");
+      if (!data?.token) throw new Error("No authentication token received.");
 
       onLoginSuccess(data.token);
     } catch (err: any) {
@@ -52,7 +52,7 @@ export const LoginPage = ({
             type="email"
             placeholder="Email"
             value={email}
-            onChange={e => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)}
             className="w-full bg-gray-900 text-white p-3 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
             autoComplete="username"
             required
@@ -61,7 +61,7 @@ export const LoginPage = ({
             type="password"
             placeholder="Password"
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
             className="w-full bg-gray-900 text-white p-3 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
             autoComplete="current-password"
             required
@@ -74,11 +74,11 @@ export const LoginPage = ({
             className="w-full btn-skittles text-white p-3 rounded-lg font-bold text-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
             disabled={isLoading}
           >
-            {isLoading ? 'Logging In...' : 'Login'}
+            {isLoading ? "Logging In..." : "Login"}
           </button>
         </form>
         <p className="text-center text-gray-400">
-          Don&apos;t have an account?{' '}
+          Don&apos;t have an account?{" "}
           <button
             onClick={onSwitchToRegister}
             className="font-bold text-cyan-400 hover:underline"

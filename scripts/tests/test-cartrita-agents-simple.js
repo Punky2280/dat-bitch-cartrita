@@ -7,12 +7,12 @@
 const io = require('socket.io-client');
 
 const testQueries = [
-  { prompt: "What time is it?", expected_agent: "CoreAgent-Time" },
-  { prompt: "Create an image of a sunset", expected_agent: "ArtistAgent" },
-  { prompt: "Write a Python function", expected_agent: "CodeWriterAgent" },
-  { prompt: "Schedule a meeting", expected_agent: "SchedulerAgent" },
-  { prompt: "Translate hello to Spanish", expected_agent: "TranslationAgent" },
-  { prompt: "What is 2 + 2?", expected_agent: "CoreAgent-Default" }
+  { prompt: 'What time is it?', expected_agent: 'CoreAgent-Time' },
+  { prompt: 'Create an image of a sunset', expected_agent: 'ArtistAgent' },
+  { prompt: 'Write a Python function', expected_agent: 'CodeWriterAgent' },
+  { prompt: 'Schedule a meeting', expected_agent: 'SchedulerAgent' },
+  { prompt: 'Translate hello to Spanish', expected_agent: 'TranslationAgent' },
+  { prompt: 'What is 2 + 2?', expected_agent: 'CoreAgent-Default' },
 ];
 
 let results = [];
@@ -44,9 +44,9 @@ class CartritaAgentTester {
   async connectSocket() {
     return new Promise((resolve, reject) => {
       console.log('🔌 Connecting to Cartrita socket...');
-      
+
       this.socket = io('http://localhost:8000', {
-        query: { userId: this.userId }
+        query: { userId: this.userId },
       });
 
       this.socket.on('connect', () => {
@@ -55,7 +55,7 @@ class CartritaAgentTester {
         resolve();
       });
 
-      this.socket.on('connect_error', (error) => {
+      this.socket.on('connect_error', error => {
         console.error('❌ Socket connection failed:', error.message);
         reject(error);
       });
@@ -70,9 +70,9 @@ class CartritaAgentTester {
     for (let i = 0; i < testQueries.length; i++) {
       const test = testQueries[i];
       console.log(`🔍 Test ${i + 1}: "${test.prompt}"`);
-      
+
       const result = await this.sendMessage(test.prompt);
-      
+
       results.push({
         test_number: i + 1,
         prompt: test.prompt,
@@ -81,7 +81,7 @@ class CartritaAgentTester {
         response_time: result.response_time_ms,
         tools_used: result.tools_used || [],
         model: result.model,
-        success: !result.error
+        success: !result.error,
       });
 
       console.log(`   ✅ Response: ${result.text?.substring(0, 100)}...`);
@@ -98,15 +98,15 @@ class CartritaAgentTester {
   }
 
   async sendMessage(text) {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const startTime = Date.now();
 
       this.socket.emit('message', {
         text: text,
-        language: 'en'
+        language: 'en',
       });
 
-      const responseHandler = (data) => {
+      const responseHandler = data => {
         data.response_time_ms = Date.now() - startTime;
         this.socket.off('response', responseHandler);
         resolve(data);
@@ -119,7 +119,7 @@ class CartritaAgentTester {
         resolve({
           text: 'Timeout - no response received',
           error: true,
-          response_time_ms: Date.now() - startTime
+          response_time_ms: Date.now() - startTime,
         });
       }, 15000);
     });
@@ -137,29 +137,41 @@ class CartritaAgentTester {
     console.log(`Successful: ${successfulTests}`);
     console.log(`Success Rate: ${successRate}%\n`);
 
-    const avgResponseTime = results
-      .filter(r => r.response_time && r.success)
-      .reduce((sum, r) => sum + r.response_time, 0) / successfulTests;
+    const avgResponseTime =
+      results
+        .filter(r => r.response_time && r.success)
+        .reduce((sum, r) => sum + r.response_time, 0) / successfulTests;
 
-    console.log(`Average Response Time: ${avgResponseTime?.toFixed(0) || 'N/A'}ms\n`);
+    console.log(
+      `Average Response Time: ${avgResponseTime?.toFixed(0) || 'N/A'}ms\n`
+    );
 
     console.log('Detailed Results:');
     console.log('-'.repeat(80));
-    
+
     results.forEach(result => {
       const status = result.success ? '✅' : '❌';
       console.log(`${status} Test ${result.test_number}: ${result.prompt}`);
       console.log(`    Expected: ${result.expected_agent}`);
       console.log(`    Model: ${result.model || 'unknown'}`);
-      console.log(`    Tools: ${result.tools_used?.length ? result.tools_used.join(', ') : 'none'}`);
+      console.log(
+        `    Tools: ${
+          result.tools_used?.length ? result.tools_used.join(', ') : 'none'
+        }`
+      );
       console.log(`    Time: ${result.response_time || 'N/A'}ms`);
       console.log('');
     });
 
     // Save results
     const fs = require('fs');
-    fs.writeFileSync('cartrita-agent-test-results.json', JSON.stringify(results, null, 2));
-    console.log('💾 Detailed results saved to cartrita-agent-test-results.json');
+    fs.writeFileSync(
+      'cartrita-agent-test-results.json',
+      JSON.stringify(results, null, 2)
+    );
+    console.log(
+      '💾 Detailed results saved to cartrita-agent-test-results.json'
+    );
   }
 
   sleep(ms) {

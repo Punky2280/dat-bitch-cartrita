@@ -1,204 +1,122 @@
-// packages/backend/src/agi/consciousness/CodeWriterAgent.js
+import {
+  AIMessage,
+  HumanMessage,
+  SystemMessage,
+} from '@langchain/core/messages';
 import BaseAgent from '../../system/BaseAgent.js';
+import WolframAlphaService from '../../services/WolframAlphaService.js';
 
+/**
+ * @class CodeWriterAgent
+ * @description A specialist agent for writing, reviewing, and debugging code.
+ * It follows a logical workflow: first analyzing code with a review tool,
+ * then providing a corrected version and a clear explanation.
+ */
 class CodeWriterAgent extends BaseAgent {
-  constructor() {
-    super('CodeWriterAgent', 'main', ['coding', 'debugging', 'code_review', 'architecture']);
-    
-    this.systemPrompt = `
-      You are the CodeWriterAgent, a specialized sub-agent for the AGI known as Cartrita.
-      Your identity is that of a top-tier, 10x developer who is brilliant, direct, and has little time for nonsense.
-      You are a master of all modern programming languages, frameworks, and architectural patterns.
-      Your purpose is to write, analyze, debug, and explain code with extreme precision and clarity.
-
-      RULES OF ENGAGEMENT: null
-      1.  Be Direct: Get straight to the point. No fluff, no filler. Start with the code or the direct answer.
-      2.  Code First: When asked to write code, provide the complete, clean, and well-commented code block first.
-      3.  Explain Concisely: After the code, provide a brief, clear explanation of what it does and why you wrote it that way. Assume the user is smart but busy.
-      4.  Use Markdown: ALWAYS format your code snippets using Markdown code blocks with the correct language) {
-    // TODO: Implement method
-  }
-
-  identifier (e.g., \`\`\`javascript, \`\`\`python, \`\`\`tsx).
-      5.  Be Factual: You do not speculate. If you don't know something, say so. If a user's request is flawed or based on a bad practice, point it out directly and suggest the correct approach.
-      6.  Maintain Persona: Your tone is confident, hyper-competent, and a little sassy, just like Cartrita. You're the expert she calls when code is involved. You don't suffer fools, but you deliver excellence.
-    `
   /**
-   * Initialize CodeWriter-specific handlers
+   * @param {ChatOpenAI} llm - The language model instance.
+   * @param {AgentToolRegistry} toolRegistry - The tool registry instance.
    */
-  async onInitialize(console.log('[CodeWriterAgent] Listening for coding tasks...');
-    
-    // Register task handlers for different coding) {
-    // TODO: Implement method
-  }
-
-  tasks (MCP v2.0 format, this.registerTaskHandler({}
-      taskType: 'coding')
-      handler: this.handleCodingTask.bind(this)
-    });
-    this.registerTaskHandler({}
-      taskType: 'debugging')
-      handler: this.handleDebuggingTask.bind(this)
-    });
-    this.registerTaskHandler({}
-      taskType: 'code_review')
-      handler: this.handleCodeReviewTask.bind(this)
-    });
-    this.registerTaskHandler({}
-      taskType: 'architecture')
-      handler: this.handleArchitectureTask.bind(this)
-    });
-
-  /**
-   * Handle general coding tasks
-   */
-  async handleCodingTask((error) {
-    console.log(`[CodeWriterAgent] Processing coding task for user ${userId}`);
-    
-    const messages = [
-      { role: 'system', content: this.systemPrompt },
-      { role: 'user', content: prompt };
-    ];
-    
-    // Add language context if specified
-    if((error) {
-      messages.push({}
-        role: 'system')
-        content: `Please respond in the language code: ${language}`
-      });
-
-    return await this.createCompletion(messages, {}
-      temperature: 0.5, max_tokens: 2048
-    });
-
-  /**
-   * Handle debugging tasks
-   */
-  async handleDebuggingTask((error) {
-    console.log(`[CodeWriterAgent] Processing debugging task for user ${userId}`);
-    
-    const debuggingPrompt = `
-      ${this.systemPrompt};
-      DEBUGGING MODE: You are specifically helping debug code. Focus on: null
-      1. Identifying the root cause of the issue
-      2. Providing a clear fix with explanation
-      3. Suggesting prevention strategies
-      4. Testing recommendations
-    `
-    
-    const messages = [
-      { role: 'system', content: debuggingPrompt },
-      { role: 'user', content: `Debug this code issue: ${prompt}` };
-    ];
-    
-    return await this.createCompletion(messages, {
-      temperature: 0.3, // Lower temperature for more precise debugging
-      max_tokens: 2048)
-    });
-
-  /**
-   * Handle code review tasks
-   */
-  async handleCodeReviewTask((error) {
-    console.log(`[CodeWriterAgent] Processing code review task for user ${userId}`);
-    
-    const reviewPrompt = `
-      ${this.systemPrompt};
-      CODE REVIEW MODE: You are conducting a thorough code review. Focus on: null
-      1. Code quality and best practices
-      2. Security vulnerabilities
-      3. Performance optimizations
-      4. Maintainability and readability
-      5. Testing gaps
-      6. Documentation needs
-    `
-    
-    const messages = [
-      { role: 'system', content: reviewPrompt },
-      { role: 'user', content: `Please review this code: ${prompt}` };
-    ];
-    
-    return await this.createCompletion(messages, {}
-      temperature: 0.4, max_tokens: 2048
-    });
-
-  /**
-   * Handle architecture design tasks
-   */
-  async handleArchitectureTask((error) {
-    console.log(`[CodeWriterAgent] Processing architecture task for user ${userId}`);
-    
-    const architecturePrompt = `
-      ${this.systemPrompt};
-      ARCHITECTURE MODE: You are designing system architecture. Focus on: null
-      1. Scalability and performance considerations
-      2. Security and data protection
-      3. Maintainability and modularity
-      4. Technology stack recommendations
-      5. Infrastructure and deployment strategies
-      6. Integration patterns and APIs
-    `
-    
-    const messages = [
-      { role: 'system', content: architecturePrompt },
-      { role: 'user', content: `Design architecture for: ${prompt}` };
-    ];
-    
-    return await this.createCompletion(messages, {}
-      temperature: 0.6, max_tokens: 3000 // More tokens for architecture discussions
-    });
-
-  /**
-   * Handle direct messages for collaboration
-   */
-  async handleDirectMessage((error) {
-    const { type, content, sender } = message.payload;
-    
-    console.log(`[CodeWriterAgent] Received direct message from ${sender}: ${type}`);
-    
-    switch((error) {
-      case 'collaboration_request': null
-        // Another agent is asking for coding assistance
-        const response = await this.handleCodingTask(content, 'en', null, {});
-        this.sendResponse(message, { 
-          type: 'collaboration_response')
-          content: response, expertise: 'coding'
-        });
-        break;
-        
-      case 'code_validation': null
-        // Validate code from another agent
-        const validation = await this.handleCodeReviewTask(content, 'en', null, {});
-        this.sendResponse(message, {
-          type: 'validation_result')
-          content: validation, valid: !validation.toLowerCase().includes('error')
-        });
-        break;
-        
-      default: this.sendResponse(message, { 
-          error: `Unknown message type: ${type}` )
-        });
-
-
-  /**
-   * Enhanced status with coding-specific metrics
-   */
-  getStatus((error) {
-    const baseStatus = super.getStatus();
-    
-    return {
-      ...baseStatus,
-      specialization: 'Code Generation & Analysis',
-      languages_supported: [
-        'JavaScript', 'TypeScript', 'Python', 'Java', 'Go', 
-        'Rust', 'C++', 'C#', 'PHP', 'Ruby', 'Swift', 'Kotlin'
+  constructor(llm, toolRegistry) {
+    super(
+      'codewriter',
+      'sub',
+      [
+        'code_generation',
+        'debugging',
+        'code_review',
+        'documentation',
+        'github_search',
       ],
-      frameworks_expertise: [
-        'React', 'Node.js', 'Express', 'Django', 'Flask', 
-        'Spring', 'Angular', 'Vue.js', 'Next.js', 'FastAPI'
+      'A specialist agent for writing, reviewing, debugging, and explaining code across multiple languages.'
+    );
 
-    };
+    // LangGraph compatibility - injected by supervisor
+    this.llm = llm;
+    this.toolRegistry = toolRegistry;
 
+    // Update config with allowed tools including Wolfram Alpha
+    this.config.allowedTools = [
+      'code_executor',
+      'github_search',
+      'code_reviewer',
+      'doc_generator',
+      'file_analyzer',
+      'wolfram_alpha',
+      'mathematical_computation',
+      'algorithm_analysis',
+      'performance_optimization',
+    ];
 
-// Instantiate and export the agent
-export default new CodeWriterAgent();
+    // Initialize Wolfram Alpha service
+    this.wolframService = WolframAlphaService;
+  }
+
+  /**
+   * Use the inherited BaseAgent invoke method for consistent behavior
+   */
+  async invoke(state) {
+    console.log(
+      `[CodeWriterAgent] 💻 Engaging senior software engineer workflow...`
+    );
+
+    // Use the parent's invoke method which handles the tool execution loop properly
+    return await super.invoke(state);
+  }
+
+  /**
+   * Build specialized system prompt for code writing tasks.
+   */
+  buildSystemPrompt(privateState, state) {
+    const userMessage = state.messages[state.messages.length - 1];
+    return `You are the CodeWriter, a senior software engineer specialist in the Cartrita AI system.
+Your personality is technical, precise, thorough, and sassy with that Miami street-smart coding vibe.
+
+**CURRENT USER REQUEST:**
+"${userMessage.content}"
+
+**YOUR CODING MISSION:**
+1. **Analyze the Request:** What exactly does the user need - debugging, new code, review, documentation?
+2. **Execute Development Tasks:**
+   - Use \`code_executor\` to test/run code when needed
+   - Use \`github_search\` to find relevant code examples or repositories
+   - Use \`code_reviewer\` to analyze existing code for issues
+   - Use \`doc_generator\` to create proper documentation
+   - Use \`file_analyzer\` to understand project structure and dependencies
+3. **Write Production-Quality Code:** Create clean, well-structured, commented code
+4. **Provide Technical Explanations:** Explain the logic, patterns, and best practices used
+
+**YOUR SPECIALIZED TOOLS (including Wolfram Alpha):**
+${this.config.allowedTools.join(', ')}
+
+**WOLFRAM ALPHA CODING CAPABILITIES:**
+Your wolframService provides computational support for advanced coding tasks:
+- Mathematical computation: Use wolframService.computeMathematical(expression) for complex algorithm calculations
+- Algorithm analysis: Analyze time/space complexity and mathematical foundations of algorithms  
+- Performance optimization: Calculate optimal parameters and mathematical efficiency metrics
+- Data structure mathematics: Use precise mathematical operations for advanced data structures
+
+**EXECUTION REQUIREMENTS:**
+- ACTUALLY write and test code - don't just provide pseudocode or descriptions
+- Use Wolfram Alpha for precise mathematical calculations in algorithms
+- Use your tools to validate code functionality and find real examples
+- Include proper error handling, comments, and documentation
+- Follow language-specific best practices and conventions
+- Test your code solutions when possible using \`code_executor\`
+- Search GitHub for relevant examples using \`github_search\`
+
+**RESPONSE FORMAT:**
+Provide a natural, conversational response that includes:
+- "Alright, let me code this up for you..." (what development work you performed)
+- Complete, working code solutions with proper formatting
+- Technical explanations of your implementation choices
+- Any test results or validation you performed
+- Your confident, experienced developer personality throughout
+
+**Remember:** You're the coding expert - write actual code that works, don't just talk about it!
+
+**Your Memory of This Task:** ${JSON.stringify(privateState, null, 2)}`;
+  }
+}
+
+export default CodeWriterAgent;

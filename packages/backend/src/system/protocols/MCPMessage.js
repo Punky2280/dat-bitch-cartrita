@@ -9,20 +9,27 @@
 import { v4 as uuidv4 } from 'uuid';
 
 class MCPMessage {
-  constructor({ type, sender, recipient = null, payload = {}, priority = 'normal', metadata = {} }) {
+  constructor({
+    type,
+    sender,
+    recipient = null,
+    payload = {},
+    priority = 'normal',
+    metadata = {},
+  }) {
     // Generate unique message ID
     this.id = uuidv4();
     this.timestamp = new Date().toISOString();
-    
+
     // Message routing
     this.type = this.validateMessageType(type);
     this.sender = this.validateAgentId(sender);
     this.recipient = recipient; // null for broadcast messages
-    
+
     // Message content
     this.payload = payload;
     this.priority = this.validatePriority(priority);
-    
+
     // Protocol metadata
     this.protocol_version = '1.0.0';
     this.metadata = {
@@ -30,7 +37,7 @@ class MCPMessage {
       created_at: this.timestamp,
       ttl: metadata.ttl || 30000, // 30 second default TTL
     };
-    
+
     // Message status tracking
     this.status = 'pending';
     this.retries = 0;
@@ -43,7 +50,7 @@ class MCPMessage {
   validateMessageType(type) {
     const validTypes = [
       'TASK_REQUEST',
-      'TASK_RESPONSE', 
+      'TASK_RESPONSE',
       'TASK_COMPLETE',
       'TASK_FAIL',
       'QUERY',
@@ -53,11 +60,30 @@ class MCPMessage {
       'HEARTBEAT',
       'SYSTEM_ALERT',
       'AGENT_STATE_CHANGED',
-      'BROADCAST'
+      'BROADCAST',
+      // Iteration 22: Enhanced MCP message types
+      'MULTIMODAL_TASK_REQUEST',
+      'MULTIMODAL_TASK_RESPONSE',
+      'LEARNING_UPDATE',
+      'LEARNING_REQUEST',
+      'PERFORMANCE_METRICS',
+      'ADAPTIVE_ROUTING',
+      'FUSION_REQUEST',
+      'FUSION_RESPONSE',
+      'OPTIMIZATION_REQUEST',
+      'OPTIMIZATION_RESPONSE',
+      'PREDICTION_REQUEST',
+      'PREDICTION_RESPONSE',
+      'COORDINATION_TASK',
+      'STATUS_RESPONSE',
     ];
 
     if (!type || !validTypes.includes(type)) {
-      throw new Error(`Invalid message type: ${type}. Must be one of: ${validTypes.join(', ')}`);
+      throw new Error(
+        `Invalid message type: ${type}. Must be one of: ${validTypes.join(
+          ', '
+        )}`
+      );
     }
 
     return type;
@@ -73,7 +99,9 @@ class MCPMessage {
 
     // Basic format validation: should follow pattern like "AgentType.instance"
     if (!/^[A-Za-z0-9_-]+(\.[A-Za-z0-9_-]+)?$/.test(agentId)) {
-      throw new Error(`Invalid agent ID format: ${agentId}. Must follow pattern: AgentType.instance`);
+      throw new Error(
+        `Invalid agent ID format: ${agentId}. Must follow pattern: AgentType.instance`
+      );
     }
 
     return agentId;
@@ -84,9 +112,13 @@ class MCPMessage {
    */
   validatePriority(priority) {
     const validPriorities = ['low', 'normal', 'high', 'urgent'];
-    
+
     if (!validPriorities.includes(priority)) {
-      throw new Error(`Invalid priority: ${priority}. Must be one of: ${validPriorities.join(', ')}`);
+      throw new Error(
+        `Invalid priority: ${priority}. Must be one of: ${validPriorities.join(
+          ', '
+        )}`
+      );
     }
 
     return priority;
@@ -105,8 +137,8 @@ class MCPMessage {
       metadata: {
         ...this.metadata,
         response_to: this.id,
-        conversation_id: this.metadata.conversation_id || this.id
-      }
+        conversation_id: this.metadata.conversation_id || this.id,
+      },
     });
   }
 
@@ -133,7 +165,7 @@ class MCPMessage {
   isExpired() {
     const now = Date.now();
     const created = new Date(this.timestamp).getTime();
-    return (now - created) > this.metadata.ttl;
+    return now - created > this.metadata.ttl;
   }
 
   /**
@@ -167,7 +199,7 @@ class MCPMessage {
       metadata: this.metadata,
       status: this.status,
       retries: this.retries,
-      max_retries: this.max_retries
+      max_retries: this.max_retries,
     };
   }
 
@@ -181,7 +213,7 @@ class MCPMessage {
       recipient: json.recipient,
       payload: json.payload,
       priority: json.priority,
-      metadata: json.metadata
+      metadata: json.metadata,
     });
 
     // Restore additional properties
@@ -198,7 +230,9 @@ class MCPMessage {
    * Get string representation for logging
    */
   toString() {
-    return `MCPMessage[${this.type}](${this.sender} -> ${this.recipient || 'broadcast'})`;
+    return `MCPMessage[${this.type}](${this.sender} -> ${
+      this.recipient || 'broadcast'
+    })`;
   }
 }
 

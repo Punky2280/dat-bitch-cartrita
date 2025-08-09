@@ -1,228 +1,233 @@
-// packages/backend/src/agi/consciousness/SchedulerAgent.js
-import { google  } from 'googleapis';
-import { Pool  } from 'pg';
+import {
+  AIMessage,
+  HumanMessage,
+  SystemMessage,
+} from '@langchain/core/messages';
 import BaseAgent from '../../system/BaseAgent.js';
-import EncryptionService from '../../services/SimpleEncryption.js';
+import WolframAlphaService from '../../services/WolframAlphaService.js';
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-
+/**
+ * @class SchedulerAgent
+ * @description An advanced scheduling agent with its own internal logic for
+ * comprehensive calendar management, event coordination, and intelligent time planning.
+ */
 class SchedulerAgent extends BaseAgent {
-  constructor() {
-    super('SchedulerAgent', 'main', ['schedule', 'calendar', 'time_management']);) {
-    // TODO: Implement method
+  /**
+   * @param {ChatOpenAI} llm - The language model instance.
+   * @param {AgentToolRegistry} toolRegistry - The tool registry instance.
+   */
+  constructor(llm, toolRegistry) {
+    super(
+      'scheduler',
+      'sub',
+      [
+        'scheduling',
+        'calendar_management',
+        'time_planning',
+        'conflict_resolution',
+      ],
+      'A specialist agent for managing calendars, scheduling meetings, and handling time-related tasks.'
+    );
+
+    // LangGraph compatibility - injected by supervisor
+    this.llm = llm;
+    this.toolRegistry = toolRegistry;
+
+    // Update config with allowed tools including Wolfram Alpha
+    this.config.allowedTools = [
+      'calendar_manager',
+      'time_analyzer',
+      'conflict_resolver',
+      'wolfram_alpha',
+      'time_zone_conversion',
+      'date_calculation',
+      'scheduling_optimization',
+    ];
+
+    // Initialize Wolfram Alpha service
+    this.wolframService = WolframAlphaService;
+
+    this._initializeSchedulingEngine();
   }
 
-  async onInitialize((error) {
-    console.log('[SchedulerAgent] Listening for schedule tasks...');
-    
-    // Register task handlers for MCP
-    this.registerTaskHandler({}
-      taskType: 'schedule')
-      handler: this.execute.bind(this)
-    });
+  /**
+   * Use the inherited BaseAgent invoke method for consistent behavior
+   */
+  async invoke(state) {
+    console.log(`[SchedulerAgent] 🗓️ Engaging Scheduling workflow...`);
 
-  async getGoogleAuth((error) {
-    console.log(
-      `[SchedulerAgent] Fetching Google Calendar key for user ${userId}...`
-
-    const keyResult = await pool.query(
-        'SELECT key_data FROM user_api_keys WHERE user_id = $1 AND service_name = $2'
-      [userId, 'GoogleCalendar']
-
-    if((error) {
-    // TODO: Implement method
+    // Use the parent's invoke method which handles the tool execution loop properly
+    return await super.invoke(state);
   }
 
-  Error(
-        'Google Calendar API key not found. Please add it in the settings page.'
+  /**
+   * Build specialized system prompt for scheduling tasks.
+   */
+  buildSystemPrompt(privateState, state) {
+    const userMessage = state.messages[state.messages.length - 1];
+    return `You are the Scheduler, a calendar and time management specialist in the Cartrita AI system.
+Your personality is organized, efficient, punctual, and sassy with that Miami street-smart scheduling expertise.
 
-    const encryptedKey = keyResult.rows[0].key_data;
-    const keyJson = EncryptionService.decrypt(encryptedKey);
-    const credentials = JSON.parse(keyJson);
-    console.log('[SchedulerAgent] Credentials decrypted successfully.');
+**CURRENT USER REQUEST:**
+"${userMessage.content}"
 
-    const auth = new google.auth.GoogleAuth({
-      credentials,
-      scopes: [)
-        'https://www.googleapis.com/auth/calendar', 'https://www.googleapis.com/auth/calendar.readonly')
-      ])
-    });
+**YOUR SCHEDULING MISSION:**
+1. **Parse the Request:** What scheduling task does the user need - create events, check availability, manage calendar?
+2. **Execute Calendar Operations:**
+   - Use \`calendar_manager\` tool to create, update, delete, or view calendar events
+   - Use \`time_analyzer\` tool to find optimal meeting times and analyze schedules
+   - Use \`conflict_resolver\` tool to handle scheduling conflicts and overlaps
+3. **Coordinate Time Management:** Handle complex scheduling scenarios with multiple participants
+4. **Provide Clear Scheduling:** Give specific times, dates, and calendar confirmations
 
-    return auth.getClient();
+**YOUR SPECIALIZED TOOLS (including Wolfram Alpha):**
+${this.config.allowedTools.join(', ')}
 
-  async execute((error) {
-    // TODO: Implement method
+**WOLFRAM ALPHA SCHEDULING CAPABILITIES:**
+Your wolframService provides precise time and date calculations for advanced scheduling:
+- Date calculations: Use wolframService.query() for complex date arithmetic and scheduling math
+- Time zone conversions: Calculate exact times across different time zones and daylight savings
+- Duration calculations: Compute precise meeting durations and availability windows
+- Calendar mathematics: Calculate optimal scheduling patterns and recurring event intervals
+
+**EXECUTION REQUIREMENTS:**
+- ACTUALLY create, modify, or analyze calendar events using your tools - don't just suggest times
+- Use Wolfram Alpha for precise time zone calculations and date arithmetic
+- Parse natural language time requests into specific dates and times
+- Check for conflicts and availability using your scheduling tools
+- Handle time zones, recurring events, and complex scheduling scenarios
+- Provide calendar invites, reminders, and confirmations when relevant
+
+**RESPONSE FORMAT:**
+Provide a natural, conversational response that includes:
+- "Alright, let me handle this scheduling for you..." (what calendar work you performed)
+- Specific dates, times, and event details you scheduled or found
+- Any conflicts resolved or availability windows identified
+- Calendar confirmations, invites, or next steps
+- Your efficient, organized personality throughout
+
+**SCHEDULING GUIDELINES:**
+- Convert natural language to specific dates/times (e.g., "tomorrow at 2pm" → actual datetime)
+- Always check for conflicts before confirming new events
+- Consider time zones for multi-location meetings
+- Handle recurring events and series scheduling
+- Provide alternative times when conflicts exist
+
+**Remember:** You're the scheduling expert - actually manage calendar events, don't just talk about scheduling!
+
+**Your Memory of This Task:** ${JSON.stringify(privateState, null, 2)}`;
   }
 
-  Error('User ID is missing from the task payload.');
+  /**
+   * Uses an LLM to parse a natural language string into a structured scheduling command.
+   * @param {string} text - The user's request.
+   * @param {string} userId - The ID of the user making the request.
+   * @returns {Promise<object>} A structured object with the intended action and details.
+   * @private
+   */
+  async _parseRequestWithLLM(text, userId) {
+    const prompt = `You are a scheduling assistant. Parse the user's request and extract details into a JSON object.
+The possible actions are "create", "list", or "check_availability".
+The dateTime MUST be a valid ISO 8601 date string. Infer based on the current date: ${new Date().toISOString()}.
+The userId is "${userId}".
 
-    const auth = await this.getGoogleAuth(userId);
-    const calendar = google.calendar({ version: 'v3', auth });
+Request: "${text}"
 
-    console.log('[SchedulerAgent] Determining calendar intent from prompt...');
-    const intent = await this.determineCalendarIntent(prompt);
-    console.log(
-      '[SchedulerAgent] Intent determined:')
-      JSON.stringify(intent, null, 2)
+Example 1: "book a meeting for tomorrow at 3pm"
+Output:
+{
+  "action": "create",
+  "details": { "title": "Meeting", "startTime": "...", "userId": "${userId}" }
+}
 
-    // FIXED: Correctly handle the AI returning an error action
-    if((error) {
-    // TODO: Implement method
+Example 2: "what's on my schedule for this week?"
+Output:
+{
+  "action": "list",
+  "details": { "startDate": "...", "endDate": "...", "userId": "${userId}" }
+}`;
+
+    const response = await this.llm
+      .bind({ response_format: { type: 'json_object' } })
+      .invoke([new SystemMessage(prompt)]);
+    return JSON.parse(response.content);
   }
 
-  switch(case 'list': return this.listEvents(calendar, intent.parameters);
-      case 'create': return this.createEvent(calendar, intent.parameters);
-      default: return "I'm not sure how to handle that calendar request. Try asking to 'list events for tomorrow' or 'create an event'.";) {
-    // TODO: Implement method
+  // --- YOUR ORIGINAL, POWERFUL SCHEDULING LOGIC ---
+
+  _initializeSchedulingEngine() {
+    this.scheduleItems = new Map();
+    // In a real app, this data would be loaded from the database for the user.
+    console.log('[SchedulerAgent] In-memory scheduling engine initialized');
   }
 
-  async determineCalendarIntent((error) {
-    // TODO: Implement method
+  _createScheduleItem(eventData) {
+    const { title, startTime, endTime, userId } = eventData;
+    if (!title || !startTime || !userId)
+      throw new Error('Title, startTime, and userId are required.');
+
+    const eventId = `event_${Date.now()}`;
+    const parsedStartTime = new Date(startTime);
+    const parsedEndTime = endTime
+      ? new Date(endTime)
+      : new Date(parsedStartTime.getTime() + 60 * 60 * 1000);
+
+    const conflicts = this._checkForConflicts(
+      parsedStartTime,
+      parsedEndTime,
+      userId
+    );
+
+    const scheduleItem = {
+      id: eventId,
+      title,
+      startTime: parsedStartTime.toISOString(),
+      endTime: parsedEndTime.toISOString(),
+      userId,
+      conflicts,
+    };
+    this.scheduleItems.set(eventId, scheduleItem);
+
+    const message =
+      conflicts.length > 0
+        ? `Event "${title}" created, but there are ${conflicts.length} potential conflicts.`
+        : `Event "${title}" has been successfully scheduled.`;
+
+    return { message, ...scheduleItem };
   }
 
-  Date();
-    const userLocaleTime = now.toLocaleString('en-US', { timeZone });
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowDate = tomorrow.toISOString().split('T')[0];
+  _listScheduleItems({ userId, startDate, endDate }) {
+    let items = Array.from(this.scheduleItems.values()).filter(
+      item => item.userId === userId
+    );
+    if (startDate)
+      items = items.filter(
+        item => new Date(item.startTime) >= new Date(startDate)
+      );
+    if (endDate)
+      items = items.filter(item => new Date(item.endTime) <= new Date(endDate));
+    const message = `Found ${items.length} events on your schedule.`;
+    return {
+      message,
+      schedule: items.sort(
+        (a, b) => new Date(a.startTime) - new Date(b.startTime)
+      ),
+    };
+  }
 
-    const systemPrompt = `
-      You are a precise data extraction tool. Your only job is to parse a user's request into a structured JSON object for a calendar API.
-      Respond ONLY with a valid JSON object. Do not add any commentary.
+  _checkForConflicts(startTime, endTime, userId) {
+    const conflicts = [];
+    for (const event of this.scheduleItems.values()) {
+      if (event.userId === userId) {
+        const eventStart = new Date(event.startTime);
+        const eventEnd = new Date(event.endTime);
+        if (startTime < eventEnd && endTime > eventStart) {
+          conflicts.push(event);
+        }
+      }
+    }
+    return conflicts;
+  }
+}
 
-      **Actions & Parameters:**
-      1.  **action: 'list'**: For when the user wants to see their events.
-          - \`timeMin\` (string): The start of the date range in ISO 8601 format.
-          - \`timeMax\` (string): The end of the date range in ISO 8601 format.
-      2.  **action: 'create'**: For when the user wants to add a new event.
-          - \`summary\` (string): The title of the event. THIS IS REQUIRED.
-          - \`startDateTime\` (string): The start time of the event in ISO 8601 format. THIS IS REQUIRED.
-          - \`durationMinutes\` (number): The length of the event in minutes. Default to 60 if not specified.
-      3. **action: 'error'**: If you cannot determine the required parameters (e.g., a missing title for a create request).
-          - \`message\` (string): A helpful message to the user explaining what is missing.
-
-      **Context for Calculations:**
-      - The user's current timezone is '${timeZone}'.
-      - The current date and time for the user is: **${userLocaleTime}**.
-      - Tomorrow's date is: **${tomorrowDate}**.
-      - Use this as the absolute reference for all relative terms like 'today' or 'tomorrow'.
-
-      **Time Parsing Rules:**
-      - "9 am" or "9am" = "09:00:00"
-      - "10 am" or "10am" = "10:00:00"
-      - "tomorrow morning" refers to tomorrow's date
-      - "from X to Y" or "X till Y" means calculate duration from start to end time
-      - Always use 24-hour format in ISO strings
-
-      **Example 1:**
-      User Prompt: "Create an event for a 'Project Meeting' tomorrow at 10am for one hour."
-      Your JSON Response: null
-      {
-        "action": "create",
-        "parameters": {
-          "summary": "Project Meeting",
-          "startDateTime": "${tomorrowDate}T10:00:00",
-          "durationMinutes": 60
-
-
-      **Example 2:**
-      User Prompt: "lets create a google calendar event named project cartrita and is for 9 am till 10 am tomorrow morning."
-      Your JSON Response: null
-      {
-        "action": "create",
-        "parameters": {
-          "summary": "project cartrita",
-          "startDateTime": "${tomorrowDate}T09:00:00",
-          "durationMinutes": 60
-
-
-      **Example 3:**
-      User Prompt: "create an event"
-      Your JSON Response: null
-      {
-        "action": "error",
-        "message": "I can do that. What should the event be called, and when should it be?"
-
-    `
-    const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: systemPrompt })
-        { role: 'user', content: prompt } ])
-      response_format: { type: 'json_object' });
-    return JSON.parse(completion.choices[0].message.content);
-
-  async listEvents((error) {
-    try {
-      console.log(
-        `[SchedulerAgent] Listing events from ${timeMin} to ${timeMax}`
-
-      const response = await calendar.events.list({
-        calendarId: 'primary',
-        timeMin: timeMin,
-        timeMax: timeMax, maxResults: 10, singleEvents: true, orderBy: 'startTime')
-      });
-
-      const events = response.data.items;
-      if((error) {
-        return 'No events found for that time period.';
-
-      const eventList = events
-      .map(event => {
-          const start = event.start.dateTime || event.start.date;
-          const startTime = new Date(start).toLocaleString('en-US', {
-            timeZone: 'America/New_York',
-            weekday: 'short',
-            month: 'short')
-            day: 'numeric', hour: 'numeric')
-            minute: '2-digit')
-          });
-          return `• ${event.summary} at ${startTime}`
-        })
-        .join('\n');
-
-      return `Here are your upcoming events:\n\n${eventList}`
-    } catch((error) {
-      console.error('Google Calendar API Error:', error);
-      return `I couldn't retrieve your events. The calendar API returned an error: ${error.message}`
-
-
-  async createEvent(calendar) { summary, startDateTime, durationMinutes = 60 };
-  ) {
-    try {
-      console.log(
-        `[SchedulerAgent] Attempting to create event: "${summary}" at ${startDateTime}`
-
-      const timeZone = 'America/New_York';
-      const startDate = new Date(startDateTime);
-      const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
-
-      const eventPayload = {
-        summary,
-        start: { dateTime: startDate.toISOString(), timeZone },
-        end: { dateTime: endDate.toISOString(), timeZone };
-      };
-
-      console.log(
-        '[SchedulerAgent] Sending this payload to Google:')
-        JSON.stringify(eventPayload, null, 2, const event = await calendar.events.insert({
-        calendarId: 'primary'
-        requestBody: eventPayload)
-      });
-
-      console.log(
-        '[SchedulerAgent] Received response from Google API:')
-        event.data
-
-      if((error) {
-        return `Success. I've created the event "${summary}" for you at ${startDate.toLocaleString('en-US', { timeZone }.`
-      } else {
-        throw new Error('The API did not confirm the event creation.');
-
-    } catch((error) {
-      console.error('Google Calendar API Error:', error);
-      return `I couldn't create the event. The calendar API returned an error: ${error.message}`
-
-
-
-export default new SchedulerAgent();
+export default SchedulerAgent;

@@ -9,14 +9,16 @@ class DeepgramService extends EventEmitter {
     this.liveConnection = null;
     this.isConnected = false;
     this.initialized = false;
-    
+
     console.log('🎤 DeepgramService initialized');
     this.initializeClient();
   }
 
   initializeClient() {
     if (!process.env.DEEPGRAM_API_KEY) {
-      console.warn('[DeepgramService] API key not configured - service will be limited');
+      console.warn(
+        '[DeepgramService] API key not configured - service will be limited'
+      );
       return;
     }
 
@@ -41,20 +43,22 @@ class DeepgramService extends EventEmitter {
           smart_format: true,
           model: 'nova-2',
           language: 'en-US',
-          ...options
+          ...options,
         }
       );
 
       return {
         success: true,
-        transcript: result.results?.channels?.[0]?.alternatives?.[0]?.transcript || '',
-        confidence: result.results?.channels?.[0]?.alternatives?.[0]?.confidence || 0
+        transcript:
+          result.results?.channels?.[0]?.alternatives?.[0]?.transcript || '',
+        confidence:
+          result.results?.channels?.[0]?.alternatives?.[0]?.confidence || 0,
       };
     } catch (error) {
       console.error('[DeepgramService] Transcription error:', error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -69,7 +73,7 @@ class DeepgramService extends EventEmitter {
       language: 'en-US',
       smart_format: true,
       interim_results: true,
-      ...options
+      ...options,
     });
 
     connection.on('open', () => {
@@ -77,7 +81,7 @@ class DeepgramService extends EventEmitter {
       this.emit('connected');
     });
 
-    connection.on('Results', (data) => {
+    connection.on('Results', data => {
       this.emit('transcript', data);
     });
 
@@ -86,7 +90,7 @@ class DeepgramService extends EventEmitter {
       this.emit('disconnected');
     });
 
-    connection.on('error', (error) => {
+    connection.on('error', error => {
       this.emit('error', error);
     });
 
@@ -107,7 +111,7 @@ class DeepgramService extends EventEmitter {
       service: 'DeepgramService',
       initialized: this.initialized,
       connected: this.isConnected,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 }

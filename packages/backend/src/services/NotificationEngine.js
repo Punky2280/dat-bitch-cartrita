@@ -3,7 +3,7 @@ import pool from '../db.js';
 import CalendarService from './CalendarService.js';
 import EmailService from './EmailService.js';
 import ContactService from './ContactService.js';
-import MessageBus from '../system/MessageBus.js';
+import messageBus from '../system/MessageBus.js';
 import { EventEmitter  } from 'events';
 
 class NotificationEngine extends EventEmitter {

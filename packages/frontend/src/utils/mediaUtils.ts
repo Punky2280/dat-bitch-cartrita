@@ -6,21 +6,21 @@ export const checkMediaSupport = () => {
   // Check if running on HTTPS or localhost
   const isSecureContext =
     window.isSecureContext ||
-    window.location.protocol === 'https:' ||
-    window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1';
+    window.location.protocol === "https:" ||
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1";
 
   if (!isSecureContext) {
-    issues.push('getUserMedia requires HTTPS or localhost');
+    issues.push("getUserMedia requires HTTPS or localhost");
   }
 
   // Check API availability
   if (!navigator.mediaDevices) {
-    issues.push('navigator.mediaDevices not available');
+    issues.push("navigator.mediaDevices not available");
   }
 
   if (!navigator.mediaDevices?.getUserMedia) {
-    issues.push('getUserMedia not available');
+    issues.push("getUserMedia not available");
   }
 
   return {
@@ -45,17 +45,17 @@ export const getOptimalVideoConstraints = (): MediaTrackConstraints => {
     width: { ideal: 1280, min: 640 },
     height: { ideal: 720, min: 480 },
     frameRate: { ideal: 15, min: 10 },
-    facingMode: 'user', // Front-facing camera
+    facingMode: "user", // Front-facing camera
   };
 };
 
 export const getSupportedMimeType = (): string => {
   const types = [
-    'audio/webm;codecs=opus',
-    'audio/webm',
-    'audio/mp4',
-    'audio/ogg;codecs=opus',
-    'audio/wav',
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/mp4",
+    "audio/ogg;codecs=opus",
+    "audio/wav",
   ];
 
   for (const type of types) {
@@ -64,21 +64,21 @@ export const getSupportedMimeType = (): string => {
     }
   }
 
-  return ''; // Use default
+  return ""; // Use default
 };
 
 export const logMediaDeviceInfo = async () => {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices();
-    console.log('[MediaUtils] Available devices:');
+    console.log("[MediaUtils] Available devices:");
     devices.forEach((device, index) => {
       console.log(
-        `  ${index}: ${device.kind} - ${device.label || 'Unnamed device'}`
+        `  ${index}: ${device.kind} - ${device.label || "Unnamed device"}`,
       );
     });
     return devices;
   } catch (error) {
-    console.error('[MediaUtils] Could not enumerate devices:', error);
+    console.error("[MediaUtils] Could not enumerate devices:", error);
     return [];
   }
 };

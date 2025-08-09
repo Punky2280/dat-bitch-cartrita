@@ -54,7 +54,7 @@ export class VoiceActivityDetector {
 
   async start(stream: MediaStream): Promise<boolean> {
     try {
-      console.log('[VAD] Starting voice activity detection...');
+      console.log("[VAD] Starting voice activity detection...");
 
       // Create audio context and analyzer
       this.audioContext = new (window.AudioContext ||
@@ -85,17 +85,17 @@ export class VoiceActivityDetector {
       // Start analysis loop
       this.analyze();
 
-      console.log('[VAD] Voice activity detection started');
+      console.log("[VAD] Voice activity detection started");
       return true;
     } catch (error) {
-      console.error('[VAD] Failed to start voice activity detection:', error);
+      console.error("[VAD] Failed to start voice activity detection:", error);
       this.cleanup();
       return false;
     }
   }
 
   stop(): void {
-    console.log('[VAD] Stopping voice activity detection...');
+    console.log("[VAD] Stopping voice activity detection...");
     this.isRunning = false;
     this.cleanup();
   }
@@ -111,7 +111,7 @@ export class VoiceActivityDetector {
       this.source = null;
     }
 
-    if (this.audioContext && this.audioContext.state !== 'closed') {
+    if (this.audioContext && this.audioContext.state !== "closed") {
       this.audioContext.close();
       this.audioContext = null;
     }
@@ -208,12 +208,12 @@ export class VoiceActivityDetector {
     // Use dynamic thresholds based on average volume
     const dynamicSilenceThreshold = Math.max(
       this.options.silenceThreshold,
-      avgVolume * 0.5
+      avgVolume * 0.5,
     );
 
     const dynamicSpeechThreshold = Math.max(
       this.options.speechThreshold,
-      avgVolume * 1.5
+      avgVolume * 1.5,
     );
 
     // Check if current volume indicates speech
@@ -225,7 +225,7 @@ export class VoiceActivityDetector {
 
   private calculateConfidence(
     currentVolume: number,
-    isSpeaking: boolean
+    isSpeaking: boolean,
   ): number {
     const avgVolume = this.runningAverage;
 
@@ -258,7 +258,7 @@ export class VoiceActivityDetector {
   // Update options dynamically
   updateOptions(newOptions: Partial<VADOptions>): void {
     this.options = { ...this.options, ...newOptions };
-    console.log('[VAD] Options updated:', this.options);
+    console.log("[VAD] Options updated:", this.options);
   }
 }
 
@@ -267,7 +267,7 @@ export class VoiceActivityDetector {
  */
 export async function analyzeAudioForSpeech(
   audioBlob: Blob,
-  options: VADOptions = {}
+  options: VADOptions = {},
 ): Promise<{ hasSpeech: boolean; confidence: number; volume: number }> {
   try {
     const audioContext = new (window.AudioContext ||
@@ -305,7 +305,7 @@ export async function analyzeAudioForSpeech(
       volume: rms,
     };
   } catch (error) {
-    console.error('[VAD] Audio analysis failed:', error);
+    console.error("[VAD] Audio analysis failed:", error);
     return {
       hasSpeech: false,
       confidence: 0,

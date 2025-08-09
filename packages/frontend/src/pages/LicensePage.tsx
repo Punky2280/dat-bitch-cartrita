@@ -1,9 +1,9 @@
-import React from 'react';
+import React from "react";
 import {
   ArrowLeftIcon,
   ScaleIcon,
   ShieldCheckIcon,
-} from '@heroicons/react/24/outline';
+} from "@heroicons/react/24/outline";
 
 interface LicensePageProps {
   onBack?: () => void;

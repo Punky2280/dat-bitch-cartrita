@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface TextareaProps
   extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -6,7 +6,7 @@ interface TextareaProps
 }
 
 export const Textarea: React.FC<TextareaProps> = ({
-  className = '',
+  className = "",
   ...props
 }) => {
   return (

@@ -2,28 +2,30 @@ FROM node:20-alpine
 
 WORKDIR /usr/src/app
 
-# Copy .npmrc first to handle peer dependencies
-COPY .npmrc ./
+# Install git and other necessary packages
+RUN apk add --no-cache git python3 make g++
 
-# Copy package files
+# Copy package manifests for workspaces
 COPY package*.json ./
 COPY packages/backend/package*.json ./packages/backend/
-COPY packages/frontend/package*.json ./packages/frontend/
-COPY packages/robotics/package*.json ./packages/robotics/
-COPY packages/shared/package*.json ./packages/shared/
 
-# Install dependencies with legacy peer deps
-RUN npm install --workspaces
+# Install dependencies without running prepare scripts (to avoid husky issues)
+RUN npm install --workspaces=false --ignore-scripts
 
-# Install the missing langchain community package specifically
-RUN npm install @langchain/community --workspace=backend
+# Change to backend directory and install backend-specific dependencies
+WORKDIR /usr/src/app/packages/backend
+COPY packages/backend/package*.json ./
+RUN npm install --ignore-scripts
 
-# Copy source code
-COPY . .
+# Copy the backend source code
+COPY packages/backend/ ./
 
-# Create directories
+# Create necessary directories
 RUN mkdir -p uploads logs
+
+# Set environment to production
+ENV NODE_ENV=production
 
 EXPOSE 8000
 
-CMD ["npm", "run", "start:backend"]
+CMD ["npm", "start"]

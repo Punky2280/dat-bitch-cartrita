@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 export const PermissionTester: React.FC = () => {
   const [results, setResults] = useState<string[]>([]);
   const [isTestingPermissions, setIsTestingPermissions] = useState(false);
 
   const addResult = (message: string) => {
-    setResults(prev => [
+    setResults((prev) => [
       ...prev,
       `${new Date().toLocaleTimeString()}: ${message}`,
     ]);
@@ -14,88 +14,96 @@ export const PermissionTester: React.FC = () => {
   const testPermissions = async () => {
     setIsTestingPermissions(true);
     setResults([]);
-    addResult('🧪 Starting permission tests...');
+    addResult("🧪 Starting permission tests...");
 
     try {
       // Test 1: Check API availability
-      addResult('📋 Step 1: Checking API availability');
+      addResult("📋 Step 1: Checking API availability");
       if (!navigator.mediaDevices) {
-        addResult('❌ navigator.mediaDevices not available');
+        addResult("❌ navigator.mediaDevices not available");
         return;
       }
       if (!navigator.mediaDevices.getUserMedia) {
-        addResult('❌ getUserMedia not available');
+        addResult("❌ getUserMedia not available");
         return;
       }
-      addResult('✅ Media APIs available');
+      addResult("✅ Media APIs available");
 
       // Test 2: Check current permissions
-      addResult('📋 Step 2: Checking current permissions');
+      addResult("📋 Step 2: Checking current permissions");
       try {
         const micPermission = await navigator.permissions.query({
-          name: 'microphone' as PermissionName,
+          name: "microphone" as PermissionName,
         });
         const cameraPermission = await navigator.permissions.query({
-          name: 'camera' as PermissionName,
+          name: "camera" as PermissionName,
         });
         addResult(`🎤 Microphone permission: ${micPermission.state}`);
         addResult(`📹 Camera permission: ${cameraPermission.state}`);
       } catch (error) {
         addResult(
-          '⚠️ Could not check permissions (this is normal in some browsers)'
+          "⚠️ Could not check permissions (this is normal in some browsers)",
         );
       }
 
       // Test 3: Request microphone only
-      addResult('📋 Step 3: Testing microphone access');
+      addResult("📋 Step 3: Testing microphone access");
       try {
         const micStream = await navigator.mediaDevices.getUserMedia({
           audio: true,
         });
-        addResult('✅ Microphone access granted');
+        addResult("✅ Microphone access granted");
         addResult(`🎤 Audio tracks: ${micStream.getAudioTracks().length}`);
-        micStream.getTracks().forEach(track => track.stop());
+        micStream.getTracks().forEach((track) => track.stop());
       } catch (error) {
         addResult(
-          `❌ Microphone access failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+          `❌ Microphone access failed: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
         );
       }
 
       // Test 4: Request camera only
-      addResult('📋 Step 4: Testing camera access');
+      addResult("📋 Step 4: Testing camera access");
       try {
         const videoStream = await navigator.mediaDevices.getUserMedia({
           video: true,
         });
-        addResult('✅ Camera access granted');
+        addResult("✅ Camera access granted");
         addResult(`📹 Video tracks: ${videoStream.getVideoTracks().length}`);
-        videoStream.getTracks().forEach(track => track.stop());
+        videoStream.getTracks().forEach((track) => track.stop());
       } catch (error) {
         addResult(
-          `❌ Camera access failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+          `❌ Camera access failed: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
         );
       }
 
       // Test 5: Request both
-      addResult('📋 Step 5: Testing combined access (microphone + camera)');
+      addResult("📋 Step 5: Testing combined access (microphone + camera)");
       try {
         const combinedStream = await navigator.mediaDevices.getUserMedia({
           audio: true,
           video: true,
         });
-        addResult('✅ Combined access granted');
+        addResult("✅ Combined access granted");
         addResult(`🎬 Total tracks: ${combinedStream.getTracks().length}`);
-        combinedStream.getTracks().forEach(track => track.stop());
+        combinedStream.getTracks().forEach((track) => track.stop());
       } catch (error) {
         addResult(
-          `❌ Combined access failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+          `❌ Combined access failed: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
         );
       }
 
-      addResult('🎉 Permission tests completed');
+      addResult("🎉 Permission tests completed");
     } catch (error) {
       addResult(
-        `❌ Test suite failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `❌ Test suite failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
       );
     } finally {
       setIsTestingPermissions(false);
@@ -118,7 +126,7 @@ export const PermissionTester: React.FC = () => {
             disabled={isTestingPermissions}
             className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white text-xs rounded"
           >
-            {isTestingPermissions ? 'Testing...' : 'Test'}
+            {isTestingPermissions ? "Testing..." : "Test"}
           </button>
           <button
             onClick={clearResults}

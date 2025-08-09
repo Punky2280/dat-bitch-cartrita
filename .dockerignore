@@ -1,8 +1,8 @@
 # Git
 .git
 .github
-.gitignore
 
+.gitignore
 # Node modules
 node_modules
 packages/*/node_modules

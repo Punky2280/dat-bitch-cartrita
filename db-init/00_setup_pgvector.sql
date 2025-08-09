@@ -5,8 +5,7 @@
 
 CREATE EXTENSION IF NOT EXISTS vector;
 
-
 DO $$
 BEGIN
-  RAISE NOTICE '✅ Enabled vector and timescaledb extensions.';
+  RAISE NOTICE '✅ Enabled vector extension.';
 END $$;

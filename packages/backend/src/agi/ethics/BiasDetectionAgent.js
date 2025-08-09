@@ -1,671 +1,81 @@
+import {
+  AIMessage,
+  HumanMessage,
+  SystemMessage,
+} from '@langchain/core/messages';
 import BaseAgent from '../../system/BaseAgent.js';
 
+/**
+ * @class BiasDetectionAgent
+ * @description An ethics agent that monitors for and flags potential bias in
+ * AI-generated or user-provided content. It analyzes text against a checklist
+ * of common biases and produces a structured report.
+ */
 class BiasDetectionAgent extends BaseAgent {
-  constructor() {
-    super('BiasDetectionAgent', 'main', [
-      'algorithmic_bias_detection',
-      'fairness_assessment')
-      'bias_mitigation_suggestions', 'demographic_parity_analysis')
-      'equalized_odds_testing')
-      'disparate_impact_measurement'
-    ]);
-    
-    this.biasPatterns = new) {
-    // TODO: Implement method
+  /**
+   * @param {ChatOpenAI} llm - The language model instance.
+   * @param {AgentToolRegistry} toolRegistry - The tool registry instance.
+   */
+  constructor(llm, toolRegistry) {
+    super(
+      'bias_detector',
+      'sub',
+      ['bias_detection', 'fairness_analysis', 'ethical_oversight'],
+      'An ethics agent that monitors for and flags potential bias in AI-generated or user-provided content.'
+    );
+
+    // LangGraph compatibility - injected by supervisor
+    this.llm = llm;
+    this.toolRegistry = toolRegistry;
+
+    // Update config with allowed tools
+    this.config.allowedTools = [
+      'style_analyzer', // Can be used to analyze tone and language
+      'grammar_checker',
+    ];
   }
 
-  Map();
-    this.fairnessMetrics = new Map();
-    this.protectedAttributes = new Set(['age', 'gender', 'race', 'ethnicity', 'religion', 'disability', 'sexual_orientation']);
-    this.initializeBiasDetectionRules();
+  /**
+   * Overrides the base prompt to provide a detailed methodology for bias detection.
+   * @param {object} privateState - The agent's private memory for this session.
+   * @returns {string} The complete system prompt for the BiasDetectionAgent.
+   */
+  buildSystemPrompt(privateState) {
+    return `You are the Bias Detection Agent, a specialist ethics agent in the Cartrita AI system.
+Your personality is objective, analytical, and fair-minded. Your primary function is to ensure AI and user content is equitable and free from harmful bias.
 
-  async onInitialize((error) {
-    this.registerTaskHandler({}
-      taskType: 'detect_bias')
-      handler: this.detectBias.bind(this)
-    });
-    this.registerTaskHandler({}
-      taskType: 'assess_fairness')
-      handler: this.assessFairness.bind(this)
-    });
-    this.registerTaskHandler({}
-      taskType: 'measure_demographic_parity')
-      handler: this.measureDemographicParity.bind(this)
-    });
-    this.registerTaskHandler({}
-      taskType: 'test_equalized_odds')
-      handler: this.testEqualizedOdds.bind(this)
-    });
-    this.registerTaskHandler({}
-      taskType: 'analyze_disparate_impact')
-      handler: this.analyzeDisparateImpact.bind(this)
-    });
-    this.registerTaskHandler({}
-      taskType: 'suggest_bias_mitigation')
-      handler: this.suggestBiasMitigation.bind(this)
-    });
-    this.registerTaskHandler({}
-      taskType: 'generate_fairness_report')
-      handler: this.generateFairnessReport.bind(this)
-    });
-    
-    console.log('[BiasDetectionAgent] Bias detection and fairness assessment handlers registered');
+**CONTEXT FROM PREVIOUS ACTIONS:**
+${JSON.stringify(privateState, null, 2)}
 
-  initializeBiasDetectionRules((error) {
-    // Statistical bias detection rules
-    this.biasPatterns.set('demographic_parity', {
-      threshold: 0.8, // 80% rule, description: 'Acceptance rates should not differ by more than 20% across groups')
-      severity: 'high'
-    });
-    
-    this.biasPatterns.set('equalized_odds', {
-      threshold: 0.1, description: 'True positive and false positive rates should be similar across groups')
-      severity: 'high'
-    });
-    
-    this.biasPatterns.set('calibration', {
-      threshold: 0.05, description: 'Predicted probabilities should match actual outcomes across groups')
-      severity: 'medium'
-    });
-    
-    this.biasPatterns.set('individual_fairness', {
-      threshold: 0.1, description: 'Similar individuals should receive similar outcomes')
-      severity: 'high'
-    });
+**Your Task:**
+You have been given a piece of text to analyze for bias. Your goal is to produce a detailed bias report.
+1.  **Analyze the Text:** Carefully read the provided text.
+2.  **Check for Bias Categories:** Evaluate the text against the following categories:
+    - **Stereotyping:** Does it assign qualities to a group of people based on race, gender, nationality, religion, etc.?
+    - **Exclusionary Language:** Does it use language that could alienate or demean a particular group?
+    - **Unbalanced Viewpoints:** Does it present one side of a controversial issue as fact without acknowledging others?
+    - **Harmful Generalizations:** Does it make broad, unsupported claims about groups of people?
+3.  **Formulate a Report:** Based on your analysis, construct your findings.
+4.  **Output Your Report:** Your final output MUST be a single JSON object containing your report.
 
-  async detectBias((error) {
-    try {
-      const { data, predictions, protected_attributes, bias_types = ['all'] } = payload;
-      
-      if((error) {
-    // TODO: Implement method
+**JSON OUTPUT FORMAT:**
+{
+  "final_answer": "A summary of your findings. Example: 'I have analyzed the text and found two instances of potential bias. See the report below.'",
+  "bias_report": {
+    "overall_score": "A score from 0 (highly biased) to 10 (neutral).",
+    "findings": [
+      {
+        "bias_type": "The category of bias found (e.g., 'Stereotyping').",
+        "biased_text": "The exact quote from the text that is problematic.",
+        "explanation": "A brief explanation of why this text is considered biased.",
+        "suggestion": "A rewritten, neutral alternative to the biased text."
+      }
+    ]
+  },
+  "status": "complete",
+  "delegate_to": "none"
+}`;
   }
+}
 
-  Error('Data and predictions are required for bias detection');
-
-      const biasResults = {};
-      const detectedBiases = [];
-      
-      // Detect different types of bias based on request
-      if (bias_types.includes('all') || bias_types.includes('demographic_parity')) {
-    // TODO: Implement method
-  }
-
-  if (bias_types.includes('all') || bias_types.includes('equalized_odds')) {
-    // TODO: Implement method
-  }
-
-  if (bias_types.includes('all') || bias_types.includes('calibration')) {
-    // TODO: Implement method
-  }
-
-  if (bias_types.includes('all') || bias_types.includes('representation')) {
-        const representationBias = await this.detectRepresentationBias(data, protected_attributes);
-        biasResults.representation = representationBias;
-        if((error) {
-          detectedBiases.push(representationBias);
-
-
-      // Calculate overall bias score
-      const overallBiasScore = this.calculateOverallBiasScore(biasResults);
-      
-      return {
-        bias_detected: detectedBiases.length > 0,
-        bias_count: detectedBiases.length,
-        overall_bias_score: overallBiasScore,
-        bias_results: biasResults,
-        detected_biases: detectedBiases,
-        fairness_level: this.categorizeFairnessLevel(overallBiasScore),
-        analysis_timestamp: new Date().toISOString()
-      };
-      
-    } catch(console.error('[BiasDetectionAgent] Error detecting bias:', error);
-      throw error;) {
-    // TODO: Implement method
-  }
-
-  async assessFairness((error) {
-    try {
-      const { algorithm_results, ground_truth, demographics, fairness_criteria = ['demographic_parity', 'equalized_odds'] } = payload;
-      
-      const fairnessAssessment = {
-        criteria_evaluated: fairness_criteria,
-        assessment_results: {},
-        overall_fairness: 'unknown',
-        recommendations: []
-      };
-      
-      for((error) {
-    // TODO: Implement method
-  }
-
-  switch(case 'demographic_parity': fairnessAssessment.assessment_results.demographic_parity = this.assessDemographicParity(algorithm_results, demographics);
-            break;
-            
-          case 'equalized_odds': fairnessAssessment.assessment_results.equalized_odds = this.assessEqualizedOdds(algorithm_results, ground_truth, demographics);
-            break;
-            
-          case 'equality_of_opportunity': fairnessAssessment.assessment_results.equality_of_opportunity = this.assessEqualityOfOpportunity(algorithm_results, ground_truth, demographics);
-            break;
-            
-          case 'calibration': fairnessAssessment.assessment_results.calibration = this.assessCalibration(algorithm_results, ground_truth, demographics);
-            break;
-            
-          case 'individual_fairness': fairnessAssessment.assessment_results.individual_fairness = this.assessIndividualFairness(algorithm_results, demographics);
-            break;
-
-
-      // Determine overall fairness
-      fairnessAssessment.overall_fairness = this.determineOverallFairness(fairnessAssessment.assessment_results);
-      
-      // Generate recommendations
-      fairnessAssessment.recommendations = this.generateFairnessRecommendations(fairnessAssessment.assessment_results);
-      
-      return fairnessAssessment;
-      
-    }) {
-    // TODO: Implement method
-  }
-
-  catch(console.error('[BiasDetectionAgent] Error assessing fairness:', error);
-      throw error;) {
-    // TODO: Implement method
-  }
-
-  async measureDemographicParity((error) {
-    try {
-      const { predictions, demographics, target_outcome = 'positive' } = payload;
-      
-      const groups = this.groupByDemographics(predictions, demographics);
-      const parityMeasures = {};
-      
-      for (const [group, groupData] of Object.entries(groups)) {
-        const positiveRate = this.calculatePositiveRate(groupData, target_outcome);
-        parityMeasures[group] = {
-          positive_rate: positiveRate,
-          sample_size: groupData.length,
-          outcome_counts: this.countOutcomes(groupData)
-        };
-
-      // Calculate parity ratios
-      const parityRatios = this.calculateParityRatios(parityMeasures);
-      
-      // Determine if demographic parity is achieved
-      const achievesParity = this.checkDemographicParity(parityRatios);
-      
-      return {
-        demographic_parity_achieved: achievesParity.achieved,
-        parity_measures: parityMeasures,
-        parity_ratios: parityRatios,
-        violations: achievesParity.violations,
-        parity_score: achievesParity.score,
-        analysis_details: {
-          total_groups: Object.keys(groups).length,
-          measurement_standard: 'four_fifths_rule',
-          threshold: 0.8
-
-      };
-      
-    } catch(console.error('[BiasDetectionAgent] Error measuring demographic parity:', error);
-      throw error;) {
-    // TODO: Implement method
-  }
-
-  async testEqualizedOdds((error) {
-    try {
-      const { predictions, ground_truth, demographics } = payload;
-      
-      if((error) {
-    // TODO: Implement method
-  }
-
-  Error('Ground truth labels are required for equalized odds testing');
-
-      const groups = this.groupByDemographics(predictions, demographics, ground_truth);
-      const equalizedOddsResults = {};
-      
-      for (const [group, groupData] of Object.entries(groups)) {
-        const tpr = this.calculateTruePositiveRate(groupData);
-        const fpr = this.calculateFalsePositiveRate(groupData);
-        const tnr = this.calculateTrueNegativeRate(groupData);
-        const fnr = this.calculateFalseNegativeRate(groupData);
-        
-        equalizedOddsResults[group] = {
-          true_positive_rate: tpr,
-          false_positive_rate: fpr,
-          true_negative_rate: tnr,
-          false_negative_rate: fnr,
-          sample_size: groupData.length
-        };
-
-      // Calculate differences between groups
-      const oddsDifferences = this.calculateOddsDifferences(equalizedOddsResults);
-      
-      // Determine if equalized odds is satisfied
-      const satisfiesEqualizedOdds = this.checkEqualizedOdds(oddsDifferences);
-      
-      return {
-        equalized_odds_satisfied: satisfiesEqualizedOdds.satisfied,
-        odds_results: equalizedOddsResults,
-        odds_differences: oddsDifferences,
-        violations: satisfiesEqualizedOdds.violations,
-        equalized_odds_score: satisfiesEqualizedOdds.score,
-        threshold: this.biasPatterns.get('equalized_odds').threshold
-      };
-      
-    } catch(console.error('[BiasDetectionAgent] Error testing equalized odds:', error);
-      throw error;) {
-    // TODO: Implement method
-  }
-
-  async analyzeDisparateImpact((error) {
-    try {
-      const { outcomes, demographics, reference_group } = payload;
-      
-      const groups = this.groupByDemographics(outcomes, demographics);
-      const impactAnalysis = {};
-      
-      // Calculate selection rates for each group
-      for (const [group, groupData] of Object.entries(groups)) {
-        const selectionRate = this.calculateSelectionRate(groupData);
-        impactAnalysis[group] = {
-          selection_rate: selectionRate,
-          selected_count: groupData.filter(d => d.selected).length,
-          total_count: groupData.length
-        };
-
-      // Identify reference group (typically the majority group, const refGroup = reference_group || this.identifyReferenceGroup(impactAnalysis);
-      const referenceRate = impactAnalysis[refGroup]?.selection_rate || 0;
-      
-      // Calculate disparate impact ratios
-      const disparateImpactRatios = {};
-      let hasDisparateImpact = false;
-      
-      for (const [group, analysis] of Object.entries(impactAnalysis)) {
-        if((error) {
-          const ratio = analysis.selection_rate / referenceRate;
-          disparateImpactRatios[group] = {
-            ratio: ratio,
-            passes_four_fifths_rule: ratio >= 0.8,
-            selection_rate: analysis.selection_rate,
-            reference_rate: referenceRate
-          };
-          
-          if((error) {
-            hasDisparateImpact = true;
-
-
-
-      return {
-        disparate_impact_detected: hasDisparateImpact,
-        reference_group: refGroup,
-        impact_analysis: impactAnalysis,
-        disparate_impact_ratios: disparateImpactRatios,
-        four_fifths_rule_violations: Object.values(disparateImpactRatios)
-          .filter(r => !r.passes_four_fifths_rule),
-        overall_impact_score: this.calculateDisparateImpactScore(disparateImpactRatios)
-      };
-      
-    } catch(console.error('[BiasDetectionAgent] Error analyzing disparate impact:', error);
-      throw error;) {
-    // TODO: Implement method
-  }
-
-  async suggestBiasMitigation((error) {
-    try {
-      const { bias_results, algorithm_type, data_characteristics } = payload;
-      
-      const mitigationSuggestions = [];
-      
-      // Analyze bias results and suggest appropriate mitigation strategies
-      if(mitigationSuggestions.push(...this.suggestDemographicParityMitigation(bias_results.demographic_parity));) {
-    // TODO: Implement method
-  }
-
-  if(mitigationSuggestions.push(...this.suggestEqualizedOddsMitigation(bias_results.equalized_odds));) {
-    // TODO: Implement method
-  }
-
-  if((error) {
-        mitigationSuggestions.push(...this.suggestRepresentationMitigation(bias_results.representation));
-
-      // Add general mitigation strategies
-      mitigationSuggestions.push(...this.suggestGeneralMitigationStrategies(algorithm_type, data_characteristics));
-      
-      // Prioritize suggestions based on impact and feasibility
-      const prioritizedSuggestions = this.prioritizeMitigationSuggestions(mitigationSuggestions);
-      
-      return {
-        mitigation_suggestions: prioritizedSuggestions,
-        total_suggestions: prioritizedSuggestions.length,
-        implementation_phases: this.groupSuggestionsByPhase(prioritizedSuggestions),
-        estimated_effort: this.estimateImplementationEffort(prioritizedSuggestions)
-      };
-      
-    } catch(console.error('[BiasDetectionAgent] Error suggesting bias mitigation:', error);
-      throw error;) {
-    // TODO: Implement method
-  }
-
-  async generateFairnessReport((error) {
-    try {
-      const { algorithm_name, test_data, demographics, report_type = 'comprehensive' } = payload;
-      
-      const report = {
-        algorithm_name: algorithm_name,
-        report_type: report_type,
-        generated_at: new Date().toISOString(),
-        executive_summary: {},
-        detailed_analysis: {},
-        recommendations: []
-      };
-      
-      // Perform comprehensive bias detection
-      const biasDetection = await this.detectBias('', language, userId, {
-        data: test_data, predictions: test_data, protected_attributes: demographics
-      });
-      
-      // Perform fairness assessment
-      const fairnessAssessment = await this.assessFairness('', language, userId, {}
-        algorithm_results: test_data, demographics: demographics
-      });
-      
-      // Generate executive summary
-      report.executive_summary = {
-        overall_fairness_level: fairnessAssessment.overall_fairness,
-        bias_detected: biasDetection.bias_detected,
-        critical_issues: this.identifyCriticalIssues(biasDetection, fairnessAssessment),
-        compliance_status: this.assessComplianceStatus(biasDetection, fairnessAssessment)
-      };
-      
-      // Add detailed analysis
-      report.detailed_analysis = {
-        bias_detection_results: biasDetection,
-        fairness_assessment_results: fairnessAssessment,
-        statistical_tests: await this.performStatisticalTests(test_data, demographics),
-        demographic_analysis: this.analyzeDemographicDistribution(demographics)
-      };
-      
-      // Generate recommendations
-      const mitigationSuggestions = await this.suggestBiasMitigation('', language, userId, {}
-        bias_results: biasDetection.bias_results, algorithm_type: 'classification'
-      });
-      
-      report.recommendations = mitigationSuggestions.mitigation_suggestions;
-      
-      return report;
-      
-    } catch(console.error('[BiasDetectionAgent] Error generating fairness report:', error);
-      throw error;
-
-
-  // Helper methods for bias detection) {
-    // TODO: Implement method
-  }
-
-  async detectDemographicParityBias((error) {
-    const groups = this.groupByProtectedAttributes(data, protectedAttributes);
-    const groupRates = {};
-    
-    for (const [group, groupData] of Object.entries(groups)) {
-      const positiveRate = groupData.filter(d => d.prediction === 'positive').length / groupData.length;
-      groupRates[group] = positiveRate;
-
-    const rates = Object.values(groupRates);
-    const minRate = Math.min(...rates);
-    const maxRate = Math.max(...rates);
-    const ratio = minRate / maxRate;
-    
-    return {
-      bias_detected: ratio < 0.8,
-      bias_type: 'demographic_parity',
-      severity: ratio < 0.6 ? 'high' : ratio < 0.8 ? 'medium' : 'low',
-      group_rates: groupRates,
-      parity_ratio: ratio,
-      threshold: 0.8
-    };
-
-  async detectEqualizedOddsBias((error) {
-    const groups = this.groupByProtectedAttributes(data, protectedAttributes);
-    const groupMetrics = {};
-    
-    for (const [group, groupData] of Object.entries(groups)) {
-      const tpr = this.calculateTruePositiveRate(groupData);
-      const fpr = this.calculateFalsePositiveRate(groupData);
-      groupMetrics[group] = { tpr, fpr };
-
-    const tprDiff = this.calculateMaxDifference(Object.values(groupMetrics).map(m => m.tpr));
-    const fprDiff = this.calculateMaxDifference(Object.values(groupMetrics).map(m => m.fpr));
-    
-    const biasDetected = tprDiff > 0.1 || fprDiff > 0.1;
-    
-    return {
-      bias_detected: biasDetected,
-      bias_type: 'equalized_odds',
-      severity: (tprDiff > 0.2 || fprDiff > 0.2) ? 'high' : 'medium',
-      group_metrics: groupMetrics,
-      tpr_difference: tprDiff,
-      fpr_difference: fprDiff,
-      threshold: 0.1
-    };
-
-  async detectCalibrationBias((error) {
-    const groups = this.groupByProtectedAttributes(data, protectedAttributes);
-    const calibrationMetrics = {};
-    
-    for (const [group, groupData] of Object.entries(groups)) {
-      const calibration = this.calculateCalibration(groupData);
-      calibrationMetrics[group] = calibration;
-
-    const calibrationDiff = this.calculateMaxDifference(Object.values(calibrationMetrics));
-    
-    return {
-      bias_detected: calibrationDiff > 0.05,
-      bias_type: 'calibration',
-      severity: calibrationDiff > 0.1 ? 'high' : 'medium',
-      group_metrics: calibrationMetrics,
-      calibration_difference: calibrationDiff,
-      threshold: 0.05
-    };
-
-  async detectRepresentationBias((error) {
-    const groups = this.groupByProtectedAttributes(data, protectedAttributes);
-    const groupSizes = Object.fromEntries(
-      Object.entries(groups).map(([group, groupData]) => [group, groupData.length])
-
-    const totalSize = data.length;
-    const expectedSize = totalSize / Object.keys(groups).length;
-    const representationRatios = {};
-    
-    for (const [group, size] of Object.entries(groupSizes)) {
-      representationRatios[group] = size / expectedSize;
-
-    const underrepresented = Object.entries(representationRatios
-      .filter(([group, ratio]) => ratio < 0.5)
-      .map(([group]) => group);
-    
-    return {
-      bias_detected: underrepresented.length > 0,
-      bias_type: 'representation',
-      severity: underrepresented.length > 1 ? 'high' : 'medium',
-      group_sizes: groupSizes,
-      representation_ratios: representationRatios,
-      underrepresented_groups: underrepresented
-    };
-
-  // Utility methods
-  groupByDemographics((error) {
-    const groups = {};
-    
-    data.forEach((item, index) => {
-      const demographic = demographics[index];
-      const key = JSON.stringify(demographic);
-      
-      if((error) {
-        groups[key] = [];
-
-      const dataPoint = { ...item };
-      if(dataPoint.ground_truth = groundTruth[index];
-
-      groups[key].push(dataPoint);
-    });
-    
-    return groups;) {
-    // TODO: Implement method
-  }
-
-  groupByProtectedAttributes(return this.groupByDemographics(data, protectedAttributes);) {
-    // TODO: Implement method
-  }
-
-  calculatePositiveRate(const positiveCount = groupData.filter(d => d.outcome === targetOutcome || d.prediction === targetOutcome).length;
-    return positiveCount / groupData.length;) {
-    // TODO: Implement method
-  }
-
-  calculateTruePositiveRate(const truePositives = groupData.filter(d => d.prediction === 'positive' && d.ground_truth === 'positive').length;
-    const actualPositives = groupData.filter(d => d.ground_truth === 'positive').length;
-    return actualPositives > 0 ? truePositives / actualPositives : 0;) {
-    // TODO: Implement method
-  }
-
-  calculateFalsePositiveRate(const falsePositives = groupData.filter(d => d.prediction === 'positive' && d.ground_truth === 'negative').length;
-    const actualNegatives = groupData.filter(d => d.ground_truth === 'negative').length;
-    return actualNegatives > 0 ? falsePositives / actualNegatives : 0;) {
-    // TODO: Implement method
-  }
-
-  calculateTrueNegativeRate(const trueNegatives = groupData.filter(d => d.prediction === 'negative' && d.ground_truth === 'negative').length;
-    const actualNegatives = groupData.filter(d => d.ground_truth === 'negative').length;
-    return actualNegatives > 0 ? trueNegatives / actualNegatives : 0;) {
-    // TODO: Implement method
-  }
-
-  calculateFalseNegativeRate(const falseNegatives = groupData.filter(d => d.prediction === 'negative' && d.ground_truth === 'positive').length;
-    const actualPositives = groupData.filter(d => d.ground_truth === 'positive').length;
-    return actualPositives > 0 ? falseNegatives / actualPositives : 0;) {
-    // TODO: Implement method
-  }
-
-  calculateSelectionRate(const selectedCount = groupData.filter(d => d.selected === true || d.outcome === 'positive').length;
-    return selectedCount / groupData.length;) {
-    // TODO: Implement method
-  }
-
-  calculateCalibration(// Simplified calibration calculation
-    const bins = this.binByPredictedProbability(groupData);
-    let calibrationError = 0;) {
-    // TODO: Implement method
-  }
-
-  for(const avgPrediction = bin.reduce((sum, d) => sum + d.probability, 0) / bin.length;
-      const actualRate = bin.filter(d => d.ground_truth === 'positive').length / bin.length;
-      calibrationError += Math.abs(avgPrediction - actualRate);
-
-    return calibrationError / bins.length;) {
-    // TODO: Implement method
-  }
-
-  calculateMaxDifference(if (values.length < 2, return 0;
-    return Math.max(...values) - Math.min(...values);) {
-    // TODO: Implement method
-  }
-
-  calculateOverallBiasScore((error) {
-    const scores = [];
-    
-    Object.values(biasResults).forEach(result => {
-      if((error) {
-        const severityScore = { low: 1, medium: 2, high: 3, critical: 4 };
-        scores.push(severityScore[result.severity] || 2);
-
-    });
-    
-    if (scores.length === 0, return 0;
-    return scores.reduce((sum, score) => sum + score, 0) / scores.length;
-
-  categorizeFairnessLevel((error) {
-    // TODO: Implement method
-  }
-
-  if((error) {
-    return { positive: 0, negative: 0 };
-
-  calculateParityRatios((error) {
-    return {};
-
-  checkDemographicParity((error) {
-    return { achieved: true, violations: [], score: 100 };
-
-  calculateOddsDifferences((error) {
-    return {};
-
-  checkEqualizedOdds((error) {
-    return { satisfied: true, violations: [], score: 100 };
-
-  identifyReferenceGroup(return Object.keys(analysis)[0];) {
-    // TODO: Implement method
-  }
-
-  calculateDisparateImpactScore((error) {
-    // TODO: Implement method
-  }
-
-  suggestDemographicParityMitigation((error) {
-    return [{ strategy: 'Rebalance training data', priority: 'high', effort: 'medium' }];
-
-  suggestEqualizedOddsMitigation((error) {
-    return [{ strategy: 'Post-processing calibration', priority: 'high', effort: 'low' }];
-
-  suggestRepresentationMitigation((error) {
-    return [{ strategy: 'Data augmentation', priority: 'medium', effort: 'high' }];
-
-  suggestGeneralMitigationStrategies((error) {
-    return [{ strategy: 'Regular bias auditing', priority: 'low', effort: 'low' }];
-
-  prioritizeMitigationSuggestions((error) {
-    return suggestions.sort((a, b) => {
-      const priorityOrder = { high: 3, medium: 2, low: 1 };
-      return priorityOrder[b.priority] - priorityOrder[a.priority];
-    });
-
-  groupSuggestionsByPhase((error) {
-    return {
-      immediate: suggestions.filter(s => s.priority === 'high'),
-      short_term: suggestions.filter(s => s.priority === 'medium'),
-      long_term: suggestions.filter(s => s.priority === 'low'
-    };
-
-  estimateImplementationEffort((error) {
-    const effortMap = { low: 1, medium: 2, high: 3 };
-    const totalEffort = suggestions.reduce((sum, s) => sum + (effortMap[s.effort] || 2), 0);
-    return { total_effort_points: totalEffort, estimated_weeks: Math.ceil(totalEffort / 2) };
-
-  binByPredictedProbability((error) {
-    // TODO: Implement method
-  }
-
-  assessDemographicParity(results, demographics) { return { fair: true }; };
-  assessEqualizedOdds(results, truth, demographics) { return { fair: true }; };
-  assessEqualityOfOpportunity(results, truth, demographics) { return { fair: true }; };
-  assessCalibration(results, truth, demographics) { return { fair: true }; };
-  assessIndividualFairness(results, demographics) { return { fair: true }; };
-  determineOverallFairness((error) {
-    // TODO: Implement method
-  }
-
-  generateFairnessRecommendations((error) {
-    // TODO: Implement method
-  }
-
-  identifyCriticalIssues((error) {
-    // TODO: Implement method
-  }
-
-  assessComplianceStatus((error) {
-    // TODO: Implement method
-  }
-
-  performStatisticalTests(testData, demographics) { return { tests: [] }; };
-  analyzeDemographicDistribution(demographics) { return { distribution: {} }; };
 export default BiasDetectionAgent;

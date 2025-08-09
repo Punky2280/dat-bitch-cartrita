@@ -5,17 +5,17 @@ export interface ValidationResult {
 
 export function validateApiKey(
   provider: string,
-  apiKey: string
+  apiKey: string,
 ): ValidationResult {
   if (!apiKey || !provider) {
-    return { isValid: false, message: 'Provider and API key are required' };
+    return { isValid: false, message: "Provider and API key are required" };
   }
 
   // Remove whitespace
   const trimmedKey = apiKey.trim();
 
   if (!trimmedKey) {
-    return { isValid: false, message: 'API key cannot be empty' };
+    return { isValid: false, message: "API key cannot be empty" };
   }
 
   // Provider-specific patterns
@@ -34,7 +34,7 @@ export function validateApiKey(
     if (trimmedKey.length < 16) {
       return {
         isValid: false,
-        message: 'API key must be at least 16 characters long',
+        message: "API key must be at least 16 characters long",
       };
     }
     return { isValid: true };
@@ -50,14 +50,14 @@ export function validateApiKey(
         'GitHub API key must start with "ghp_" or "ghs_" and be 40 characters total',
       stripe:
         'Stripe API key must start with "sk_test_" or "sk_live_" and be at least 24 characters long',
-      deepgram: 'Deepgram API key must be exactly 40 characters long',
+      deepgram: "Deepgram API key must be exactly 40 characters long",
     };
 
     return {
       isValid: false,
       message:
         errorMessages[provider as keyof typeof errorMessages] ||
-        'Invalid API key format',
+        "Invalid API key format",
     };
   }
 

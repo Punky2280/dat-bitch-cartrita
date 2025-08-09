@@ -4,16 +4,16 @@ import React, {
   useContext,
   ReactNode,
   useRef,
-} from 'react';
-import { io, Socket } from 'socket.io-client';
+} from "react";
+import { io, Socket } from "socket.io-client";
 
-type PermissionState = 'prompt' | 'granted' | 'denied';
+type PermissionState = "prompt" | "granted" | "denied";
 
 interface AmbientSettings {
   audioEnabled: boolean;
   videoEnabled: boolean;
   proactiveResponses: boolean;
-  privacyMode: 'standard' | 'enhanced';
+  privacyMode: "standard" | "enhanced";
 }
 
 interface AmbientContextType {
@@ -22,7 +22,7 @@ interface AmbientContextType {
   settings: AmbientSettings;
   enableAmbientMode: (
     token: string,
-    options?: Partial<AmbientSettings>
+    options?: Partial<AmbientSettings>,
   ) => Promise<void>;
   disableAmbientMode: () => void;
   updateSettings: (newSettings: Partial<AmbientSettings>) => void;
@@ -32,7 +32,7 @@ const defaultSettings: AmbientSettings = {
   audioEnabled: true,
   videoEnabled: false,
   proactiveResponses: true,
-  privacyMode: 'standard',
+  privacyMode: "standard",
 };
 
 const AmbientContext = createContext<AmbientContextType | undefined>(undefined);
@@ -40,7 +40,7 @@ export const AmbientProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [isEnabled, setIsEnabled] = useState(false);
-  const [permission, setPermission] = useState<PermissionState>('prompt');
+  const [permission, setPermission] = useState<PermissionState>("prompt");
   const [settings, setSettings] = useState<AmbientSettings>(defaultSettings);
 
   const audioStreamRef = useRef<MediaStream | null>(null);
@@ -51,41 +51,41 @@ export const AmbientProvider: React.FC<{ children: ReactNode }> = ({
 
   const setupAudioProcessing = (socket: Socket, stream: MediaStream) => {
     try {
-      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
       recorderRef.current = recorder;
 
-      recorder.addEventListener('dataavailable', event => {
+      recorder.addEventListener("dataavailable", (event) => {
         if (event.data.size > 0) {
-          socket.emit('audio_stream', event.data);
+          socket.emit("audio_stream", event.data);
         }
       });
 
-      recorder.addEventListener('error', event => {
-        console.error('[AudioRecorder] Error:', event);
+      recorder.addEventListener("error", (event) => {
+        console.error("[AudioRecorder] Error:", event);
       });
 
       recorder.start(250); // Send audio chunks every 250ms
-      console.log('[AudioRecorder] Started');
+      console.log("[AudioRecorder] Started");
     } catch (error) {
-      console.error('[AudioRecorder] Setup failed:', error);
+      console.error("[AudioRecorder] Setup failed:", error);
     }
   };
 
   const setupVideoProcessing = (socket: Socket, stream: MediaStream) => {
     try {
-      const video = document.createElement('video');
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
+      const video = document.createElement("video");
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
 
       if (!ctx) {
-        console.error('[VideoProcessor] Failed to get canvas context');
+        console.error("[VideoProcessor] Failed to get canvas context");
         return;
       }
 
       video.srcObject = stream;
       video.play();
 
-      video.addEventListener('loadedmetadata', () => {
+      video.addEventListener("loadedmetadata", () => {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
 
@@ -96,30 +96,30 @@ export const AmbientProvider: React.FC<{ children: ReactNode }> = ({
           try {
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             canvas.toBlob(
-              blob => {
+              (blob) => {
                 if (blob) {
-                  socket.emit('video_frame', blob);
+                  socket.emit("video_frame", blob);
                 }
               },
-              'image/jpeg',
-              0.3
+              "image/jpeg",
+              0.3,
             ); // Low quality for privacy
           } catch (error) {
-            console.error('[VideoProcessor] Frame processing error:', error);
+            console.error("[VideoProcessor] Frame processing error:", error);
           }
         };
 
         videoProcessorRef.current = setInterval(processFrame, 1000); // 1 FPS
-        console.log('[VideoProcessor] Started at 1 FPS');
+        console.log("[VideoProcessor] Started at 1 FPS");
       });
     } catch (error) {
-      console.error('[VideoProcessor] Setup failed:', error);
+      console.error("[VideoProcessor] Setup failed:", error);
     }
   };
 
   const enable = async (
     token: string,
-    options: Partial<AmbientSettings> = {}
+    options: Partial<AmbientSettings> = {},
   ) => {
     if (isEnabled) return;
 
@@ -144,11 +144,11 @@ export const AmbientProvider: React.FC<{ children: ReactNode }> = ({
         videoStreamRef.current = stream;
       }
 
-      setPermission('granted');
+      setPermission("granted");
       setIsEnabled(true);
 
       // Connect to ambient socket
-      const socket = io('/ambient', {
+      const socket = io("/ambient", {
         auth: { token },
         query: {
           audioEnabled: effectiveSettings.audioEnabled,
@@ -158,10 +158,10 @@ export const AmbientProvider: React.FC<{ children: ReactNode }> = ({
       });
       socketRef.current = socket;
 
-      socket.on('connect', () => {
+      socket.on("connect", () => {
         console.log(
-          '[AmbientSocket] Connected with settings:',
-          effectiveSettings
+          "[AmbientSocket] Connected with settings:",
+          effectiveSettings,
         );
 
         // Setup audio processing
@@ -175,17 +175,17 @@ export const AmbientProvider: React.FC<{ children: ReactNode }> = ({
         }
       });
 
-      socket.on('disconnect', () => {
-        console.log('[AmbientSocket] Disconnected');
+      socket.on("disconnect", () => {
+        console.log("[AmbientSocket] Disconnected");
       });
     } catch (err) {
-      console.error('[AmbientContext] Permission denied or error:', err);
-      setPermission('denied');
+      console.error("[AmbientContext] Permission denied or error:", err);
+      setPermission("denied");
       setIsEnabled(false);
     }
   };
   const disable = () => {
-    console.log('[AmbientContext] Disabling ambient mode');
+    console.log("[AmbientContext] Disabling ambient mode");
 
     // Stop video processing
     if (videoProcessorRef.current) {
@@ -207,12 +207,12 @@ export const AmbientProvider: React.FC<{ children: ReactNode }> = ({
 
     // Stop all media streams
     if (audioStreamRef.current) {
-      audioStreamRef.current.getTracks().forEach(track => track.stop());
+      audioStreamRef.current.getTracks().forEach((track) => track.stop());
       audioStreamRef.current = null;
     }
 
     if (videoStreamRef.current) {
-      videoStreamRef.current.getTracks().forEach(track => track.stop());
+      videoStreamRef.current.getTracks().forEach((track) => track.stop());
       videoStreamRef.current = null;
     }
 
@@ -220,7 +220,7 @@ export const AmbientProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const updateSettings = (newSettings: Partial<AmbientSettings>) => {
-    setSettings(prev => ({ ...prev, ...newSettings }));
+    setSettings((prev) => ({ ...prev, ...newSettings }));
 
     // If ambient mode is currently enabled, restart with new settings
     if (isEnabled && socketRef.current) {
@@ -229,7 +229,7 @@ export const AmbientProvider: React.FC<{ children: ReactNode }> = ({
       disable();
       setTimeout(() => {
         // We'll need to get the token from the parent component for restart
-        console.log('[AmbientContext] Settings updated, restart required');
+        console.log("[AmbientContext] Settings updated, restart required");
       }, 100);
     }
   };
@@ -252,6 +252,6 @@ export const AmbientProvider: React.FC<{ children: ReactNode }> = ({
 export const useAmbient = (): AmbientContextType => {
   const context = useContext(AmbientContext);
   if (!context)
-    throw new Error('useAmbient must be used within an AmbientProvider');
+    throw new Error("useAmbient must be used within an AmbientProvider");
   return context;
 };

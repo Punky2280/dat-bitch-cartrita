@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 
 interface SelectProps {
   value: string;
@@ -53,11 +53,11 @@ export const Select: React.FC<SelectProps> = ({
 
 export const SelectTrigger: React.FC<SelectTriggerProps> = ({
   children,
-  className = '',
+  className = "",
 }) => {
   const context = React.useContext(SelectContext);
   if (!context) {
-    throw new Error('SelectTrigger must be used within a Select component');
+    throw new Error("SelectTrigger must be used within a Select component");
   }
   const { isOpen, setIsOpen } = context;
 
@@ -69,7 +69,9 @@ export const SelectTrigger: React.FC<SelectTriggerProps> = ({
     >
       {children}
       <svg
-        className={`h-4 w-4 opacity-50 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+        className={`h-4 w-4 opacity-50 transition-transform ${
+          isOpen ? "rotate-180" : ""
+        }`}
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -86,12 +88,12 @@ export const SelectTrigger: React.FC<SelectTriggerProps> = ({
 };
 
 export const SelectValue: React.FC<SelectValueProps> = ({
-  placeholder = 'Select an option',
-  className = '',
+  placeholder = "Select an option",
+  className = "",
 }) => {
   const context = React.useContext(SelectContext);
   if (!context) {
-    throw new Error('SelectValue must be used within a Select component');
+    throw new Error("SelectValue must be used within a Select component");
   }
   const { value } = context;
 
@@ -100,11 +102,11 @@ export const SelectValue: React.FC<SelectValueProps> = ({
 
 export const SelectContent: React.FC<SelectContentProps> = ({
   children,
-  className = '',
+  className = "",
 }) => {
   const context = React.useContext(SelectContext);
   if (!context) {
-    throw new Error('SelectContent must be used within a Select component');
+    throw new Error("SelectContent must be used within a Select component");
   }
   const { isOpen, setIsOpen } = context;
   const ref = useRef<HTMLDivElement>(null);
@@ -117,9 +119,9 @@ export const SelectContent: React.FC<SelectContentProps> = ({
     };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
       return () =>
-        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [isOpen, setIsOpen]);
 
@@ -138,11 +140,11 @@ export const SelectContent: React.FC<SelectContentProps> = ({
 export const SelectItem: React.FC<SelectItemProps> = ({
   value,
   children,
-  className = '',
+  className = "",
 }) => {
   const context = React.useContext(SelectContext);
   if (!context) {
-    throw new Error('SelectItem must be used within a Select component');
+    throw new Error("SelectItem must be used within a Select component");
   }
   const { onValueChange, setIsOpen } = context;
 

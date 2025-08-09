@@ -1,25 +1,23 @@
-version: '3.8'
-
 services:
-  # PostgreSQL Database - Using regular PostgreSQL
+  # PostgreSQL Database - Using pgvector-enabled PostgreSQL
   postgres:
-    image: postgres:16-alpine
-    container_name: cartrita-db
+    image: pgvector/pgvector:pg16
+    container_name: cartrita-db-new
     restart: unless-stopped
     environment:
       POSTGRES_USER: robert
       POSTGRES_PASSWORD: punky1
       POSTGRES_DB: dat-bitch-cartrita
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+      POSTGRES_INITDB_ARGS: '--encoding=UTF-8'
     ports:
-      - "5432:5432"
+      - '5435:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./packages/backend/db-init:/docker-entrypoint-initdb.d
+      - ./db-init:/docker-entrypoint-initdb.d
     networks:
       - cartrita-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U robert -d dat-bitch-cartrita"]
+      test: ['CMD-SHELL', 'pg_isready -U robert -d dat-bitch-cartrita']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -27,16 +25,16 @@ services:
   # Redis Cache
   redis:
     image: redis:7-alpine
-    container_name: cartrita-redis
+    container_name: cartrita-redis-new
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - '6380:6379'
     volumes:
       - redis_data:/data
     networks:
       - cartrita-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 5s
       retries: 3
@@ -45,7 +43,7 @@ services:
   backend:
     build:
       context: .
-      dockerfile: Dockerfile  # Changed this line - points to root Dockerfile
+      dockerfile: Dockerfile
     container_name: cartrita-backend
     restart: unless-stopped
     environment:
@@ -59,19 +57,13 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - DATABASE_URL=postgresql://robert:punky1@postgres:5432/dat-bitch-cartrita
-      - OPENAI_API_KEY=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
-      - OPENAI_MODEL=gpt-4o
-      - OPENAI_RPM_LIMIT=60
-      - OPENAI_TPM_LIMIT=90000
-      - OPENAI_CONCURRENT_LIMIT=10
-      - JWT_SECRET=cartrita-super-secret-jwt-key-2024
-      - ENCRYPTION_KEY=abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789
-      - DEEPGRAM_API_KEY=8be507456f22a1046d56d701b20c79582c8dddb6
-      - GITHUB_TOKEN=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
+    env_file:
+      - packages/backend/.env
     ports:
-      - "8000:8000"
+      - '8001:8000'
     volumes:
-      - backend_node_modules:/usr/src/app/node_modules
+      - ./packages/backend/uploads:/usr/src/app/packages/backend/uploads
+      - ./packages/backend/logs:/usr/src/app/packages/backend/logs
     networks:
       - cartrita-network
     depends_on:
@@ -80,15 +72,44 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8000/health || exit 1"]
+      test:
+        [
+          'CMD-SHELL',
+          'wget --no-verbose --tries=1 --spider http://localhost:8000/health || exit 1',
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
 
+  # Frontend (Development server with hot reload)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: cartrita-frontend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - VITE_BACKEND_URL=http://localhost:8001
+    ports:
+      - '3001:3000'
+    volumes:
+      - ./packages/frontend/src:/app/src
+      - ./packages/frontend/public:/app/public
+      - ./packages/frontend/index.html:/app/index.html
+      - ./packages/frontend/vite.config.ts:/app/vite.config.ts
+      - ./packages/frontend/tailwind.config.js:/app/tailwind.config.js
+      - ./packages/frontend/postcss.config.js:/app/postcss.config.js
+      - ./packages/frontend/tsconfig.json:/app/tsconfig.json
+      - /app/node_modules
+    networks:
+      - cartrita-network
+    depends_on:
+      - backend
+
 volumes:
   postgres_data:
   redis_data:
-  backend_node_modules:
 
 networks:
   cartrita-network:

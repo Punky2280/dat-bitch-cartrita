@@ -5,9 +5,9 @@ const router = express.Router();
 
 // Simple test route to verify route registration
 router.get('/test', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'Chat history routes are working!',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -29,10 +29,12 @@ router.get('/history', authenticateToken, async (req, res) => {
     const offset = parseInt(req.query.offset) || 0;
 
     const result = await db.query(
-      `SELECT id, speaker, text, model, created_at 
-       FROM conversations 
-       WHERE user_id = $1 
-       ORDER BY created_at DESC 
+      `SELECT cm.id, cm.role as speaker, cm.content as text, cm.created_at,
+              c.title as conversation_title
+       FROM conversation_messages cm
+       JOIN conversations c ON c.id = cm.conversation_id
+       WHERE c.user_id = $1 
+       ORDER BY cm.created_at DESC 
        LIMIT $2 OFFSET $3`,
       [userId, limit, offset]
     );
@@ -63,7 +65,7 @@ router.delete('/history', authenticateToken, async (req, res) => {
     }
 
     const result = await db.query(
-      'DELETE FROM conversations WHERE user_id = $1', 
+      'DELETE FROM conversations WHERE user_id = $1',
       [userId]
     );
 
@@ -73,7 +75,7 @@ router.delete('/history', authenticateToken, async (req, res) => {
 
     res.json({
       message: 'Chat history cleared',
-      deletedCount: result.rowCount
+      deletedCount: result.rowCount,
     });
   } catch (error) {
     console.error('[ChatHistory] ❌ Error clearing chat history:', error);
@@ -95,13 +97,14 @@ router.get('/stats', authenticateToken, async (req, res) => {
 
     const result = await db.query(
       `SELECT 
-         COUNT(*) as total_messages,
-         COUNT(CASE WHEN speaker = 'user' THEN 1 END) as user_messages,
-         COUNT(CASE WHEN speaker = 'cartrita' THEN 1 END) as cartrita_messages,
-         MIN(created_at) as first_conversation,
-         MAX(created_at) as latest_conversation
-       FROM conversations 
-       WHERE user_id = $1`,
+         COUNT(cm.*) as total_messages,
+         COUNT(CASE WHEN cm.role = 'user' THEN 1 END) as user_messages,
+         COUNT(CASE WHEN cm.role = 'assistant' THEN 1 END) as cartrita_messages,
+         MIN(cm.created_at) as first_conversation,
+         MAX(cm.created_at) as latest_conversation
+       FROM conversation_messages cm
+       JOIN conversations c ON c.id = cm.conversation_id 
+       WHERE c.user_id = $1`,
       [userId]
     );
 

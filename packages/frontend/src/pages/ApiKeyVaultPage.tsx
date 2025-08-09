@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useThemedStyles } from '../context/ThemeContext';
-import { validateApiKey } from '../utils/apiKeyValidation';
+import React, { useState, useEffect } from "react";
+import { useThemedStyles } from "../context/ThemeContext";
+import { validateApiKey } from "../utils/apiKeyValidation";
 
 interface ApiKeyVaultPageProps {
   token: string;
@@ -54,92 +54,92 @@ interface SecurityEvent {
 // Enhanced provider presets with Google Cloud API configurations
 const ENHANCED_PROVIDER_PRESETS = {
   openai: {
-    name: 'OpenAI',
-    icon: '🤖',
+    name: "OpenAI",
+    icon: "🤖",
     keyFormat: /^sk-[A-Za-z0-9]{32,}$/,
-    keyExample: 'sk-1234567890abcdef...',
-    description: 'AI language models and embeddings',
-    required_fields: ['api_key'],
+    keyExample: "sk-1234567890abcdef...",
+    description: "AI language models and embeddings",
+    required_fields: ["api_key"],
     validation: {
       api_key: {
-        pattern: '^sk-[A-Za-z0-9]{32,}$',
+        pattern: "^sk-[A-Za-z0-9]{32,}$",
         message:
           'OpenAI API key must start with "sk-" followed by 32+ alphanumeric characters',
       },
     },
   },
   anthropic: {
-    name: 'Anthropic (Claude)',
-    icon: '🧠',
+    name: "Anthropic (Claude)",
+    icon: "🧠",
     keyFormat: /^sk-ant-[A-Za-z0-9\-_]{32,}$/,
-    keyExample: 'sk-ant-api03-1234567890abcdef...',
-    description: 'Claude AI assistant API',
-    required_fields: ['api_key'],
+    keyExample: "sk-ant-api03-1234567890abcdef...",
+    description: "Claude AI assistant API",
+    required_fields: ["api_key"],
     validation: {
       api_key: {
-        pattern: '^sk-ant-[A-Za-z0-9\\-_]{32,}$',
+        pattern: "^sk-ant-[A-Za-z0-9\\-_]{32,}$",
         message:
           'Anthropic API key must start with "sk-ant-" followed by 32+ characters',
       },
     },
   },
-  'google-cloud': {
-    name: 'Google Cloud APIs',
-    icon: '☁️',
+  "google-cloud": {
+    name: "Google Cloud APIs",
+    icon: "☁️",
     keyFormat: /^[A-Za-z0-9\-_]{39}$/,
-    keyExample: 'AIzaSyDp-cMne4eJ-EtV68iNlypHdssyZ76cFb4',
+    keyExample: "AIzaSyDp-cMne4eJ-EtV68iNlypHdssyZ76cFb4",
     description:
-      'All Google Cloud APIs including Gmail, Calendar, Contacts, Docs, Sheets, BigQuery, and more',
-    required_fields: ['api_key'],
+      "All Google Cloud APIs including Gmail, Calendar, Contacts, Docs, Sheets, BigQuery, and more",
+    required_fields: ["api_key"],
     supported_apis: [
-      'Gmail API',
-      'Google Calendar API',
-      'Google Contacts API (People API)',
-      'Google Docs API',
-      'Google Sheets API',
-      'BigQuery API',
-      'Google Cloud Storage API',
-      'Google Maps API',
-      'Google Drive API',
-      'Cloud Monitoring API',
-      'Cloud Logging API',
-      'Service Management API',
-      'Service Usage API',
-      'Analytics Hub API',
+      "Gmail API",
+      "Google Calendar API",
+      "Google Contacts API (People API)",
+      "Google Docs API",
+      "Google Sheets API",
+      "BigQuery API",
+      "Google Cloud Storage API",
+      "Google Maps API",
+      "Google Drive API",
+      "Cloud Monitoring API",
+      "Cloud Logging API",
+      "Service Management API",
+      "Service Usage API",
+      "Analytics Hub API",
     ],
     validation: {
       api_key: {
-        pattern: '^[A-Za-z0-9\\-_]{39}$',
+        pattern: "^[A-Za-z0-9\\-_]{39}$",
         message:
-          'Google Cloud API key must be exactly 39 characters (letters, numbers, hyphens, underscores)',
+          "Google Cloud API key must be exactly 39 characters (letters, numbers, hyphens, underscores)",
       },
     },
   },
   deepgram: {
-    name: 'Deepgram',
-    icon: '🎤',
+    name: "Deepgram",
+    icon: "🎤",
     keyFormat: /^[A-Za-z0-9]{32,}$/,
-    keyExample: '1234567890abcdef...',
-    description: 'Speech-to-text API',
-    required_fields: ['api_key'],
+    keyExample: "1234567890abcdef...",
+    description: "Speech-to-text API",
+    required_fields: ["api_key"],
     validation: {
       api_key: {
-        pattern: '^[A-Za-z0-9]{32,}$',
-        message: 'Deepgram API key must be 32+ alphanumeric characters',
+        pattern: "^[A-Za-z0-9]{32,}$",
+        message: "Deepgram API key must be 32+ alphanumeric characters",
       },
     },
   },
   elevenlabs: {
-    name: 'ElevenLabs',
-    icon: '🗣️',
+    name: "ElevenLabs",
+    icon: "🗣️",
     keyFormat: /^[A-Za-z0-9]{32,}$/,
-    keyExample: '1234567890abcdef...',
-    description: 'Text-to-speech API',
-    required_fields: ['api_key'],
+    keyExample: "1234567890abcdef...",
+    description: "Text-to-speech API",
+    required_fields: ["api_key"],
     validation: {
       api_key: {
-        pattern: '^[A-Za-z0-9]{32,}$',
-        message: 'ElevenLabs API key must be 32+ alphanumeric characters',
+        pattern: "^[A-Za-z0-9]{32,}$",
+        message: "ElevenLabs API key must be 32+ alphanumeric characters",
       },
     },
   },
@@ -151,8 +151,8 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
 }) => {
   const themedStyles = useThemedStyles();
   const [activeView, setActiveView] = useState<
-    'dashboard' | 'keys' | 'add' | 'security' | 'analytics'
-  >('dashboard');
+    "dashboard" | "keys" | "add" | "security" | "analytics"
+  >("dashboard");
   const [providers, setProviders] = useState<ApiProvider[]>([]);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
@@ -160,16 +160,16 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
 
   // Add key form state
   const [newKey, setNewKey] = useState({
-    provider_id: '',
-    key_name: '',
-    api_key: '',
+    provider_id: "",
+    key_name: "",
+    api_key: "",
     metadata: {} as any,
-    expires_at: '',
-    rotation_interval_days: '',
+    expires_at: "",
+    rotation_interval_days: "",
   });
 
   // Validation state
-  const [validationMessage, setValidationMessage] = useState('');
+  const [validationMessage, setValidationMessage] = useState("");
   const [isValidating, setIsValidating] = useState(false);
 
   const [testResults, setTestResults] = useState<{ [keyId: number]: any }>({});
@@ -177,7 +177,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
   // Helper functions for validation and provider info
   const getProviderInfo = (providerId: string) => {
     const selectedProvider = providers.find(
-      p => p.id.toString() === providerId
+      (p) => p.id.toString() === providerId,
     );
     if (!selectedProvider) return null;
 
@@ -189,14 +189,18 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
       ENHANCED_PROVIDER_PRESETS[
         providerName.replace(
           /\s+/g,
-          '-'
+          "-",
         ) as keyof typeof ENHANCED_PROVIDER_PRESETS
       ];
 
     if (preset) {
       let info = preset.description;
       if (preset.supported_apis) {
-        info += `. Supports: ${preset.supported_apis.slice(0, 3).join(', ')}${preset.supported_apis.length > 3 ? ` and ${preset.supported_apis.length - 3} more` : ''}.`;
+        info += `. Supports: ${preset.supported_apis.slice(0, 3).join(", ")}${
+          preset.supported_apis.length > 3
+            ? ` and ${preset.supported_apis.length - 3} more`
+            : ""
+        }.`;
       }
       return info;
     }
@@ -206,9 +210,9 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
 
   const getProviderPlaceholder = (providerId: string) => {
     const selectedProvider = providers.find(
-      p => p.id.toString() === providerId
+      (p) => p.id.toString() === providerId,
     );
-    if (!selectedProvider) return 'Enter your API key...';
+    if (!selectedProvider) return "Enter your API key...";
 
     const providerName = selectedProvider.name.toLowerCase();
     const preset =
@@ -218,11 +222,11 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
       ENHANCED_PROVIDER_PRESETS[
         providerName.replace(
           /\s+/g,
-          '-'
+          "-",
         ) as keyof typeof ENHANCED_PROVIDER_PRESETS
       ];
 
-    return preset ? preset.keyExample : 'Enter your API key...';
+    return preset ? preset.keyExample : "Enter your API key...";
   };
 
   useEffect(() => {
@@ -233,13 +237,13 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
     setLoading(true);
     try {
       const [providersRes, keysRes, securityRes] = await Promise.all([
-        fetch('/api/vault/providers', {
+        fetch("/api/vault/providers", {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('/api/vault/keys', {
+        fetch("/api/vault/keys", {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('/api/vault/security-events?limit=20', {
+        fetch("/api/vault/security-events?limit=20", {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -254,7 +258,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
       if (keysData.success) setApiKeys(keysData.keys);
       if (securityData.success) setSecurityEvents(securityData.events);
     } catch (error) {
-      console.error('Error loading vault data:', error);
+      console.error("Error loading vault data:", error);
     } finally {
       setLoading(false);
     }
@@ -262,11 +266,11 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
 
   const handleAddKey = async () => {
     try {
-      const response = await fetch('/api/vault/keys', {
-        method: 'POST',
+      const response = await fetch("/api/vault/keys", {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           ...newKey,
@@ -280,45 +284,45 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
       const data = await response.json();
       if (data.success) {
         setNewKey({
-          provider_id: '',
-          key_name: '',
-          api_key: '',
+          provider_id: "",
+          key_name: "",
+          api_key: "",
           metadata: {},
-          expires_at: '',
-          rotation_interval_days: '',
+          expires_at: "",
+          rotation_interval_days: "",
         });
-        setActiveView('keys');
+        setActiveView("keys");
         loadData();
       } else {
         alert(data.error);
       }
     } catch (error) {
-      console.error('Error adding API key:', error);
-      alert('Failed to add API key');
+      console.error("Error adding API key:", error);
+      alert("Failed to add API key");
     }
   };
 
   const handleTestKey = async (keyId: number) => {
     try {
       const response = await fetch(`/api/vault/keys/${keyId}/test`, {
-        method: 'POST',
+        method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
 
       const data = await response.json();
       setTestResults({ ...testResults, [keyId]: data.test_result });
     } catch (error) {
-      console.error('Error testing API key:', error);
+      console.error("Error testing API key:", error);
     }
   };
 
   const handleToggleKeyStatus = async (keyId: number, isActive: boolean) => {
     try {
       const response = await fetch(`/api/vault/keys/${keyId}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ is_active: !isActive }),
       });
@@ -327,14 +331,14 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
         loadData();
       }
     } catch (error) {
-      console.error('Error toggling key status:', error);
+      console.error("Error toggling key status:", error);
     }
   };
 
   const handleDeleteKey = async (keyId: number) => {
     if (
       !confirm(
-        'Are you sure you want to delete this API key? This action cannot be undone.'
+        "Are you sure you want to delete this API key? This action cannot be undone.",
       )
     ) {
       return;
@@ -342,7 +346,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
 
     try {
       const response = await fetch(`/api/vault/keys/${keyId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -350,23 +354,23 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
         loadData();
       }
     } catch (error) {
-      console.error('Error deleting API key:', error);
+      console.error("Error deleting API key:", error);
     }
   };
 
   const getSeverityColor = (severity: string): string => {
     switch (severity) {
-      case 'critical':
-        return 'text-red-400 bg-red-900/20';
-      case 'warning':
-        return 'text-yellow-400 bg-yellow-900/20';
+      case "critical":
+        return "text-red-400 bg-red-900/20";
+      case "warning":
+        return "text-yellow-400 bg-yellow-900/20";
       default:
-        return 'text-blue-400 bg-blue-900/20';
+        return "text-blue-400 bg-blue-900/20";
     }
   };
 
   const getProviderIcon = (icon: string): string => {
-    return icon || '🔑';
+    return icon || "🔑";
   };
 
   if (loading) {
@@ -403,7 +407,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
           </div>
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => setActiveView('add')}
+              onClick={() => setActiveView("add")}
               className="px-4 py-2 bg-gradient-green rounded-lg font-semibold transition-all duration-300 hover:scale-105 flex items-center space-x-2"
             >
               <span>➕</span>
@@ -418,19 +422,19 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
         <div className="max-w-7xl mx-auto px-6">
           <nav className="flex space-x-8">
             {[
-              { id: 'dashboard', name: 'Dashboard', icon: '📊' },
-              { id: 'keys', name: 'API Keys', icon: '🔑' },
-              { id: 'add', name: 'Add Key', icon: '➕' },
-              { id: 'security', name: 'Security Events', icon: '🛡️' },
-              { id: 'analytics', name: 'Usage Analytics', icon: '📈' },
-            ].map(tab => (
+              { id: "dashboard", name: "Dashboard", icon: "📊" },
+              { id: "keys", name: "API Keys", icon: "🔑" },
+              { id: "add", name: "Add Key", icon: "➕" },
+              { id: "security", name: "Security Events", icon: "🛡️" },
+              { id: "analytics", name: "Usage Analytics", icon: "📈" },
+            ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveView(tab.id as any)}
                 className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
                   activeView === tab.id
-                    ? 'border-green-500 text-green-400'
-                    : 'border-transparent text-gray-400 hover:text-white hover:border-gray-300'
+                    ? "border-green-500 text-green-400"
+                    : "border-transparent text-gray-400 hover:text-white hover:border-gray-300"
                 }`}
               >
                 <span className="mr-2">{tab.icon}</span>
@@ -443,7 +447,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-6">
-        {activeView === 'dashboard' && (
+        {activeView === "dashboard" && (
           <div className="space-y-8">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -461,7 +465,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                   <div>
                     <p className="text-blue-100">Active Keys</p>
                     <p className="text-2xl font-bold">
-                      {apiKeys.filter(k => k.is_active).length}
+                      {apiKeys.filter((k) => k.is_active).length}
                     </p>
                   </div>
                   <div className="text-3xl">✅</div>
@@ -472,7 +476,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                   <div>
                     <p className="text-yellow-100">Need Rotation</p>
                     <p className="text-2xl font-bold">
-                      {apiKeys.filter(k => k.needs_rotation).length}
+                      {apiKeys.filter((k) => k.needs_rotation).length}
                     </p>
                   </div>
                   <div className="text-3xl">🔄</div>
@@ -498,7 +502,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                   <span>Recently Added Keys</span>
                 </h2>
                 <div className="space-y-4">
-                  {apiKeys.slice(0, 5).map(key => (
+                  {apiKeys.slice(0, 5).map((key) => (
                     <div
                       key={key.id}
                       className="flex items-center justify-between p-4 border border-gray-700 rounded-lg"
@@ -516,9 +520,13 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                       </div>
                       <div className="text-right text-sm">
                         <div
-                          className={`px-2 py-1 rounded ${key.is_active ? 'bg-green-900/20 text-green-400' : 'bg-red-900/20 text-red-400'}`}
+                          className={`px-2 py-1 rounded ${
+                            key.is_active
+                              ? "bg-green-900/20 text-green-400"
+                              : "bg-red-900/20 text-red-400"
+                          }`}
                         >
-                          {key.is_active ? 'Active' : 'Inactive'}
+                          {key.is_active ? "Active" : "Inactive"}
                         </div>
                         <div className="text-gray-500 mt-1">
                           {new Date(key.created_at).toLocaleDateString()}
@@ -536,13 +544,15 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                   <span>Recent Security Events</span>
                 </h2>
                 <div className="space-y-4">
-                  {securityEvents.slice(0, 5).map(event => (
+                  {securityEvents.slice(0, 5).map((event) => (
                     <div
                       key={event.id}
                       className="flex items-start space-x-3 p-4 border border-gray-700 rounded-lg"
                     >
                       <div
-                        className={`px-2 py-1 rounded text-xs font-medium ${getSeverityColor(event.severity)}`}
+                        className={`px-2 py-1 rounded text-xs font-medium ${getSeverityColor(
+                          event.severity,
+                        )}`}
                       >
                         {event.severity.toUpperCase()}
                       </div>
@@ -567,7 +577,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
           </div>
         )}
 
-        {activeView === 'keys' && (
+        {activeView === "keys" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold">
@@ -576,7 +586,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
               <div className="flex items-center space-x-4">
                 <select className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
                   <option value="">All Providers</option>
-                  {providers.map(provider => (
+                  {providers.map((provider) => (
                     <option key={provider.id} value={provider.name}>
                       {provider.display_name}
                     </option>
@@ -586,7 +596,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {apiKeys.map(key => (
+              {apiKeys.map((key) => (
                 <div
                   key={key.id}
                   className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-green-500 transition-colors"
@@ -613,7 +623,9 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                         />
                       )}
                       <div
-                        className={`w-3 h-3 rounded-full ${key.is_active ? 'bg-green-400' : 'bg-red-400'}`}
+                        className={`w-3 h-3 rounded-full ${
+                          key.is_active ? "bg-green-400" : "bg-red-400"
+                        }`}
                       />
                     </div>
                   </div>
@@ -630,7 +642,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                       <span className="text-white">
                         {key.last_used_at
                           ? new Date(key.last_used_at).toLocaleDateString()
-                          : 'Never'}
+                          : "Never"}
                       </span>
                     </div>
                     {key.usage_stats && (
@@ -663,11 +675,11 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                       }
                       className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                         key.is_active
-                          ? 'bg-yellow-600 hover:bg-yellow-700'
-                          : 'bg-green-600 hover:bg-green-700'
+                          ? "bg-yellow-600 hover:bg-yellow-700"
+                          : "bg-green-600 hover:bg-green-700"
                       }`}
                     >
-                      {key.is_active ? '⏸️ Disable' : '▶️ Enable'}
+                      {key.is_active ? "⏸️ Disable" : "▶️ Enable"}
                     </button>
                     <button
                       onClick={() => handleDeleteKey(key.id)}
@@ -680,9 +692,9 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                   {testResults[key.id] && (
                     <div
                       className={`mt-4 p-3 rounded-lg text-sm ${
-                        testResults[key.id].status === 'success'
-                          ? 'bg-green-900/20 border border-green-700 text-green-200'
-                          : 'bg-red-900/20 border border-red-700 text-red-200'
+                        testResults[key.id].status === "success"
+                          ? "bg-green-900/20 border border-green-700 text-green-200"
+                          : "bg-red-900/20 border border-red-700 text-red-200"
                       }`}
                     >
                       <div className="font-medium">
@@ -704,7 +716,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
           </div>
         )}
 
-        {activeView === 'add' && (
+        {activeView === "add" && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-gray-800 rounded-xl p-6">
               <h2 className="text-xl font-bold mb-6">Add New API Key</h2>
@@ -716,13 +728,13 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                   </label>
                   <select
                     value={newKey.provider_id}
-                    onChange={e =>
+                    onChange={(e) =>
                       setNewKey({ ...newKey, provider_id: e.target.value })
                     }
                     className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500"
                   >
                     <option value="">Select a provider...</option>
-                    {providers.map(provider => (
+                    {providers.map((provider) => (
                       <option key={provider.id} value={provider.id}>
                         {provider.icon} {provider.display_name}
                       </option>
@@ -737,7 +749,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                   <input
                     type="text"
                     value={newKey.key_name}
-                    onChange={e =>
+                    onChange={(e) =>
                       setNewKey({ ...newKey, key_name: e.target.value })
                     }
                     className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-green-500"
@@ -752,7 +764,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                   <input
                     type="password"
                     value={newKey.api_key}
-                    onChange={e => {
+                    onChange={(e) => {
                       const value = e.target.value;
                       setNewKey({ ...newKey, api_key: value });
 
@@ -760,24 +772,24 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                       if (value && newKey.provider_id) {
                         const validation = validateApiKey(
                           newKey.provider_id,
-                          value
+                          value,
                         );
                         setValidationMessage(
-                          validation.isValid ? '' : validation.message || ''
+                          validation.isValid ? "" : validation.message || "",
                         );
                       } else {
-                        setValidationMessage('');
+                        setValidationMessage("");
                       }
                     }}
                     className={`w-full px-4 py-3 glass-card border rounded-lg text-white placeholder-gray-400 focus:outline-none transition-colors ${
                       validationMessage
-                        ? 'border-red-500 focus:border-red-400'
-                        : 'border-gray-600/50 focus:border-blue-500'
+                        ? "border-red-500 focus:border-red-400"
+                        : "border-gray-600/50 focus:border-blue-500"
                     }`}
                     placeholder={
                       newKey.provider_id
                         ? getProviderPlaceholder(newKey.provider_id)
-                        : 'Enter your API key...'
+                        : "Enter your API key..."
                     }
                   />
                   {validationMessage && (
@@ -805,7 +817,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                     <input
                       type="datetime-local"
                       value={newKey.expires_at}
-                      onChange={e =>
+                      onChange={(e) =>
                         setNewKey({ ...newKey, expires_at: e.target.value })
                       }
                       className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500"
@@ -819,7 +831,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                     <input
                       type="number"
                       value={newKey.rotation_interval_days}
-                      onChange={e =>
+                      onChange={(e) =>
                         setNewKey({
                           ...newKey,
                           rotation_interval_days: e.target.value,
@@ -842,7 +854,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                     Add API Key
                   </button>
                   <button
-                    onClick={() => setActiveView('keys')}
+                    onClick={() => setActiveView("keys")}
                     className="px-6 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg font-semibold transition-colors"
                   >
                     Cancel
@@ -853,12 +865,12 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
           </div>
         )}
 
-        {activeView === 'security' && (
+        {activeView === "security" && (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Security Events</h2>
 
             <div className="space-y-4">
-              {securityEvents.map(event => (
+              {securityEvents.map((event) => (
                 <div
                   key={event.id}
                   className="bg-gray-800 border border-gray-700 rounded-lg p-6"
@@ -866,13 +878,15 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-4">
                       <div
-                        className={`px-3 py-1 rounded text-sm font-medium ${getSeverityColor(event.severity)}`}
+                        className={`px-3 py-1 rounded text-sm font-medium ${getSeverityColor(
+                          event.severity,
+                        )}`}
                       >
                         {event.severity.toUpperCase()}
                       </div>
                       <div>
                         <h3 className="font-semibold text-lg">
-                          {event.event_type.replace('_', ' ').toUpperCase()}
+                          {event.event_type.replace("_", " ").toUpperCase()}
                         </h3>
                         <p className="text-gray-300 mt-1">
                           {event.description}
@@ -898,7 +912,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
           </div>
         )}
 
-        {activeView === 'analytics' && (
+        {activeView === "analytics" && (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Usage Analytics</h2>
             <div className="bg-gray-800 rounded-xl p-6 text-center">

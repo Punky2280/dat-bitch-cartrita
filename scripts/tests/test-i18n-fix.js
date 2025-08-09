@@ -110,7 +110,9 @@ async function runAllTests() {
   console.log('========================');
   console.log(`i18next Loaded: ${results.i18nLoaded ? '✅' : '❌'}`);
   console.log(
-    `Translation Files: ${Object.keys(results.translationLoading).length} languages tested`
+    `Translation Files: ${
+      Object.keys(results.translationLoading).length
+    } languages tested`
   );
   console.log(
     `React Integration: ${results.reactI18n.hasLanguageSelector ? '✅' : '❌'}`

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState } from "react";
 
 interface AudioVisualizerProps {
   isRecording: boolean;
@@ -15,8 +15,8 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
   audioStream,
   width = 300,
   height = 60,
-  barColor = '#00ff88',
-  backgroundColor = 'rgba(0, 0, 0, 0.2)',
+  barColor = "#00ff88",
+  backgroundColor = "rgba(0, 0, 0, 0.2)",
   sensitivity = 1.0,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -59,8 +59,8 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
       visualize();
     } catch (error) {
       console.error(
-        '[AudioVisualizer] Failed to initialize audio analysis:',
-        error
+        "[AudioVisualizer] Failed to initialize audio analysis:",
+        error,
       );
     }
   };
@@ -69,7 +69,7 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
     if (!analyzerRef.current || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const analyzer = analyzerRef.current;
@@ -101,7 +101,7 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
         const dataIndex = Math.floor((i * bufferLength) / barCount);
         const barHeight = Math.max(
           2,
-          (dataArray[dataIndex] / 255) * maxBarHeight * sensitivity
+          (dataArray[dataIndex] / 255) * maxBarHeight * sensitivity,
         );
 
         // Create gradient for each bar
@@ -109,17 +109,17 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
           0,
           canvas.height,
           0,
-          canvas.height - barHeight
+          canvas.height - barHeight,
         );
         gradient.addColorStop(0, barColor);
-        gradient.addColorStop(1, barColor + '60'); // More transparent at top
+        gradient.addColorStop(1, barColor + "60"); // More transparent at top
 
         ctx.fillStyle = gradient;
         ctx.fillRect(
           i * barWidth + 1,
           canvas.height - barHeight,
           barWidth - 2,
-          barHeight
+          barHeight,
         );
       }
 
@@ -128,7 +128,7 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
         const pulseAlpha = 0.1 + 0.1 * Math.sin(Date.now() * 0.005);
         ctx.fillStyle = `${barColor}${Math.floor(pulseAlpha * 255)
           .toString(16)
-          .padStart(2, '0')}`;
+          .padStart(2, "0")}`;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
@@ -158,13 +158,13 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
         ref={canvasRef}
         width={width}
         height={height}
-        className={`audio-visualizer ${isActive ? 'active' : 'inactive'}`}
+        className={`audio-visualizer ${isActive ? "active" : "inactive"}`}
         style={{
-          border: `1px solid ${isActive ? barColor : '#333'}`,
-          borderRadius: '8px',
+          border: `1px solid ${isActive ? barColor : "#333"}`,
+          borderRadius: "8px",
           background: backgroundColor,
-          transition: 'border-color 0.3s ease',
-          boxShadow: isActive ? `0 0 20px ${barColor}40` : 'none',
+          transition: "border-color 0.3s ease",
+          boxShadow: isActive ? `0 0 20px ${barColor}40` : "none",
           opacity: isActive ? 1 : 0.6,
         }}
       />
@@ -172,23 +172,23 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
         <div
           className="recording-indicator"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginTop: '8px',
-            fontSize: '12px',
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginTop: "8px",
+            fontSize: "12px",
             color: barColor,
-            fontWeight: 'bold',
+            fontWeight: "bold",
           }}
         >
           <div
             style={{
-              width: '8px',
-              height: '8px',
+              width: "8px",
+              height: "8px",
               backgroundColor: barColor,
-              borderRadius: '50%',
-              marginRight: '6px',
-              animation: 'pulse 1.5s infinite',
+              borderRadius: "50%",
+              marginRight: "6px",
+              animation: "pulse 1.5s infinite",
             }}
           />
           Recording Audio...

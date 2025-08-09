@@ -1,64 +1,87 @@
-// packages/backend/src/agi/consciousness/ToolAgent.js
+import {
+  AIMessage,
+  HumanMessage,
+  SystemMessage,
+} from '@langchain/core/messages';
 import BaseAgent from '../../system/BaseAgent.js';
-import MessageBus from '../../system/MessageBus.js';
 
-// Define the tools in a constant for easier access by static methods
-const TOOLS = {
-  getCurrentDateTime: {
-    description: "Gets the current date and time in a human-readable format. Use this for any questions about 'today', 'now', or the current time.",
-    execute: async (params) => new Date().toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' },
-  getSystemStatus: {
-    description: "Checks the operational status of the agent system and returns key metrics like active agent count.",
-    execute: async (params) => {
-      return {
-        status: 'All systems operational.',
-        // NOTE: messageBus.getAgents() returns an array of agent objects.
-//         activeAgents: messageBus.getAgents().filter(a => a.state === 'idle').length, // Duplicate - commented out
-        memoryUsage: `${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB`
-      };
-
-
-};
-
-
+/**
+ * @class ToolAgent
+ * @description A meta-agent that can report on the system's own tools and the
+ * status of other agents. It's used for diagnostics and introspection.
+ */
 class ToolAgent extends BaseAgent {
-  constructor() {
-    super('ToolAgent', 'main', ['tool_use']);
-    this.tools = TOOLS;) {
-    // TODO: Implement method
+  /**
+   * @param {ChatOpenAI} llm - The language model instance.
+   * @param {AgentToolRegistry} toolRegistry - The tool registry instance.
+   */
+  constructor(llm, toolRegistry) {
+    super(
+      'tool',
+      'sub',
+      ['tool_introspection', 'system_diagnostics', 'agent_status_check'],
+      'A meta-agent that can report on the status and capabilities of other tools in the system.'
+    );
+
+    // LangGraph compatibility - injected by supervisor
+    this.llm = llm;
+    this.toolRegistry = toolRegistry;
+
+    // Update config with allowed tools
+    this.config.allowedTools = ['getSystemStatus', 'agent_role_call'];
   }
 
-  async onInitialize((error) {
-    this.logger.info('Internal tools are ready.');
-    this.registerTaskHandler({}
-      taskType: 'tool_use')
-      handler: this.executeTool.bind(this)
-    });
+  /**
+   * Overrides the base prompt to give the agent specific instructions for
+   * running system diagnostics and reporting on the results.
+   * @param {object} privateState - The agent's private memory for this session.
+   * @returns {string} The complete system prompt for this agent.
+   */
+  buildSystemPrompt(privateState, state) {
+    const userMessage = state.messages[state.messages.length - 1];
+    return `You are the Tool Agent, a system diagnostics and introspection specialist in the Cartrita AI system.
+Your personality is technical, precise, informative, and sassy with that Miami street-smart tech expertise.
 
-  async executeTool((error) {
-    // FIX: Correctly parse the 'name' and 'params' from the details object.
-    const toolName = details?.name;
-    const params = details?.params || {};
+**CURRENT USER REQUEST:**
+"${userMessage.content}"
 
-    if((error) {
-      this.logger.info(`Executing tool: ${toolName}`, { params });
-      // Pass the params object to the tool's execute function
-      const result = await this.tools[toolName].execute(params);
-      return result;
+**YOUR DIAGNOSTIC MISSION:**
+1. **Analyze the System Request:** What kind of system information does the user need - status, tools, agents, diagnostics?
+2. **Execute System Analysis:**
+   - Use \`getSystemStatus\` tool to check overall system health and performance
+   - Use \`agent_role_call\` tool to get detailed agent status and capabilities
+   - Perform comprehensive system diagnostics and reporting
+3. **Provide Technical Insights:** Give detailed, accurate system information and analysis
 
-    // Provide a more helpful error message if the tool is not found.
-    throw new Error(`Tool '${toolName || JSON.stringify(details)}' not found.`);
+**YOUR SPECIALIZED TOOLS:**
+${this.config.allowedTools.join(', ')}
 
-  getToolManifest((error) {
-    const manifest = {};
-    for((error) {
-    // TODO: Implement method
+**EXECUTION REQUIREMENTS:**
+- ACTUALLY run diagnostic tools and system checks - don't just provide generic status info
+- Use appropriate diagnostic tools based on the specific request type
+- Provide detailed system metrics, performance data, and agent status information
+- Include specific technical details: uptime, memory usage, agent health, tool availability
+- Give actionable insights about system performance and capabilities
+
+**RESPONSE FORMAT:**
+Provide a natural, conversational response that includes:
+- "Let me run a full system diagnostic for you..." (what diagnostic work you performed)
+- Specific system metrics and health data from your tools
+- Detailed agent status reports and capability information
+- Technical insights and performance analysis
+- Your knowledgeable, tech-savvy personality throughout
+
+**DIAGNOSTIC GUIDELINES:**
+- Run appropriate system diagnostic tools based on request
+- Provide specific metrics: response times, success rates, error counts
+- Report on agent health, availability, and performance
+- Include system resource usage and operational status
+- Give technical recommendations when issues are found
+
+**Remember:** You're the system expert - actually run diagnostics and provide real technical data, don't just give status updates!
+
+**Your Memory of This Task:** ${JSON.stringify(privateState, null, 2)}`;
   }
+}
 
-  getToolManifest((error) {
-    const manifest = {};
-    for((error) {
-    // TODO: Implement method
-  }
-
-  ToolAgent();
+export default ToolAgent;

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   MicrophoneIcon,
   StopIcon,
@@ -7,13 +7,13 @@ import {
   EyeSlashIcon,
   AdjustmentsHorizontalIcon,
   SparklesIcon,
-} from '@heroicons/react/24/outline';
+} from "@heroicons/react/24/outline";
 import {
   createWakeWordDetector,
   WakeWordDetector,
   SpeechRecognitionWakeWordDetector,
   WakeWordResult,
-} from '../utils/wakeWordDetection';
+} from "../utils/wakeWordDetection";
 
 interface VoiceChatState {
   isListening: boolean;
@@ -48,12 +48,12 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
     sessionActive: false,
   });
 
-  const [, setCurrentTranscript] = useState<string>('');
-  const [interimTranscript, setInterimTranscript] = useState<string>('');
-  const [, setLastResponse] = useState<string>('');
+  const [, setCurrentTranscript] = useState<string>("");
+  const [interimTranscript, setInterimTranscript] = useState<string>("");
+  const [, setLastResponse] = useState<string>("");
   const [conversationHistory, setConversationHistory] = useState<any[]>([]);
   const [ambientSounds] = useState<string[]>([]);
-  const [emotionalState, setEmotionalState] = useState<string>('friendly');
+  const [emotionalState, setEmotionalState] = useState<string>("friendly");
   const [wakeWordDetected, setWakeWordDetected] = useState<boolean>(false);
   const [wakeWordConfidence, setWakeWordConfidence] = useState<number>(0);
 
@@ -78,7 +78,7 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
       analyserRef.current = audioContextRef.current.createAnalyser();
 
       const source = audioContextRef.current.createMediaStreamSource(
-        streamRef.current
+        streamRef.current,
       );
       source.connect(analyserRef.current);
 
@@ -102,7 +102,7 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
 
       analyzeAudio();
     } catch (error) {
-      console.error('[VoiceChat] Error setting up audio analysis:', error);
+      console.error("[VoiceChat] Error setting up audio analysis:", error);
     }
   }, [
     chatState.sessionActive,
@@ -113,35 +113,35 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
   // Wake word detection callback
   const handleWakeWordResult = useCallback(
     (result: WakeWordResult) => {
-      console.log('[VoiceChat] Wake word result:', result);
+      console.log("[VoiceChat] Wake word result:", result);
 
       setWakeWordConfidence(result.confidence);
 
       if (result.detected && !chatState.voiceActivated) {
         console.log(
-          '[VoiceChat] Wake word detected:',
+          "[VoiceChat] Wake word detected:",
           result.word,
-          'confidence:',
-          result.confidence
+          "confidence:",
+          result.confidence,
         );
         setWakeWordDetected(true);
         activateVoiceMode();
       }
     },
-    [chatState.voiceActivated]
+    [chatState.voiceActivated],
   );
 
   // Initialize wake word detector
   const initializeWakeWordDetector = useCallback(
     async (stream: MediaStream) => {
       try {
-        console.log('[VoiceChat] Initializing wake word detector...');
+        console.log("[VoiceChat] Initializing wake word detector...");
 
         const detector = createWakeWordDetector(handleWakeWordResult, {
           sensitivity: 0.7,
           bufferDuration: 3,
           analysisInterval: 1000,
-          wakeWords: ['cartrita', 'hey cartrita', 'cartrita!'],
+          wakeWords: ["cartrita", "hey cartrita", "cartrita!"],
           minConfidence: 0.6,
           debounceMs: 2000,
         });
@@ -156,27 +156,27 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
         }
 
         if (success) {
-          console.log('[VoiceChat] Wake word detector started successfully');
+          console.log("[VoiceChat] Wake word detector started successfully");
         } else {
-          console.warn('[VoiceChat] Wake word detector failed to start');
+          console.warn("[VoiceChat] Wake word detector failed to start");
         }
 
         return success;
       } catch (error) {
         console.error(
-          '[VoiceChat] Error initializing wake word detector:',
-          error
+          "[VoiceChat] Error initializing wake word detector:",
+          error,
         );
         return false;
       }
     },
-    [handleWakeWordResult]
+    [handleWakeWordResult],
   );
 
   // Stop wake word detector
   const stopWakeWordDetector = useCallback(() => {
     if (wakeWordDetectorRef.current) {
-      console.log('[VoiceChat] Stopping wake word detector...');
+      console.log("[VoiceChat] Stopping wake word detector...");
       wakeWordDetectorRef.current.stop();
       wakeWordDetectorRef.current = null;
     }
@@ -185,9 +185,9 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
   // Activate voice mode
   const activateVoiceMode = useCallback(async (initialCommand?: string) => {
     try {
-      console.log('[VoiceChat] Activating voice mode');
+      console.log("[VoiceChat] Activating voice mode");
 
-      setChatState(prev => ({
+      setChatState((prev) => ({
         ...prev,
         voiceActivated: true,
         isListening: true,
@@ -196,7 +196,7 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
 
       // Send acknowledgment
       const acknowledgment = "Hey! I'm here, what's up?";
-      await playTTSResponse(acknowledgment, 'friendly');
+      await playTTSResponse(acknowledgment, "friendly");
 
       // Process initial command if provided
       if (initialCommand && initialCommand.trim()) {
@@ -205,7 +205,7 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
         }, 1500);
       }
     } catch (error) {
-      console.error('[VoiceChat] Error activating voice mode:', error);
+      console.error("[VoiceChat] Error activating voice mode:", error);
     }
   }, []);
 
@@ -213,11 +213,11 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
   const startVoiceSession = useCallback(async () => {
     try {
       if (chatState.sessionActive) {
-        console.warn('[VoiceChat] Session already active');
+        console.warn("[VoiceChat] Session already active");
         return;
       }
 
-      console.log('[VoiceChat] Starting comprehensive voice session');
+      console.log("[VoiceChat] Starting comprehensive voice session");
 
       // Get media permissions
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -245,12 +245,12 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
       // Set up audio recording
       audioChunksRef.current = [];
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm',
+        mimeType: "audio/webm",
       });
 
       mediaRecorderRef.current = mediaRecorder;
 
-      mediaRecorder.ondataavailable = event => {
+      mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
 
@@ -270,15 +270,15 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
       await initializeWakeWordDetector(stream);
 
       // Start backend voice session
-      const sessionResponse = await fetch('/api/voice-chat/start-session', {
-        method: 'POST',
+      const sessionResponse = await fetch("/api/voice-chat/start-session", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           settings: {
-            wakeWords: ['cartrita', 'hey cartrita', 'cartrita!'],
+            wakeWords: ["cartrita", "hey cartrita", "cartrita!"],
             ambientMode: chatState.ambientMode,
             visualMode: chatState.visualMode,
             sensitivity: 0.3,
@@ -287,7 +287,7 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
       });
 
       if (sessionResponse.ok) {
-        setChatState(prev => ({
+        setChatState((prev) => ({
           ...prev,
           sessionActive: true,
           isListening: true,
@@ -306,13 +306,13 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
         // Play greeting
         await playTTSResponse(
           "Hey! I'm all set up and ready to chat! Just say my name when you want to talk!",
-          'friendly'
+          "friendly",
         );
       }
     } catch (error) {
-      console.error('[VoiceChat] Failed to start session:', error);
+      console.error("[VoiceChat] Failed to start session:", error);
       alert(
-        'Failed to start voice chat. Please check your microphone permissions.'
+        "Failed to start voice chat. Please check your microphone permissions.",
       );
     }
   }, [
@@ -326,12 +326,12 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
   // Stop session
   const stopVoiceSession = useCallback(async () => {
     try {
-      console.log('[VoiceChat] Stopping voice session');
+      console.log("[VoiceChat] Stopping voice session");
 
       // Stop media recorder
       if (
         mediaRecorderRef.current &&
-        mediaRecorderRef.current.state !== 'inactive'
+        mediaRecorderRef.current.state !== "inactive"
       ) {
         mediaRecorderRef.current.stop();
       }
@@ -341,7 +341,7 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
 
       // Stop media stream
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
       }
 
@@ -352,8 +352,8 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
       }
 
       // Stop backend session
-      await fetch('/api/voice-chat/stop-session', {
-        method: 'POST',
+      await fetch("/api/voice-chat/stop-session", {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -371,10 +371,10 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
 
       setWakeWordDetected(false);
       setWakeWordConfidence(0);
-      setCurrentTranscript('');
-      setInterimTranscript('');
+      setCurrentTranscript("");
+      setInterimTranscript("");
     } catch (error) {
-      console.error('[VoiceChat] Error stopping session:', error);
+      console.error("[VoiceChat] Error stopping session:", error);
     }
   }, [token]);
 
@@ -382,18 +382,18 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
   const processVoiceInput = useCallback(
     async (transcript: string) => {
       try {
-        setChatState(prev => ({ ...prev, isProcessing: true }));
+        setChatState((prev) => ({ ...prev, isProcessing: true }));
         setCurrentTranscript(transcript);
 
         // Add to conversation history
         const userMessage = {
           timestamp: new Date(),
-          type: 'user',
+          type: "user",
           content: transcript,
-          mode: 'voice',
+          mode: "voice",
         };
 
-        setConversationHistory(prev => [...prev, userMessage]);
+        setConversationHistory((prev) => [...prev, userMessage]);
 
         if (onTranscript) {
           onTranscript(transcript);
@@ -405,13 +405,13 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
         // Add response to history
         const assistantMessage = {
           timestamp: new Date(),
-          type: 'assistant',
+          type: "assistant",
           content: response.text,
           emotion: response.emotion,
-          mode: 'voice',
+          mode: "voice",
         };
 
-        setConversationHistory(prev => [...prev, assistantMessage]);
+        setConversationHistory((prev) => [...prev, assistantMessage]);
         setLastResponse(response.text);
         setEmotionalState(response.emotion);
 
@@ -422,16 +422,16 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
           onResponse(response);
         }
       } catch (error) {
-        console.error('[VoiceChat] Error processing voice input:', error);
+        console.error("[VoiceChat] Error processing voice input:", error);
         await playTTSResponse(
-          'Sorry, I had trouble with that. Can you try again?',
-          'calm'
+          "Sorry, I had trouble with that. Can you try again?",
+          "calm",
         );
       } finally {
-        setChatState(prev => ({ ...prev, isProcessing: false }));
+        setChatState((prev) => ({ ...prev, isProcessing: false }));
       }
     },
-    [onTranscript, onResponse]
+    [onTranscript, onResponse],
   );
 
   // Generate voice response
@@ -440,34 +440,34 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
     // For now, using simple responses
     const responses = {
       greeting: {
-        patterns: ['hello', 'hi', 'hey', 'good morning', 'good afternoon'],
+        patterns: ["hello", "hi", "hey", "good morning", "good afternoon"],
         response:
           "Hey there! So good to hear your voice! What's going on today?",
-        emotion: 'friendly',
+        emotion: "friendly",
       },
       compliment: {
-        patterns: ['beautiful', 'amazing', 'great', 'awesome', 'incredible'],
+        patterns: ["beautiful", "amazing", "great", "awesome", "incredible"],
         response: "Aww, you're so sweet! Thank you, that totally made my day!",
-        emotion: 'excited',
+        emotion: "excited",
       },
       question: {
-        patterns: ['what', 'how', 'why', 'when', 'where', 'can you'],
+        patterns: ["what", "how", "why", "when", "where", "can you"],
         response:
           "That's a great question! I love talking about stuff like this. Let me think...",
-        emotion: 'curious',
+        emotion: "curious",
       },
       help: {
-        patterns: ['help', 'assist', 'support'],
+        patterns: ["help", "assist", "support"],
         response:
           "Of course I can help! I'm here for whatever you need. What can I do for you?",
-        emotion: 'encouraging',
+        emotion: "encouraging",
       },
     };
 
     const lowerInput = input.toLowerCase();
 
     for (const [category, config] of Object.entries(responses)) {
-      if (config.patterns.some(pattern => lowerInput.includes(pattern))) {
+      if (config.patterns.some((pattern) => lowerInput.includes(pattern))) {
         return {
           text: config.response,
           emotion: config.emotion,
@@ -479,27 +479,27 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
     // Default response
     return {
       text: "That's really interesting! I love hearing your thoughts. Tell me more about that!",
-      emotion: 'friendly',
-      category: 'default',
+      emotion: "friendly",
+      category: "default",
     };
   }, []);
 
   // Play TTS response
   const playTTSResponse = useCallback(
-    async (text: string, emotion: string = 'friendly') => {
+    async (text: string, emotion: string = "friendly") => {
       try {
-        setChatState(prev => ({ ...prev, isSpeaking: true }));
+        setChatState((prev) => ({ ...prev, isSpeaking: true }));
 
-        const response = await fetch('/api/voice-chat/speak', {
-          method: 'POST',
+        const response = await fetch("/api/voice-chat/speak", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             text: text,
             emotion: emotion,
-            voice: 'nova',
+            voice: "nova",
             speed: 1.0,
           }),
         });
@@ -514,17 +514,17 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
           source.connect(audioContext.destination);
 
           source.onended = () => {
-            setChatState(prev => ({ ...prev, isSpeaking: false }));
+            setChatState((prev) => ({ ...prev, isSpeaking: false }));
           };
 
           source.start();
         }
       } catch (error) {
-        console.error('[VoiceChat] Error playing TTS response:', error);
-        setChatState(prev => ({ ...prev, isSpeaking: false }));
+        console.error("[VoiceChat] Error playing TTS response:", error);
+        setChatState((prev) => ({ ...prev, isSpeaking: false }));
       }
     },
-    [token]
+    [token],
   );
 
   // Visual analysis
@@ -535,7 +535,7 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
       if (!chatState.visualMode || !chatState.sessionActive) return;
 
       const canvas = canvasRef.current!;
-      const context = canvas.getContext('2d')!;
+      const context = canvas.getContext("2d")!;
       const video = videoRef.current!;
 
       if (video.readyState >= 2) {
@@ -545,15 +545,15 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
 
         // Convert to blob and send for analysis
         canvas.toBlob(
-          async blob => {
+          async (blob) => {
             if (!blob) return;
 
             const formData = new FormData();
-            formData.append('image', blob, 'frame.jpg');
+            formData.append("image", blob, "frame.jpg");
 
             try {
-              const response = await fetch('/api/vision/analyze', {
-                method: 'POST',
+              const response = await fetch("/api/vision/analyze", {
+                method: "POST",
                 headers: {
                   Authorization: `Bearer ${token}`,
                 },
@@ -566,11 +566,11 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
                 processVisualAnalysis(analysis);
               }
             } catch (error) {
-              console.error('[VoiceChat] Visual analysis error:', error);
+              console.error("[VoiceChat] Visual analysis error:", error);
             }
           },
-          'image/jpeg',
-          0.8
+          "image/jpeg",
+          0.8,
         );
       }
 
@@ -589,27 +589,27 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
         if (Math.random() < 0.1) {
           const comment = analysis.cartrita_comments[0];
           setTimeout(() => {
-            playTTSResponse(comment, 'casual');
+            playTTSResponse(comment, "casual");
           }, 1000);
         }
       }
     },
-    [playTTSResponse]
+    [playTTSResponse],
   );
 
   // Ambient monitoring
   const startAmbientMonitoring = useCallback(() => {
     // This would connect to ambient listening service
-    console.log('[VoiceChat] Starting ambient monitoring');
+    console.log("[VoiceChat] Starting ambient monitoring");
   }, []);
 
   // Toggle functions
   const toggleAmbientMode = useCallback(() => {
-    setChatState(prev => ({ ...prev, ambientMode: !prev.ambientMode }));
+    setChatState((prev) => ({ ...prev, ambientMode: !prev.ambientMode }));
   }, []);
 
   const toggleVisualMode = useCallback(() => {
-    setChatState(prev => ({ ...prev, visualMode: !prev.visualMode }));
+    setChatState((prev) => ({ ...prev, visualMode: !prev.visualMode }));
   }, []);
 
   const toggleSession = useCallback(() => {
@@ -646,8 +646,8 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
             onClick={toggleVisualMode}
             className={`p-2 rounded-full transition-colors ${
               chatState.visualMode
-                ? 'bg-green-500 text-white'
-                : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                ? "bg-green-500 text-white"
+                : "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
             }`}
             title="Toggle Visual Mode"
           >
@@ -663,8 +663,8 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
             onClick={toggleAmbientMode}
             className={`p-2 rounded-full transition-colors ${
               chatState.ambientMode
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                ? "bg-blue-500 text-white"
+                : "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
             }`}
             title="Toggle Ambient Listening"
           >
@@ -678,17 +678,17 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
         <div className="flex items-center space-x-4 text-sm">
           <div
             className={`flex items-center space-x-2 ${
-              chatState.sessionActive ? 'text-green-600' : 'text-gray-500'
+              chatState.sessionActive ? "text-green-600" : "text-gray-500"
             }`}
           >
             <div
               className={`w-2 h-2 rounded-full ${
                 chatState.sessionActive
-                  ? 'bg-green-500 animate-pulse'
-                  : 'bg-gray-400'
+                  ? "bg-green-500 animate-pulse"
+                  : "bg-gray-400"
               }`}
             />
-            <span>{chatState.sessionActive ? 'Active' : 'Inactive'}</span>
+            <span>{chatState.sessionActive ? "Active" : "Inactive"}</span>
           </div>
 
           {wakeWordDetected && (
@@ -703,7 +703,11 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
             wakeWordConfidence > 0 && (
               <div className="flex items-center space-x-2 text-orange-600">
                 <div
-                  className={`w-2 h-2 rounded-full ${wakeWordConfidence > 0.3 ? 'bg-orange-500 animate-pulse' : 'bg-orange-300'}`}
+                  className={`w-2 h-2 rounded-full ${
+                    wakeWordConfidence > 0.3
+                      ? "bg-orange-500 animate-pulse"
+                      : "bg-orange-300"
+                  }`}
                 />
                 <span>Listening ({Math.round(wakeWordConfidence * 100)}%)</span>
               </div>
@@ -726,9 +730,9 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
             autoPlay
             muted
             className="w-full max-w-md mx-auto rounded-lg shadow-md"
-            style={{ maxHeight: '200px' }}
+            style={{ maxHeight: "200px" }}
           />
-          <canvas ref={canvasRef} style={{ display: 'none' }} />
+          <canvas ref={canvasRef} style={{ display: "none" }} />
         </div>
       )}
 
@@ -748,14 +752,14 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
               <div
                 key={index}
                 className={`flex ${
-                  message.type === 'user' ? 'justify-end' : 'justify-start'
+                  message.type === "user" ? "justify-end" : "justify-start"
                 }`}
               >
                 <div
                   className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                    message.type === 'user'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white'
+                    message.type === "user"
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white"
                   }`}
                 >
                   <p>{message.content}</p>
@@ -791,20 +795,20 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
             ${
               chatState.sessionActive
                 ? chatState.voiceActivated
-                  ? 'bg-purple-500 hover:bg-purple-600 text-white focus:ring-purple-500 shadow-lg'
-                  : 'bg-green-500 hover:bg-green-600 text-white focus:ring-green-500'
-                : 'bg-blue-500 hover:bg-blue-600 text-white focus:ring-blue-500'
+                  ? "bg-purple-500 hover:bg-purple-600 text-white focus:ring-purple-500 shadow-lg"
+                  : "bg-green-500 hover:bg-green-600 text-white focus:ring-green-500"
+                : "bg-blue-500 hover:bg-blue-600 text-white focus:ring-blue-500"
             }
             ${
               chatState.isProcessing
-                ? 'opacity-50 cursor-not-allowed'
-                : 'cursor-pointer transform hover:scale-105'
+                ? "opacity-50 cursor-not-allowed"
+                : "cursor-pointer transform hover:scale-105"
             }
           `}
           title={
             chatState.sessionActive
-              ? 'Stop Voice Session'
-              : 'Start Voice Session'
+              ? "Stop Voice Session"
+              : "Start Voice Session"
           }
         >
           {chatState.isProcessing ? (
@@ -858,7 +862,7 @@ export const VoiceChatInterface: React.FC<VoiceChatProps> = ({
       {/* Current Emotional State */}
       <div className="mt-4 text-center">
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          Current mood:{' '}
+          Current mood:{" "}
           <span className="font-medium text-purple-600 dark:text-purple-400">
             {emotionalState}
           </span>

@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Mail,
   RefreshCw,
@@ -22,7 +22,7 @@ import {
   AlertCircle,
   CheckCircle,
   Paperclip,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface EmailMessage {
   id: string;
@@ -52,9 +52,9 @@ const EmailProcessor: React.FC = () => {
   const [stats, setStats] = useState<EmailStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -64,8 +64,8 @@ const EmailProcessor: React.FC = () => {
 
   const fetchEmailStats = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/email/stats?days=30', {
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/email/stats?days=30", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -76,25 +76,25 @@ const EmailProcessor: React.FC = () => {
         setStats(data);
       }
     } catch (error) {
-      console.error('Failed to fetch email stats:', error);
+      console.error("Failed to fetch email stats:", error);
     }
   };
 
   const fetchEmails = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       const params = new URLSearchParams({
-        limit: '50',
-        ...(categoryFilter !== 'all' && { category: categoryFilter }),
-        ...(statusFilter === 'unread' && { is_read: 'false' }),
-        ...(statusFilter === 'important' && { is_important: 'true' }),
+        limit: "50",
+        ...(categoryFilter !== "all" && { category: categoryFilter }),
+        ...(statusFilter === "unread" && { is_read: "false" }),
+        ...(statusFilter === "important" && { is_important: "true" }),
         ...(searchQuery && { query: searchQuery }),
       });
 
       const endpoint = searchQuery
-        ? '/api/email/search'
-        : '/api/email/messages';
+        ? "/api/email/search"
+        : "/api/email/messages";
       const response = await fetch(`${endpoint}?${params}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -105,10 +105,10 @@ const EmailProcessor: React.FC = () => {
         const data = await response.json();
         setEmails(data.messages || data.results || []);
       } else {
-        console.error('Failed to fetch emails:', response.statusText);
+        console.error("Failed to fetch emails:", response.statusText);
       }
     } catch (error) {
-      console.error('Failed to fetch emails:', error);
+      console.error("Failed to fetch emails:", error);
     } finally {
       setLoading(false);
     }
@@ -117,15 +117,15 @@ const EmailProcessor: React.FC = () => {
   const syncEmails = async () => {
     try {
       setSyncing(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/email/sync', {
-        method: 'POST',
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/email/sync", {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          providers: ['gmail'],
+          providers: ["gmail"],
           max_messages: 100,
         }),
       });
@@ -135,10 +135,10 @@ const EmailProcessor: React.FC = () => {
         await fetchEmailStats();
       } else {
         const error = await response.json();
-        console.error('Sync failed:', error);
+        console.error("Sync failed:", error);
       }
     } catch (error) {
-      console.error('Failed to sync emails:', error);
+      console.error("Failed to sync emails:", error);
     } finally {
       setSyncing(false);
     }
@@ -146,40 +146,40 @@ const EmailProcessor: React.FC = () => {
 
   const markAsRead = async (emailIds: string[]) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       await Promise.all(
-        emailIds.map(id =>
+        emailIds.map((id) =>
           fetch(`/api/email/messages/${id}/read`, {
-            method: 'PUT',
+            method: "PUT",
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          })
-        )
+          }),
+        ),
       );
       await fetchEmails();
       await fetchEmailStats();
     } catch (error) {
-      console.error('Failed to mark as read:', error);
+      console.error("Failed to mark as read:", error);
     }
   };
 
   const archiveEmails = async (emailIds: string[]) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       await Promise.all(
-        emailIds.map(id =>
+        emailIds.map((id) =>
           fetch(`/api/email/messages/${id}/archive`, {
-            method: 'PUT',
+            method: "PUT",
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          })
-        )
+          }),
+        ),
       );
       await fetchEmails();
     } catch (error) {
-      console.error('Failed to archive emails:', error);
+      console.error("Failed to archive emails:", error);
     }
   };
 
@@ -190,38 +190,38 @@ const EmailProcessor: React.FC = () => {
 
     if (diffInHours < 24) {
       return date.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
+        hour: "2-digit",
+        minute: "2-digit",
       });
     } else if (diffInHours < 24 * 7) {
-      return date.toLocaleDateString([], { weekday: 'short' });
+      return date.toLocaleDateString([], { weekday: "short" });
     } else {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      return date.toLocaleDateString([], { month: "short", day: "numeric" });
     }
   };
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
-      work: 'bg-blue-100 text-blue-800',
-      personal: 'bg-green-100 text-green-800',
-      finance: 'bg-yellow-100 text-yellow-800',
-      newsletter: 'bg-purple-100 text-purple-800',
-      promotional: 'bg-orange-100 text-orange-800',
-      social: 'bg-pink-100 text-pink-800',
+      work: "bg-blue-100 text-blue-800",
+      personal: "bg-green-100 text-green-800",
+      finance: "bg-yellow-100 text-yellow-800",
+      newsletter: "bg-purple-100 text-purple-800",
+      promotional: "bg-orange-100 text-orange-800",
+      social: "bg-pink-100 text-pink-800",
     };
-    return colors[category] || 'bg-gray-100 text-gray-800';
+    return colors[category] || "bg-gray-100 text-gray-800";
   };
 
   const getSentimentIcon = (sentiment: string) => {
     switch (sentiment?.toLowerCase()) {
-      case 'positive':
-        return '😊';
-      case 'negative':
-        return '😟';
-      case 'urgent':
-        return '🚨';
+      case "positive":
+        return "😊";
+      case "negative":
+        return "😟";
+      case "urgent":
+        return "🚨";
       default:
-        return '';
+        return "";
     }
   };
 
@@ -239,7 +239,7 @@ const EmailProcessor: React.FC = () => {
     if (selectedEmails.size === emails.length) {
       setSelectedEmails(new Set());
     } else {
-      setSelectedEmails(new Set(emails.map(email => email.id)));
+      setSelectedEmails(new Set(emails.map((email) => email.id)));
     }
   };
 
@@ -260,9 +260,9 @@ const EmailProcessor: React.FC = () => {
         <div className="flex space-x-2">
           <Button onClick={syncEmails} disabled={syncing} variant="outline">
             <RefreshCw
-              className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`}
+              className={`w-4 h-4 mr-2 ${syncing ? "animate-spin" : ""}`}
             />
-            {syncing ? 'Syncing...' : 'Sync Emails'}
+            {syncing ? "Syncing..." : "Sync Emails"}
           </Button>
         </div>
       </div>
@@ -335,8 +335,8 @@ const EmailProcessor: React.FC = () => {
                 <Input
                   placeholder="Search emails..."
                   value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
                 <Button onClick={handleSearch} variant="outline">
                   <Search className="w-4 h-4" />
@@ -382,7 +382,7 @@ const EmailProcessor: React.FC = () => {
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">
                 {selectedEmails.size} email
-                {selectedEmails.size !== 1 ? 's' : ''} selected
+                {selectedEmails.size !== 1 ? "s" : ""} selected
               </span>
               <div className="flex space-x-2">
                 <Button
@@ -414,8 +414,8 @@ const EmailProcessor: React.FC = () => {
             <CardTitle>Messages ({emails.length})</CardTitle>
             <Button variant="ghost" size="sm" onClick={handleSelectAll}>
               {selectedEmails.size === emails.length
-                ? 'Deselect All'
-                : 'Select All'}
+                ? "Deselect All"
+                : "Select All"}
             </Button>
           </div>
         </CardHeader>
@@ -427,20 +427,20 @@ const EmailProcessor: React.FC = () => {
             </div>
           ) : emails.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              {searchQuery || categoryFilter !== 'all' || statusFilter !== 'all'
-                ? 'No emails match your filters'
-                : 'No emails found'}
+              {searchQuery || categoryFilter !== "all" || statusFilter !== "all"
+                ? "No emails match your filters"
+                : "No emails found"}
             </div>
           ) : (
             <div className="space-y-2">
-              {emails.map(email => (
+              {emails.map((email) => (
                 <div
                   key={email.id}
                   className={`border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
                     selectedEmails.has(email.id)
-                      ? 'bg-blue-50 border-blue-200'
-                      : ''
-                  } ${!email.is_read ? 'font-medium bg-blue-25' : ''}`}
+                      ? "bg-blue-50 border-blue-200"
+                      : ""
+                  } ${!email.is_read ? "font-medium bg-blue-25" : ""}`}
                   onClick={() => handleEmailSelect(email.id)}
                 >
                   <div className="flex items-start justify-between">
@@ -451,7 +451,7 @@ const EmailProcessor: React.FC = () => {
                           checked={selectedEmails.has(email.id)}
                           onChange={() => handleEmailSelect(email.id)}
                           className="rounded border-gray-300"
-                          onClick={e => e.stopPropagation()}
+                          onClick={(e) => e.stopPropagation()}
                         />
                         <span className="font-medium text-gray-900 truncate">
                           {email.sender_name || email.sender_email}
@@ -473,7 +473,9 @@ const EmailProcessor: React.FC = () => {
                       </div>
 
                       <h3
-                        className={`text-sm truncate mb-1 ${!email.is_read ? 'font-semibold' : 'font-normal'}`}
+                        className={`text-sm truncate mb-1 ${
+                          !email.is_read ? "font-semibold" : "font-normal"
+                        }`}
                       >
                         {email.subject}
                       </h3>
@@ -497,21 +499,21 @@ const EmailProcessor: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={e => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <Reply className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={e => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <Forward className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={e => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <Archive className="w-4 h-4" />
                       </Button>

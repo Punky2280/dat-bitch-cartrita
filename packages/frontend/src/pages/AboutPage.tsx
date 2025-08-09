@@ -1,10 +1,10 @@
-import React from 'react';
+import React from "react";
 import {
   ArrowLeftIcon,
   HeartIcon,
   SparklesIcon,
   CpuChipIcon,
-} from '@heroicons/react/24/outline';
+} from "@heroicons/react/24/outline";
 
 interface AboutPageProps {
   onBack?: () => void;

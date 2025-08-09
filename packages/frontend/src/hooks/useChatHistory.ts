@@ -1,0 +1,68 @@
+import { useCallback } from "react";
+import { API_BASE_URL } from "../config/constants";
+import type { Message } from "../types/chat";
+
+interface UseChatHistoryOptions {
+  onHistoryLoaded: (messages: Message[]) => void;
+}
+
+export const useChatHistory = (
+  token: string,
+  options: UseChatHistoryOptions,
+) => {
+  const loadHistory = useCallback(async () => {
+    if (!token) {
+      console.warn("📭 No token available for chat history request");
+      return;
+    }
+
+    try {
+      console.log("🔍 Loading chat history...");
+
+      const response = await fetch(`${API_BASE_URL}/api/chat/history`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      console.log("📡 Chat history response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Chat history error response:", errorText);
+        throw new Error(
+          `Failed to load history: ${response.status} ${response.statusText}`,
+        );
+      }
+
+      const data = await response.json();
+      console.log("📨 Chat history data received:", data);
+
+      const conversations = data.conversations || [];
+      options.onHistoryLoaded(conversations);
+    } catch (error) {
+      console.error("Error loading chat history:", error);
+      throw error;
+    }
+  }, [token, options]);
+
+  const clearHistory = useCallback(async () => {
+    if (!token) return;
+
+    const response = await fetch(`${API_BASE_URL}/api/chat/history`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to clear chat history");
+    }
+  }, [token]);
+
+  return {
+    loadHistory,
+    clearHistory,
+  };
+};

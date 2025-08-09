@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Calendar,
   RefreshCw,
@@ -14,7 +14,7 @@ import {
   Users,
   AlertCircle,
   CheckCircle,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface CalendarEvent {
   id: string;
@@ -34,7 +34,7 @@ const CalendarManager: React.FC = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [filter, setFilter] = useState('');
+  const [filter, setFilter] = useState("");
   const [status, setStatus] = useState<any>(null);
 
   useEffect(() => {
@@ -44,8 +44,8 @@ const CalendarManager: React.FC = () => {
 
   const fetchCalendarStatus = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/calendar/status', {
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/calendar/status", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -56,15 +56,15 @@ const CalendarManager: React.FC = () => {
         setStatus(data);
       }
     } catch (error) {
-      console.error('Failed to fetch calendar status:', error);
+      console.error("Failed to fetch calendar status:", error);
     }
   };
 
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/calendar/events?limit=50', {
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/calendar/events?limit=50", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -74,10 +74,10 @@ const CalendarManager: React.FC = () => {
         const data = await response.json();
         setEvents(data.events || []);
       } else {
-        console.error('Failed to fetch events:', response.statusText);
+        console.error("Failed to fetch events:", response.statusText);
       }
     } catch (error) {
-      console.error('Failed to fetch events:', error);
+      console.error("Failed to fetch events:", error);
     } finally {
       setLoading(false);
     }
@@ -86,15 +86,15 @@ const CalendarManager: React.FC = () => {
   const syncCalendar = async () => {
     try {
       setSyncing(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/calendar/sync', {
-        method: 'POST',
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/calendar/sync", {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          calendar_ids: ['primary'],
+          calendar_ids: ["primary"],
         }),
       });
 
@@ -103,10 +103,10 @@ const CalendarManager: React.FC = () => {
         await fetchCalendarStatus();
       } else {
         const error = await response.json();
-        console.error('Sync failed:', error);
+        console.error("Sync failed:", error);
       }
     } catch (error) {
-      console.error('Failed to sync calendar:', error);
+      console.error("Failed to sync calendar:", error);
     } finally {
       setSyncing(false);
     }
@@ -120,7 +120,7 @@ const CalendarManager: React.FC = () => {
     const startDate = new Date(start);
     const endDate = new Date(end);
     const duration = Math.round(
-      (endDate.getTime() - startDate.getTime()) / (1000 * 60)
+      (endDate.getTime() - startDate.getTime()) / (1000 * 60),
     );
 
     if (duration < 60) {
@@ -134,22 +134,22 @@ const CalendarManager: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
-      case 'confirmed':
-        return 'bg-green-100 text-green-800';
-      case 'tentative':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
+      case "confirmed":
+        return "bg-green-100 text-green-800";
+      case "tentative":
+        return "bg-yellow-100 text-yellow-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const filteredEvents = events.filter(
-    event =>
+    (event) =>
       event.title.toLowerCase().includes(filter.toLowerCase()) ||
       event.description?.toLowerCase().includes(filter.toLowerCase()) ||
-      event.location?.toLowerCase().includes(filter.toLowerCase())
+      event.location?.toLowerCase().includes(filter.toLowerCase()),
   );
 
   return (
@@ -165,9 +165,9 @@ const CalendarManager: React.FC = () => {
         <div className="flex space-x-2">
           <Button onClick={syncCalendar} disabled={syncing} variant="outline">
             <RefreshCw
-              className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`}
+              className={`w-4 h-4 mr-2 ${syncing ? "animate-spin" : ""}`}
             />
-            {syncing ? 'Syncing...' : 'Sync Calendar'}
+            {syncing ? "Syncing..." : "Sync Calendar"}
           </Button>
           <Button>
             <Plus className="w-4 h-4 mr-2" />
@@ -194,10 +194,10 @@ const CalendarManager: React.FC = () => {
                   <AlertCircle className="w-4 h-4 text-red-500" />
                 )}
                 <span className="text-sm font-medium">
-                  Google Calendar:{' '}
+                  Google Calendar:{" "}
                   {status.status?.google_calendar
-                    ? 'Connected'
-                    : 'Not Connected'}
+                    ? "Connected"
+                    : "Not Connected"}
                 </span>
               </div>
               <div className="text-sm">
@@ -205,7 +205,7 @@ const CalendarManager: React.FC = () => {
                 <span>
                   {status.status?.last_sync
                     ? formatDate(status.status.last_sync)
-                    : 'Never'}
+                    : "Never"}
                 </span>
               </div>
               <div className="text-sm">
@@ -222,7 +222,7 @@ const CalendarManager: React.FC = () => {
         <Input
           placeholder="Search events..."
           value={filter}
-          onChange={e => setFilter(e.target.value)}
+          onChange={(e) => setFilter(e.target.value)}
           className="max-w-md"
         />
       </div>
@@ -240,11 +240,11 @@ const CalendarManager: React.FC = () => {
             </div>
           ) : filteredEvents.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              {filter ? 'No events match your search' : 'No events found'}
+              {filter ? "No events match your search" : "No events found"}
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredEvents.map(event => (
+              {filteredEvents.map((event) => (
                 <div
                   key={event.id}
                   className="border rounded-lg p-4 hover:bg-gray-50"
@@ -273,7 +273,7 @@ const CalendarManager: React.FC = () => {
                         </div>
                         <div className="flex items-center">
                           <span>
-                            Duration:{' '}
+                            Duration:{" "}
                             {formatDuration(event.start_time, event.end_time)}
                           </span>
                         </div>

@@ -33,6 +33,7 @@ scripts/
 ## 🚀 Usage Instructions
 
 ### Setup Scripts
+
 ```bash
 # Main system setup
 ./scripts/setup/setup-cartrita.sh
@@ -45,6 +46,7 @@ scripts/
 ```
 
 ### Testing Scripts
+
 ```bash
 # Comprehensive backend check
 node scripts/tests/comprehensive-backend-check.js
@@ -60,6 +62,7 @@ node scripts/tests/test-voice-permissions.js
 ```
 
 ### Fix Scripts
+
 ```bash
 # Syntax error fixes
 node scripts/fixes/fix-all-syntax-errors.js
@@ -104,24 +107,28 @@ packages/frontend/scripts/
 ## 🔧 Script Categories
 
 ### 🧪 Testing Scripts
+
 - **API Testing**: Validate endpoints and responses
 - **Integration Testing**: Test component interactions
 - **System Testing**: Full system validation
 - **Performance Testing**: Response time and load testing
 
 ### 🛠️ Setup Scripts
+
 - **Environment Setup**: Configure development environment
 - **Database Setup**: Initialize and migrate databases
 - **Service Setup**: Configure external services
 - **Docker Setup**: Container configuration
 
 ### 🔧 Fix Scripts
+
 - **Syntax Fixes**: Automated code repair
 - **Import Fixes**: ES6 module corrections
 - **Security Fixes**: Security vulnerability patches
 - **Linting Fixes**: Code style corrections
 
 ### 🔍 Debug Scripts
+
 - **Route Debugging**: API route validation
 - **Agent Debugging**: Multi-agent system diagnostics
 - **Performance Debugging**: System performance analysis
@@ -139,6 +146,7 @@ All scripts follow a consistent naming pattern:
 ## 🏃‍♂️ Running Scripts
 
 ### From Project Root
+
 ```bash
 # Run any script from project root
 node scripts/tests/test-api-endpoints.js
@@ -146,12 +154,13 @@ node scripts/tests/test-api-endpoints.js
 ```
 
 ### From Package Directories
+
 ```bash
 # Backend scripts
 cd packages/backend
 node scripts/tests/test-voice-system.js
 
-# Frontend scripts  
+# Frontend scripts
 cd packages/frontend
 node scripts/tests/test-component.js
 ```
@@ -159,11 +168,13 @@ node scripts/tests/test-component.js
 ## 📊 Script Dependencies
 
 ### Required Environment Variables
+
 - `OPENAI_API_KEY`: Required for AI-related tests
 - `JWT_SECRET`: Required for authentication tests
 - `DEEPGRAM_API_KEY`: Required for voice system tests
 
 ### Required Services
+
 - **PostgreSQL**: Database connection required
 - **Docker**: Container operations
 - **Node.js 18+**: Script execution environment
@@ -178,6 +189,7 @@ node scripts/tests/test-component.js
 ## 📋 Maintenance
 
 ### Adding New Scripts
+
 1. Place in appropriate category directory
 2. Follow naming conventions
 3. Add usage documentation
@@ -185,6 +197,7 @@ node scripts/tests/test-component.js
 5. Test script functionality
 
 ### Script Organization Rules
+
 - **Keep scripts focused**: One purpose per script
 - **Use descriptive names**: Clear functionality indication
 - **Add comments**: Explain complex operations

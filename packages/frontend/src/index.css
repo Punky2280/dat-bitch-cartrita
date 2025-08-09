@@ -4,7 +4,7 @@
 
 /* Base Styles */
 :root {
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: "Inter", system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color-scheme: dark;
@@ -137,7 +137,7 @@ body {
 }
 
 .theme-cyberpunk .bg-animated::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -173,7 +173,7 @@ body {
 }
 
 .theme-neon .bg-animated::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;

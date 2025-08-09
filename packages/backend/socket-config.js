@@ -8,7 +8,7 @@ const socketConfig = {
   cors: {
     origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
     methods: ['GET', 'POST'],
-    credentials: true
+    credentials: true,
   },
   // Improve connection stability
   pingTimeout: 60000, // How long to wait for ping response
@@ -28,7 +28,7 @@ const socketConfig = {
       req.headers.origin
     );
     callback(null, true);
-  }
+  },
 };
 
 export default socketConfig;

@@ -31,12 +31,11 @@ try {
   const testTool = new DynamicTool({
     name: 'test_tool',
     description: 'A test tool',
-    func: async () => 'Hello from tool!'
+    func: async () => 'Hello from tool!',
   });
   console.log('✅ Tool created successfully');
 
   console.log('\n✅ LangChain basic functionality is working!');
-
 } catch (error) {
   console.error('❌ Error testing LangChain:', error.message);
   console.error('Stack:', error.stack);

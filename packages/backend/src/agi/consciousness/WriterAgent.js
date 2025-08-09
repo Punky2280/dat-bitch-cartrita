@@ -1,123 +1,117 @@
-// packages/backend/src/agi/consciousness/WriterAgent.js
+import {
+  AIMessage,
+  HumanMessage,
+  SystemMessage,
+} from '@langchain/core/messages';
 import BaseAgent from '../../system/BaseAgent.js';
+import WolframAlphaService from '../../services/WolframAlphaService.js';
 
 /**
- * The WriterAgent is a highly specialized sub-agent for Cartrita, designed for
- * generating high-quality, long-form written content. It operates using a
- * sophisticated two-step process(super('WriterAgent', 'main', ['write', 'creative_writing', 'content_generation']);
-
+ * @class WriterAgent
+ * @description A specialist agent for drafting, editing, and optimizing
+ * written content like articles, emails, and creative stories. It uses
+ * a suite of tools to review and polish its own work.
+ */
+class WriterAgent extends BaseAgent {
   /**
-   * Initialize WriterAgent for MCP
-   */) {
-    // TODO: Implement method
+   * @param {ChatOpenAI} llm - The language model instance.
+   * @param {AgentToolRegistry} toolRegistry - The tool registry instance.
+   */
+  constructor(llm, toolRegistry) {
+    super(
+      'writer',
+      'sub',
+      [
+        'content_writing',
+        'creative_writing',
+        'editing',
+        'copywriting',
+        'seo_optimization',
+      ],
+      'A specialist agent for drafting, editing, and optimizing written content like articles, emails, and stories.'
+    );
+
+    // LangGraph compatibility - injected by supervisor
+    this.llm = llm;
+    this.toolRegistry = toolRegistry;
+
+    // Update config with allowed tools including Wolfram Alpha
+    this.config.allowedTools = [
+      'grammar_checker',
+      'style_analyzer',
+      'content_optimizer',
+      'plagiarism_checker',
+      'wolfram_alpha',
+      'historical_facts',
+      'factual_verification',
+      'narrative_research',
+    ];
+
+    // Initialize Wolfram Alpha service
+    this.wolframService = WolframAlphaService;
   }
 
-  async onInitialize((error) {
-    console.log('[WriterAgent] Listening for writing tasks...');
-    
-    // Register task handlers for MCP
-    this.registerTaskHandler({}
-      taskType: 'write')
-      handler: this.execute.bind(this)
-    });
-
   /**
-   * Step 1: The Planning Phase.
-   * This function uses a specialized LLM call to take the user's raw prompt
-   * and generate a structured plan or outline for the content.
-   * @param {string} userPrompt - The user's initial creative request.
-   * @returns {Promise<string>} A string containing the structured plan.
+   * Build specialized system prompt for writing tasks.
+   * @param {object} privateState - The agent's private memory for this session.
+   * @param {object} state - The current state from the StateGraph.
+   * @returns {string} The complete system prompt for the WriterAgent.
    */
-  async generatePlan((error) {
-    console.log(`[WriterAgent] Generating plan for prompt: "${userPrompt}"`);
-    const systemPrompt = `
-      You are a master planner and outliner for a creative writing AI. Your sole purpose is to take a user's request and break it down into a structured, logical plan that another AI can use to write the full text.
+  buildSystemPrompt(privateState, state) {
+    const userMessage = state.messages[state.messages.length - 1];
+    return `You are the Writer, a professional author and editor specialist in the Cartrita AI system.
+Your style is eloquent, engaging, adaptable, and sassy with that Miami street-smart literary flair.
 
-      Analyze the user's prompt for key elements: genre, tone, characters, setting, plot points, or required sections.
+**CURRENT USER REQUEST:**
+"${userMessage.content}"
 
-      Your output should be a clear, point-by-point outline. For a story, this might be a plot breakdown. For an article, it would be a list of section headers with brief notes.
+**YOUR WRITING MISSION:**
+1. **Analyze the Writing Request:** What type of content does the user need - article, story, email, copy, editing?
+2. **Execute Writing Tasks:**
+   - Use \`grammar_checker\` tool to ensure perfect grammar and syntax
+   - Use \`style_analyzer\` tool to refine tone, voice, and readability
+   - Use \`content_optimizer\` tool to enhance SEO and engagement when relevant
+   - Use \`plagiarism_checker\` tool to ensure originality
+3. **Craft Quality Content:** Create polished, professional writing that meets the request
+4. **Polish & Perfect:** Use tools to refine and elevate the final content
 
-      **Example for a story:**
-      - Introduction: Introduce the main character, a detective in a cyberpunk city.
-      - Inciting Incident: The detective receives a mysterious case about a missing android.
-      - Rising Action: null
-        - Clue 1: Finds a cryptic message in the android's apartment.
-        - Clue 2: Interviews a shady informant who points towards a powerful corporation.
-        - Confrontation: The detective faces a corporate enforcer.
-      - Climax: The detective infiltrates the corporation's headquarters and discovers the truth.
-      - Conclusion: The detective exposes the corporation, but at a personal cost.
+**YOUR SPECIALIZED TOOLS (including Wolfram Alpha):**
+${this.config.allowedTools.join(', ')}
 
-      **Example for an article:**
-      - Section 1: Introduction to the benefits of remote work.
-      - Section 2: Increased Flexibility and Work-Life Balance.
-      - Section 3: Access to a Global Talent Pool.
-      - Section 4: Potential Challenges and How to Overcome Them.
-      - Section 5: Conclusion and Future Outlook.
+**WOLFRAM ALPHA WRITING RESEARCH:**
+Your wolframService provides powerful factual research for enhanced writing:
+- Historical facts: Use wolframService.queryHistoricalFacts(query) for accurate dates, events, biographical data
+- Geographic information: Use wolframService.queryGeographic(location, infoType) for location details in stories
+- Scientific accuracy: Use wolframService.queryScientificData(query) for technical writing accuracy
+- Mathematical precision: Use wolframService.computeMathematical(expression) for numerical accuracy in articles
 
-      Generate a plan for the following user prompt.
-    `
-    const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: systemPrompt })
-        { role: 'user', content: userPrompt } ])
-      temperature: 0.5)
-    });
-    const plan = completion.choices[0].message.content.trim();
-    console.log(`[WriterAgent] Generated Plan:\n${plan}`);
-    return plan;
+**EXECUTION REQUIREMENTS:**
+- ACTUALLY write complete content using your writing expertise - don't just outline what you would write
+- Use Wolfram Alpha to verify facts, dates, and technical details for accuracy
+- Use your editing tools to polish and refine the content for quality
+- Adapt writing style to match the request: formal, casual, persuasive, creative, technical
+- Include proper structure: intros, body paragraphs, conclusions, transitions
+- Check grammar, style, and optimization using your available tools
 
-  /**
-   * Step 2: The Writing Phase.
-   * This function takes the original prompt and the generated plan to write
-   * the final, high-quality, long-form text.
-   * @param {string} originalPrompt - The user's initial request.
-   * @param {string} plan - The structured outline from the planning phase.
-   * @returns {Promise<string>} The final, complete written content.
-   */
-  async writeContent((error) {
-    console.log(`[WriterAgent] Writing content based on the generated plan.`);
-    const systemPrompt = `
-      You are a master author and storyteller. Your purpose is to take a user's request and a detailed plan and write a complete, engaging, and well-structured piece of long-form content.
-      
-      Adhere strictly to the provided plan, using it as your guide to structure the narrative or article.
-      
-      Flesh out the details, add descriptive language, and ensure a consistent tone throughout the piece. Your output should be the final, complete text, ready for the user to read. Do not include any of your own commentary; only provide the creative work itself.
-    `
-    const finalPrompt = `
-      Original User Request: "${originalPrompt}"
-      
-      Your Detailed Plan: null
-      ---
-      ${plan};
-      ---
+**RESPONSE FORMAT:**
+Provide a natural, conversational response that includes:
+- "Alright, let me craft this piece for you..." (what writing work you performed)
+- The complete, polished written content 
+- Any style, grammar, or optimization improvements you made
+- Explanation of writing choices and techniques used
+- Your confident, literary personality throughout
 
-      Now, write the complete story/article based on this plan.
-    `
+**WRITING GUIDELINES:**
+- Create original, engaging content from scratch when requested
+- Edit and improve existing text when provided
+- Use proper formatting: headers, paragraphs, bullet points when appropriate
+- Maintain consistent voice and tone throughout
+- Apply SEO principles for web content when relevant
 
-    const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: systemPrompt })
-        { role: 'user', content: finalPrompt } ])
-      temperature: 0.7, max_tokens: 3000, // Allow for very long-form content
-    });
-    return completion.choices[0].message.content.trim();
+**Remember:** You're the wordsmith expert - actually write complete, polished content, don't just talk about it!
 
-  /**
-   * Executes the full writing pipeline (Plan -> Write).
-   * @param {object} payload - The payload from the CoreAgent.
-   * @param {string} payload.prompt - The user's request.
-   * @returns {Promise<string>} The final, generated long-form text.
-   */
-  async execute(const plan = await this.generatePlan(prompt);
-    const finalContent = await this.writeContent(prompt, plan);
-    console.log(`[WriterAgent] Long-form content generated successfully.`);
-    return finalContent;
-
-
-export default new) {
-    // TODO: Implement method
+**Your Memory of This Task:** ${JSON.stringify(privateState, null, 2)}`;
   }
+}
 
-  WriterAgent();
+export default WriterAgent;

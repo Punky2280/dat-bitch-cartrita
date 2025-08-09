@@ -1,314 +1,651 @@
-import MessageBus from '../../system/MessageBus.js';
-import { Pool  } from 'pg';
+import BaseAgent from '../../system/BaseAgent.js';
 
-class ConversationStore {
-  constructor((error) {
-    // TODO: Implement method
+class ConversationStore extends BaseAgent {
+  constructor() {
+    super('ConversationStore', 'main', [
+      'conversation_storage',
+      'message_retrieval',
+      'context_management',
+      'session_tracking',
+      'conversation_analysis',
+    ]);
+
+    this.conversations = new Map();
+    this.userSessions = new Map();
+    this.conversationMetrics = new Map();
+    this.initializeStorageFramework();
   }
 
-  Map(); // userId -> conversation history
-    this.conversationSummaries = new Map(); // userId -> conversation summaries
-    this.contextWindows = new Map(); // userId -> current context window
-    this.memoryMetrics = {
-      totalConversations: 0,
-      totalMessages: 0,
-      avgMessagesPerConversation: 0,
-      memoryCompressionEvents: 0
-    };
-
-    this.maxHistoryLength = 1000; // Messages per user
-    this.contextWindowSize = 20; // Recent messages for immediate context
-    this.summaryTriggerLength = 50; // Trigger summarization after N messages
-
-    // Initialize database connection if available
-    if((error) {
-    // TODO: Implement method
-  }
-
-  Pool({ connectionString: process.env.DATABASE_URL });
-    } else {
-      this.pool = null;
-      console.warn(
-        '[ConversationStore] Database connection not available, using memory only.'
-
-    // Listen for conversation events)
-//     messageBus.on('conversation:message', this.storeMessage.bind(this)); // Duplicate - commented out
-//     messageBus.on( // Duplicate - commented out)
-      'conversation:summary-request')
-      this.generateConversationSummary.bind(this)
-
-//     messageBus.on('conversation:context-request', this.getContext.bind(this)); // Duplicate - commented out
-
-    console.log(
-      '[ConversationStore] Advanced conversation memory system initialized.'
-
-
-  async storeMessage((error) {
-    const { userId, speaker, text, timestamp, metadata = {} } = messageData;
-
-    if((error) {
-    // TODO: Implement method
-  }
-
-  if (!this.history.has(userId)) {
-      this.history.set(userId, []);
-      this.contextWindows.set(userId, []);
-
-    const message = {
-      id: Date.now() + Math.random(),
-      speaker,
-      text: text.substring(0, 2000), // Limit message length
-      timestamp: timestamp || new Date().toISOString(),
-      metadata,
-      tokens: this.estimateTokens(text)
-    };
-
-    // Add to user's history
-    const userHistory = this.history.get(userId);
-    userHistory.push(message);
-    this.memoryMetrics.totalMessages++;
-
-    // Update context window (recent messages, const contextWindow = this.contextWindows.get(userId);
-    contextWindow.push(message);
-    if(contextWindow.shift();
-
-    // Check if we need to compress old memories) {
-    // TODO: Implement method
-  }
-
-  if(this.compressOldMemories(userId);
-
-    // Check if we need to generate a summary) {
-    // TODO: Implement method
-  }
-
-  if(this.generateConversationSummary(userId);
-
-    // Store in database if available) {
-    // TODO: Implement method
-  }
-
-  if((error) {
-      try {
-this.pool.query(
-        'INSERT INTO conversation_memory (user_id, speaker, text, metadata, timestamp, VALUES ($1, $2, $3, $4, $5)',
-          [userId, speaker, text, JSON.stringify(metadata), message.timestamp]
-
-      
-      } catch(console.warn(
-          '[ConversationStore] Database storage failed:')
-          error.message) {
-    // TODO: Implement method
-  }
-
-  async getContext((error) {
-    const { userId, contextType = 'recent', limit = 20 } = requestData;
-    if (!this.history.has(userId)) {
-      return { context: [], summary: null };
-
-    let context = [];
-    let summary = null;
-
-    switch((error) {
-      case 'recent': context = this.contextWindows.get(userId) || [];
-        break;
-      case 'full': context = this.history.get(userId).slice(-limit);
-        break;
-      case 'summary': summary = this.conversationSummaries.get(userId);
-        context = this.contextWindows.get(userId) || [];
-        break;
-      default: context = this.contextWindows.get(userId) || [];
-
-    return {
-      context: context.map(msg => ({
-        speaker: msg.speaker
-        text: msg.text, timestamp: msg.timestamp, tokens: msg.tokens)
-      })),
-      summary,
-      totalMessages: this.history.get(userId)?.length || 0
-    };
-
-  async generateConversationSummary(const userHistory = this.history.get(userId);) {
-    // TODO: Implement method
-  }
-
-  if (!userHistory || userHistory.length < 10, return;
-
-    try {
-
-      // Simple extractive summarization for now
-      const recentMessages = userHistory.slice(-30);
-      const topics = this.extractTopics(recentMessages);
-      const keyPoints = this.extractKeyPoints(recentMessages);
-
-      const summary = {
-        userId,
-        timestamp: new Date().toISOString(),
-        messageCount: userHistory.length,
-        topics: topics.slice(0, 5),
-        keyPoints: keyPoints.slice(0, 10),
-        timespan: {
-          start: userHistory[0]?.timestamp,
-          end: userHistory[userHistory.length - 1]?.timestamp
-        
-
-
-    
-
-    } catch((error) {
-      console.error(error);
-
-      };
-
-      this.conversationSummaries.set(userId, summary);
-
-//       messageBus.emit('conversation:summary-generated', { // Duplicate - commented out
-        userId, summary)
-      });
-    } catch(console.error('[ConversationStore] Summary generation failed:', error);) {
-    // TODO: Implement method
-  }
-
-  extractTopics((error) {
-    // Simple topic extraction based on word frequency
-    const words = messages
-      .map(msg => msg.text.toLowerCase())
-      .join(' ')
-      .replace(/[^\w\s]/g, '')
-      .split(/\s+/)
-      .filter(word => word.length > 3);
-
-    const frequency = {};
-    words.forEach(word => {
-      frequency[word] = (frequency[word] || 0) + 1;
+  async onInitialize() {
+    this.registerTaskHandler({
+      taskType: 'store_conversation',
+      handler: this.storeConversation.bind(this),
+    });
+    this.registerTaskHandler({
+      taskType: 'retrieve_conversation',
+      handler: this.retrieveConversation.bind(this),
+    });
+    this.registerTaskHandler({
+      taskType: 'search_conversations',
+      handler: this.searchConversations.bind(this),
+    });
+    this.registerTaskHandler({
+      taskType: 'analyze_conversation',
+      handler: this.analyzeConversation.bind(this),
     });
 
-    return Object.entries(frequency)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 10)
-      .map(([word, count]) => ({ word, count }));
-
-  extractKeyPoints((error) {
-    // TODO: Implement method
-  }
-
-  points (questions, decisions, conclusions, const keyPatterns = [
-      /\b(decided|concluded|realized|learned|discovered)\b/i,
-      /\b(important|crucial|key|main|primary)\b/i,
-      /\?$/,
-      /\b(will|plan to|going to|should|must)\b/i
-    ];
-
-    return messages
-      .filter(msg => keyPatterns.some(pattern => pattern.test(msg.text)))
-      .slice(-10)
-      .map(msg => ({
-        text: msg.text.substring(0, 200),
-        speaker: msg.speaker,
-        timestamp: msg.timestamp
-      }));
-
-  async compressOldMemories(const userHistory = this.history.get(userId);) {
-    // TODO: Implement method
-  }
-
-  if (!userHistory || userHistory.length <= this.maxHistoryLength, return;
-
-    // Keep recent messages and generate summary of older ones
-    const keepRecent = userHistory.slice(
-      -Math.floor(this.maxHistoryLength * 0.7
-
-    const toCompress = userHistory.slice(
-      0
-      -Math.floor(this.maxHistoryLength * 0.7)
-
-    // Generate summary of compressed messages
-    if((error) {
-      const compressedSummary = {
-        type: 'compressed-memory',
-        messageCount: toCompress.length,
-        timespan: {
-          start: toCompress[0]?.timestamp,
-          end: toCompress[toCompress.length - 1]?.timestamp
-        },
-        topics: this.extractTopics(toCompress),
-        keyPoints: this.extractKeyPoints(toCompress)
-      };
-
-      // Add compressed summary as a special message
-      keepRecent.unshift({}
-        id: 'compressed-' + Date.now(),
-        speaker: 'system',
-        text: `[Compressed Memory: ${toCompress.length} messages from ${compressedSummary.timespan.start} to ${compressedSummary.timespan.end}]`,
-        timestamp: new Date().toISOString(),
-        metadata: { compressed: true, summary: compressedSummary },
-        tokens: 100
-      });
-
-    this.history.set(userId, keepRecent);
-    this.memoryMetrics.memoryCompressionEvents++;
-
     console.log(
-      `[ConversationStore] Compressed ${toCompress.length} messages for user ${userId}`
-
-
-  estimateTokens((error) {
-    // TODO: Implement method
+      '[ConversationStore] Conversation storage and retrieval system initialized'
+    );
   }
 
-  estimation (1 token ≈ 4 characters for English, return Math.ceil(text.length / 4);
+  initializeStorageFramework() {
+    // Initialize storage metrics
+    this.conversationMetrics.set('total_conversations', 0);
+    this.conversationMetrics.set('total_messages', 0);
+    this.conversationMetrics.set('active_sessions', 0);
+    this.conversationMetrics.set('storage_size', 0);
+  }
 
-  getUserStats((error) {
-    const userHistory = this.history.get(userId) || [];
-    const contextWindow = this.contextWindows.get(userId) || [];
-    const summary = this.conversationSummaries.get(userId);
+  async storeConversation(payload, userId, language) {
+    try {
+      const {
+        conversation_id,
+        messages = [],
+        metadata = {},
+        session_info = {},
+      } = payload;
 
-    return {
-      totalMessages: userHistory.length,
-      recentMessages: contextWindow.length,
-      hasSummary: !!summary,
-      totalTokens: userHistory.reduce((sum, msg) => sum + (msg.tokens || 0), 0),
-      firstMessage: userHistory[0]?.timestamp,
-      lastMessage: userHistory[userHistory.length - 1]?.timestamp,
-      memoryUtilization: userHistory.length / this.maxHistoryLength
+      if (!conversation_id) {
+        throw new Error('Conversation ID is required');
+      }
+
+      const storage = await this.performConversationStorage(
+        conversation_id,
+        messages,
+        metadata,
+        session_info,
+        userId
+      );
+
+      return {
+        storage_successful: true,
+        conversation_id: conversation_id,
+        messages_stored: storage.messagesStored,
+        storage_size: storage.storageSize,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error('[ConversationStore] Error storing conversation:', error);
+      throw error;
+    }
+  }
+
+  async performConversationStorage(
+    conversationId,
+    messages,
+    metadata,
+    sessionInfo,
+    userId
+  ) {
+    // Create or update conversation record
+    const conversation = {
+      id: conversationId,
+      user_id: userId,
+      messages: messages,
+      metadata: {
+        ...metadata,
+        created_at: metadata.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        message_count: messages.length,
+      },
+      session_info: sessionInfo,
     };
 
-  getSystemStats((error) {
+    // Store conversation
+    this.conversations.set(conversationId, conversation);
+
+    // Update metrics
+    this.conversationMetrics.set(
+      'total_conversations',
+      this.conversations.size
+    );
+    this.conversationMetrics.set(
+      'total_messages',
+      this.conversationMetrics.get('total_messages') + messages.length
+    );
+
+    // Update user session tracking
+    this.updateUserSession(userId, conversationId, sessionInfo);
+
     return {
-      ...this.memoryMetrics,
-      activeUsers: this.history.size,
-      totalStoredMessages: Array.from(this.history.values()).reduce(
-        (sum, hist) => sum + hist.length,
+      messagesStored: messages.length,
+      storageSize: JSON.stringify(conversation).length,
+    };
+  }
+
+  updateUserSession(userId, conversationId, sessionInfo) {
+    if (!this.userSessions.has(userId)) {
+      this.userSessions.set(userId, {
+        active_conversations: [],
+        session_history: [],
+        last_activity: new Date().toISOString(),
+      });
+    }
+
+    const userSession = this.userSessions.get(userId);
+
+    // Add to active conversations if not already present
+    if (!userSession.active_conversations.includes(conversationId)) {
+      userSession.active_conversations.push(conversationId);
+    }
+
+    // Update session history
+    userSession.session_history.push({
+      conversation_id: conversationId,
+      timestamp: new Date().toISOString(),
+      session_info: sessionInfo,
+    });
+
+    // Keep only recent session history
+    if (userSession.session_history.length > 50) {
+      userSession.session_history = userSession.session_history.slice(-25);
+    }
+
+    userSession.last_activity = new Date().toISOString();
+  }
+
+  async retrieveConversation(payload, userId, language) {
+    try {
+      const {
+        conversation_id,
+        include_metadata = true,
+        message_limit = null,
+        message_offset = 0,
+      } = payload;
+
+      if (!conversation_id) {
+        throw new Error('Conversation ID is required');
+      }
+
+      const retrieval = await this.performConversationRetrieval(
+        conversation_id,
+        include_metadata,
+        message_limit,
+        message_offset,
+        userId
+      );
+
+      return {
+        retrieval_successful: true,
+        conversation_id: conversation_id,
+        conversation: retrieval.conversation,
+        message_count: retrieval.messageCount,
+        has_more_messages: retrieval.hasMoreMessages,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error(
+        '[ConversationStore] Error retrieving conversation:',
+        error
+      );
+      throw error;
+    }
+  }
+
+  async performConversationRetrieval(
+    conversationId,
+    includeMetadata,
+    messageLimit,
+    messageOffset,
+    userId
+  ) {
+    const conversation = this.conversations.get(conversationId);
+
+    if (!conversation) {
+      throw new Error(`Conversation not found: ${conversationId}`);
+    }
+
+    // Check user access
+    if (conversation.user_id !== userId) {
+      throw new Error('Access denied to conversation');
+    }
+
+    let messages = conversation.messages;
+    let hasMoreMessages = false;
+
+    // Apply pagination if requested
+    if (messageLimit) {
+      const startIndex = messageOffset;
+      const endIndex = startIndex + messageLimit;
+      messages = conversation.messages.slice(startIndex, endIndex);
+      hasMoreMessages = endIndex < conversation.messages.length;
+    }
+
+    const result = {
+      conversation: {
+        id: conversation.id,
+        messages: messages,
+        ...(includeMetadata && { metadata: conversation.metadata }),
+        ...(includeMetadata && { session_info: conversation.session_info }),
+      },
+      messageCount: messages.length,
+      hasMoreMessages: hasMoreMessages,
+    };
+
+    return result;
+  }
+
+  async searchConversations(payload, userId, language) {
+    try {
+      const {
+        query,
+        search_type = 'content',
+        time_range = 'all',
+        limit = 10,
+        include_metadata = false,
+      } = payload;
+
+      const search = await this.performConversationSearch(
+        query,
+        search_type,
+        time_range,
+        limit,
+        include_metadata,
+        userId
+      );
+
+      return {
+        search_completed: true,
+        query: query,
+        search_type: search_type,
+        results: search.results,
+        result_count: search.results.length,
+        total_matches: search.totalMatches,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error(
+        '[ConversationStore] Error searching conversations:',
+        error
+      );
+      throw error;
+    }
+  }
+
+  async performConversationSearch(
+    query,
+    searchType,
+    timeRange,
+    limit,
+    includeMetadata,
+    userId
+  ) {
+    const userConversations = Array.from(this.conversations.values()).filter(
+      conv => conv.user_id === userId
+    );
+
+    let results = [];
+
+    // Apply time range filter
+    const filteredConversations = this.filterByTimeRange(
+      userConversations,
+      timeRange
+    );
+
+    // Perform search based on type
+    switch (searchType) {
+      case 'content':
+        results = this.searchByContent(filteredConversations, query);
+        break;
+      case 'metadata':
+        results = this.searchByMetadata(filteredConversations, query);
+        break;
+      case 'date':
+        results = this.searchByDate(filteredConversations, query);
+        break;
+      default:
+        results = this.searchByContent(filteredConversations, query);
+    }
+
+    // Sort by relevance (simplified)
+    results.sort((a, b) => b.relevance_score - a.relevance_score);
+
+    // Apply limit
+    const limitedResults = results.slice(0, limit);
+
+    // Format results
+    const formattedResults = limitedResults.map(result => ({
+      conversation_id: result.conversation.id,
+      relevance_score: result.relevance_score,
+      matching_context: result.matching_context,
+      ...(includeMetadata && { metadata: result.conversation.metadata }),
+    }));
+
+    return {
+      results: formattedResults,
+      totalMatches: results.length,
+    };
+  }
+
+  searchByContent(conversations, query) {
+    const results = [];
+    const queryLower = query.toLowerCase();
+
+    conversations.forEach(conversation => {
+      const matches = conversation.messages.filter(
+        message =>
+          message.content && message.content.toLowerCase().includes(queryLower)
+      );
+
+      if (matches.length > 0) {
+        const relevanceScore = matches.length / conversation.messages.length;
+        results.push({
+          conversation: conversation,
+          relevance_score: relevanceScore,
+          matching_context: matches
+            .slice(0, 3)
+            .map(m => m.content.substring(0, 100)),
+        });
+      }
+    });
+
+    return results;
+  }
+
+  searchByMetadata(conversations, query) {
+    const results = [];
+    const queryLower = query.toLowerCase();
+
+    conversations.forEach(conversation => {
+      const metadataStr = JSON.stringify(conversation.metadata).toLowerCase();
+      if (metadataStr.includes(queryLower)) {
+        results.push({
+          conversation: conversation,
+          relevance_score: 0.8,
+          matching_context: ['Metadata match'],
+        });
+      }
+    });
+
+    return results;
+  }
+
+  searchByDate(conversations, dateQuery) {
+    const results = [];
+    const targetDate = new Date(dateQuery);
+
+    conversations.forEach(conversation => {
+      const createdDate = new Date(conversation.metadata.created_at);
+      const daysDiff =
+        Math.abs(targetDate - createdDate) / (1000 * 60 * 60 * 24);
+
+      if (daysDiff <= 1) {
+        // Within 1 day
+        results.push({
+          conversation: conversation,
+          relevance_score: Math.max(0.1, 1 - daysDiff),
+          matching_context: [`Date: ${conversation.metadata.created_at}`],
+        });
+      }
+    });
+
+    return results;
+  }
+
+  filterByTimeRange(conversations, timeRange) {
+    if (timeRange === 'all') {
+      return conversations;
+    }
+
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - this.parseTimeRange(timeRange));
+
+    return conversations.filter(
+      conversation => new Date(conversation.metadata.created_at) >= cutoff
+    );
+  }
+
+  parseTimeRange(timeRange) {
+    const units = { h: 3600000, d: 86400000, w: 604800000, m: 2592000000 };
+    const match = timeRange.match(/(\d+)([hdwm])/);
+    if (match) {
+      return parseInt(match[1]) * (units[match[2]] || units.d);
+    }
+    return 86400000; // Default 24 hours
+  }
+
+  async analyzeConversation(payload, userId, language) {
+    try {
+      const {
+        conversation_id,
+        analysis_type = 'summary',
+        include_sentiment = false,
+        include_topics = false,
+      } = payload;
+
+      if (!conversation_id) {
+        throw new Error('Conversation ID is required');
+      }
+
+      const analysis = await this.performConversationAnalysis(
+        conversation_id,
+        analysis_type,
+        include_sentiment,
+        include_topics,
+        userId
+      );
+
+      return {
+        analysis_completed: true,
+        conversation_id: conversation_id,
+        analysis_type: analysis_type,
+        analysis: analysis.results,
+        insights: analysis.insights,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error('[ConversationStore] Error analyzing conversation:', error);
+      throw error;
+    }
+  }
+
+  async performConversationAnalysis(
+    conversationId,
+    analysisType,
+    includeSentiment,
+    includeTopics,
+    userId
+  ) {
+    const conversation = this.conversations.get(conversationId);
+
+    if (!conversation) {
+      throw new Error(`Conversation not found: ${conversationId}`);
+    }
+
+    if (conversation.user_id !== userId) {
+      throw new Error('Access denied to conversation');
+    }
+
+    const analysis = {
+      results: {},
+      insights: [],
+    };
+
+    // Basic conversation statistics
+    analysis.results.basic_stats = {
+      total_messages: conversation.messages.length,
+      user_messages: conversation.messages.filter(m => m.role === 'user')
+        .length,
+      assistant_messages: conversation.messages.filter(
+        m => m.role === 'assistant'
+      ).length,
+      conversation_duration: this.calculateConversationDuration(conversation),
+      average_message_length: this.calculateAverageMessageLength(
+        conversation.messages
+      ),
+    };
+
+    // Sentiment analysis (simplified)
+    if (includeSentiment) {
+      analysis.results.sentiment = this.analyzeSentiment(conversation.messages);
+    }
+
+    // Topic extraction (simplified)
+    if (includeTopics) {
+      analysis.results.topics = this.extractTopics(conversation.messages);
+    }
+
+    // Generate insights
+    analysis.insights = this.generateConversationInsights(analysis.results);
+
+    return analysis;
+  }
+
+  calculateConversationDuration(conversation) {
+    if (conversation.messages.length < 2) {
+      return 0;
+    }
+
+    const firstMessage = conversation.messages[0];
+    const lastMessage = conversation.messages[conversation.messages.length - 1];
+
+    if (firstMessage.timestamp && lastMessage.timestamp) {
+      return new Date(lastMessage.timestamp) - new Date(firstMessage.timestamp);
+    }
+
+    return 0;
+  }
+
+  calculateAverageMessageLength(messages) {
+    if (messages.length === 0) return 0;
+
+    const totalLength = messages.reduce(
+      (sum, message) => sum + (message.content ? message.content.length : 0),
+      0
+    );
+
+    return totalLength / messages.length;
+  }
+
+  analyzeSentiment(messages) {
+    // Simplified sentiment analysis
+    const sentiments = { positive: 0, neutral: 0, negative: 0 };
+
+    messages.forEach(message => {
+      if (!message.content) return;
+
+      const content = message.content.toLowerCase();
+      const positiveWords = [
+        'good',
+        'great',
+        'excellent',
+        'happy',
+        'love',
+        'awesome',
+      ];
+      const negativeWords = [
+        'bad',
+        'terrible',
+        'sad',
+        'hate',
+        'awful',
+        'horrible',
+      ];
+
+      const positiveCount = positiveWords.filter(word =>
+        content.includes(word)
+      ).length;
+      const negativeCount = negativeWords.filter(word =>
+        content.includes(word)
+      ).length;
+
+      if (positiveCount > negativeCount) {
+        sentiments.positive++;
+      } else if (negativeCount > positiveCount) {
+        sentiments.negative++;
+      } else {
+        sentiments.neutral++;
+      }
+    });
+
+    return sentiments;
+  }
+
+  extractTopics(messages) {
+    // Simplified topic extraction
+    const topics = new Map();
+
+    messages.forEach(message => {
+      if (!message.content) return;
+
+      const words = message.content
+        .toLowerCase()
+        .split(/\W+/)
+        .filter(word => word.length > 3);
+
+      words.forEach(word => {
+        topics.set(word, (topics.get(word) || 0) + 1);
+      });
+    });
+
+    // Return top 10 topics
+    return Array.from(topics.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([topic, count]) => ({ topic, count }));
+  }
+
+  generateConversationInsights(results) {
+    const insights = [];
+
+    if (results.basic_stats) {
+      const stats = results.basic_stats;
+
+      if (stats.total_messages > 20) {
+        insights.push({
+          type: 'engagement',
+          insight: 'This was a highly engaged conversation with many exchanges',
+          confidence: 0.8,
+        });
+      }
+
+      if (stats.average_message_length > 200) {
+        insights.push({
+          type: 'detail',
+          insight: 'Messages were detailed and comprehensive',
+          confidence: 0.7,
+        });
+      }
+    }
+
+    if (results.sentiment) {
+      const { positive, negative, neutral } = results.sentiment;
+      const total = positive + negative + neutral;
+
+      if (positive / total > 0.6) {
+        insights.push({
+          type: 'sentiment',
+          insight: 'Overall conversation sentiment was positive',
+          confidence: 0.6,
+        });
+      }
+    }
+
+    return insights;
+  }
+
+  getStorageStats() {
+    return {
+      total_conversations: this.conversations.size,
+      total_messages: this.conversationMetrics.get('total_messages'),
+      active_sessions: this.userSessions.size,
+      storage_size_bytes: Array.from(this.conversations.values()).reduce(
+        (size, conv) => size + JSON.stringify(conv).length,
         0
       ),
-      memoryUsage: {
-        histories: this.history.size,
-        summaries: this.conversationSummaries.size,
-        contextWindows: this.contextWindows.size
-
     };
-
-  // Cleanup old data
-  cleanup((error) {
-    // TODO: Implement method
   }
+}
 
-  Date(Date.now() - maxAgeHours * 60 * 60 * 1000);
-    let cleaned = 0;
-
-    for((error) {
-    // TODO: Implement method
-  }
-
-  Date(msg.timestamp) > cutoff
-
-      if((error) {
-        this.history.set(userId, filteredHistory);
-        cleaned += history.length - filteredHistory.length;
-
-
-    console.log(`[ConversationStore] Cleaned up ${cleaned} old messages`);
-    return cleaned;
-
-
-export default new ConversationStore();
+export default ConversationStore;

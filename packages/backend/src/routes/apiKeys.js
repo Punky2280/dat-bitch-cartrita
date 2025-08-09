@@ -5,7 +5,7 @@ router.get('/', (req, res) => {
   res.json({
     message: 'apiKeys routes',
     status: 'ready',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 

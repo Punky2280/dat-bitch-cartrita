@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import ForceGraph3D from 'react-force-graph-3d';
-import * as THREE from 'three';
-import { useThemedStyles } from '../context/ThemeContext';
+import React, { useState, useEffect, useRef } from "react";
+import ForceGraph3D from "react-force-graph-3d";
+import * as THREE from "three";
+import { useThemedStyles } from "../context/ThemeContext";
 
 interface KnowledgeHubPageProps {
   token: string;
@@ -37,7 +37,7 @@ interface GraphNode {
   val: number;
   color: string;
   group: string;
-  type: 'entry' | 'cluster';
+  type: "entry" | "cluster";
 }
 
 interface GraphLink {
@@ -60,8 +60,8 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
 }) => {
   const themedStyles = useThemedStyles();
   const [activeView, setActiveView] = useState<
-    'overview' | 'graph' | 'search' | 'entries' | 'create'
-  >('overview');
+    "overview" | "graph" | "search" | "entries" | "create"
+  >("overview");
   const [entries, setEntries] = useState<KnowledgeEntry[]>([]);
   const [clusters, setClusters] = useState<KnowledgeCluster[]>([]);
   const [graphData, setGraphData] = useState<{
@@ -71,23 +71,23 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
   const [loading, setLoading] = useState(true);
 
   // Search state
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
   // Create entry state
   const [newEntry, setNewEntry] = useState({
-    title: '',
-    content: '',
-    content_type: 'text',
-    category: 'general',
+    title: "",
+    content: "",
+    content_type: "text",
+    category: "general",
     tags: [] as string[],
     importance_score: 0.5,
   });
 
   // Filters
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [contentTypeFilter, setContentTypeFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [contentTypeFilter, setContentTypeFilter] = useState("all");
 
   const fgRef = useRef<any>();
 
@@ -99,13 +99,13 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
     setLoading(true);
     try {
       const [entriesRes, clustersRes, graphRes] = await Promise.all([
-        fetch('/api/knowledge/entries', {
+        fetch("/api/knowledge/entries", {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('/api/knowledge/clusters', {
+        fetch("/api/knowledge/clusters", {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('/api/knowledge/graph', {
+        fetch("/api/knowledge/graph", {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -120,7 +120,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
       if (clustersData.success) setClusters(clustersData.clusters);
       if (graphData.success) setGraphData(transformGraphData(graphData.graph));
     } catch (error) {
-      console.error('Error loading knowledge data:', error);
+      console.error("Error loading knowledge data:", error);
     } finally {
       setLoading(false);
     }
@@ -138,19 +138,19 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
         val: entry.importance_score * 10 + 5,
         color: getContentTypeColor(entry.content_type),
         group: entry.category,
-        type: 'entry',
+        type: "entry",
       });
     });
 
     // Add cluster nodes
-    clusters.forEach(cluster => {
+    clusters.forEach((cluster) => {
       nodes.push({
         id: `cluster_${cluster.id}`,
         name: cluster.name,
         val: cluster.size * 2 + 10,
         color: cluster.color,
-        group: 'cluster',
-        type: 'cluster',
+        group: "cluster",
+        type: "cluster",
       });
     });
 
@@ -168,13 +168,13 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
 
   const getContentTypeColor = (contentType: string): string => {
     const colors: { [key: string]: string } = {
-      text: '#3B82F6',
-      code: '#10B981',
-      image: '#F59E0B',
-      document: '#8B5CF6',
-      link: '#EF4444',
+      text: "#3B82F6",
+      code: "#10B981",
+      image: "#F59E0B",
+      document: "#8B5CF6",
+      link: "#EF4444",
     };
-    return colors[contentType] || '#6B7280';
+    return colors[contentType] || "#6B7280";
   };
 
   const handleSearch = async () => {
@@ -182,11 +182,11 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
 
     setIsSearching(true);
     try {
-      const response = await fetch('/api/knowledge/search', {
-        method: 'POST',
+      const response = await fetch("/api/knowledge/search", {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           query: searchQuery,
@@ -200,7 +200,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
         setSearchResults(data.results);
       }
     } catch (error) {
-      console.error('Error searching knowledge:', error);
+      console.error("Error searching knowledge:", error);
     } finally {
       setIsSearching(false);
     }
@@ -208,11 +208,11 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
 
   const handleCreateEntry = async () => {
     try {
-      const response = await fetch('/api/knowledge/entries', {
-        method: 'POST',
+      const response = await fetch("/api/knowledge/entries", {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(newEntry),
       });
@@ -220,31 +220,31 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
       const data = await response.json();
       if (data.success) {
         setNewEntry({
-          title: '',
-          content: '',
-          content_type: 'text',
-          category: 'general',
+          title: "",
+          content: "",
+          content_type: "text",
+          category: "general",
           tags: [],
           importance_score: 0.5,
         });
-        setActiveView('entries');
+        setActiveView("entries");
         loadData();
       }
     } catch (error) {
-      console.error('Error creating knowledge entry:', error);
+      console.error("Error creating knowledge entry:", error);
     }
   };
 
-  const filteredEntries = entries.filter(entry => {
+  const filteredEntries = entries.filter((entry) => {
     const categoryMatch =
-      categoryFilter === 'all' || entry.category === categoryFilter;
+      categoryFilter === "all" || entry.category === categoryFilter;
     const typeMatch =
-      contentTypeFilter === 'all' || entry.content_type === contentTypeFilter;
+      contentTypeFilter === "all" || entry.content_type === contentTypeFilter;
     return categoryMatch && typeMatch;
   });
 
-  const categories = [...new Set(entries.map(e => e.category))];
-  const contentTypes = [...new Set(entries.map(e => e.content_type))];
+  const categories = [...new Set(entries.map((e) => e.category))];
+  const contentTypes = [...new Set(entries.map((e) => e.content_type))];
 
   if (loading) {
     return (
@@ -281,7 +281,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
           </div>
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => setActiveView('create')}
+              onClick={() => setActiveView("create")}
               className="px-4 py-2 bg-gradient-purple rounded-lg font-semibold transition-all duration-300 hover:scale-105 flex items-center space-x-2"
             >
               <span>➕</span>
@@ -296,19 +296,19 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
         <div className="max-w-7xl mx-auto px-6">
           <nav className="flex space-x-8">
             {[
-              { id: 'overview', name: 'Overview', icon: '📊' },
-              { id: 'graph', name: '3D Knowledge Graph', icon: '🕸️' },
-              { id: 'search', name: 'Semantic Search', icon: '🔍' },
-              { id: 'entries', name: 'All Entries', icon: '📚' },
-              { id: 'create', name: 'Create Entry', icon: '✏️' },
-            ].map(tab => (
+              { id: "overview", name: "Overview", icon: "📊" },
+              { id: "graph", name: "3D Knowledge Graph", icon: "🕸️" },
+              { id: "search", name: "Semantic Search", icon: "🔍" },
+              { id: "entries", name: "All Entries", icon: "📚" },
+              { id: "create", name: "Create Entry", icon: "✏️" },
+            ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveView(tab.id as any)}
                 className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
                   activeView === tab.id
-                    ? 'border-purple-500 text-purple-400'
-                    : 'border-transparent text-gray-400 hover:text-white hover:border-gray-300'
+                    ? "border-purple-500 text-purple-400"
+                    : "border-transparent text-gray-400 hover:text-white hover:border-gray-300"
                 }`}
               >
                 <span className="mr-2">{tab.icon}</span>
@@ -321,7 +321,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-6">
-        {activeView === 'overview' && (
+        {activeView === "overview" && (
           <div className="space-y-8">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -361,7 +361,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
                         ? (
                             (entries.reduce(
                               (sum, e) => sum + e.importance_score,
-                              0
+                              0,
                             ) /
                               entries.length) *
                             100
@@ -384,7 +384,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
                   <span>Recent Entries</span>
                 </h2>
                 <div className="space-y-4">
-                  {entries.slice(0, 5).map(entry => (
+                  {entries.slice(0, 5).map((entry) => (
                     <div
                       key={entry.id}
                       className="border border-gray-700 rounded-lg p-4 hover:border-purple-500 transition-colors"
@@ -428,7 +428,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
                   <span>Knowledge Clusters</span>
                 </h2>
                 <div className="space-y-4">
-                  {clusters.slice(0, 5).map(cluster => (
+                  {clusters.slice(0, 5).map((cluster) => (
                     <div
                       key={cluster.id}
                       className="border border-gray-700 rounded-lg p-4 hover:border-purple-500 transition-colors"
@@ -463,7 +463,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
           </div>
         )}
 
-        {activeView === 'graph' && (
+        {activeView === "graph" && (
           <div className="h-screen bg-gray-800 rounded-xl overflow-hidden">
             <div className="p-4 border-b border-gray-700">
               <h2 className="text-xl font-bold">3D Knowledge Graph</h2>
@@ -484,29 +484,29 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
                   showNavInfo={false}
                   controlType="orbit"
                   onNodeClick={(node: any) => {
-                    console.log('Node clicked:', node);
+                    console.log("Node clicked:", node);
                   }}
                   nodeThreeObject={(node: any) => {
                     try {
-                      const canvas = document.createElement('canvas');
-                      const context = canvas.getContext('2d');
+                      const canvas = document.createElement("canvas");
+                      const context = canvas.getContext("2d");
                       if (!context) return new THREE.Mesh();
 
                       canvas.width = 256;
                       canvas.height = 256;
 
-                      context.fillStyle = node.color || '#3B82F6';
+                      context.fillStyle = node.color || "#3B82F6";
                       context.beginPath();
                       context.arc(128, 128, 100, 0, 2 * Math.PI);
                       context.fill();
 
-                      context.fillStyle = 'white';
-                      context.font = '32px Arial';
-                      context.textAlign = 'center';
+                      context.fillStyle = "white";
+                      context.font = "32px Arial";
+                      context.textAlign = "center";
                       context.fillText(
-                        node.type === 'cluster' ? '🧩' : '📄',
+                        node.type === "cluster" ? "🧩" : "📄",
                         128,
-                        140
+                        140,
                       );
 
                       const texture = new THREE.CanvasTexture(canvas);
@@ -517,11 +517,11 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
                       sprite.scale.set(node.val || 1, node.val || 1, 1);
                       return sprite;
                     } catch (error) {
-                      console.error('Error creating node sprite:', error);
+                      console.error("Error creating node sprite:", error);
                       // Fallback to simple geometry
                       const geometry = new THREE.SphereGeometry(node.val || 1);
                       const material = new THREE.MeshBasicMaterial({
-                        color: node.color || '#3B82F6',
+                        color: node.color || "#3B82F6",
                       });
                       return new THREE.Mesh(geometry, material);
                     }
@@ -532,7 +532,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
           </div>
         )}
 
-        {activeView === 'search' && (
+        {activeView === "search" && (
           <div className="space-y-6">
             <div className="bg-gray-800 rounded-xl p-6">
               <h2 className="text-xl font-bold mb-4">Semantic Search</h2>
@@ -541,8 +541,8 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
                   type="text"
                   placeholder="Search your knowledge base..."
                   value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  onKeyPress={e => e.key === 'Enter' && handleSearch()}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                   className="flex-1 px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
                 />
                 <button
@@ -550,7 +550,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
                   disabled={isSearching}
                   className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 rounded-lg font-semibold transition-colors"
                 >
-                  {isSearching ? '🔍 Searching...' : '🔍 Search'}
+                  {isSearching ? "🔍 Searching..." : "🔍 Search"}
                 </button>
               </div>
             </div>
@@ -560,7 +560,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
                 <h3 className="text-lg font-semibold">
                   Search Results ({searchResults.length})
                 </h3>
-                {searchResults.map(result => (
+                {searchResults.map((result) => (
                   <div
                     key={result.id}
                     className="bg-gray-800 border border-gray-700 rounded-lg p-6 hover:border-purple-500 transition-colors"
@@ -595,7 +595,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
           </div>
         )}
 
-        {activeView === 'entries' && (
+        {activeView === "entries" && (
           <div className="space-y-6">
             {/* Filters */}
             <div className="bg-gray-800 rounded-xl p-6">
@@ -603,11 +603,11 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
               <div className="flex space-x-4">
                 <select
                   value={categoryFilter}
-                  onChange={e => setCategoryFilter(e.target.value)}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
                   className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-purple-500"
                 >
                   <option value="all">All Categories</option>
-                  {categories.map(category => (
+                  {categories.map((category) => (
                     <option key={category} value={category}>
                       {category}
                     </option>
@@ -615,11 +615,11 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
                 </select>
                 <select
                   value={contentTypeFilter}
-                  onChange={e => setContentTypeFilter(e.target.value)}
+                  onChange={(e) => setContentTypeFilter(e.target.value)}
                   className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-purple-500"
                 >
                   <option value="all">All Types</option>
-                  {contentTypes.map(type => (
+                  {contentTypes.map((type) => (
                     <option key={type} value={type}>
                       {type}
                     </option>
@@ -630,7 +630,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
 
             {/* Entries Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredEntries.map(entry => (
+              {filteredEntries.map((entry) => (
                 <div
                   key={entry.id}
                   className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-purple-500 transition-colors"
@@ -681,7 +681,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
           </div>
         )}
 
-        {activeView === 'create' && (
+        {activeView === "create" && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-gray-800 rounded-xl p-6">
               <h2 className="text-xl font-bold mb-6">
@@ -696,7 +696,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
                   <input
                     type="text"
                     value={newEntry.title}
-                    onChange={e =>
+                    onChange={(e) =>
                       setNewEntry({ ...newEntry, title: e.target.value })
                     }
                     className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
@@ -710,7 +710,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
                   </label>
                   <textarea
                     value={newEntry.content}
-                    onChange={e =>
+                    onChange={(e) =>
                       setNewEntry({ ...newEntry, content: e.target.value })
                     }
                     rows={8}
@@ -726,7 +726,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
                     </label>
                     <select
                       value={newEntry.content_type}
-                      onChange={e =>
+                      onChange={(e) =>
                         setNewEntry({
                           ...newEntry,
                           content_type: e.target.value,
@@ -748,7 +748,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
                     </label>
                     <select
                       value={newEntry.category}
-                      onChange={e =>
+                      onChange={(e) =>
                         setNewEntry({ ...newEntry, category: e.target.value })
                       }
                       className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-purple-500"
@@ -765,7 +765,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Importance Score:{' '}
+                    Importance Score:{" "}
                     {(newEntry.importance_score * 100).toFixed(0)}%
                   </label>
                   <input
@@ -774,7 +774,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
                     max="1"
                     step="0.1"
                     value={newEntry.importance_score}
-                    onChange={e =>
+                    onChange={(e) =>
                       setNewEntry({
                         ...newEntry,
                         importance_score: parseFloat(e.target.value),
@@ -790,13 +790,13 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
                   </label>
                   <input
                     type="text"
-                    onChange={e =>
+                    onChange={(e) =>
                       setNewEntry({
                         ...newEntry,
                         tags: e.target.value
-                          .split(',')
-                          .map(t => t.trim())
-                          .filter(t => t),
+                          .split(",")
+                          .map((t) => t.trim())
+                          .filter((t) => t),
                       })
                     }
                     className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
@@ -812,7 +812,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
                     Create Knowledge Entry
                   </button>
                   <button
-                    onClick={() => setActiveView('entries')}
+                    onClick={() => setActiveView("entries")}
                     className="px-6 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg font-semibold transition-colors"
                   >
                     Cancel

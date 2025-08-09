@@ -27,7 +27,7 @@ class PrivacyControlService extends EventEmitter {
       email_messages: ['sender_email', 'sender_name', 'recipient_emails'],
       calendar_events: ['attendee_emails', 'organizer_email'],
       contacts: ['email', 'phone', 'address'],
-      chat_conversations: ['participant_ids', 'participant_names']
+      chat_conversations: ['participant_ids', 'participant_names'],
     };
 
     console.log('🔒 PrivacyControlService initialized');
@@ -55,7 +55,9 @@ class PrivacyControlService extends EventEmitter {
 
   async setRetentionPolicy(dataType, retentionDays) {
     // TODO: Implement setting retention policy
-    console.log(`�� Setting retention policy for ${dataType}: ${retentionDays} days`);
+    console.log(
+      `�� Setting retention policy for ${dataType}: ${retentionDays} days`
+    );
   }
 
   async cleanupExpiredData() {
@@ -73,7 +75,7 @@ class PrivacyControlService extends EventEmitter {
     return {
       initialized: this.initialized,
       retentionPolicies: Object.fromEntries(this.retentionPolicies),
-      defaultRetentionPeriods: this.defaultRetentionPeriods
+      defaultRetentionPeriods: this.defaultRetentionPeriods,
     };
   }
 }

@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent } from "react";
 
 interface RegisterPageProps {
   onSwitchToLogin: () => void;
@@ -9,44 +9,44 @@ export const RegisterPage = ({
   onSwitchToLogin,
   onRegisterSuccess,
 }: RegisterPageProps) => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
+      setError("Password must be at least 6 characters long");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const res = await fetch('http://localhost:8000/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("http://localhost:8000/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password }),
       });
 
       const data = await res.json();
 
       if (res.status === 409) {
-        throw new Error('An account with that email already exists.');
+        throw new Error("An account with that email already exists.");
       }
 
       if (!res.ok) {
-        throw new Error(data.message || 'Registration failed.');
+        throw new Error(data.message || "Registration failed.");
       }
 
       onRegisterSuccess();
@@ -74,7 +74,7 @@ export const RegisterPage = ({
             type="text"
             placeholder="Full Name"
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={(e) => setName(e.target.value)}
             className="w-full bg-gray-900 text-white p-3 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
             autoComplete="name"
             required
@@ -84,7 +84,7 @@ export const RegisterPage = ({
             type="email"
             placeholder="Email"
             value={email}
-            onChange={e => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)}
             className="w-full bg-gray-900 text-white p-3 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
             autoComplete="email"
             required
@@ -94,7 +94,7 @@ export const RegisterPage = ({
             type="password"
             placeholder="Password"
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
             className="w-full bg-gray-900 text-white p-3 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
             autoComplete="new-password"
             required
@@ -105,7 +105,7 @@ export const RegisterPage = ({
             type="password"
             placeholder="Confirm Password"
             value={confirmPassword}
-            onChange={e => setConfirmPassword(e.target.value)}
+            onChange={(e) => setConfirmPassword(e.target.value)}
             className="w-full bg-gray-900 text-white p-3 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
             autoComplete="new-password"
             required
@@ -121,12 +121,12 @@ export const RegisterPage = ({
             className="w-full btn-skittles text-white p-3 rounded-lg font-bold text-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
             disabled={isLoading}
           >
-            {isLoading ? 'Creating Account...' : 'Register'}
+            {isLoading ? "Creating Account..." : "Register"}
           </button>
         </form>
 
         <p className="text-center text-gray-400">
-          Already have an account?{' '}
+          Already have an account?{" "}
           <button
             onClick={onSwitchToLogin}
             className="font-bold text-cyan-400 hover:underline"

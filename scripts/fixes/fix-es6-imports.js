@@ -18,48 +18,55 @@ function fixImportsInFile(filePath) {
   const content = fs.readFileSync(filePath, 'utf8');
   const lines = content.split('\n');
   let modified = false;
-  
+
   const fixedLines = lines.map(line => {
     // Match import statements with relative paths that don't have .js extension
-    const importMatch = line.match(/^(\s*import\s+.*from\s+['"`])(\.\.?\/[^'"`]*?)(['"`];?\s*)$/);
-    
+    const importMatch = line.match(
+      /^(\s*import\s+.*from\s+['"`])(\.\.?\/[^'"`]*?)(['"`];?\s*)$/
+    );
+
     if (importMatch) {
       const [, prefix, importPath, suffix] = importMatch;
-      
+
       // Check if the import path doesn't already have .js extension
       if (!importPath.endsWith('.js') && !importPath.endsWith('.json')) {
         // Verify that adding .js would create a valid file path
-        const absolutePath = path.resolve(path.dirname(filePath), importPath + '.js');
-        
+        const absolutePath = path.resolve(
+          path.dirname(filePath),
+          importPath + '.js'
+        );
+
         if (fs.existsSync(absolutePath)) {
           modified = true;
           return `${prefix}${importPath}.js${suffix}`;
         }
       }
     }
-    
+
     return line;
   });
-  
+
   if (modified) {
     fs.writeFileSync(filePath, fixedLines.join('\n'));
-    console.log(`✅ Fixed imports in: ${path.relative(process.cwd(), filePath)}`);
+    console.log(
+      `✅ Fixed imports in: ${path.relative(process.cwd(), filePath)}`
+    );
     return true;
   }
-  
+
   return false;
 }
 
 function walkDirectory(dir) {
   let totalFixed = 0;
-  
+
   function walk(currentDir) {
     const items = fs.readdirSync(currentDir);
-    
+
     for (const item of items) {
       const fullPath = path.join(currentDir, item);
       const stat = fs.statSync(fullPath);
-      
+
       if (stat.isDirectory()) {
         // Skip node_modules and other unwanted directories
         if (!['node_modules', '.git', 'dist', 'build'].includes(item)) {
@@ -72,7 +79,7 @@ function walkDirectory(dir) {
       }
     }
   }
-  
+
   walk(dir);
   return totalFixed;
 }

@@ -1,16 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { MicrophoneIcon, StopIcon } from '@heroicons/react/24/outline';
+import React, { useState, useRef, useEffect } from "react";
+import { MicrophoneIcon, StopIcon } from "@heroicons/react/24/outline";
 import {
   checkMediaSupport,
   getOptimalAudioConstraints,
   getSupportedMimeType,
   logMediaDeviceInfo,
-} from '@/utils/mediaUtils';
-import { AudioVisualizer } from './AudioVisualizer';
+} from "@/utils/mediaUtils";
+import { AudioVisualizer } from "./AudioVisualizer";
 import {
   MediaPermissionHandler,
   MediaPermissionState,
-} from './MediaPermissionHandler';
+} from "./MediaPermissionHandler";
 
 interface VoiceToTextButtonProps {
   onTranscript: (text: string) => void;
@@ -26,8 +26,8 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [permissions, setPermissions] = useState<MediaPermissionState>({
-    microphone: 'unknown',
-    camera: 'unknown',
+    microphone: "unknown",
+    camera: "unknown",
   });
   const [showPermissionUI, setShowPermissionUI] = useState(false);
 
@@ -56,16 +56,16 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
       }
 
       console.log(
-        '[VoiceToText] Audio analysis - Avg volume:',
+        "[VoiceToText] Audio analysis - Avg volume:",
         avg.toFixed(6),
-        'Max volume:',
-        max.toFixed(6)
+        "Max volume:",
+        max.toFixed(6),
       );
 
       // More lenient threshold - if there's any significant audio activity
       return avg > 0.001 || max > 0.01;
     } catch (error) {
-      console.error('[VoiceToText] Audio validation error:', error);
+      console.error("[VoiceToText] Audio validation error:", error);
       return true; // If we can't validate, assume it's valid
     }
   }
@@ -74,13 +74,13 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
     if (disabled || !token) return;
 
     try {
-      console.log('[VoiceToText] Starting recording');
+      console.log("[VoiceToText] Starting recording");
 
       // Check media support
       const support = checkMediaSupport();
       if (!support.isSupported) {
-        console.error('[VoiceToText] Media support issues:', support.issues);
-        throw new Error(`Media not supported: ${support.issues.join(', ')}`);
+        console.error("[VoiceToText] Media support issues:", support.issues);
+        throw new Error(`Media not supported: ${support.issues.join(", ")}`);
       }
 
       // Log available devices for debugging
@@ -88,32 +88,32 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
 
       // Request permissions with optimal settings
       const audioConstraints = getOptimalAudioConstraints();
-      console.log('[VoiceToText] Audio constraints:', audioConstraints);
+      console.log("[VoiceToText] Audio constraints:", audioConstraints);
 
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: audioConstraints,
       });
 
-      console.log('[VoiceToText] Microphone access granted');
+      console.log("[VoiceToText] Microphone access granted");
       console.log(
-        '[VoiceToText] Audio tracks:',
-        stream.getAudioTracks().length
+        "[VoiceToText] Audio tracks:",
+        stream.getAudioTracks().length,
       );
 
       // Check if audio tracks are active
       const audioTracks = stream.getAudioTracks();
       if (audioTracks.length === 0) {
-        throw new Error('No audio tracks available');
+        throw new Error("No audio tracks available");
       }
 
       audioTracks.forEach((track, index) => {
         console.log(
           `[VoiceToText] Track ${index}:`,
           track.label,
-          'enabled:',
+          "enabled:",
           track.enabled,
-          'readyState:',
-          track.readyState
+          "readyState:",
+          track.readyState,
         );
       });
 
@@ -123,93 +123,93 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
 
       // Use optimal MIME type
       const mimeType = getSupportedMimeType();
-      console.log('[VoiceToText] Using MIME type:', mimeType || 'default');
+      console.log("[VoiceToText] Using MIME type:", mimeType || "default");
 
       const mediaRecorder = new MediaRecorder(
         stream,
-        mimeType ? { mimeType } : undefined
+        mimeType ? { mimeType } : undefined,
       );
       mediaRecorderRef.current = mediaRecorder;
 
-      mediaRecorder.ondataavailable = event => {
+      mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
       };
 
       mediaRecorder.onstop = async () => {
-        console.log('[VoiceToText] Recording stopped, processing...');
+        console.log("[VoiceToText] Recording stopped, processing...");
         setIsProcessing(true);
 
         try {
           const audioBlob = new Blob(audioChunksRef.current, {
-            type: 'audio/webm',
+            type: "audio/webm",
           });
           console.log(
-            '[VoiceToText] Audio blob created:',
+            "[VoiceToText] Audio blob created:",
             audioBlob.size,
-            'bytes'
+            "bytes",
           );
 
           const isValid = await isAudioValid(audioBlob);
           if (!isValid) {
             console.warn(
-              '[VoiceToText] Skipping transcription — audio appears silent'
+              "[VoiceToText] Skipping transcription — audio appears silent",
             );
             console.warn(
-              '[VoiceToText] Try speaking louder or closer to the microphone'
+              "[VoiceToText] Try speaking louder or closer to the microphone",
             );
             alert(
-              'No speech detected in your recording. Please speak louder and closer to the microphone, then try again.'
+              "No speech detected in your recording. Please speak louder and closer to the microphone, then try again.",
             );
             return;
           }
 
           const formData = new FormData();
-          formData.append('audio', audioBlob, 'recording.webm');
-          console.log('[VoiceToText] FormData created, sending request...');
+          formData.append("audio", audioBlob, "recording.webm");
+          console.log("[VoiceToText] FormData created, sending request...");
 
           const response = await fetch(
-            'http://localhost:8000/api/voice-to-text/transcribe',
+            "http://localhost:8000/api/voice-to-text/transcribe",
             {
-              method: 'POST',
+              method: "POST",
               headers: {
                 Authorization: `Bearer ${token}`,
               },
               body: formData,
-            }
+            },
           );
 
           console.log(
-            '[VoiceToText] Response received:',
+            "[VoiceToText] Response received:",
             response.status,
-            response.statusText
+            response.statusText,
           );
 
           if (!response.ok) {
             const errorText = await response.text();
-            console.error('[VoiceToText] Error response:', errorText);
+            console.error("[VoiceToText] Error response:", errorText);
             throw new Error(
-              `Transcription failed: ${response.status} ${response.statusText} - ${errorText}`
+              `Transcription failed: ${response.status} ${response.statusText} - ${errorText}`,
             );
           }
 
           const result = await response.json();
-          console.log('[VoiceToText] Transcription result:', result);
+          console.log("[VoiceToText] Transcription result:", result);
 
           if (result.transcript) {
             console.log(
-              '[VoiceToText] Transcription successful:',
-              result.transcript
+              "[VoiceToText] Transcription successful:",
+              result.transcript,
             );
             onTranscript(result.transcript);
           } else {
-            console.warn('[VoiceToText] No transcript received');
+            console.warn("[VoiceToText] No transcript received");
           }
         } catch (error) {
-          console.error('[VoiceToText] Transcription error:', error);
+          console.error("[VoiceToText] Transcription error:", error);
           const errorMessage =
-            error instanceof Error ? error.message : 'Unknown error';
+            error instanceof Error ? error.message : "Unknown error";
           alert(`Failed to transcribe speech: ${errorMessage}`);
         } finally {
           setIsProcessing(false);
@@ -218,44 +218,44 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
 
       mediaRecorder.start(1000); // Collect data every second
     } catch (error) {
-      console.error('[VoiceToText] Failed to start recording:', error);
+      console.error("[VoiceToText] Failed to start recording:", error);
       setIsRecording(false);
 
       if (error instanceof Error) {
-        if (error.name === 'NotAllowedError') {
+        if (error.name === "NotAllowedError") {
           alert(
-            'Microphone permission was denied. Please allow microphone access in your browser settings and try again.'
+            "Microphone permission was denied. Please allow microphone access in your browser settings and try again.",
           );
-        } else if (error.name === 'NotFoundError') {
+        } else if (error.name === "NotFoundError") {
           alert(
-            'No microphone found. Please connect a microphone and try again.'
+            "No microphone found. Please connect a microphone and try again.",
           );
-        } else if (error.name === 'NotReadableError') {
+        } else if (error.name === "NotReadableError") {
           alert(
-            'Microphone is already in use by another application. Please close other applications using the microphone and try again.'
+            "Microphone is already in use by another application. Please close other applications using the microphone and try again.",
           );
         } else {
           alert(`Failed to start voice recording: ${error.message}`);
         }
       } else {
-        alert('Failed to start voice recording. Please try again.');
+        alert("Failed to start voice recording. Please try again.");
       }
     }
   };
 
   const stopRecording = () => {
-    console.log('[VoiceToText] Stopping recording');
+    console.log("[VoiceToText] Stopping recording");
 
     if (
       mediaRecorderRef.current &&
-      mediaRecorderRef.current.state !== 'inactive'
+      mediaRecorderRef.current.state !== "inactive"
     ) {
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current = null;
     }
 
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
 
@@ -267,7 +267,7 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
       stopRecording();
     } else {
       // Check permissions before starting recording
-      if (permissions.microphone !== 'granted') {
+      if (permissions.microphone !== "granted") {
         setShowPermissionUI(true);
         return;
       }
@@ -279,7 +279,7 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
     setPermissions(newPermissions);
 
     // Auto-hide permission UI if microphone access is granted
-    if (newPermissions.microphone === 'granted' && showPermissionUI) {
+    if (newPermissions.microphone === "granted" && showPermissionUI) {
       setShowPermissionUI(false);
     }
   };
@@ -303,26 +303,30 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
           p-2 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2
           ${
             isRecording
-              ? 'bg-red-500 hover:bg-red-600 text-white focus:ring-red-500'
+              ? "bg-red-500 hover:bg-red-600 text-white focus:ring-red-500"
               : isProcessing
-                ? 'bg-blue-500 text-white animate-pulse'
-                : 'bg-gray-100 hover:bg-gray-200 text-gray-600 focus:ring-blue-500 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300'
+                ? "bg-blue-500 text-white animate-pulse"
+                : "bg-gray-100 hover:bg-gray-200 text-gray-600 focus:ring-blue-500 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300"
           }
-          ${isButtonDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+          ${
+            isButtonDisabled
+              ? "opacity-50 cursor-not-allowed"
+              : "cursor-pointer"
+          }
         `}
         title={
           isRecording
-            ? 'Stop recording'
+            ? "Stop recording"
             : isProcessing
-              ? 'Processing...'
-              : 'Start voice input'
+              ? "Processing..."
+              : "Start voice input"
         }
       >
         {isRecording ? (
           <StopIcon className="h-5 w-5" />
         ) : (
           <MicrophoneIcon
-            className={`h-5 w-5 ${isProcessing ? 'animate-pulse' : ''}`}
+            className={`h-5 w-5 ${isProcessing ? "animate-pulse" : ""}`}
           />
         )}
       </button>
@@ -357,7 +361,7 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 w-80">
           <MediaPermissionHandler
             onPermissionChange={handlePermissionChange}
-            requiredPermissions={['microphone']}
+            requiredPermissions={["microphone"]}
             showUI={true}
             autoRequest={false}
           />

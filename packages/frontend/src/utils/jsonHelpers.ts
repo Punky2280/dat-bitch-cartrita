@@ -5,17 +5,17 @@
  */
 export const safeJsonParse = <T = any>(
   jsonString: string,
-  fallback: T | null = null
+  fallback: T | null = null,
 ): T | null => {
   try {
-    if (!jsonString || typeof jsonString !== 'string') {
+    if (!jsonString || typeof jsonString !== "string") {
       return fallback;
     }
 
     const parsed = JSON.parse(jsonString);
     return parsed;
   } catch (error) {
-    console.warn('JSON parse error:', error);
+    console.warn("JSON parse error:", error);
     return fallback;
   }
 };
@@ -25,13 +25,13 @@ export const safeJsonParse = <T = any>(
  */
 export const parseJwtPayload = (token: string): any | null => {
   try {
-    if (!token || typeof token !== 'string') {
-      throw new Error('Invalid token format');
+    if (!token || typeof token !== "string") {
+      throw new Error("Invalid token format");
     }
 
-    const tokenParts = token.split('.');
+    const tokenParts = token.split(".");
     if (tokenParts.length !== 3) {
-      throw new Error('Token does not have 3 parts');
+      throw new Error("Token does not have 3 parts");
     }
 
     // Safely decode and parse the payload
@@ -41,24 +41,24 @@ export const parseJwtPayload = (token: string): any | null => {
     try {
       decodedPayload = atob(base64Payload);
     } catch (decodeError) {
-      throw new Error('Failed to decode token payload');
+      throw new Error("Failed to decode token payload");
     }
 
     let payload;
     try {
       payload = JSON.parse(decodedPayload);
     } catch (parseError) {
-      throw new Error('Failed to parse token payload as JSON');
+      throw new Error("Failed to parse token payload as JSON");
     }
 
     // Validate payload structure
-    if (!payload || typeof payload !== 'object') {
-      throw new Error('Invalid payload structure');
+    if (!payload || typeof payload !== "object") {
+      throw new Error("Invalid payload structure");
     }
 
     return payload;
   } catch (error) {
-    console.error('JWT parsing error:', error);
+    console.error("JWT parsing error:", error);
     return null;
   }
 };
@@ -67,17 +67,17 @@ export const parseJwtPayload = (token: string): any | null => {
  * Safely handle API response JSON parsing
  */
 export const safeApiJsonResponse = async <T = any>(
-  response: Response
+  response: Response,
 ): Promise<T | null> => {
   try {
-    if (!response.headers.get('content-type')?.includes('application/json')) {
-      throw new Error('Response is not JSON');
+    if (!response.headers.get("content-type")?.includes("application/json")) {
+      throw new Error("Response is not JSON");
     }
 
     const data = await response.json();
     return data;
   } catch (error) {
-    console.warn('API JSON response parsing error:', error);
+    console.warn("API JSON response parsing error:", error);
     return null;
   }
 };
@@ -87,7 +87,7 @@ export const safeApiJsonResponse = async <T = any>(
  */
 export const safeLocalStorageGet = <T = any>(
   key: string,
-  fallback: T | null = null
+  fallback: T | null = null,
 ): T | null => {
   try {
     const item = localStorage.getItem(key);
@@ -102,7 +102,7 @@ export const safeLocalStorageGet = <T = any>(
     } catch (removeError) {
       console.warn(
         `Failed to remove corrupted localStorage key "${key}":`,
-        removeError
+        removeError,
       );
     }
     return fallback;
@@ -128,7 +128,7 @@ export const safeLocalStorageSet = (key: string, value: any): boolean => {
  */
 export const safeFetch = async <T = any>(
   url: string,
-  options?: RequestInit
+  options?: RequestInit,
 ): Promise<{
   data: T | null;
   response: Response;
@@ -164,13 +164,13 @@ export const safeFetch = async <T = any>(
     return {
       data,
       response,
-      error: data ? null : 'Failed to parse response JSON',
+      error: data ? null : "Failed to parse response JSON",
     };
   } catch (error) {
     return {
       data: null,
       response: null as any,
-      error: error instanceof Error ? error.message : 'Network request failed',
+      error: error instanceof Error ? error.message : "Network request failed",
     };
   }
 };
@@ -180,11 +180,11 @@ export const safeFetch = async <T = any>(
  */
 export const validateObjectStructure = (
   obj: any,
-  requiredKeys: string[]
+  requiredKeys: string[],
 ): boolean => {
-  if (!obj || typeof obj !== 'object') {
+  if (!obj || typeof obj !== "object") {
     return false;
   }
 
-  return requiredKeys.every(key => key in obj);
+  return requiredKeys.every((key) => key in obj);
 };

@@ -1,0 +1,1737 @@
+
+> backend@1.0.0 start
+> node .
+
+[dotenv@17.2.1] injecting env (37) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[loadEnv] ✅ Environment loaded from: /home/robbie/development/dat-bitch-cartrita/packages/backend/.env
+🎤 DeepgramService initialized
+[DeepgramService] ✅ Client initialized
+🗣️ TextToSpeechService initialized
+[TextToSpeechService] ✅ Client initialized
+✅ Hybrid MessageBus with MCP initialized
+🌊 AmbientListeningService initialized
+[AmbientListeningService] Ambient monitoring setup completed
+👁️ VisualAnalysisService initialized
+[VisualAnalysisService] ✅ Client initialized
+[APIKeyManager] 🔐 Secure API key manager initialized
+🔐 SecureEncryptionService initialized with AES-256-GCM
+🧠 MultiModalProcessingService initialized
+[ServiceInitializer] Constructor initialized
+[EnhancedWorkflowEngine] ⚠️ Handler handleWebhookTrigger not implemented for webhook-trigger, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleScheduleTrigger not implemented for schedule-trigger, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleMCPResearcherNode not implemented for mcp-researcher, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleMCPAnalystNode not implemented for mcp-analyst, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleRAGSearchNode not implemented for rag-search, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleDataTransformNode not implemented for data-transform, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleDataFilterNode not implemented for data-filter, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleSplitNode not implemented for logic-split, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleLoopNode not implemented for logic-loop, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleEmailNode not implemented for email-send, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleWebhookSendNode not implemented for webhook-send, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleDatabaseQueryNode not implemented for database-query, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleWolframPlotNode not implemented for wolfram-plot, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleImageAnalysisNode not implemented for image-analysis, using fallback
+[EnhancedWorkflowEngine] ⚠️ Handler handleAudioTranscriptionNode not implemented for audio-transcription, using fallback
+[EnhancedWorkflowEngine] ✅ Initialized 24 node handlers
+[EnhancedWorkflowEngine] ⏰ Scheduler initialized
+[EnhancedWorkflowEngine] 🚀 Real execution system initialized
+[WorkflowNodeRegistry] ✅ Registered 28 nodes across 10 categories
+[WorkflowNodeRegistry] 🎯 Comprehensive node registry initialized
+[EnhancedKnowledgeHub] 🧠 Advanced RAG system initialized
+[SupervisorRegistry] Hierarchical structure initialized
+[SupervisorRegistry] Supervisors: 5
+[SupervisorRegistry] Subordinates: 24
+[SupervisorRegistry] Coordination graph compiled
+[Index] 🚀 Starting Cartrita backend...
+[SensoryProcessingService] 🧠 Sensory processing service initialized
+[Route Registration] Starting route registration...
+[Route Registration] ✅ All API routes registered.
+🚀 Initializing Cartrita backend...
+[AmbientListeningService] ✅ Service initialized successfully
+🔴 Initializing Redis cache...
+[Redis] Attempting connection to: redis://localhost:6379
+[Redis] ✅ Connected to Redis server
+✅ Redis cache initialized
+🧠 Initializing Hierarchical Supervisor Agent...
+[CartritaSupervisor] 🚀 Initializing hierarchical multi-agent system...
+[AgentToolRegistry] 🛠️ Initializing tool registry...
+[AgentToolRegistry] ✅ Registered tool: getCurrentDateTime (system)
+[AgentToolRegistry] ✅ Registered tool: getSystemStatus (system)
+[AgentToolRegistry] ✅ Registered tool: agent_role_call (system)
+[AgentToolRegistry] ✅ Registered tool: dalle_3 (image_generation)
+[AgentToolRegistry] ✅ Registered tool: image_analyzer (image_generation)
+[AgentToolRegistry] ✅ Registered tool: visual_editor (image_generation)
+[AgentToolRegistry] ✅ Registered tool: tavily_search (research) with configured API key
+[AgentToolRegistry] ✅ Registered tool: wikipedia_search (research)
+[AgentToolRegistry] ✅ Registered tool: serp_search (research) with configured API key
+[AgentToolRegistry] ✅ Registered tool: duckduckgo_search (research)
+[AgentToolRegistry] ✅ Registered tool: web_browser (research)
+[AgentToolRegistry] ✅ Registered tool: url_scraper (research)
+[AgentToolRegistry] ✅ Registered tool: arxiv_search (research)
+[AgentToolRegistry] ✅ Registered tool: news_search (research)
+[AgentToolRegistry] ✅ Registered tool: calculator (coding)
+[AgentToolRegistry] ✅ Registered tool: code_executor (coding)
+[AgentToolRegistry] ✅ Registered tool: github_search (coding)
+[AgentToolRegistry] ✅ Registered tool: code_reviewer (coding)
+[AgentToolRegistry] ✅ Registered tool: doc_generator (coding)
+[AgentToolRegistry] ⚠️ Google Calendar tools unavailable: Missing GOOGLE_API_KEY
+[AgentToolRegistry] ✅ Registered tool: calendar_api (scheduling)
+[AgentToolRegistry] ✅ Registered tool: timezone_converter (scheduling)
+[AgentToolRegistry] ✅ Registered tool: meeting_scheduler (scheduling)
+[AgentToolRegistry] ✅ Registered tool: grammar_checker (writing)
+[AgentToolRegistry] ✅ Registered tool: style_analyzer (writing)
+[AgentToolRegistry] ✅ Registered tool: content_optimizer (writing)
+[AgentToolRegistry] ✅ Registered tool: plagiarism_checker (writing)
+[AgentToolRegistry] ✅ Registered tool: task_tracker (task_management)
+[AgentToolRegistry] ✅ Registered tool: workflow_engine (task_management)
+[AgentToolRegistry] ✅ Registered tool: priority_analyzer (task_management)
+[AgentToolRegistry] ✅ Registered tool: data_analyzer (analytics)
+[AgentToolRegistry] ✅ Registered tool: chart_generator (analytics)
+[AgentToolRegistry] ✅ Registered tool: statistics_engine (analytics)
+[AgentToolRegistry] ✅ Registered tool: joke_generator (humor)
+[AgentToolRegistry] ✅ Registered tool: meme_creator (humor)
+[AgentToolRegistry] ✅ Registered tool: humor_analyzer (humor)
+[AgentToolRegistry] ✅ Registered tool: design_tools (design)
+[AgentToolRegistry] ✅ Registered tool: mockup_generator (design)
+[AgentToolRegistry] ✅ Registered tool: ux_analyzer (design)
+[AgentToolRegistry] ✅ Registered tool: security_scanner (security)
+[AgentToolRegistry] ✅ Registered tool: knowledge_query (knowledge)
+[AgentToolRegistry] ✅ Registered tool: file_analyzer (utility)
+[AgentToolRegistry] ✅ Successfully registered 41 tools
+[AgentToolRegistry] 📋 Available tool categories:
+  ✅ system: 3 tools
+  ✅ image_generation: 3 tools
+  ✅ research: 8 tools
+  ✅ coding: 5 tools
+  ✅ scheduling: 3 tools
+  ✅ writing: 4 tools
+  ✅ task_management: 3 tools
+  ✅ analytics: 3 tools
+  ✅ humor: 3 tools
+  ✅ design: 3 tools
+  ✅ security: 1 tools
+  ✅ knowledge: 1 tools
+  ✅ utility: 1 tools
+[CartritaSupervisor] 📝 Registering sub-agents...
+[APIKeyManager] 🔑 Provided 2 API keys to codewriter_1754569594227 (codewriter)
+🤖 BaseAgent codewriter created with ID: codewriter_1754569594227
+[CartritaSupervisor] ✅ Instantiated CodeWriterAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: codewriter
+[APIKeyManager] 🔑 Provided 4 API keys to researcher_1754569594230 (researcher)
+[researcher] ⚠️ No OpenAI API key available
+🤖 BaseAgent researcher created with ID: researcher_1754569594230
+[ResearcherAgent] ✅ Initialized with 9 tools
+[CartritaSupervisor] ✅ Instantiated ResearcherAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: researcher
+✅ Database connected successfully
+[APIKeyManager] 🔑 Provided 1 API keys to artist_1754569594233 (artist)
+🤖 BaseAgent artist created with ID: artist_1754569594233
+[CartritaSupervisor] ✅ Instantiated ArtistAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: artist
+[APIKeyManager] 🔑 Provided 1 API keys to writer_1754569594235 (writer)
+🤖 BaseAgent writer created with ID: writer_1754569594235
+[CartritaSupervisor] ✅ Instantiated WriterAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: writer
+[APIKeyManager] 🔑 Provided 4 API keys to scheduler_1754569594237 (scheduler)
+🤖 BaseAgent scheduler created with ID: scheduler_1754569594237
+[SchedulerAgent] In-memory scheduling engine initialized
+[CartritaSupervisor] ✅ Instantiated SchedulerAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: scheduler
+[APIKeyManager] 🔑 Provided 1 API keys to taskmanager_1754569594239 (taskmanager)
+🤖 BaseAgent taskmanager created with ID: taskmanager_1754569594239
+[CartritaSupervisor] ✅ Instantiated TaskManagementAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: taskmanager
+[CartritaSupervisor] ❌ Failed to load ComedianAgent.js: Invalid or unexpected token
+[APIKeyManager] 🔑 Provided 4 API keys to analyst_1754569594242 (analyst)
+🤖 BaseAgent analyst created with ID: analyst_1754569594242
+[CartritaSupervisor] ✅ Instantiated AnalyticsAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: analyst
+[APIKeyManager] 🔑 Provided 1 API keys to designer_1754569594244 (designer)
+🤖 BaseAgent designer created with ID: designer_1754569594244
+[CartritaSupervisor] ✅ Instantiated DesignAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: designer
+[APIKeyManager] 🔑 Provided 1 API keys to tool_1754569594246 (tool)
+🤖 BaseAgent tool created with ID: tool_1754569594246
+[CartritaSupervisor] ✅ Instantiated ToolAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: tool
+[APIKeyManager] 🔑 Provided 1 API keys to emotional_1754569594254 (emotional)
+🤖 BaseAgent emotional created with ID: emotional_1754569594254
+[CartritaSupervisor] ✅ Instantiated EmotionalIntelligenceAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: emotional
+[APIKeyManager] 🔑 Provided 1 API keys to multimodal_1754569594254 (multimodal)
+🤖 BaseAgent multimodal created with ID: multimodal_1754569594254
+[CartritaSupervisor] ✅ Instantiated MultiModalFusionAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: multimodal
+[CartritaSupervisor] ❌ Failed to load PersonalizationAgent.js: Invalid or unexpected token
+[APIKeyManager] 🔑 Provided 1 API keys to github_1754569594299 (github)
+🤖 BaseAgent github created with ID: github_1754569594299
+[CartritaSupervisor] ✅ Instantiated GitHubSearchAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: github
+[APIKeyManager] 🔑 Provided 1 API keys to notification_1754569594301 (notification)
+🤖 BaseAgent notification created with ID: notification_1754569594301
+[CartritaSupervisor] ✅ Instantiated ../communication/NotificationAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: notification
+[APIKeyManager] 🔑 Provided 1 API keys to translation_1754569594302 (translation)
+🤖 BaseAgent translation created with ID: translation_1754569594302
+[CartritaSupervisor] ✅ Instantiated ../communication/TranslationAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: translation
+[APIKeyManager] 🔑 Provided 1 API keys to bias_detector_1754569594303 (bias_detector)
+🤖 BaseAgent bias_detector created with ID: bias_detector_1754569594303
+[CartritaSupervisor] ✅ Instantiated ../ethics/BiasDetectionAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: bias_detector
+[APIKeyManager] 🔑 Provided 1 API keys to privacy_1754569594305 (privacy)
+🤖 BaseAgent privacy created with ID: privacy_1754569594305
+[CartritaSupervisor] ✅ Instantiated ../ethics/PrivacyProtectionAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: privacy
+[CartritaSupervisor] ❌ Failed to load ../ethics/ConstitutionalAI.js: capabilities.join is not a function
+[APIKeyManager] 🔑 Provided 1 API keys to api_gateway_1754569594308 (api_gateway)
+🤖 BaseAgent api_gateway created with ID: api_gateway_1754569594308
+[CartritaSupervisor] ✅ Instantiated ../integration/APIGatewayAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: api_gateway
+[APIKeyManager] 🔑 Provided 1 API keys to context_memory_1754569594311 (context_memory)
+🤖 BaseAgent context_memory created with ID: context_memory_1754569594311
+[CartritaSupervisor] ✅ Instantiated ../memory/ContextMemoryAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: context_memory
+[APIKeyManager] 🔑 Provided 1 API keys to knowledge_graph_1754569594313 (knowledge_graph)
+🤖 BaseAgent knowledge_graph created with ID: knowledge_graph_1754569594313
+[CartritaSupervisor] ✅ Instantiated ../memory/KnowledgeGraphAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: knowledge_graph
+[APIKeyManager] 🔑 Provided 1 API keys to learning_adapter_1754569594315 (learning_adapter)
+🤖 BaseAgent learning_adapter created with ID: learning_adapter_1754569594315
+[CartritaSupervisor] ✅ Instantiated ../memory/LearningAdapterAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: learning_adapter
+[APIKeyManager] 🔑 Provided 1 API keys to user_profile_1754569594316 (user_profile)
+🤖 BaseAgent user_profile created with ID: user_profile_1754569594316
+[CartritaSupervisor] ✅ Instantiated ../memory/UserProfile.js as class
+[CartritaSupervisor] 🎯 Registered agent: user_profile
+[CartritaSupervisor] ❌ Failed to load ../security/SecurityAuditAgent.js: capabilities.join is not a function
+[APIKeyManager] 🔑 Provided 1 API keys to mcp_coordinator_1754569594318 (mcp_coordinator)
+🤖 BaseAgent mcp_coordinator created with ID: mcp_coordinator_1754569594318
+[CartritaSupervisor] ✅ Instantiated ../system/MCPCoordinatorAgent.js as class
+[CartritaSupervisor] 🎯 Registered agent: mcp_coordinator
+[CartritaSupervisor] 📊 Successfully registered 22 sub-agents
+[CartritaSupervisor] 🗺️ State graph built with termination controls and recursion limit
+[CartritaSupervisor] ✅ Successfully initialized with 22 sub-agents.
+✅ Hierarchical Supervisor Agent initialized
+🔧 Initializing services...
+[ServiceInitializer] Starting Cartrita Iteration 21 service initialization...
+[ServiceInitializer] Initializing core services...
+[ServiceInitializer] ✓ Deepgram service available
+[ServiceInitializer] ✓ Visual analysis service available
+[ServiceInitializer] ✓ Text-to-speech service available
+[ServiceInitializer] ✓ Voice interaction service available
+[ServiceInitializer] ✓ Ambient listening service available
+[ServiceInitializer] Initializing multi-modal services...
+✅ WorkflowEngine v2.1 initialized with LangChain StateGraph support
+[ServiceInitializer] ✓ WorkflowEngine initialized
+[ServiceInitializer] Setting up cross-service event listeners...
+🎙️ VoiceInteractionService initialized
+[VoiceInteractionService] ✅ Service initialized
+[ServiceInitializer] ✓ Cross-service event listeners configured
+[ServiceInitializer] ✓ MultiModal Fusion Agent initialized
+[MultiModalProcessingService] Failed to load existing data: relation "multi_modal_processing_log" does not exist
+✅ MultiModalProcessingService fully initialized
+[ServiceInitializer] ✓ MultiModal Processing Service initialized (Iteration 22)
+[WolframAlphaService] 🧮 Initializing comprehensive Wolfram Alpha service...
+[APIKeyManager] 🚫 Agent wolfram-service-1754569594322 (general) denied access to wolfram API
+[WolframAlphaService] 🔍 Querying: "2+2..."
+[WolframAlphaService] ❌ Query failed: Request failed with status code 401
+[WolframAlphaService] ❌ Initialization failed: testQuery.includes is not a function
+[ServiceInitializer] 🎉 Cartrita services initialized successfully! (Iterations 18-22)
+[ServiceInitializer] Available features:
+  • Speech-to-text with Deepgram
+  • Wake word detection ("Cartrita!")
+  • Feminine urban voice synthesis
+  • Live voice chat mode
+  • Ambient listening and environmental sound analysis
+  • Visual analysis with OpenAI Vision
+  • Multi-modal sensory fusion
+  • Context-aware personality adaptation
+  • Workflow automation engine
+  • Enhanced LangChain agent orchestration
+  • Wolfram Alpha computational intelligence
+🔌 Setting up Socket.IO event handlers...
+✅ Socket.IO event handlers are now active.
+🎉 All systems initialized successfully!
+✅ Cartrita backend is live on port 8000
+🌍 Environment: development
+🔗 Allowed origins: http://localhost:5173, http://127.0.0.1:5173, http://localhost:3000
+📊 Health check available at: http://localhost:8000/health
+[EnhancedKnowledgeHub] ✅ Vector operations test passed (1536 dimensions)
+[EnhancedKnowledgeHub] ✅ RAG system ready
+[Knowledge] ✅ Enhanced Knowledge Hub initialized
+[2025-08-07T12:26:45.652Z] GET /api/chat/test
+[0mGET /api/chat/test [32m200[0m 5.567 ms - 85[0m
+✅ Database connected successfully
+[0mOPTIONS /api/auth/register [32m200[0m 0.798 ms - 0[0m
+[2025-08-07T12:27:55.783Z] POST /api/auth/register
+[Auth] Registration request body: {
+  name: 'Robert Allen',
+  email: 'robbienosebest@gmail.com',
+  password: 'punky1'
+}
+[0mPOST /api/auth/register [33m400[0m 10.427 ms - 50[0m
+[2025-08-07T12:27:56.604Z] POST /api/auth/register
+[Auth] Registration request body: {
+  name: 'Robert Allen',
+  email: 'robbienosebest@gmail.com',
+  password: 'punky1'
+}
+[0mPOST /api/auth/register [33m400[0m 3.639 ms - 50[0m
+[2025-08-07T12:27:57.775Z] POST /api/auth/register
+[Auth] Registration request body: {
+  name: 'Robert Allen',
+  email: 'robbienosebest@gmail.com',
+  password: 'punky1'
+}
+[0mPOST /api/auth/register [33m400[0m 1.344 ms - 50[0m
+[2025-08-07T12:27:58.146Z] POST /api/auth/register
+[Auth] Registration request body: {
+  name: 'Robert Allen',
+  email: 'robbienosebest@gmail.com',
+  password: 'punky1'
+}
+[0mPOST /api/auth/register [33m400[0m 3.727 ms - 50[0m
+[2025-08-07T12:27:58.361Z] POST /api/auth/register
+[Auth] Registration request body: {
+  name: 'Robert Allen',
+  email: 'robbienosebest@gmail.com',
+  password: 'punky1'
+}
+[0mPOST /api/auth/register [33m400[0m 3.255 ms - 50[0m
+✅ Database connected successfully
+✅ Database connected successfully
+✅ Database connected successfully
+[0mOPTIONS /api/auth/login [32m200[0m 1.071 ms - 0[0m
+[2025-08-07T12:30:03.352Z] POST /api/auth/login
+[Auth] Login request body: { email: 'robbienosebest@gmail.com', password: 'punky1' }
+[0mPOST /api/auth/login [33m401[0m 5.483 ms - 31[0m
+[2025-08-07T12:30:03.030Z] POST /api/auth/login
+[Auth] Login request body: { email: 'robbienosebest@gmail.com', password: 'punky1' }
+[0mPOST /api/auth/login [33m401[0m 4.757 ms - 31[0m
+[2025-08-07T12:30:03.275Z] POST /api/auth/login
+[Auth] Login request body: { email: 'robbienosebest@gmail.com', password: 'punky1' }
+[0mPOST /api/auth/login [33m401[0m 5.500 ms - 31[0m
+[0mOPTIONS /api/auth/register [32m200[0m 0.487 ms - 0[0m
+[2025-08-07T12:30:16.431Z] POST /api/auth/register
+[Auth] Registration request body: {
+  name: 'Robert Allen',
+  email: 'robbienosebest@gmail.com',
+  password: 'punky1'
+}
+[0mPOST /api/auth/register [33m400[0m 1.346 ms - 50[0m
+[2025-08-07T12:30:19.043Z] POST /api/auth/register
+[Auth] Registration request body: {
+  name: 'Robert Allen',
+  email: 'robbienosebest@gmail.com',
+  password: 'punky1'
+}
+[0mPOST /api/auth/register [33m400[0m 2.442 ms - 50[0m
+[2025-08-07T12:30:19.755Z] POST /api/auth/register
+[Auth] Registration request body: {
+  name: 'Robert Allen',
+  email: 'robbienosebest@gmail.com',
+  password: 'punky1'
+}
+[0mPOST /api/auth/register [33m400[0m 2.530 ms - 50[0m
+[2025-08-07T12:30:19.982Z] POST /api/auth/register
+[Auth] Registration request body: {
+  name: 'Robert Allen',
+  email: 'robbienosebest@gmail.com',
+  password: 'punky1'
+}
+[0mPOST /api/auth/register [33m400[0m 2.673 ms - 50[0m
+[2025-08-07T12:30:20.203Z] POST /api/auth/register
+[Auth] Registration request body: {
+  name: 'Robert Allen',
+  email: 'robbienosebest@gmail.com',
+  password: 'punky1'
+}
+[0mPOST /api/auth/register [33m400[0m 1.519 ms - 50[0m
+[0mOPTIONS /api/auth/register [32m200[0m 0.487 ms - 0[0m
+[2025-08-07T12:30:33.877Z] POST /api/auth/register
+[Auth] Registration request body: { name: 'Robert Allen', email: 'joe@joe.com', password: 'punky1' }
+[0mPOST /api/auth/register [33m400[0m 1.681 ms - 50[0m
+[2025-08-07T12:30:35.965Z] POST /api/auth/register
+[Auth] Registration request body: { name: 'Robert Allen', email: 'joe@joe.com', password: 'punky1' }
+[0mPOST /api/auth/register [33m400[0m 2.561 ms - 50[0m
+[2025-08-07T12:30:36.347Z] POST /api/auth/register
+[Auth] Registration request body: { name: 'Robert Allen', email: 'joe@joe.com', password: 'punky1' }
+[0mPOST /api/auth/register [33m400[0m 1.380 ms - 50[0m
+[2025-08-07T12:30:36.555Z] POST /api/auth/register
+[Auth] Registration request body: { name: 'Robert Allen', email: 'joe@joe.com', password: 'punky1' }
+[0mPOST /api/auth/register [33m400[0m 2.144 ms - 50[0m
+[2025-08-07T12:30:36.790Z] POST /api/auth/register
+[Auth] Registration request body: { name: 'Robert Allen', email: 'joe@joe.com', password: 'punky1' }
+[0mPOST /api/auth/register [33m400[0m 2.148 ms - 50[0m
+[0mOPTIONS /api/auth/register [32m200[0m 0.274 ms - 0[0m
+[2025-08-07T12:30:56.810Z] POST /api/auth/register
+[Auth] Registration request body: {
+  name: 'Lourdes Allen',
+  email: 'blululu84@icloud.com',
+  password: 'punky1'
+}
+[0mPOST /api/auth/register [33m400[0m 0.862 ms - 50[0m
+[2025-08-07T12:30:57.576Z] POST /api/auth/register
+[Auth] Registration request body: {
+  name: 'Lourdes Allen',
+  email: 'blululu84@icloud.com',
+  password: 'punky1'
+}
+[0mPOST /api/auth/register [33m400[0m 2.403 ms - 50[0m
+[2025-08-07T12:30:57.819Z] POST /api/auth/register
+[Auth] Registration request body: {
+  name: 'Lourdes Allen',
+  email: 'blululu84@icloud.com',
+  password: 'punky1'
+}
+[0mPOST /api/auth/register [33m400[0m 2.429 ms - 50[0m
+[2025-08-07T12:30:58.089Z] POST /api/auth/register
+[Auth] Registration request body: {
+  name: 'Lourdes Allen',
+  email: 'blululu84@icloud.com',
+  password: 'punky1'
+}
+[0mPOST /api/auth/register [33m400[0m 2.532 ms - 50[0m
+[2025-08-07T12:30:58.899Z] POST /api/auth/register
+[Auth] Registration request body: {
+  name: 'Lourdes Allen',
+  email: 'blululu84@icloud.com',
+  password: 'punky1'
+}
+[0mPOST /api/auth/register [33m400[0m 2.192 ms - 50[0m
+✅ Database connected successfully
+[0mOPTIONS /api/auth/login [32m200[0m 0.778 ms - 0[0m
+[2025-08-07T12:31:06.127Z] POST /api/auth/login
+[Auth] Login request body: { email: 'lulufdez84@gmail.com', password: 'punky1' }
+[0mPOST /api/auth/login [33m401[0m 5.024 ms - 31[0m
+[2025-08-07T12:31:06.983Z] POST /api/auth/login
+[Auth] Login request body: { email: 'lulufdez84@gmail.com', password: 'punky1' }
+[0mPOST /api/auth/login [33m401[0m 4.565 ms - 31[0m
+[2025-08-07T12:31:07.223Z] POST /api/auth/login
+[Auth] Login request body: { email: 'lulufdez84@gmail.com', password: 'punky1' }
+[0mPOST /api/auth/login [33m401[0m 2.772 ms - 31[0m
+[2025-08-07T12:31:07.464Z] POST /api/auth/login
+[Auth] Login request body: { email: 'lulufdez84@gmail.com', password: 'punky1' }
+[0mPOST /api/auth/login [33m401[0m 4.523 ms - 31[0m
+✅ Database connected successfully
+[2025-08-07T12:32:56.303Z] POST /api/auth/login
+[Auth] Login request body: { email: 'robbienosebest@gmail.com', password: 'punky123' }
+✅ Database connected successfully
+[0mPOST /api/auth/login [33m401[0m 279.793 ms - 31[0m
+[2025-08-07T12:33:10.049Z] POST /api/auth/login
+[Auth] Login request body: { email: 'robbienosebest@gmail.com', password: 'punky123' }
+✅ Database connected successfully
+[Auth] User logged in: Robert Allen (ID: 2)
+[0mPOST /api/auth/login [32m200[0m 266.072 ms - 322[0m
+[2025-08-07T12:33:13.909Z] POST /api/auth/register
+[Auth] Registration request body: {
+  name: 'Test User 2',
+  email: 'test2@example.com',
+  password: 'punky123'
+}
+[Auth] User registered: Test User 2 (ID: 4)
+[0mPOST /api/auth/register [32m201[0m 269.767 ms - 356[0m
+✅ Database connected successfully
+✅ Database connected successfully
+✅ Database connected successfully
+[0mOPTIONS /api/auth/login [32m200[0m 0.550 ms - 0[0m
+[2025-08-07T12:36:23.424Z] POST /api/auth/login
+[Auth] Login request body: { email: 'lulufdez84@gmail.com', password: 'punky1' }
+✅ Database connected successfully
+[0mPOST /api/auth/login [33m401[0m 218.048 ms - 31[0m
+[2025-08-07T12:36:24.367Z] POST /api/auth/login
+[Auth] Login request body: { email: 'lulufdez84@gmail.com', password: 'punky1' }
+[0mPOST /api/auth/login [33m401[0m 209.157 ms - 31[0m
+[0mOPTIONS /api/auth/register [32m200[0m 0.501 ms - 0[0m
+[2025-08-07T12:36:58.534Z] POST /api/auth/register
+[Auth] Registration request body: { name: 'guy', email: 'TimeCapsule1122@gmail.com', password: 'robbi1' }
+[0mPOST /api/auth/register [33m400[0m 0.907 ms - 50[0m
+✅ Database connected successfully
+✅ Database connected successfully
+✅ Database connected successfully
+✅ Database connected successfully
+✅ Database connected successfully
+[2025-08-07T12:41:06.406Z] POST /api/auth/login
+[Auth] Login request body: { email: 'robbienosebest@gmail.com', password: 'punky1' }
+[Auth] User logged in: Robert Allen (ID: 2)
+[0mPOST /api/auth/login [32m200[0m 233.263 ms - 322[0m
+[2025-08-07T12:41:12.526Z] GET /api/auth/verify
+[0mGET /api/auth/verify [32m200[0m 2.208 ms - 93[0m
+✅ Database connected successfully
+✅ Database connected successfully
+✅ Database connected successfully
+✅ Database connected successfully
+✅ Database connected successfully
+✅ Database connected successfully
+✅ Database connected successfully
+✅ Database connected successfully
+✅ Database connected successfully
+✅ Database connected successfully
+✅ Database connected successfully
+✅ Database connected successfully
+[0mOPTIONS /api/auth/register [32m200[0m 0.686 ms - 0[0m
+[2025-08-07T12:53:40.596Z] POST /api/auth/register
+[Auth] Registration request body: { name: 'guy', email: 'TimeCapsule1122@gmail.com', password: 'robbi1' }
+[0mPOST /api/auth/register [33m400[0m 1.360 ms - 50[0m
+[0mOPTIONS /api/auth/login [32m200[0m 0.698 ms - 0[0m
+[2025-08-07T12:53:46.032Z] POST /api/auth/login
+[Auth] Login request body: { email: 'robbienosebest@gmail.com', password: 'punky1' }
+✅ Database connected successfully
+[Auth] User logged in: Robert Allen (ID: 2)
+[0mPOST /api/auth/login [32m200[0m 260.543 ms - 322[0m
+[0mOPTIONS /api/chat/history [32m200[0m 0.578 ms - 0[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.490 ms - 0[0m
+[2025-08-07T12:53:46.377Z] GET /api/chat/history
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[ChatHistory] 🔍 req.user: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.394 ms - 0[0m
+[2025-08-07T12:53:46.388Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.068 ms - 375[0m
+[2025-08-07T12:53:46.392Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.938 ms - 375[0m
+[ChatHistory] 📭 No messages found for user 2
+[0mGET /api/chat/history [32m200[0m 19.599 ms - 52[0m
+[2025-08-07T12:53:46.398Z] GET /api/chat/history
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[ChatHistory] 🔍 req.user: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[ChatHistory] 📭 No messages found for user 2
+[0mGET /api/chat/history [36m304[0m 2.521 ms - -[0m
+[Socket Auth] 🔍 Handshake query: [Object: null prototype] {
+  EIO: '4',
+  transport: 'polling',
+  t: 'eemk7w0d'
+}
+[Socket Auth] 🔍 Handshake auth: {
+  token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsIm5hbWUiOiJSb2JlcnQgQWxsZW4iLCJlbWFpbCI6InJvYmJpZW5vc2ViZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc1NDU3MTIyNiwiZXhwIjoxNzU0NjU3NjI2fQ.eP1qmWs6BEVKpDwwyxpIsizbZnIla92iHN9u2lYSnKo'
+}
+[Socket Auth] 🔍 Token found: YES
+[Socket Auth] 🔍 Decoded payload: {
+  "sub": 2,
+  "name": "Robert Allen",
+  "email": "robbienosebest@gmail.com",
+  "iat": 1754571226,
+  "exp": 1754657626
+}
+[Socket Auth] ✅ User authenticated: Robert Allen (ID: 2)
+[Socket.IO] User connected: Robert Allen (ID: jmBJrGUOVdrAMQwsAAAC)
+[Chat] Robert Allen: "What can you help me with?..."
+[Chat] Error processing message from Robert Allen: error: column "speaker" of relation "conversations" does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/index.js:254:25
+    at async OpenTelemetryTracing.traceUserInteraction (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/system/OpenTelemetryTracing.js:299:22)
+    at async Socket.<anonymous> (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/index.js:249:34) {
+  length: 133,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '37',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_target.c',
+  line: '1066',
+  routine: 'checkInsertTargets'
+}
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.715 ms - 0[0m
+[2025-08-07T12:53:55.618Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.598 ms - 375[0m
+✅ Database connected successfully
+[0mOPTIONS /api/agent/metrics [32m200[0m 1.305 ms - 0[0m
+[2025-08-07T12:54:06.515Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.773 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.350 ms - 0[0m
+[2025-08-07T12:54:16.918Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.628 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.680 ms - 0[0m
+[2025-08-07T12:54:26.076Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.124 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.900 ms - 0[0m
+[2025-08-07T12:54:36.467Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 2.174 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.892 ms - 0[0m
+[2025-08-07T12:54:46.865Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.661 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.232 ms - 0[0m
+[2025-08-07T12:54:56.031Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.496 ms - 375[0m
+✅ Database connected successfully
+[MultiModalProcessingService] Cache cleanup: 0 items remaining
+✅ Database connected successfully
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.365 ms - 0[0m
+[2025-08-07T12:56:04.266Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.087 ms - 375[0m
+✅ Database connected successfully
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.651 ms - 0[0m
+[2025-08-07T12:57:04.197Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.368 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.659 ms - 0[0m
+[2025-08-07T12:57:47.660Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.370 ms - 375[0m
+[Socket.IO] User disconnected: Robert Allen, reason: client namespace disconnect
+[0mOPTIONS /api/user/me [32m200[0m 0.690 ms - 0[0m
+[0mOPTIONS /api/settings [32m200[0m 0.571 ms - 0[0m
+[0mOPTIONS /api/settings [32m200[0m 1.295 ms - 0[0m
+[2025-08-07T12:57:49.656Z] GET /api/settings
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[Settings] 📁 Fetching settings for user 2
+[0mOPTIONS /api/user/me [32m200[0m 0.503 ms - 0[0m
+[2025-08-07T12:57:49.663Z] GET /api/user/me
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[UserRoute] 🚀 GET /me endpoint hit
+[UserRoute] 🔍 req.user exists: true
+[UserRoute] 🔍 Looking up user with ID: 2
+✅ Database connected successfully
+✅ Database connected successfully
+[UserRoute] ✅ Database connection test passed
+[UserRoute] 🔍 Database query result: 1 rows
+[UserRoute] ✅ User found: Robert Allen
+[Settings] ✅ Settings retrieved for user 2
+[0mGET /api/settings [32m200[0m 25.412 ms - 320[0m
+[UserRoute] ❌ Error in GET /me: error: relation "user_settings" does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/user.js:74:28 {
+  length: 112,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '15',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+[0mGET /api/user/me [31m500[0m 19.282 ms - 94[0m
+[2025-08-07T12:57:49.683Z] GET /api/settings
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[Settings] 📁 Fetching settings for user 2
+[2025-08-07T12:57:49.685Z] GET /api/user/me
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[UserRoute] 🚀 GET /me endpoint hit
+[UserRoute] 🔍 req.user exists: true
+[UserRoute] 🔍 Looking up user with ID: 2
+[Settings] ✅ Settings retrieved for user 2
+[0mGET /api/settings [32m200[0m 4.391 ms - 320[0m
+✅ Database connected successfully
+[UserRoute] ✅ Database connection test passed
+[UserRoute] 🔍 Database query result: 1 rows
+[UserRoute] ✅ User found: Robert Allen
+[UserRoute] ❌ Error in GET /me: error: relation "user_settings" does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/user.js:74:28 {
+  length: 112,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '15',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+[0mGET /api/user/me [31m500[0m 17.414 ms - 94[0m
+✅ Database connected successfully
+[2025-08-07T12:58:24.319Z] GET /api/health/system
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[Health] Running comprehensive system health check...
+🏥 Starting comprehensive system health check...
+🔍 Checking database...
+🔍 Checking openai_api...
+🔍 Checking auth_endpoints...
+🔍 Checking chat_endpoints...
+🔍 Checking agent_endpoints...
+🔍 Checking voice_endpoints...
+🔍 Checking knowledge_endpoints...
+🔍 Checking calendar_endpoints...
+🔍 Checking email_endpoints...
+🔍 Checking vault_endpoints...
+🔍 Checking deepgram_service...
+🔍 Checking google_services...
+🔍 Checking hierarchical_agents...
+🔍 Checking tool_registry...
+🔍 Checking langchain_integration...
+✅ Database connected successfully
+🏥 Health check complete: healthy
+[0mGET /api/health/system [32m200[0m 732.754 ms - -[0m
+[2025-08-07T12:58:25.078Z] GET /api/health/system
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[Health] Running comprehensive system health check...
+🏥 Starting comprehensive system health check...
+🔍 Checking database...
+🔍 Checking openai_api...
+🔍 Checking auth_endpoints...
+🔍 Checking chat_endpoints...
+🔍 Checking agent_endpoints...
+🔍 Checking voice_endpoints...
+🔍 Checking knowledge_endpoints...
+🔍 Checking calendar_endpoints...
+🔍 Checking email_endpoints...
+🔍 Checking vault_endpoints...
+🔍 Checking deepgram_service...
+🔍 Checking google_services...
+🔍 Checking hierarchical_agents...
+🔍 Checking tool_registry...
+🔍 Checking langchain_integration...
+🏥 Health check complete: healthy
+[0mGET /api/health/system [32m200[0m 431.295 ms - -[0m
+[2025-08-07T12:58:29.166Z] GET /api/health/system
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[Health] Running comprehensive system health check...
+🏥 Starting comprehensive system health check...
+🔍 Checking database...
+🔍 Checking openai_api...
+🔍 Checking auth_endpoints...
+🔍 Checking chat_endpoints...
+🔍 Checking agent_endpoints...
+🔍 Checking voice_endpoints...
+🔍 Checking knowledge_endpoints...
+🔍 Checking calendar_endpoints...
+🔍 Checking email_endpoints...
+🔍 Checking vault_endpoints...
+🔍 Checking deepgram_service...
+🔍 Checking google_services...
+🔍 Checking hierarchical_agents...
+🔍 Checking tool_registry...
+🔍 Checking langchain_integration...
+🏥 Health check complete: healthy
+[0mGET /api/health/system [32m200[0m 552.565 ms - -[0m
+[2025-08-07T12:58:36.909Z] GET /api/health/system
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[Health] Running comprehensive system health check...
+🏥 Starting comprehensive system health check...
+🔍 Checking database...
+🔍 Checking openai_api...
+🔍 Checking auth_endpoints...
+🔍 Checking chat_endpoints...
+🔍 Checking agent_endpoints...
+🔍 Checking voice_endpoints...
+🔍 Checking knowledge_endpoints...
+🔍 Checking calendar_endpoints...
+🔍 Checking email_endpoints...
+🔍 Checking vault_endpoints...
+🔍 Checking deepgram_service...
+🔍 Checking google_services...
+🔍 Checking hierarchical_agents...
+🔍 Checking tool_registry...
+🔍 Checking langchain_integration...
+🏥 Health check complete: healthy
+[0mGET /api/health/system [32m200[0m 331.017 ms - -[0m
+[0mOPTIONS /api/chat/history [32m200[0m 0.709 ms - 0[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.585 ms - 0[0m
+[2025-08-07T12:58:50.494Z] GET /api/chat/history
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[ChatHistory] 🔍 req.user: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[0mOPTIONS /api/chat/history [32m200[0m 0.263 ms - 0[0m
+[2025-08-07T12:58:50.498Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.922 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.267 ms - 0[0m
+[2025-08-07T12:58:50.508Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.935 ms - 375[0m
+✅ Database connected successfully
+[ChatHistory] 📭 No messages found for user 2
+[0mGET /api/chat/history [36m304[0m 28.992 ms - -[0m
+[2025-08-07T12:58:50.525Z] GET /api/chat/history
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[ChatHistory] 🔍 req.user: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[ChatHistory] 📭 No messages found for user 2
+[0mGET /api/chat/history [36m304[0m 6.188 ms - -[0m
+[Socket Auth] 🔍 Handshake query: [Object: null prototype] {
+  EIO: '4',
+  transport: 'polling',
+  t: 'el5diu5m'
+}
+[Socket Auth] 🔍 Handshake auth: {
+  token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsIm5hbWUiOiJSb2JlcnQgQWxsZW4iLCJlbWFpbCI6InJvYmJpZW5vc2ViZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc1NDU3MTIyNiwiZXhwIjoxNzU0NjU3NjI2fQ.eP1qmWs6BEVKpDwwyxpIsizbZnIla92iHN9u2lYSnKo'
+}
+[Socket Auth] 🔍 Token found: YES
+[Socket Auth] 🔍 Decoded payload: {
+  "sub": 2,
+  "name": "Robert Allen",
+  "email": "robbienosebest@gmail.com",
+  "iat": 1754571226,
+  "exp": 1754657626
+}
+[Socket Auth] ✅ User authenticated: Robert Allen (ID: 2)
+[Socket.IO] User connected: Robert Allen (ID: 1FkkFwPf6Kw4g-ptAAAF)
+[Chat] Robert Allen: "What time is it?..."
+[Chat] Error processing message from Robert Allen: error: column "speaker" of relation "conversations" does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/index.js:254:25
+    at async OpenTelemetryTracing.traceUserInteraction (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/system/OpenTelemetryTracing.js:299:22)
+    at async Socket.<anonymous> (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/index.js:249:34) {
+  length: 133,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '37',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_target.c',
+  line: '1066',
+  routine: 'checkInsertTargets'
+}
+[Socket.IO] User disconnected: Robert Allen, reason: client namespace disconnect
+[2025-08-07T12:58:58.487Z] GET /api/workflows
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[WorkflowRoute] 🚀 GET /workflows endpoint hit
+[2025-08-07T12:58:58.491Z] GET /api/workflows/templates
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[WorkflowRoute] 🚀 GET /workflows/:id endpoint hit
+[WorkflowRoute] ✅ Found 0 workflows
+[0mGET /api/workflows [32m200[0m 9.130 ms - 86[0m
+[2025-08-07T12:58:58.497Z] GET /api/workflows/node-types
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[0mGET /api/workflows/node-types [32m200[0m 4.319 ms - -[0m
+[2025-08-07T12:58:58.504Z] GET /api/workflows
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[WorkflowRoute] 🚀 GET /workflows endpoint hit
+[WorkflowRoute] ✅ Found 0 workflows
+[0mGET /api/workflows [32m200[0m 5.601 ms - 86[0m
+[2025-08-07T12:58:58.514Z] GET /api/workflows/node-types
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[0mGET /api/workflows/node-types [36m304[0m 1.656 ms - -[0m
+✅ Database connected successfully
+[WorkflowRoute] ❌ Error fetching workflow details: error: invalid input syntax for type integer: "templates"
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/workflows.js:237:20 {
+  length: 152,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $1 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'numutils.c',
+  line: '617',
+  routine: 'pg_strtoint32_safe'
+}
+[0mGET /api/workflows/templates [31m500[0m 26.524 ms - 109[0m
+[2025-08-07T12:58:58.525Z] GET /api/workflows/templates
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[WorkflowRoute] 🚀 GET /workflows/:id endpoint hit
+[WorkflowRoute] ❌ Error fetching workflow details: error: invalid input syntax for type integer: "templates"
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/workflows.js:237:20 {
+  length: 152,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $1 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'numutils.c',
+  line: '617',
+  routine: 'pg_strtoint32_safe'
+}
+[0mGET /api/workflows/templates [31m500[0m 3.010 ms - 109[0m
+✅ Database connected successfully
+[2025-08-07T12:59:01.469Z] POST /api/workflows
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[WorkflowRoute] 🔄 POST /workflows endpoint hit
+[WorkflowRoute] ❌ Error creating workflow: error: column "category" of relation "workflows" does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/workflows.js:204:20 {
+  length: 130,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '60',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_target.c',
+  line: '1066',
+  routine: 'checkInsertTargets'
+}
+[0mPOST /api/workflows [31m500[0m 6.755 ms - 110[0m
+[0mOPTIONS /api/chat/history [32m200[0m 0.539 ms - 0[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.299 ms - 0[0m
+[0mOPTIONS /api/chat/history [32m200[0m 0.256 ms - 0[0m
+[2025-08-07T12:59:05.765Z] GET /api/chat/history
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[ChatHistory] 🔍 req.user: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.337 ms - 0[0m
+[2025-08-07T12:59:05.773Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.131 ms - 375[0m
+[2025-08-07T12:59:05.777Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.995 ms - 375[0m
+[Socket Auth] 🔍 Handshake query: [Object: null prototype] {
+  EIO: '4',
+  transport: 'polling',
+  t: 'elhmv0yq'
+}
+[Socket Auth] 🔍 Handshake auth: {
+  token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsIm5hbWUiOiJSb2JlcnQgQWxsZW4iLCJlbWFpbCI6InJvYmJpZW5vc2ViZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc1NDU3MTIyNiwiZXhwIjoxNzU0NjU3NjI2fQ.eP1qmWs6BEVKpDwwyxpIsizbZnIla92iHN9u2lYSnKo'
+}
+[Socket Auth] 🔍 Token found: YES
+[Socket Auth] 🔍 Decoded payload: {
+  "sub": 2,
+  "name": "Robert Allen",
+  "email": "robbienosebest@gmail.com",
+  "iat": 1754571226,
+  "exp": 1754657626
+}
+[Socket Auth] ✅ User authenticated: Robert Allen (ID: 2)
+[Socket.IO] User connected: Robert Allen (ID: ZvIxAMU1wm3Wclw1AAAI)
+✅ Database connected successfully
+[ChatHistory] 📭 No messages found for user 2
+[0mGET /api/chat/history [36m304[0m 29.905 ms - -[0m
+[2025-08-07T12:59:05.797Z] GET /api/chat/history
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[ChatHistory] 🔍 req.user: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[ChatHistory] 📭 No messages found for user 2
+[0mGET /api/chat/history [36m304[0m 3.475 ms - -[0m
+[Socket.IO] User disconnected: Robert Allen, reason: client namespace disconnect
+[2025-08-07T12:59:07.559Z] GET /api/knowledge/entries
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[Knowledge] 📋 Fetching entries for user 2: { category: undefined, limit: 50 }
+[2025-08-07T12:59:07.562Z] GET /api/knowledge/clusters
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[Knowledge] 🔗 Fetching clusters for user 2
+[2025-08-07T12:59:07.565Z] GET /api/knowledge/graph
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[Knowledge] 🕸️ Fetching knowledge graph for user 2
+[Knowledge] ❌ Entries error: error: relation "knowledge_entries" does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/knowledge.js:646:20 {
+  length: 117,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '211',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+[0mGET /api/knowledge/entries [31m500[0m 10.265 ms - 74[0m
+[2025-08-07T12:59:07.578Z] GET /api/knowledge/entries
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[Knowledge] 📋 Fetching entries for user 2: { category: undefined, limit: 50 }
+✅ Database connected successfully
+✅ Database connected successfully
+[Knowledge] ❌ Clusters error: error: relation "knowledge_entries" does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/knowledge.js:699:20 {
+  length: 117,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '190',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+[0mGET /api/knowledge/clusters [31m500[0m 24.275 ms - 76[0m
+[Knowledge] ❌ Graph error: error: relation "knowledge_entries" does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/knowledge.js:762:20 {
+  length: 117,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '131',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+[0mGET /api/knowledge/graph [31m500[0m 23.534 ms - 105[0m
+[2025-08-07T12:59:07.595Z] GET /api/knowledge/clusters
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[Knowledge] 🔗 Fetching clusters for user 2
+✅ Database connected successfully
+[2025-08-07T12:59:07.598Z] GET /api/knowledge/graph
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[Knowledge] 🕸️ Fetching knowledge graph for user 2
+[Knowledge] ❌ Entries error: error: relation "knowledge_entries" does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/knowledge.js:646:20 {
+  length: 117,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '211',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+[0mGET /api/knowledge/entries [31m500[0m 24.355 ms - 74[0m
+✅ Database connected successfully
+✅ Database connected successfully
+[Knowledge] ❌ Clusters error: error: relation "knowledge_entries" does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/knowledge.js:699:20 {
+  length: 117,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '190',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+[0mGET /api/knowledge/clusters [31m500[0m 15.637 ms - 76[0m
+[Knowledge] ❌ Graph error: error: relation "knowledge_entries" does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/knowledge.js:762:20 {
+  length: 117,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '131',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+[0mGET /api/knowledge/graph [31m500[0m 14.193 ms - 105[0m
+[2025-08-07T12:59:11.886Z] POST /api/knowledge/entries
+[0mPOST /api/knowledge/entries [33m404[0m 2.256 ms - 62[0m
+[2025-08-07T12:59:12.258Z] POST /api/knowledge/entries
+[0mPOST /api/knowledge/entries [33m404[0m 2.882 ms - 62[0m
+[2025-08-07T12:59:12.398Z] POST /api/knowledge/entries
+[0mPOST /api/knowledge/entries [33m404[0m 1.013 ms - 62[0m
+[2025-08-07T12:59:12.633Z] POST /api/knowledge/entries
+[0mPOST /api/knowledge/entries [33m404[0m 1.503 ms - 62[0m
+[2025-08-07T12:59:12.870Z] POST /api/knowledge/entries
+[0mPOST /api/knowledge/entries [33m404[0m 2.265 ms - 62[0m
+[0mOPTIONS /api/chat/history [32m200[0m 0.604 ms - 0[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.337 ms - 0[0m
+[0mOPTIONS /api/chat/history [32m200[0m 0.420 ms - 0[0m
+[2025-08-07T12:59:17.375Z] GET /api/chat/history
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[ChatHistory] 🔍 req.user: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[2025-08-07T12:59:17.381Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.964 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.330 ms - 0[0m
+[2025-08-07T12:59:17.386Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.806 ms - 375[0m
+[Socket Auth] 🔍 Handshake query: [Object: null prototype] {
+  EIO: '4',
+  transport: 'polling',
+  t: 'elq9qlvw'
+}
+[Socket Auth] 🔍 Handshake auth: {
+  token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsIm5hbWUiOiJSb2JlcnQgQWxsZW4iLCJlbWFpbCI6InJvYmJpZW5vc2ViZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc1NDU3MTIyNiwiZXhwIjoxNzU0NjU3NjI2fQ.eP1qmWs6BEVKpDwwyxpIsizbZnIla92iHN9u2lYSnKo'
+}
+[Socket Auth] 🔍 Token found: YES
+[Socket Auth] 🔍 Decoded payload: {
+  "sub": 2,
+  "name": "Robert Allen",
+  "email": "robbienosebest@gmail.com",
+  "iat": 1754571226,
+  "exp": 1754657626
+}
+[Socket Auth] ✅ User authenticated: Robert Allen (ID: 2)
+[Socket.IO] User connected: Robert Allen (ID: OtPAge4tsjbBrKKXAAAL)
+✅ Database connected successfully
+[ChatHistory] 📭 No messages found for user 2
+[0mGET /api/chat/history [36m304[0m 31.557 ms - -[0m
+[2025-08-07T12:59:17.409Z] GET /api/chat/history
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[ChatHistory] 🔍 req.user: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[ChatHistory] 📭 No messages found for user 2
+[0mGET /api/chat/history [36m304[0m 7.191 ms - -[0m
+[Socket.IO] User disconnected: Robert Allen, reason: client namespace disconnect
+[2025-08-07T12:59:18.590Z] GET /api/vault/providers
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[2025-08-07T12:59:18.596Z] GET /api/vault/keys
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+Error fetching API providers: error: column "icon" does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/vault.js:11:20 {
+  length: 104,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '52',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3722',
+  routine: 'errorMissingColumn'
+}
+[2025-08-07T12:59:18.602Z] GET /api/vault/security-events
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[0mGET /api/vault/providers [32m200[0m 10.460 ms - -[0m
+✅ Database connected successfully
+✅ Database connected successfully
+[2025-08-07T12:59:18.619Z] GET /api/vault/providers
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+Error fetching API keys: error: column uak.usage_count does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/vault.js:444:20 {
+  length: 113,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '37',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3722',
+  routine: 'errorMissingColumn'
+}
+[0mGET /api/vault/keys [36m304[0m 24.409 ms - -[0m
+Error fetching security events: error: column "description" does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/vault.js:597:20 {
+  length: 111,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '31',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3722',
+  routine: 'errorMissingColumn'
+}
+[0mGET /api/vault/security-events?limit=20 [36m304[0m 20.169 ms - -[0m
+[2025-08-07T12:59:18.629Z] GET /api/vault/keys
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[2025-08-07T12:59:18.632Z] GET /api/vault/security-events
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+✅ Database connected successfully
+Error fetching API providers: error: column "icon" does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/vault.js:11:20 {
+  length: 104,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '52',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3722',
+  routine: 'errorMissingColumn'
+}
+[0mGET /api/vault/providers [36m304[0m 19.020 ms - -[0m
+✅ Database connected successfully
+✅ Database connected successfully
+Error fetching API keys: error: column uak.usage_count does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/vault.js:444:20 {
+  length: 113,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '37',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3722',
+  routine: 'errorMissingColumn'
+}
+[0mGET /api/vault/keys [36m304[0m 13.055 ms - -[0m
+Error fetching security events: error: column "description" does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/vault.js:597:20 {
+  length: 111,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '31',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3722',
+  routine: 'errorMissingColumn'
+}
+[0mGET /api/vault/security-events?limit=20 [36m304[0m 11.567 ms - -[0m
+[2025-08-07T12:59:56.856Z] POST /api/vault/keys
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[0mPOST /api/vault/keys [33m400[0m 7.146 ms - 77[0m
+✅ Database connected successfully
+[2025-08-07T13:00:13.431Z] POST /api/vault/keys
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[0mPOST /api/vault/keys [33m400[0m 3.692 ms - 77[0m
+[2025-08-07T13:00:52.613Z] POST /api/vault/keys
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[0mPOST /api/vault/keys [33m400[0m 3.665 ms - 77[0m
+✅ Database connected successfully
+[0mOPTIONS /api/chat/history [32m200[0m 0.552 ms - 0[0m
+[2025-08-07T13:01:06.048Z] GET /api/chat/history
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[ChatHistory] 🔍 req.user: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.289 ms - 0[0m
+[0mOPTIONS /api/chat/history [32m200[0m 0.479 ms - 0[0m
+[ChatHistory] 📭 No messages found for user 2
+[0mGET /api/chat/history [36m304[0m 9.659 ms - -[0m
+[2025-08-07T13:01:06.059Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.953 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.378 ms - 0[0m
+[2025-08-07T13:01:06.061Z] GET /api/chat/history
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[ChatHistory] 🔍 req.user: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[2025-08-07T13:01:06.065Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.980 ms - 375[0m
+[ChatHistory] 📭 No messages found for user 2
+[0mGET /api/chat/history [36m304[0m 6.834 ms - -[0m
+[Socket Auth] 🔍 Handshake query: [Object: null prototype] {
+  EIO: '4',
+  transport: 'polling',
+  t: 'eo2kewu8'
+}
+[Socket Auth] 🔍 Handshake auth: {
+  token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsIm5hbWUiOiJSb2JlcnQgQWxsZW4iLCJlbWFpbCI6InJvYmJpZW5vc2ViZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc1NDU3MTIyNiwiZXhwIjoxNzU0NjU3NjI2fQ.eP1qmWs6BEVKpDwwyxpIsizbZnIla92iHN9u2lYSnKo'
+}
+[Socket Auth] 🔍 Token found: YES
+[Socket Auth] 🔍 Decoded payload: {
+  "sub": 2,
+  "name": "Robert Allen",
+  "email": "robbienosebest@gmail.com",
+  "iat": 1754571226,
+  "exp": 1754657626
+}
+[Socket Auth] ✅ User authenticated: Robert Allen (ID: 2)
+[Socket.IO] User connected: Robert Allen (ID: k8xCuD0TzZdiaHA2AAAO)
+[Socket.IO] User disconnected: Robert Allen, reason: client namespace disconnect
+[0mOPTIONS /api/user/me [32m200[0m 0.494 ms - 0[0m
+[0mOPTIONS /api/settings [32m200[0m 0.308 ms - 0[0m
+[0mOPTIONS /api/user/me [32m200[0m 0.266 ms - 0[0m
+[0mOPTIONS /api/settings [32m200[0m 0.534 ms - 0[0m
+[2025-08-07T13:01:07.835Z] GET /api/user/me
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[UserRoute] 🚀 GET /me endpoint hit
+[UserRoute] 🔍 req.user exists: true
+[UserRoute] 🔍 Looking up user with ID: 2
+[2025-08-07T13:01:07.838Z] GET /api/settings
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[Settings] 📁 Fetching settings for user 2
+[UserRoute] ✅ Database connection test passed
+[UserRoute] 🔍 Database query result: 1 rows
+[UserRoute] ✅ User found: Robert Allen
+[UserRoute] ❌ Error in GET /me: error: relation "user_settings" does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/user.js:74:28 {
+  length: 112,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '15',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+[0mGET /api/user/me [31m500[0m 8.991 ms - 94[0m
+[2025-08-07T13:01:07.847Z] GET /api/user/me
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[UserRoute] 🚀 GET /me endpoint hit
+[UserRoute] 🔍 req.user exists: true
+[UserRoute] 🔍 Looking up user with ID: 2
+✅ Database connected successfully
+[Settings] ✅ Settings retrieved for user 2
+[0mGET /api/settings [32m200[0m 20.119 ms - 320[0m
+[2025-08-07T13:01:07.861Z] GET /api/settings
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[Settings] 📁 Fetching settings for user 2
+✅ Database connected successfully
+[Settings] ✅ Settings retrieved for user 2
+[0mGET /api/settings [32m200[0m 2.670 ms - 320[0m
+[UserRoute] ✅ Database connection test passed
+[UserRoute] 🔍 Database query result: 1 rows
+[UserRoute] ✅ User found: Robert Allen
+[UserRoute] ❌ Error in GET /me: error: relation "user_settings" does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/user.js:74:28 {
+  length: 112,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '15',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+[0mGET /api/user/me [31m500[0m 23.277 ms - 94[0m
+[0mOPTIONS /api/settings/export-data [32m200[0m 0.763 ms - 0[0m
+[2025-08-07T13:01:10.541Z] GET /api/settings/export-data
+[0mGET /api/settings/export-data [33m404[0m 1.477 ms - 65[0m
+[2025-08-07T13:01:12.148Z] GET /api/settings/export-data
+[0mGET /api/settings/export-data [33m404[0m 1.868 ms - 65[0m
+[2025-08-07T13:01:12.451Z] GET /api/settings/export-data
+[0mGET /api/settings/export-data [33m404[0m 1.420 ms - 65[0m
+[0mOPTIONS /api/settings/clear-chat-history [32m200[0m 0.557 ms - 0[0m
+[2025-08-07T13:01:16.665Z] POST /api/settings/clear-chat-history
+[0mPOST /api/settings/clear-chat-history [33m400[0m 2.120 ms - 59[0m
+[0mOPTIONS /api/chat/history [32m200[0m 0.765 ms - 0[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.602 ms - 0[0m
+[0mOPTIONS /api/chat/history [32m200[0m 0.499 ms - 0[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 1.034 ms - 0[0m
+[2025-08-07T13:01:20.003Z] GET /api/chat/history
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[ChatHistory] 🔍 req.user: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[2025-08-07T13:01:20.007Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.853 ms - 375[0m
+[2025-08-07T13:01:20.011Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.712 ms - 375[0m
+[Socket Auth] 🔍 Handshake query: [Object: null prototype] {
+  EIO: '4',
+  transport: 'polling',
+  t: 'eocx78kd'
+}
+[Socket Auth] 🔍 Handshake auth: {
+  token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsIm5hbWUiOiJSb2JlcnQgQWxsZW4iLCJlbWFpbCI6InJvYmJpZW5vc2ViZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc1NDU3MTIyNiwiZXhwIjoxNzU0NjU3NjI2fQ.eP1qmWs6BEVKpDwwyxpIsizbZnIla92iHN9u2lYSnKo'
+}
+[Socket Auth] 🔍 Token found: YES
+[Socket Auth] 🔍 Decoded payload: {
+  "sub": 2,
+  "name": "Robert Allen",
+  "email": "robbienosebest@gmail.com",
+  "iat": 1754571226,
+  "exp": 1754657626
+}
+[Socket Auth] ✅ User authenticated: Robert Allen (ID: 2)
+[Socket.IO] User connected: Robert Allen (ID: 6NJZeQlY3aVd7CyHAAAR)
+✅ Database connected successfully
+[ChatHistory] 📭 No messages found for user 2
+[0mGET /api/chat/history [36m304[0m 33.005 ms - -[0m
+[2025-08-07T13:01:20.041Z] GET /api/chat/history
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[ChatHistory] 🔍 req.user: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[ChatHistory] 📭 No messages found for user 2
+[0mGET /api/chat/history [36m304[0m 4.157 ms - -[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.666 ms - 0[0m
+[2025-08-07T13:01:30.456Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.468 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.713 ms - 0[0m
+[2025-08-07T13:01:39.610Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 2.006 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.375 ms - 0[0m
+[2025-08-07T13:01:50.012Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 3.816 ms - 375[0m
+✅ Database connected successfully
+[0mOPTIONS /api/agent/metrics [32m200[0m 1.016 ms - 0[0m
+[2025-08-07T13:02:00.888Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.461 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.335 ms - 0[0m
+[2025-08-07T13:02:10.014Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.561 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.439 ms - 0[0m
+[2025-08-07T13:02:20.422Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.716 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.885 ms - 0[0m
+[2025-08-07T13:02:30.882Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.747 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.489 ms - 0[0m
+[2025-08-07T13:02:39.980Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.937 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.940 ms - 0[0m
+[2025-08-07T13:02:50.389Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.296 ms - 375[0m
+✅ Database connected successfully
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.354 ms - 0[0m
+[2025-08-07T13:03:04.945Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.648 ms - 375[0m
+✅ Database connected successfully
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.325 ms - 0[0m
+[2025-08-07T13:04:04.895Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.235 ms - 375[0m
+✅ Database connected successfully
+[0mOPTIONS /api/agent/metrics [32m200[0m 4.698 ms - 0[0m
+[2025-08-07T13:05:04.816Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.869 ms - 375[0m
+✅ Database connected successfully
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.500 ms - 0[0m
+[2025-08-07T13:06:04.714Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.952 ms - 375[0m
+✅ Database connected successfully
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.852 ms - 0[0m
+[2025-08-07T13:07:04.646Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.659 ms - 375[0m
+✅ Database connected successfully
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.677 ms - 0[0m
+[2025-08-07T13:08:04.553Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.653 ms - 375[0m
+✅ Database connected successfully
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.901 ms - 0[0m
+[2025-08-07T13:09:04.473Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.009 ms - 375[0m
+✅ Database connected successfully
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.820 ms - 0[0m
+[2025-08-07T13:10:04.380Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.709 ms - 375[0m
+✅ Database connected successfully
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.345 ms - 0[0m
+[2025-08-07T13:11:04.312Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.463 ms - 375[0m
+✅ Database connected successfully
+[0mOPTIONS /api/agent/metrics [32m200[0m 1.087 ms - 0[0m
+[2025-08-07T13:12:05.498Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.295 ms - 375[0m
+✅ Database connected successfully
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.974 ms - 0[0m
+[2025-08-07T13:13:04.820Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.260 ms - 375[0m
+✅ Database connected successfully
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.952 ms - 0[0m
+[2025-08-07T13:14:04.743Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.628 ms - 375[0m
+✅ Database connected successfully
+[0mOPTIONS /api/agent/metrics [32m200[0m 1.193 ms - 0[0m
+[2025-08-07T13:15:04.646Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.397 ms - 375[0m
+✅ Database connected successfully
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.456 ms - 0[0m
+[2025-08-07T13:16:01.978Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.656 ms - 375[0m
+[Chat] Robert Allen: "Create an image of a sunset..."
+[Chat] Error processing message from Robert Allen: error: column "speaker" of relation "conversations" does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/index.js:254:25
+    at async OpenTelemetryTracing.traceUserInteraction (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/system/OpenTelemetryTracing.js:299:22)
+    at async Socket.<anonymous> (file:///home/robbie/development/dat-bitch-cartrita/packages/backend/index.js:249:34) {
+  length: 133,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '37',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_target.c',
+  line: '1066',
+  routine: 'checkInsertTargets'
+}
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.788 ms - 0[0m
+[2025-08-07T13:16:10.517Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 2.571 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.319 ms - 0[0m
+[2025-08-07T13:16:19.504Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.365 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.247 ms - 0[0m
+[2025-08-07T13:16:30.372Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.519 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.648 ms - 0[0m
+[2025-08-07T13:16:40.778Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.633 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.942 ms - 0[0m
+[2025-08-07T13:16:49.936Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.402 ms - 375[0m
+✅ Database connected successfully
+[0mOPTIONS /api/agent/metrics [32m200[0m 1.196 ms - 0[0m
+[2025-08-07T13:17:00.334Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.940 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.622 ms - 0[0m
+[2025-08-07T13:17:10.765Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.152 ms - 375[0m
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.200 ms - 0[0m
+[2025-08-07T13:17:21.172Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.524 ms - 375[0m
+✅ Database connected successfully
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.270 ms - 0[0m
+[2025-08-07T13:18:04.415Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 1.840 ms - 375[0m
+[2025-08-07T13:18:37.576Z] GET /api/user/me
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[UserRoute] 🚀 GET /me endpoint hit
+[UserRoute] 🔍 req.user exists: true
+[UserRoute] 🔍 Looking up user with ID: 2
+✅ Database connected successfully
+[UserRoute] ✅ Database connection test passed
+[UserRoute] 🔍 Database query result: 1 rows
+[UserRoute] ✅ User found: Robert Allen
+[UserRoute] ❌ Error in GET /me: error: relation "user_settings" does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/user.js:74:28 {
+  length: 112,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '15',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+[0mGET /api/user/me [31m500[0m 11.293 ms - 94[0m
+[2025-08-07T13:18:55.739Z] GET /api/user/me
+[Auth Middleware] ✅ Authenticated user: 2
+[Auth Middleware] 🔍 Full user object: {"id":2,"name":"Robert Allen","email":"robbienosebest@gmail.com"}
+[UserRoute] 🚀 GET /me endpoint hit
+[UserRoute] 🔍 req.user exists: true
+[UserRoute] 🔍 Looking up user with ID: 2
+✅ Database connected successfully
+[UserRoute] ✅ Database connection test passed
+[UserRoute] 🔍 Database query result: 1 rows
+[UserRoute] ✅ User found: Robert Allen
+[UserRoute] ❌ Error in GET /me: error: relation "user_settings" does not exist
+    at /home/robbie/development/dat-bitch-cartrita/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///home/robbie/development/dat-bitch-cartrita/packages/backend/src/routes/user.js:74:28 {
+  length: 112,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '15',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+[0mGET /api/user/me [31m500[0m 11.180 ms - 94[0m
+✅ Database connected successfully
+[0mOPTIONS /api/agent/metrics [32m200[0m 0.249 ms - 0[0m
+[2025-08-07T13:19:04.339Z] GET /api/agent/metrics
+[0mGET /api/agent/metrics [32m200[0m 0.898 ms - 375[0m
+🔄 Graceful shutdown initiated (SIGTERM)
+🔴 Cleaning up Redis connection...
+[Redis] 🔌 Connection closed
+🗄️ Closing database connections...
+🔌 Closing HTTP server...
+⚠️ Forced shutdown after timeout

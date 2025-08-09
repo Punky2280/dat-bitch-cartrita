@@ -1,471 +1,175 @@
-// packages/backend/src/agi/consciousness/GitHubSearchAgent.js
+import { AIMessage, SystemMessage } from '@langchain/core/messages';
+import BaseAgent from '../../system/BaseAgent.js';
+import { Octokit } from '@octokit/rest';
 
 /**
- * Enhanced GitHubSearchAgent - Advanced Repository Discovery and Analysis
- * 
- * This sophisticated agent provides comprehensive GitHub search capabilities with: null
- * - Multi-faceted repository search (repos, code, users, issues)
- * - Advanced filtering and sorting options
- * - Detailed repository analysis and insights
- * - Trending repository detection
- * - Language and technology stack analysis
- * - Repository health metrics evaluation
- * - Collaborative filtering recommendations
+ * @class GitHubSearchAgent
+ * @description An advanced agent for comprehensive GitHub search and analysis.
+ * Features multi-faceted search (repos, code, users), advanced filtering,
+ * caching, and AI-powered result summarization.
  */
-
-import BaseAgent from '../../system/BaseAgent.js';
-import { Octokit  } from '@octokit/rest';
-
 class GitHubSearchAgent extends BaseAgent {
-  constructor() {
-    super('GitHubSearchAgent', 'main', ['github_search', 'repository_analysis', 'code_discovery']);
-    
-    // Initialize GitHub API client with enhanced configuration
-    this.octokit = new) {
-    // TODO: Implement method
-  }
+  /**
+   * @param {ChatOpenAI} llm - The language model instance.
+   * @param {AgentToolRegistry} toolRegistry - The tool registry instance.
+   */
+  constructor(llm, toolRegistry) {
+    super(
+      'github',
+      'sub',
+      [
+        'github_search',
+        'repository_analysis',
+        'code_discovery',
+        'trending_detection',
+      ],
+      'A specialist agent for searching and analyzing GitHub repositories, code, and users.'
+    );
 
-  Octokit({
-      auth: process.env.GITHUB_TOKEN, userAgent: 'Cartrita-AI-Agent/1.0')
-      timeZone: 'America/New_York')
-      request: {
-        timeout: 10000, // 10 second timeout
-        retries: 2
+    // LangGraph compatibility - injected by supervisor
+    this.llm = llm;
+    this.toolRegistry = toolRegistry;
 
-    });
-    
-    // Search configuration
-    this.searchConfig = {
-      defaultResultsPerPage: 10,
-      maxResultsPerPage: 30,
-      supportedSortOptions: ['stars', 'forks', 'help-wanted-issues', 'updated'],
-      supportedLanguages: ['javascript', 'python', 'java', 'typescript', 'go', 'rust', 'cpp', 'csharp'],
-      qualityThresholds: {
-        minStars: 10,
-        minForks: 5,
-        maxAge: 365 * 2 // 2 years
+    // Update config with allowed tools
+    this.config.allowedTools = [
+      'github_search',
+      'github_repo_analyzer',
+      'github_trending',
+    ];
 
-    };
-    
-    // Cache for performance optimization
+    this.octokit = new Octokit({ auth: process.env.GITHUB_TOKEN || '' });
     this.searchCache = new Map();
     this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
-    
-    // Analysis metrics
-    this.analysisMetrics = {
-      searches_performed: 0,
-      repositories_analyzed: 0,
-      cache_hits: 0,
-      api_calls_made: 0,
-      average_analysis_time: 0
-    };
+  }
 
   /**
-   * Initialize the enhanced GitHub search agent
+   * Use the inherited BaseAgent invoke method for consistent behavior
    */
-  async onInitialize((error) {
-    console.log('[GitHubSearchAgent] Advanced repository discovery and analysis ready.');
-    
-    // Register multiple task handlers for different search types
-    this.registerTaskHandler({}
-      taskType: 'github_search')
-      handler: this.execute.bind(this)
-    });
-    
-    this.registerTaskHandler({}
-      taskType: 'repository_analysis')
-      handler: this.analyzeRepository.bind(this)
-    });
-    
-    this.registerTaskHandler({}
-      taskType: 'code_discovery')
-      handler: this.searchCode.bind(this)
-    });
-    
-    // Test GitHub API connection
-this.testConnection();
-    console.log('[GitHubSearchAgent] Enhanced capabilities enabled:');
-    console.log('  ✅ Repository search with advanced filtering');
-    console.log('  ✅ Code search across repositories');
-    console.log('  ✅ Repository health and quality analysis');
-    console.log('  ✅ Trending repository detection');
-    console.log('  ✅ Language and technology insights');
+  async invoke(state) {
+    console.log(
+      `[GitHubSearchAgent] 💻 Engaging GitHub specialist workflow...`
+    );
+
+    // Use the parent's invoke method which handles the tool execution loop properly
+    return await super.invoke(state);
+  }
 
   /**
-   * Test GitHub API connection and rate limits
+   * Build specialized system prompt for GitHub search tasks.
    */
-  async testConnection((error) {
-    try {
-      const { data } = await this.octokit.rest.meta.get();
-      console.log('[GitHubSearchAgent] GitHub API connection established');
-      
-      // Check rate limits
-      const rateLimit = await this.octokit.rest.rateLimit.get();
-      const remaining = rateLimit.data.rate.remaining;
-      const resetTime = new Date(rateLimit.data.rate.reset * 1000);
-      
-      console.log(`[GitHubSearchAgent] Rate limit: ${remaining}/5000, resets at ${resetTime.toLocaleTimeString()}`);
-      
-      if(console.warn('[GitHubSearchAgent] Low rate limit remaining!');
+  buildSystemPrompt(privateState, state) {
+    const userMessage = state.messages[state.messages.length - 1];
+    return `You are the GitHub Search specialist in the Cartrita AI system.
+Your personality is technical, resourceful, code-savvy, and sassy with that Miami street-smart developer expertise.
 
-    }) {
-    // TODO: Implement method
+**CURRENT USER REQUEST:**
+"${userMessage.content}"
+
+**YOUR GITHUB MISSION:**
+1. **Analyze the Search Request:** What kind of GitHub content is the user looking for - repos, code, users, trends?
+2. **Execute GitHub Operations:**
+   - Use \`github_search\` tool to find repositories, code snippets, or users
+   - Use \`github_repo_analyzer\` tool to analyze specific repositories in detail
+   - Use \`github_trending\` tool to find trending repositories and technologies
+3. **Provide Comprehensive Results:** Give detailed information about repositories, code examples, and insights
+
+**YOUR SPECIALIZED TOOLS:**
+${this.config.allowedTools.join(', ')}
+
+**EXECUTION REQUIREMENTS:**
+- ACTUALLY search GitHub using your tools - don't just provide general information
+- Use specific search queries based on user requirements (language, stars, topics, etc.)
+- Analyze repository details: stars, forks, issues, recent activity, technologies used
+- Find actual code examples, popular libraries, and trending projects
+- Provide direct links to repositories, files, and relevant GitHub content
+
+**RESPONSE FORMAT:**
+Provide a natural, conversational response that includes:
+- "Let me search GitHub for that..." (what search operations you performed)
+- Specific repositories, code examples, or users you found
+- Detailed analysis of repository metrics, activity, and relevance
+- Direct GitHub links and practical information for the user
+- Your tech-savvy, code-smart personality throughout
+
+**GITHUB SEARCH GUIDELINES:**
+- Use appropriate search filters: language, stars, created/updated dates, topics
+- Analyze repository quality: stars, forks, recent activity, documentation
+- Provide practical insights: how to use libraries, implementation examples
+- Include trending analysis when relevant
+- Give actionable information for developers
+
+**Remember:** You're the GitHub expert - actually search and analyze repositories, don't just provide generic information!
+
+**Your Memory of This Task:** ${JSON.stringify(privateState, null, 2)}`;
   }
-
-  catch(console.warn('[GitHubSearchAgent] GitHub API connection issue:', error.message);
-
 
   /**
-   * Main execution method with enhanced search capabilities
-   */) {
-    // TODO: Implement method
+   * Uses an LLM to summarize the raw API results into a user-friendly format.
+   * @param {string} originalQuery - The user's original query.
+   * @param {Array} items - The items returned from the GitHub API.
+   * @returns {Promise<string>} A summarized, natural language response.
+   * @private
+   */
+  async _summarizeResults(originalQuery, items) {
+    const systemPrompt = `You are a GitHub expert. You have just received the following JSON data from the GitHub API in response to the user's query. Your task is to summarize these results in a clean, helpful, and user-friendly way.
+
+- Provide a brief, one-sentence summary of the top result.
+- List the top 3-5 most relevant results in a Markdown list.
+- For each item, include its name, a brief description, and a direct Markdown link.
+- Conclude with a summary of the total number of items found.`;
+
+    const content = `User Query: "${originalQuery}"\n\nAPI Results (JSON):\n${JSON.stringify(
+      items.slice(0, 10),
+      null,
+      2
+    )}`;
+
+    const response = await this.llm.invoke([
+      new SystemMessage(systemPrompt),
+      new HumanMessage(content),
+    ]);
+
+    return response.content;
   }
-
-  async execute((error) {
-    const startTime = Date.now();
-    this.analysisMetrics.searches_performed++;
-    
-    try {
-      console.log(`[GitHubSearchAgent] Processing enhanced search query: "${query}"`);
-      
-      // Parse search intent and parameters
-      const searchIntent = this.parseSearchIntent(query);
-      console.log(`[GitHubSearchAgent] Search intent analysis:`, searchIntent);
-      
-      // Check cache first
-      const cacheKey = this.generateCacheKey(query, searchIntent);
-      const cachedResult = this.getCachedResult(cacheKey);
-      
-      if(this.analysisMetrics.cache_hits++;
-        console.log('[GitHubSearchAgent] Returning cached result');
-        return cachedResult;
-
-      let results;
-      
-      // Route to appropriate search method based on intent) {
-    // TODO: Implement method
-  }
-
-  switch(case 'code_search': results = await this.performCodeSearch(searchIntent);
-          break;
-        case 'user_search': results = await this.searchUsers(searchIntent);
-          break;
-        case 'trending': results = await this.findTrendingRepositories(searchIntent);
-          break;
-        default: results = await this.performRepositorySearch(searchIntent);
-
-      // Generate comprehensive analysis
-      const analysis = await this.generateEnhancedAnalysis(query, results, searchIntent);
-      
-      // Cache the result
-      this.cacheResult(cacheKey, analysis);
-      
-      // Update metrics
-      const analysisTime = Date.now() - startTime;
-      this.updateAnalysisMetrics(analysisTime);
-      
-      return analysis;
-      
-    }) {
-    // TODO: Implement method
-  }
-
-  catch(console.error('[GitHubSearchAgent] Search failed:', error);
-      return this.generateErrorResponse(error, query);
-
 
   /**
-   * Parse user query to determine search intent and parameters
-   */) {
-    // TODO: Implement method
-  }
-
-  parseSearchIntent((error) {
-    const queryLower = query.toLowerCase();
-    
+   * A simple parser to extract key terms from the user's query.
+   * @param {string} query - The user's natural language query.
+   * @returns {object} A structured search intent object.
+   * @private
+   */
+  _parseSearchIntent(query) {
+    const qLower = query.toLowerCase();
     const intent = {
-      type: 'repository_search', // default
-      originalQuery: query,
-      filters: {},
-      sortBy: 'stars',
-      language: null,
-      qualityFilter: false
+      type: 'repos',
+      query: query.replace(/find|search|for|github/gi, '').trim(),
+      sortBy: 'best-match',
     };
-    
-    // Detect search type
-    if (queryLower.includes('code') || queryLower.includes('function') || queryLower.includes('implementation')) {
-      intent.type = 'code_search';
-    } else if (queryLower.includes('user') || queryLower.includes('developer') || queryLower.includes('author')) {
-      intent.type = 'user_search';
-    } else if (queryLower.includes('trending') || queryLower.includes('popular') || queryLower.includes('hot')) {
-    // TODO: Implement method
-  }
-
-  if (queryLower.includes(lang)) {
-        intent.language = lang;
-        break;
-
-
-    // Extract quality preferences
-    if (queryLower.includes('high quality') || queryLower.includes('well maintained') || queryLower.includes('popular')) {
-      intent.qualityFilter = true;
-
-    // Extract sort preference
-    if (queryLower.includes('recent') || queryLower.includes('updated')) {
+    if (qLower.includes('code for')) intent.type = 'code';
+    if (qLower.includes('user') || qLower.includes('author'))
+      intent.type = 'users';
+    if (qLower.includes('popular') || qLower.includes('stars'))
+      intent.sortBy = 'stars';
+    if (qLower.includes('recent') || qLower.includes('updated'))
       intent.sortBy = 'updated';
-    } else if (queryLower.includes('fork')) {
-      intent.sortBy = 'forks';
 
+    // Add language filter
+    const languages = [
+      'javascript',
+      'python',
+      'typescript',
+      'java',
+      'go',
+      'rust',
+    ];
+    for (const lang of languages) {
+      if (qLower.includes(lang)) {
+        intent.query += ` language:${lang}`;
+        break;
+      }
+    }
     return intent;
-
-  /**
-   * Perform enhanced repository search with filtering
-   */
-  async performRepositorySearch((error) {
-    const { originalQuery, language, qualityFilter, sortBy } = searchIntent;
-    
-    // Build search query with filters
-    let searchQuery = originalQuery;
-    
-    if((error) {
-      searchQuery += ` language:${language}`
-
-    if((error) {
-      searchQuery += ` stars:>${this.searchConfig.qualityThresholds.minStars}`
-      searchQuery += ` forks:>${this.searchConfig.qualityThresholds.minForks}`
-
-    console.log(`[GitHubSearchAgent] Enhanced search query: "${searchQuery}"`);
-    
-    this.analysisMetrics.api_calls_made++;
-    const { data } = await this.octokit.search.repos({
-      q: searchQuery, sort: sortBy, order: 'desc')
-      per_page: this.searchConfig.defaultResultsPerPage)
-    });
-    
-    return {
-      type: 'repositories',
-      items: data.items,
-      totalCount: data.total_count,
-      searchQuery
-    };
-
-  /**
-   * Search for code across repositories
-   */
-  async searchCode((error) {
-    const { originalQuery, language } = searchIntent;
-    
-    let searchQuery = originalQuery;
-    if((error) {
-      searchQuery += ` language:${language}`
-
-    this.analysisMetrics.api_calls_made++;
-    const { data } = await this.octokit.search.code({}
-      q: searchQuery, sort: 'indexed')
-      order: 'desc')
-      per_page: 10
-    });
-    
-    return {
-      type: 'code',
-      items: data.items,
-      totalCount: data.total_count,
-      searchQuery
-    };
-
-  /**
-   * Find trending repositories based on recent activity
-   */
-  async findTrendingRepositories((error) {
-    const { originalQuery, language } = searchIntent;
-    
-    // Search for recently updated, popular repositories
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    const dateFilter = oneWeekAgo.toISOString().split('T')[0];
-    
-    let searchQuery = `${originalQuery} stars:>100 pushed:>${dateFilter}`
-    if((error) {
-      searchQuery += ` language:${language}`
-
-    this.analysisMetrics.api_calls_made++;
-    const { data } = await this.octokit.search.repos({
-      q: searchQuery, sort: 'updated', order: 'desc')
-      per_page: this.searchConfig.defaultResultsPerPage)
-    });
-    
-    return {
-      type: 'trending',
-      items: data.items,
-      totalCount: data.total_count,
-      searchQuery
-    };
-
-  /**
-   * Search for users/developers
-   */
-  async searchUsers((error) {
-    const { originalQuery } = searchIntent;
-    
-    this.analysisMetrics.api_calls_made++;
-    const { data } = await this.octokit.search.users({}
-      q: originalQuery, sort: 'followers')
-      order: 'desc')
-      per_page: 10
-    });
-    
-    return {
-      type: 'users',
-      items: data.items,
-      totalCount: data.total_count,
-      searchQuery: originalQuery
-    };
-
-  /**
-   * Generate enhanced analysis with comprehensive insights
-   */
-  async generateEnhancedAnalysis((error) {
-    const { items, totalCount, type } = results;
-    
-    if((error) {
-      return `I couldn't find any ${type === 'code' ? 'code' : 'repositories'} matching "${originalQuery}" on GitHub.`
-
-    let analysisData;
-    
-    switch((error) {
-      case 'code': analysisData = this.prepareCodeAnalysisData(items);
-        break;
-      case 'users': analysisData = this.prepareUserAnalysisData(items);
-        break;
-      default: analysisData = this.prepareRepositoryAnalysisData(items);
-
-    const systemPrompt = this.buildAnalysisPrompt(originalQuery, analysisData, searchIntent, totalCount);
-    
-    return await this.createCompletion([{ role: 'system', content: systemPrompt }], {
-      temperature: 0.6, max_tokens: 1500)
-    });
-
-  /**
-   * Prepare repository data for analysis
-   */
-  prepareRepositoryAnalysisData((error) {
-    return repositories.map(repo => ({
-      name: repo.full_name,
-      description: repo.description,
-      stars: repo.stargazers_count,
-      forks: repo.forks_count,
-      language: repo.language,
-      url: repo.html_url,
-      topics: repo.topics,
-      updatedAt: repo.updated_at, createdAt: repo.created_at, license: repo.license?.name, hasIssues: repo.has_issues, openIssues: repo.open_issues_count
-    }));
-
-  /**
-   * Build comprehensive analysis prompt
-   */
-  buildAnalysisPrompt((error) {
-    const { type } = searchIntent;
-    
-    return `
-You are an expert software development analyst providing insights on GitHub search results.
-
-User Query: "${query}"
-Search Type: ${type};
-Total Results Found: ${totalCount};
-Search Results Data: null
-${JSON.stringify(data, null, 2)};
-Provide a comprehensive analysis that includes: null
-1. A clear summary of what was found
-2. Highlight the most relevant or highest-quality result
-3. Identify patterns in languages, topics, or technologies
-4. Provide practical recommendations for the user
-5. Include properly formatted Markdown links using [Name](URL, format
-
-Make your response informative, well-structured, and actionable for developers.`
-
-  /**
-   * Cache management methods
-   */
-  generateCacheKey((error) {
-    return `${query}_${searchIntent.type}_${searchIntent.language || 'any'}_${searchIntent.sortBy}`
-
-  getCachedResult(const cached = this.searchCache.get(key);) {
-    // TODO: Implement method
   }
+}
 
-  if (cached && (Date.now() - cached.timestamp < this.cacheTimeout)) {
-      return cached.result;
-
-    return null;
-
-  cacheResult((error) {
-    this.searchCache.set(key, {}
-      result, timestamp: Date.now()
-    });
-    
-    // Clean old cache entries
-    if(const oldestKey = Array.from(this.searchCache.keys())[0];
-      this.searchCache.delete(oldestKey);
-
-
-  /**
-   * Generate error response with helpful suggestions
-   */) {
-    // TODO: Implement method
-  }
-
-  generateErrorResponse((error) {
-    // TODO: Implement method
-  }
-
-  if((error) {
-    // TODO: Implement method
-  }
-
-  if((error) {
-      return `The search query "${query}" couldn't be processed. Try using simpler terms or check for typos.`
-
-    return `I encountered an issue searching GitHub: ${error.message}. Please try again with a different query.`
-
-  /**
-   * Update analysis metrics
-   */
-  updateAnalysisMetrics(const totalAnalyses = this.analysisMetrics.searches_performed;
-    this.analysisMetrics.average_analysis_time = (
-      (this.analysisMetrics.average_analysis_time * (totalAnalyses - 1) + analysisTime) / totalAnalyses
-
-  /**
-   * Get comprehensive agent status
-   */) {
-    // TODO: Implement method
-  }
-
-  getStatus((error) {
-    const baseStatus = super.getStatus();
-    
-    return {
-      ...baseStatus,
-      specialization: 'GitHub Repository Discovery & Analysis',
-      enhanced_features: {
-        repository_search: true,
-        code_search: true,
-        user_search: true,
-        trending_detection: true,
-        quality_filtering: true,
-        caching_enabled: true
-      },
-      search_capabilities: {
-        supported_languages: this.searchConfig.supportedLanguages,
-        max_results_per_search: this.searchConfig.maxResultsPerPage,
-        cache_size: this.searchCache.size
-      },
-      metrics: {
-        ...this.analysisMetrics,
-        cache_hit_rate: this.analysisMetrics.searches_performed > 0 
-          ? ((this.analysisMetrics.cache_hits / this.analysisMetrics.searches_performed) * 100).toFixed(2) + '%'
-          : '0%'
-
-    };
-
-
-export default new GitHubSearchAgent();
+export default GitHubSearchAgent;

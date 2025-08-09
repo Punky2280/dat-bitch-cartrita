@@ -35,29 +35,33 @@ const criticalFiles = [
   'packages/backend/src/routes/auth.js',
   'packages/backend/src/routes/calendar.js',
   'packages/backend/src/routes/chatHistory.js',
-  'packages/backend/src/routes/contact.js'
+  'packages/backend/src/routes/contact.js',
 ];
 
 function fixCommonSyntaxErrors(content) {
   // Fix common parsing issues
   let fixed = content;
-  
+
   // Fix case statements without break
-  fixed = fixed.replace(/case\s+(['"`][^'"`]*['"`]|\w+):\s*\{([^}]*)\}\s*(?=case|default|$)/g, 
-    'case $1: {\n$2\nbreak;\n}');
-  
+  fixed = fixed.replace(
+    /case\s+(['"`][^'"`]*['"`]|\w+):\s*\{([^}]*)\}\s*(?=case|default|$)/g,
+    'case $1: {\n$2\nbreak;\n}'
+  );
+
   // Fix missing semicolons after function calls
   fixed = fixed.replace(/(\w+\([^)]*\))\s*\n/g, '$1;\n');
-  
+
   // Fix duplicate declarations
-  fixed = fixed.replace(/(const|let|var)\s+(\w+)\s*=.*?\n.*?\1\s+\2\s*=/g, 
-    (match) => {
+  fixed = fixed.replace(
+    /(const|let|var)\s+(\w+)\s*=.*?\n.*?\1\s+\2\s*=/g,
+    match => {
       const lines = match.split('\n');
       return lines[0] + '\n' + lines[1].replace(/^(const|let|var)\s+/, '');
-    });
-  
+    }
+  );
+
   // Fix invalid regex flags
-  fixed = fixed.replace(/\/[^\/]*\/[a-z]*[^a-z\s]/g, (match) => {
+  fixed = fixed.replace(/\/[^\/]*\/[a-z]*[^a-z\s]/g, match => {
     const parts = match.split('/');
     if (parts.length >= 3) {
       const flags = parts[2].replace(/[^gimuy]/g, '');
@@ -65,28 +69,28 @@ function fixCommonSyntaxErrors(content) {
     }
     return match;
   });
-  
+
   // Fix missing commas in object literals
   fixed = fixed.replace(/(\w+:\s*[^,}\n]+)\s*\n\s*(\w+:)/g, '$1,\n$2');
-  
+
   // Fix unclosed template literals
-  fixed = fixed.replace(/`[^`]*$/gm, (match) => match + '`');
-  
+  fixed = fixed.replace(/`[^`]*$/gm, match => match + '`');
+
   return fixed;
 }
 
 function fixFile(filePath) {
   const fullPath = path.join(__dirname, filePath);
-  
+
   if (!fs.existsSync(fullPath)) {
     console.log(`⚠️  File not found: ${filePath}`);
     return false;
   }
-  
+
   try {
     const content = fs.readFileSync(fullPath, 'utf8');
     const fixed = fixCommonSyntaxErrors(content);
-    
+
     if (content !== fixed) {
       fs.writeFileSync(fullPath, fixed, 'utf8');
       console.log(`✅ Fixed: ${filePath}`);
