@@ -29,7 +29,10 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "echo 'No tests specified' && exit 0",
-    "prepare": "husky"
+  "prepare": "husky",
+  "secrets:scan": "detect-secrets scan > .secrets.baseline || true",
+  "secrets:audit": "detect-secrets audit .secrets.baseline",
+  "secrets:check": "detect-secrets scan --baseline .secrets.baseline || true"
   },
   "devDependencies": {
     "@babel/core": "^7.28.0",

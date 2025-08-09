@@ -30,3 +30,8 @@ Thumbs.db
 .env.development.local
 .env.test.local
 .env.production.local
+.env.*
+!.env.example
+
+# Secret scanning baseline
+.secrets.baseline
