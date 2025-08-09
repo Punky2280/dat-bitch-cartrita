@@ -1,0 +1,21 @@
+{
+  "name": "@cartrita/mcp-testing",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@cartrita/mcp-core": "0.1.0",
+    "@cartrita/orchestrator": "0.1.0",
+    "@cartrita/supervisor-intelligence": "0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "vitest": "^3.2.4",
+    "tsx": "^4.11.0"
+  }
+}

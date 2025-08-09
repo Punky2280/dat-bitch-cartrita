@@ -76,6 +76,9 @@ class AgentToolRegistry {
       // Register utility tools
       await this.registerUtilityTools();
 
+  // Register HuggingFace tools (optional, safe failure)
+  await this.registerHuggingFaceTools();
+
       this.initialized = true;
       console.log(
         `[AgentToolRegistry] ✅ Successfully registered ${this.tools.size} tools`
@@ -285,6 +288,108 @@ class AgentToolRegistry {
         return roleCallReport;
       },
     });
+  }
+
+  /**
+   * Register lightweight HuggingFace inference tools to unify usage via tool interface
+   */
+  async registerHuggingFaceTools() {
+    try {
+      const { default: AgentOrchestrator } = await import('../../integrations/huggingface/AgentOrchestrator.js');
+      const hfOrchestrator = new AgentOrchestrator();
+      await hfOrchestrator.initialize();
+      global.hfOrchestrator = hfOrchestrator;
+      // Create per-task counters (once)
+      if (!global.hfTaskCounters && OpenTelemetryTracing && OpenTelemetryTracing.meter) {
+        global.hfTaskCounters = {};
+      }
+
+      const ensureCounter = (task) => {
+        if (!global.hfTaskCounters) return null;
+        if (!global.hfTaskCounters[task]) {
+          try {
+            global.hfTaskCounters[task] = OpenTelemetryTracing.createCounter(`hf_task_${task.replace(/[^a-z0-9_]/g,'_')}_total`, `HuggingFace task executions for ${task}`);
+          } catch(_) {}
+        }
+        return global.hfTaskCounters[task];
+      };
+
+      const hfTools = [
+        { name: 'hf_text_classification', task: 'text-classification', desc: 'Classify sentiment / category of text' },
+        { name: 'hf_summarization', task: 'summarization', desc: 'Summarize long text' },
+        { name: 'hf_translation', task: 'translation', desc: 'Translate text between languages' },
+        { name: 'hf_image_classification', task: 'image-classification', desc: 'Classify objects present in an image (base64 data URI or hfbin token)' },
+        { name: 'hf_object_detection', task: 'object-detection', desc: 'Detect objects with bounding boxes in an image' },
+        { name: 'hf_image_segmentation', task: 'image-segmentation', desc: 'Segment objects/regions in an image' },
+        { name: 'hf_visual_qa', task: 'visual-question-answering', desc: 'Answer a question about an image' },
+        { name: 'hf_document_qa', task: 'document-question-answering', desc: 'Answer questions about a document image/PDF' },
+        { name: 'hf_zero_shot_image_classification', task: 'zero-shot-image-classification', desc: 'Classify image with arbitrary labels' },
+        { name: 'hf_asr', task: 'automatic-speech-recognition', desc: 'Transcribe spoken audio' }
+      ];
+
+      for (const t of hfTools) {
+        this.registerTool({
+          name: t.name,
+          description: t.desc,
+          category: 'huggingface',
+          schema: z.object({
+            input: z.string().describe('Primary text or base64 data URI or hfbin:<uuid> token depending on task'),
+            labels: z.array(z.string()).optional().describe('Optional labels for zero-shot tasks'),
+            question: z.string().optional().describe('For VQA/document QA'),
+            options: z.any().optional(),
+          }),
+          func: async ({ input, labels, question, options }) => {
+            const payload = {};
+            // Token resolution
+            const tokenMatch = input.startsWith('hfbin:') ? input.substring(6) : null;
+            let binaryBuffer = null;
+            if (tokenMatch && global.hfBinaryStore?.has(tokenMatch)) {
+              const stored = global.hfBinaryStore.get(tokenMatch);
+              // Ownership enforcement: expect caller context user id passed via options?.userId (pattern for future tool wrappers)
+              const invokingUserId = options?.userId || options?.user_id || null;
+              if (stored.userId && invokingUserId && String(stored.userId) !== String(invokingUserId)) {
+                console.warn('[AgentToolRegistry] hfbin token ownership mismatch');
+                if (global.otelCounters?.hfTokenMisuse) {
+                  try { global.otelCounters.hfTokenMisuse.add(1, { tool: t.name, task: t.task }); } catch(_) {}
+                }
+              } else {
+                binaryBuffer = stored.buffer;
+                if (stored.type.startsWith('image/')) payload.imageData = binaryBuffer;
+                else if (stored.type.startsWith('audio/')) payload.audioData = binaryBuffer;
+                else if (stored.type === 'application/pdf') payload.document = binaryBuffer;
+              }
+            }
+            if (!binaryBuffer) {
+              if (t.task.includes('text') || ['summarization','translation','question-answering'].includes(t.task)) {
+                payload.text = input;
+              } else if (t.task.includes('image')) {
+                payload.imageData = input; // assume base64 or URL handled by orchestrator/agent
+              } else if (t.task.includes('speech') || t.task.includes('audio')) {
+                payload.audioData = input;
+              }
+            }
+            if (labels) payload.labels = labels;
+            if (question) payload.question = question;
+
+            const counter = ensureCounter(t.task);
+            const start = Date.now();
+            return await OpenTelemetryTracing.traceOperation('huggingface.task', { attributes: { 'hf.task': t.task, 'hf.tool': t.name } }, async () => {
+              try {
+                const result = await hfOrchestrator.routeTask(t.task, payload, options || {});
+                counter && counter.add(1, { status: 'success' });
+                return { success: true, task: t.task, duration_ms: Date.now() - start, result };
+              } catch (err) {
+                counter && counter.add(1, { status: 'error' });
+                return { success: false, task: t.task, error: err.message };
+              }
+            });
+          }
+        });
+      }
+      console.log('[AgentToolRegistry] ✅ HuggingFace tools registered');
+    } catch (error) {
+      console.warn('[AgentToolRegistry] ⚠️ HuggingFace tools not registered:', error.message);
+    }
   }
 
   /**

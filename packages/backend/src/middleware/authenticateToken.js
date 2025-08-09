@@ -14,8 +14,16 @@ function authenticateToken(req, res, next) {
 
   jwt.verify(token, process.env.JWT_SECRET, (err, decodedPayload) => {
     if (err) {
-      console.error('[Auth Middleware] ❌ JWT Verification Error:', err);
-      return res.status(403).json({ error: 'Forbidden: Invalid token.' });
+      const category = err.name === 'TokenExpiredError'
+        ? 'expired'
+        : err.name === 'JsonWebTokenError'
+          ? 'malformed'
+          : 'unknown';
+      console.error('[Auth Middleware] ❌ JWT Verification Error:', category, err.message);
+      return res.status(403).json({
+        error: 'Forbidden: Invalid or expired token.',
+        category,
+      });
     }
 
     // --- FIX: Create a consistent user object ---

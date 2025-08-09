@@ -1,3 +1,4 @@
+console.log('[CartritaSupervisor] 🔧 EnhancedLangChainCoreAgent module loaded');
 import { StateGraph } from '@langchain/langgraph';
 import {
   AIMessage,
@@ -51,6 +52,8 @@ class CartritaSupervisorAgent {
       });
       await this.toolRegistry.initialize();
       await this.registerSubAgents();
+  // Fallback: ensure HuggingFace bridge agents present (some environments skip earlier dynamic imports silently)
+  await this.ensureHFBridgeAgents();
       await this.buildStateGraph();
       this.isInitialized = true;
       console.log(
@@ -59,6 +62,33 @@ class CartritaSupervisorAgent {
     } catch (error) {
       console.error('[CartritaSupervisor] ❌ Initialization failed:', error);
       this.isInitialized = false;
+    }
+  }
+
+  async ensureHFBridgeAgents() {
+    const required = [
+      { name: 'VisionMaster', path: '../../integrations/huggingface/bridge/HFVisionAgent.js' },
+      { name: 'AudioWizard', path: '../../integrations/huggingface/bridge/HFAudioAgent.js' },
+      { name: 'LanguageMaestro', path: '../../integrations/huggingface/bridge/HFLanguageAgent.js' },
+      { name: 'MultiModalOracle', path: '../../integrations/huggingface/bridge/HFMultimodalAgent.js' },
+      { name: 'DataSage', path: '../../integrations/huggingface/bridge/HFDataAgent.js' },
+    ];
+    for (const spec of required) {
+      if (this.subAgents.has(spec.name)) continue;
+      try {
+        console.log(`[CartritaSupervisor] ➕ Adding missing HF bridge agent: ${spec.name}`);
+        const { default: HFBridge } = await import(spec.path);
+        if (HFBridge) {
+          const instance = new HFBridge();
+          if (!instance.metrics) {
+            instance.metrics = { invocations: 0, successful_delegations: 0, failed_delegations: 0, average_response_time: 0 };
+          }
+          this.subAgents.set(instance.config.name, instance);
+          console.log(`[CartritaSupervisor] ✅ HF bridge agent registered (fallback): ${instance.config.name}`);
+        }
+      } catch (e) {
+        console.warn(`[CartritaSupervisor] ⚠️ Failed fallback registration for ${spec.name}: ${e.message}`);
+      }
     }
   }
 
@@ -98,11 +128,24 @@ class CartritaSupervisorAgent {
       '../security/SecurityAuditAgent.js',
       // System agents (1)
       '../system/MCPCoordinatorAgent.js',
+  // HuggingFace integrated agents (5) - note double parent path (../../) out of consciousness -> agi -> src
+  '../../integrations/huggingface/bridge/HFVisionAgent.js',
+  '../../integrations/huggingface/bridge/HFAudioAgent.js',
+  '../../integrations/huggingface/bridge/HFLanguageAgent.js',
+  '../../integrations/huggingface/bridge/HFMultimodalAgent.js',
+  '../../integrations/huggingface/bridge/HFDataAgent.js',
     ];
 
     for (const fileName of agentFileNames) {
       try {
-        const { default: AgentExport } = await import(`./${fileName}`);
+        // Support nested relative paths (../, ../../) without duplicating './'
+        const importPath = fileName.startsWith('../') || fileName.startsWith('../../')
+          ? fileName
+          : `./${fileName}`;
+        if (importPath.includes('huggingface')) {
+          console.log(`[CartritaSupervisor] 🔍 Importing HF bridge agent from: ${importPath}`);
+        }
+        const { default: AgentExport } = await import(importPath);
         if (!AgentExport) {
           console.warn(
             `[CartritaSupervisor] ⚠️ Failed to load export from ${fileName}`
@@ -149,10 +192,10 @@ class CartritaSupervisorAgent {
           `[CartritaSupervisor] 🎯 Registered agent: ${agentInstance.config.name}`
         );
       } catch (error) {
-        console.error(
-          `[CartritaSupervisor] ❌ Failed to load ${fileName}:`,
-          error.message
-        );
+        console.error(`[CartritaSupervisor] ❌ Failed to load ${fileName}: ${error.message}`);
+        if (fileName.includes('huggingface')) {
+          console.error(error.stack);
+        }
       }
     }
     console.log(
@@ -169,24 +212,56 @@ class CartritaSupervisorAgent {
         try {
           if (instance.execute && typeof instance.execute === 'function') {
             const lastMessage = state.messages[state.messages.length - 1];
-            const result = await instance.execute(
+            const execResult = await instance.execute(
               lastMessage.content,
               'en',
               state.user_id
             );
 
-            // Mark this agent as completed in private state
+            // Normalize various agent return shapes
+            // Supported shapes:
+            // 1. { text: 'response string', ... }
+            // 2. { messages: [ { content, structured? } ], next_agent? }
+            // 3. Raw string
+            let aiMessages = [];
+            let summaryText = null;
+
+            if (typeof execResult === 'string') {
+              summaryText = execResult;
+              aiMessages = [new AIMessage(execResult)];
+            } else if (execResult && Array.isArray(execResult.messages)) {
+              aiMessages = execResult.messages.map(m => {
+                const content = typeof m === 'string' ? m : (m.content || JSON.stringify(m));
+                const msg = new AIMessage(content);
+                // Attach structured payload if present
+                if (m.structured) {
+                  msg.additional_kwargs = { ...(msg.additional_kwargs||{}), structured: m.structured };
+                }
+                return msg;
+              });
+              const last = aiMessages[aiMessages.length - 1];
+              summaryText = last?.content || null;
+            } else if (execResult && typeof execResult === 'object' && execResult.text) {
+              summaryText = execResult.text;
+              aiMessages = [new AIMessage(execResult.text)];
+            } else {
+              // Fallback to JSON string form
+              summaryText = '[non-standard agent result]';
+              aiMessages = [new AIMessage(typeof execResult === 'object' ? JSON.stringify(execResult).slice(0,800) : String(execResult))];
+            }
+
+            // Update private state with raw result for auditing
             const updatedPrivateState = { ...state.private_state };
             updatedPrivateState[name] = {
               completed: true,
-              result: result.text || result,
+              result: summaryText || '[no-content]',
+              raw: execResult,
             };
 
-            // Always return to supervisor after agent execution
             return {
-              messages: [new AIMessage(result.text || result)],
+              messages: aiMessages,
               private_state: updatedPrivateState,
-              next_agent: 'cartrita',
+              next_agent: 'cartrita', // All sub-agents route back
             };
           } else {
             console.warn(
@@ -243,6 +318,38 @@ class CartritaSupervisorAgent {
     const intentAnalysis = this.analyzeIntent(
       state.messages[state.messages.length - 1].content
     );
+    const lastText = state.messages[state.messages.length - 1].content || '';
+
+    // --- Fast-path modality delegation for HuggingFace agents ---
+    // Avoid extra LLM call when intent clearly targets a specialized modality.
+    const modalityMap = [
+      { agent: 'VisionMaster', patterns: ['analyze image', 'classify image', 'what is in this image', 'object detection', 'image segmentation', 'describe this image'] },
+      { agent: 'AudioWizard', patterns: ['transcribe audio', 'speech to text', 'voice activity', 'classify audio', 'tts ', 'text to speech'] },
+      { agent: 'LanguageMaestro', patterns: ['summarize ', 'translate ', 'classify text', 'sentiment', 'fill mask', 'generate text'] },
+      { agent: 'MultiModalOracle', patterns: ['multimodal', 'cross modal', 'image and text', 'audio and text'] },
+      { agent: 'DataSage', patterns: ['tabular', 'time series', 'forecast', 'regression', 'dataset analysis'] }
+    ];
+
+    const lower = lastText.toLowerCase();
+    for (const { agent, patterns } of modalityMap) {
+      const matched = patterns.some(p => lower.includes(p));
+      if (matched) {
+        try { global.otelCounters?.fastDelegations?.add(1, { agent, available: this.subAgents.has(agent) ? 'yes':'no' }); } catch(_) {}
+        try { if (global.debugMetrics) global.debugMetrics.fast_path_delegations++; } catch(_) {}
+        if (this.subAgents.has(agent)) {
+          console.log(`[CartritaSupervisor] ⚡ Fast-path delegating to ${agent} based on keyword match`);
+          return {
+            messages: [new AIMessage(`Routing to ${agent} for specialized processing.`)],
+            next_agent: agent,
+            private_state: { ...state.private_state, fast_path: true }
+          };
+        } else if (global.hfOrchestrator?.agents?.has(agent)) {
+          console.log(`[CartritaSupervisor] ⚡ Fast-path (no subAgent) recognized ${agent} modality; continuing inline`);
+          // We only increment metrics; normal supervisor flow continues.
+          break; // prevent multiple matches
+        }
+      }
+    }
 
     // Check if we have agent results to finalize
     const completedAgents = Object.keys(state.private_state || {}).filter(

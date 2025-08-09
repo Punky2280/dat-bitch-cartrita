@@ -2,6 +2,7 @@
 
 **The World's Most Advanced Personal AI Operating System**
 
+
 **DBC**: Data-driven AI Tool that Applies Behavioral Intelligence Tools while Connecting Humanity.  
 **Cartrita**: Cognitive AI Reasoning Tool for Real-time Information and Task Automation.
 

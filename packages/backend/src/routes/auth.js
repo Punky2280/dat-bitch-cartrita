@@ -121,13 +121,17 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Find user
+    // Find user by email OR name (case-insensitive)
     const result = await db.query(
-      'SELECT id, name, email, password_hash FROM users WHERE email = $1',
+      `SELECT id, name, email, password_hash
+       FROM users
+       WHERE LOWER(email) = LOWER($1) OR LOWER(name) = LOWER($1)
+       LIMIT 1`,
       [loginIdentifier]
     );
 
     if (result.rows.length === 0) {
+      try { global.openTelemetryIntegration?.meter?.createCounter && OpenTelemetryTracing?.createCounter; } catch(_) {}
       return res.status(401).json({
         error: 'Invalid credentials',
       });
@@ -137,7 +141,7 @@ router.post('/login', async (req, res) => {
 
     // Check password
     const validPassword = await bcrypt.compare(password, user.password_hash);
-    if (!validPassword) {
+  if (!validPassword) {
       return res.status(401).json({
         error: 'Invalid credentials',
       });
@@ -156,18 +160,26 @@ router.post('/login', async (req, res) => {
 
     console.log(`[Auth] User logged in: ${user.name} (ID: ${user.id})`);
 
+    try {
+      if (global.otelCounters?.authSuccess) {
+        global.otelCounters.authSuccess.add(1, { method: 'login' });
+      }
+    } catch (_) {}
     res.json({
       success: true,
       message: 'Login successful',
       user: {
         id: user.id,
-        username: user.username,
+        // Preserve existing clients expecting either `username` or `name`
+        username: user.name,
+        name: user.name,
         email: user.email,
       },
       token,
     });
   } catch (error) {
     console.error('[Auth] Login error:', error);
+    try { if (global.otelCounters?.authFailure) global.otelCounters.authFailure.add(1, { stage: 'exception' }); } catch(_) {}
     res.status(500).json({
       error: 'Internal server error during login',
     });

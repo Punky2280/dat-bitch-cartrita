@@ -318,6 +318,7 @@ export class MCPUnixSocketTransport extends EventEmitter {
       connections: Array.from(this.connections.entries()).map(([id, conn]) => ({
         id,
         isAlive: conn.isAlive,
+  lastPing: conn.lastPing,
         queueSize: conn.messageQueue.length,
         bytesReceived: conn.bytesReceived,
         bytesSent: conn.bytesSent,

@@ -21,6 +21,8 @@ import {
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { ConsoleSpanExporter } from '@opentelemetry/sdk-trace-node';
 import metricsPkg from '@opentelemetry/sdk-metrics';
+import { Resource } from '@opentelemetry/resources';
+import { buildBaseResourceAttributes } from './otelSemantic.js';
 const { PeriodicExportingMetricReader, ConsoleMetricExporter } = metricsPkg;
 
 class OpenTelemetryTracing {
@@ -55,6 +57,7 @@ class OpenTelemetryTracing {
       );
 
       // Follow official Node.js SDK pattern with exporters and metric readers
+      const resource = new Resource(buildBaseResourceAttributes(process.env));
       this.sdk = new NodeSDK({
         serviceName: this.serviceName,
         serviceVersion: this.serviceVersion,
@@ -66,6 +69,7 @@ class OpenTelemetryTracing {
             exportIntervalMillis: 30000, // Export metrics every 30 seconds
           }),
         instrumentations: [getNodeAutoInstrumentations()],
+        resource,
       });
 
       await this.sdk.start();
@@ -134,12 +138,14 @@ class OpenTelemetryTracing {
 
   async traceAgentOperation(agentName, operation, attributes, handler) {
     const spanName = `agent.${agentName}.${operation}`;
-    const options = {
+  const options = {
       kind: SpanKind.INTERNAL,
       attributes: {
         'agent.name': agentName,
         'agent.operation': operation,
         'agent.type': this.getAgentType(agentName),
+    'code.namespace': `agent.${agentName}`,
+    'code.function': operation,
         ...attributes,
       },
     };
@@ -148,13 +154,14 @@ class OpenTelemetryTracing {
 
   async traceToolExecution(toolName, agentName, parameters, handler) {
     const spanName = `tool.${toolName}`;
-    const options = {
+  const options = {
       kind: SpanKind.INTERNAL,
       attributes: {
         'tool.name': toolName,
         'tool.agent': agentName,
         'tool.parameters': JSON.stringify(parameters),
         'tool.category': this.getToolCategory(toolName),
+    'code.namespace': `tool.${toolName}`,
       },
     };
     return this.traceOperation(spanName, options, handler);

@@ -52,6 +52,32 @@ router.get('/history', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/chat/structured - retrieve structured outputs with optional task/status filters & pagination
+router.get('/structured', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(400).json({ error: 'Missing userId in request context' });
+    const { task, status } = req.query;
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = parseInt(req.query.offset) || 0;
+    const params = [userId];
+    let filterSql = '';
+    if (task) { params.push(task); filterSql += ` AND (cm.metadata->'structured')::jsonb @> to_jsonb(ARRAY[json_build_object('task', $${params.length})]::json)`; }
+    if (status) { params.push(status); filterSql += ` AND EXISTS (SELECT 1 FROM jsonb_array_elements(cm.metadata->'structured') elem WHERE elem->>'status' = $${params.length})`; }
+    params.push(limit, offset);
+    const sql = `SELECT cm.id, cm.created_at, cm.metadata->'structured' AS structured
+                 FROM conversation_messages cm
+                 JOIN conversations c ON c.id = cm.conversation_id
+                 WHERE c.user_id = $1 AND cm.role = 'assistant' AND cm.metadata ? 'structured' ${filterSql}
+                 ORDER BY cm.created_at DESC LIMIT $${params.length-1} OFFSET $${params.length}`;
+    const result = await db.query(sql, params);
+    res.json({ success: true, count: result.rows.length, limit, offset, data: result.rows });
+  } catch (err) {
+    console.error('[ChatHistory] ❌ Error fetching structured outputs:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch structured outputs' });
+  }
+});
+
 // Clear chat history for authenticated user
 router.delete('/history', authenticateToken, async (req, res) => {
   try {
