@@ -5,7 +5,8 @@
  */
 
 import express from 'express';
-import authenticateToken from '../middleware/authenticateToken.js'; // Assuming admin-level protection middleware exists
+import authenticateToken from '../middleware/authenticateToken.js';
+import { mcpSystem } from '../mcp/mcp-integration.js';
 
 const router = express.Router();
 
@@ -15,32 +16,59 @@ const router = express.Router();
  * @access  Private (Admin/Supervisor)
  */
 router.get('/agent-hierarchy', authenticateToken, (req, res) => {
-  // TODO: Query the LangChain StateGraph instance to get the real-time status of each agent.
   console.log('[MCP] Fetching agent hierarchy status.');
-  res.status(200).json({
-    supervisor: {
-      name: 'CARTRITA SUPERVISOR',
-      status: 'ACTIVE',
-      mode: 'Orchestrating',
-    },
-    specialized_agents: [
-      { name: 'ResearcherAgent', status: 'IDLE', tasks_completed: 42 },
-      {
-        name: 'CodeWriterAgent',
-        status: 'ACTIVE',
-        current_task: 'Reviewing GitHub PR #1337',
+  
+  try {
+    const mcpStatus = mcpSystem.getStatus();
+    
+    res.status(200).json({
+      mcp_system: {
+        initialized: mcpStatus.initialized,
+        orchestrator: mcpStatus.orchestrator,
+        supervisors: mcpStatus.supervisors
       },
-      { name: 'ArtistAgent', status: 'IDLE', tasks_completed: 12 },
-      {
-        name: 'SchedulerAgent',
-        status: 'ERROR',
-        last_error: 'Google API token expired',
+      hierarchy: {
+        tier_0: {
+          name: 'MCP Orchestrator',
+          status: mcpStatus.orchestrator,
+          role: 'Task routing and coordination'
+        },
+        tier_1: {
+          intelligence_supervisor: {
+            name: 'Intelligence Supervisor',
+            status: mcpStatus.supervisors.intelligence.status,
+            agents: mcpStatus.supervisors.intelligence.activeAgents || 0
+          },
+          multimodal_supervisor: {
+            name: 'MultiModal Supervisor', 
+            status: mcpStatus.supervisors.multimodal.status,
+            capabilities: mcpStatus.supervisors.multimodal.multiModalCapabilities || []
+          }
+        },
+        tier_2: {
+          supported_agents: [
+            'WriterAgent',
+            'CodeWriterAgent', 
+            'AnalyticsAgent',
+            'ResearchAgent',
+            'LangChainExecutor',
+            'HuggingFaceLanguageAgent',
+            'DeepgramAgent'
+          ]
+        }
       },
-      // ... and so on for all 11+ agents
-    ],
-    message:
-      "Here's the breakdown of the crew. Looks like Scheduler's slacking again.",
-  });
+      supported_task_types: mcpStatus.supportedTaskTypes || [],
+      message: mcpStatus.initialized 
+        ? "MCP system is operational. All supervisors ready for tasks." 
+        : "MCP system initializing..."
+    });
+  } catch (error) {
+    console.error('[MCP] Error fetching hierarchy:', error);
+    res.status(500).json({
+      error: 'Failed to fetch agent hierarchy',
+      details: error.message
+    });
+  }
 });
 
 /**
@@ -48,24 +76,49 @@ router.get('/agent-hierarchy', authenticateToken, (req, res) => {
  * @desc    Allow the Master Supervisor to execute a complex task directly, bypassing normal agent routing.
  * @access  Private (Admin/Supervisor Only)
  */
-router.post('/supervisor/override', authenticateToken, (req, res) => {
-  const { task_description, tools_required, priority } = req.body;
-  if (!task_description) {
+router.post('/supervisor/override', authenticateToken, async (req, res) => {
+  const { task_description, task_type, parameters, priority } = req.body;
+  
+  if (!task_description && !task_type) {
     return res.status(400).json({
-      error: "Yeah, I can't do nothin' with nothin'. Give me a task.",
+      error: "Task description or task type is required.",
     });
   }
-  // TODO:
-  // 1. Authenticate that the request comes from a privileged user.
-  // 2. Invoke the `supervisorAgent.accessAllTools()` and `supervisorAgent.overrideAgentRestrictions()` methods.
-  // 3. Pass the complex task directly to the supervisor agent instance for execution.
-  console.log(`[MCP] SUPERVISOR OVERRIDE ACTIVATED. Task: ${task_description}`);
-  res.status(202).json({
-    message:
-      "Alright, stepping in. The regular agents can take five. I'll handle this personally.",
-    task_id: `override-${new Date().getTime()}`,
-    status: 'ACCEPTED',
-  });
+
+  try {
+    console.log(`[MCP] SUPERVISOR OVERRIDE ACTIVATED. Task: ${task_description || task_type}`);
+    
+    const taskId = `override-${Date.now()}`;
+    
+    // Process task through MCP system
+    const result = await mcpSystem.processTask(
+      task_type || 'general.task', 
+      {
+        description: task_description,
+        priority: priority || 'high',
+        override: true,
+        ...parameters
+      },
+      {
+        userId: req.user?.id,
+        sessionId: req.sessionID,
+        isOverride: true
+      }
+    );
+    
+    res.status(202).json({
+      message: "MCP Orchestrator handling supervisor override task.",
+      task_id: taskId,
+      status: 'ACCEPTED',
+      mcp_result: result
+    });
+  } catch (error) {
+    console.error('[MCP] Supervisor override error:', error);
+    res.status(500).json({
+      error: 'Failed to process supervisor override',
+      details: error.message
+    });
+  }
 });
 
 /**
@@ -92,6 +145,78 @@ router.get('/tool-registry', authenticateToken, (req, res) => {
     },
     message: 'The whole toolbox. Ready to get to work.',
   });
+});
+
+/**
+ * @route   POST /api/mcp/task
+ * @desc    Process a task through the MCP system
+ * @access  Private
+ */
+router.post('/task', authenticateToken, async (req, res) => {
+  const { taskType, parameters } = req.body;
+  
+  if (!taskType) {
+    return res.status(400).json({
+      error: 'taskType is required'
+    });
+  }
+
+  try {
+    console.log(`[MCP] Processing task: ${taskType}`);
+    
+    const result = await mcpSystem.processTask(taskType, parameters, {
+      userId: req.user?.id,
+      sessionId: req.sessionID
+    });
+    
+    res.json(result);
+  } catch (error) {
+    console.error('[MCP] Task processing error:', error);
+    res.status(500).json({
+      error: 'Task processing failed',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * @route   GET /api/mcp/status
+ * @desc    Get MCP system status
+ * @access  Private
+ */
+router.get('/status', authenticateToken, (req, res) => {
+  try {
+    const status = mcpSystem.getStatus();
+    res.json(status);
+  } catch (error) {
+    console.error('[MCP] Status error:', error);
+    res.status(500).json({
+      error: 'Failed to get MCP status',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * @route   GET /api/mcp/health
+ * @desc    MCP health check
+ * @access  Public
+ */
+router.get('/health', (req, res) => {
+  try {
+    const status = mcpSystem.getStatus();
+    const isHealthy = status.initialized && status.orchestrator === 'active';
+    
+    res.status(isHealthy ? 200 : 503).json({
+      status: isHealthy ? 'healthy' : 'unhealthy',
+      ...status
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      error: error.message
+    });
+  }
 });
 
 export { router };

@@ -83,7 +83,7 @@ import healthRoutes from './src/routes/health.js';
 import iteration22Routes from './src/routes/iteration22.js';
 import workflowToolsRoutes from './src/routes/workflowTools.js';
 import fineTuningRoutes from './src/routes/fineTuningRoutes.js';
-import huggingfaceRoutes from '../../integrations/huggingface/routes/huggingfaceRoutes.js';
+import huggingfaceRoutes from './src/integrations/huggingface/routes/huggingfaceRoutes.js';
 
 // --- CONFIGURATION ---
 const PORT = process.env.PORT || 8001;
@@ -487,6 +487,39 @@ async function startServer() {
         );
         handleAgentError('Advanced2025MCPOrchestrator', mcpError);
       }
+
+      // Initialize new MCP System with full infrastructure
+      console.log('🎛️  Initializing Hierarchical MCP System...');
+      try {
+        const { mcpSystem } = await import('./src/mcp/mcp-integration.js');
+        
+        // Get Redis client if available
+        let redisClient = null;
+        try {
+          const { default: Redis } = await import('./src/services/RedisService.js');
+          redisClient = Redis.client;
+        } catch (redisError) {
+          console.warn('[MCP] Redis service not available');
+        }
+
+        await mcpSystem.initialize(
+          {
+            coreAgent,
+            researcherAgent: coreAgent.agents?.researcherAgent,
+            writerAgent: coreAgent.agents?.writerAgent,
+            codeWriterAgent: coreAgent.agents?.codeWriterAgent,
+            analyticsAgent: coreAgent.agents?.analyticsAgent,
+            multiModalFusionAgent: coreAgent.agents?.multiModalFusionAgent,
+          },
+          pool, // PostgreSQL connection pool
+          redisClient // Redis client
+        );
+        console.log('✅ Hierarchical MCP System initialized successfully');
+        global.mcpSystem = mcpSystem;
+      } catch (mcpSystemError) {
+        console.warn('⚠️ MCP System initialization failed, continuing...');
+        handleAgentError('MCPSystem', mcpSystemError);
+      }
     }
 
     // --- ✅ MODIFICATION IS HERE ---
@@ -538,6 +571,13 @@ async function gracefulShutdown(signal) {
       console.log('🌟 Shutting down Advanced 2025 MCP Orchestrator...');
       await Advanced2025MCPInitializer.shutdown();
       console.log('✅ Advanced 2025 MCP Orchestrator shutdown complete');
+    }
+
+    // Shutdown MCP System
+    if (global.mcpSystem) {
+      console.log('🎛️  Shutting down Hierarchical MCP System...');
+      await global.mcpSystem.shutdown();
+      console.log('✅ Hierarchical MCP System shutdown complete');
     }
 
     // Cleanup Redis connection
