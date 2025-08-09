@@ -1,0 +1,32 @@
+# Python dependencies for Advanced Audio Analytics
+# pyannote.audio and related dependencies
+
+torch>=2.0.0
+torchaudio>=2.0.0
+pyannote.audio>=3.0.0
+pyannote.core>=5.0.0
+pyannote.database>=5.0.0
+pyannote.metrics>=3.0.0
+
+# Audio processing dependencies
+librosa>=0.10.0
+soundfile>=0.12.0
+scipy>=1.10.0
+numpy>=1.24.0
+
+# Machine learning dependencies
+scikit-learn>=1.3.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Utility dependencies
+pydub>=0.25.0
+webrtcvad>=2.0.0
+speechbrain>=0.5.0
+
+# Optional GPU acceleration
+# torch-audio-cuda (uncomment if CUDA available)
+
+# Development and debugging
+jupyter>=1.0.0
+ipython>=8.0.0

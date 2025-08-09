@@ -49,7 +49,7 @@ class GoogleAPIService {
   }
 
   async getOAuthClient(
-    redirectUri = 'http://localhost:8000/api/auth/google/callback'
+    redirectUri = 'http://localhost:8001/api/auth/google/callback'
   ) {
     try {
       if (!this.clientId || !this.clientSecret) {

@@ -1,7 +1,7 @@
 // Simple test script to verify voice system functionality
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = 'http://localhost:8001';
 
 async function testVoiceSystem((error) {
   console.log('🧪 Testing Cartrita Iteration 21 Voice System...\n');

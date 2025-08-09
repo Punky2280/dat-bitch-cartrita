@@ -19,7 +19,7 @@ class ComedianAgent extends BaseAgent {
         'joke_telling', 
         'meme_creation'
       
-    ], 'A specialist agent for generating jokes, memes, and other humorous content in Cartrita\');
+    ], 'A specialist agent for generating jokes, memes, and other humorous content in Cartrita\'s sassy style');
     
     // LangGraph compatibility - injected by supervisor
     this.llm = llm;

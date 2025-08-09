@@ -6,6 +6,7 @@ import {
   SparklesIcon,
   VideoCameraIcon,
 } from "@heroicons/react/24/outline";
+import { API_BASE_URL } from "../config/constants";
 
 interface LiveChatButtonProps {
   token: string;
@@ -217,7 +218,7 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
       formData.append("audio", audioBlob, "wake-check.webm");
 
       const response = await fetch(
-        "http://localhost:8000/api/voice-to-text/transcribe",
+        `${API_BASE_URL}/api/voice-to-text/transcribe`,
         {
           method: "POST",
           headers: {
@@ -277,7 +278,7 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
       }));
 
       // Send to your chat API for processing
-      const response = await fetch("http://localhost:8000/api/chat", {
+      const response = await fetch(`${API_BASE_URL}/api/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -315,7 +316,7 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
       setChatState((prev) => ({ ...prev, isSpeaking: true }));
 
       const response = await fetch(
-        "http://localhost:8000/api/voice-chat/speak",
+        `${API_BASE_URL}/api/voice-chat/speak`,
         {
           method: "POST",
           headers: {

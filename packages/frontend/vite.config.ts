@@ -10,11 +10,11 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': { 
-        target: process.env.VITE_BACKEND_URL || 'http://localhost:8000', 
+        target: process.env.VITE_BACKEND_URL || 'http://localhost:8001', 
         changeOrigin: true 
       },
       '/socket.io': { 
-        target: process.env.VITE_BACKEND_URL?.replace('http', 'ws') || 'ws://localhost:8000', 
+        target: process.env.VITE_BACKEND_URL?.replace('http', 'ws') || 'ws://localhost:8001', 
         ws: true 
       },
     },

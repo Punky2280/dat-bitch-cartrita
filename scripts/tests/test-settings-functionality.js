@@ -3,7 +3,7 @@
 
 console.log('🧪 Testing Cartrita Settings Functionality...');
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = 'http://localhost:8001/api';
 const FRONTEND_BASE = 'http://localhost:5173';
 
 // Mock authentication token for testing
@@ -333,7 +333,7 @@ async function runAllSettingsTests() {
     // Provide specific recommendations
     console.log('\n🔧 Recommendations:');
     if (!results.settingsAPI.success) {
-      console.log('- Check backend server is running on port 8000');
+      console.log('- Check backend server is running on port 8001');
       console.log('- Verify authentication token is valid');
     }
     if (!results.sessionManagement.hasAuth) {

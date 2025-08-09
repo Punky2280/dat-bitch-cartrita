@@ -14,8 +14,9 @@
 8. [Secure API Key Vault](#secure-api-key-vault)
 9. [Chat Interface & Agent Orchestration](#chat-interface--agent-orchestration)
 10. [Settings & Personalization](#settings--personalization)
-11. [Privacy Controls](#privacy-controls)
-12. [Troubleshooting](#troubleshooting)
+11. [OpenTelemetry Integration & Telemetry Agent](#opentelemetry-integration--telemetry-agent)
+12. [Privacy Controls](#privacy-controls)
+13. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -521,6 +522,116 @@ Comprehensive customization for the multi-agent system and all interfaces.
 
 ---
 
+## OpenTelemetry Integration & Telemetry Agent
+
+**Complete observability with AI-powered telemetry operations** - Cartrita features a full integration of OpenTelemetry JS repositories directly in the backend.
+
+### 📊 **Complete Upstream Integration**
+
+Cartrita has **fully merged** both OpenTelemetry repositories into the backend system:
+
+- **OpenTelemetry JS**: Core API and SDK functionality integrated directly
+- **OpenTelemetry JS Contrib**: All instrumentation libraries merged
+- **Zero External Dependencies**: Everything runs natively within Cartrita
+
+### 🤖 **AI-Powered Telemetry Agent**
+
+The **TelemetryAgent** provides natural language observability operations:
+
+**Natural Language Commands**:
+- _"Check telemetry status"_
+- _"Create a trace for user login process"_ 
+- _"Analyze traces from the last hour"_
+- _"Create a counter named user_actions_total"_
+- _"Show system performance metrics"_
+- _"Generate telemetry report"_
+
+**Automatic Instrumentation**:
+- **Express.js**: HTTP request/response tracing
+- **PostgreSQL**: Database query instrumentation  
+- **Redis**: Cache operation monitoring
+- **WebSocket**: Real-time communication tracing
+- **Agent Operations**: Multi-agent workflow tracking
+- **Voice Interactions**: Speech-to-text and TTS monitoring
+- **AI Model Usage**: OpenAI API call optimization
+
+### 🔍 **Using Telemetry in Chat**
+
+Simply ask Cartrita to perform observability tasks:
+
+```
+You: "Can you check our system performance and create some traces?"
+
+Cartrita: *Checking telemetry status...*
+✅ OpenTelemetry: Fully Operational (98% health score)
+✅ Active Traces: 1,247 spans today
+✅ Metrics: 23 counters, 15 histograms active
+✅ Performance: Response times averaging 145ms
+
+*Creating demonstration traces...*
+🔍 Custom trace "system-performance-check" created
+📊 Trace includes 6 child spans across all services
+⚡ Total execution: 23ms with full instrumentation
+
+Performance insights: Database queries optimal, 
+Redis cache hit ratio 94.2%, all agents responsive.
+```
+
+### 📈 **Telemetry Operations**
+
+**Trace Management**:
+- Create custom traces for any workflow
+- Analyze distributed traces across the system
+- Demo complex scenarios for learning
+- Monitor agent collaboration patterns
+
+**Metrics Collection**:
+- Create business and technical metrics
+- Record measurements with proper labels
+- Track performance trends over time
+- Monitor user satisfaction and engagement
+
+**System Analysis**:
+- Generate comprehensive performance reports
+- Identify bottlenecks and optimization opportunities
+- Track error rates and system health
+- Monitor resource utilization trends
+
+### 🛠️ **Advanced Telemetry Features**
+
+**Custom Cartrita Instrumentations**:
+- **MCP Communication**: Inter-agent message tracing
+- **Multi-Modal Processing**: Cross-sensory operation monitoring
+- **Knowledge Hub Operations**: Vector search and embedding performance
+- **Workflow Engine**: Tool orchestration and automation tracking
+
+**Interactive Telemetry Manual**:
+- Complete documentation accessible via chat commands
+- 50+ example operations with best practices
+- Troubleshooting guides and optimization tips
+- Real-time updates with system status
+
+**Production-Ready Observability**:
+- Enterprise-grade distributed tracing
+- Custom business metrics collection
+- Automated performance monitoring
+- AI-powered analysis and recommendations
+
+### 📚 **Telemetry Manual Access**
+
+**Via Chat Commands**:
+- _"Show telemetry manual"_
+- _"Give me telemetry examples"_
+- _"Show me how to create traces"_
+- _"What telemetry operations are available?"_
+
+**Direct API Access**:
+- `GET /api/telemetry/manual` - Complete interactive documentation
+- `POST /api/telemetry/command` - Execute telemetry operations
+- `GET /api/telemetry/status` - System observability status
+
+---
+
 ## Privacy Controls
 
 **GDPR-compliant privacy management** with comprehensive user control.
@@ -606,6 +717,36 @@ Comprehensive customization for the multi-agent system and all interfaces.
 - Ensure knowledge entries exist in your database
 - Try different search terms or semantic variations
 - Check that database connection is stable
+
+### 📊 **Telemetry System Issues**
+
+**Telemetry Agent Not Responding**:
+
+- Check system status with _"Check telemetry status"_
+- Verify OpenTelemetry integration is initialized
+- Try basic commands like _"Show telemetry manual"_
+- Restart may be needed if integration failed during startup
+
+**Traces Not Appearing**:
+
+- Confirm tracing is enabled in telemetry status
+- Create manual test trace: _"Create a demo trace"_
+- Check trace storage backend connectivity
+- Verify span export configuration
+
+**Metrics Showing Zero Values**:
+
+- Ensure metrics are being actively recorded
+- Check metric names match exactly (case-sensitive)
+- Verify metric types (counter vs histogram) are correct
+- Try creating new metrics: _"Create a counter named test_metric"_
+
+**Performance Analysis Issues**:
+
+- System needs sufficient uptime for meaningful trends
+- Check if enough data points exist for analysis
+- Verify performance monitoring components are active
+- Try requesting specific time ranges: _"Analyze last hour"_
 
 ### 🎙️ **Voice System Issues**
 

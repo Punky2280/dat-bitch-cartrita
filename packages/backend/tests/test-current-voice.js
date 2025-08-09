@@ -1,7 +1,7 @@
 // Test script to check current voice functionality status
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = 'http://localhost:8001';
 
 async function testCurrentVoiceSetup((error) {
   console.log('🔍 Testing Current Voice Setup Status\n');
@@ -77,7 +77,7 @@ async function testCurrentVoiceSetup((error) {
 
     // Check for backend logs or errors
     console.log('\n5. Checking backend configuration...');
-    console.log('   🔧 Backend is running on port 8000');
+    console.log('   🔧 Backend is running on port 8001');
     console.log('   🔧 Expected voice routes:');
     console.log('      - /api/voice-chat/* (for voice interaction)');
     console.log('      - /api/voice-to-text/* (for transcription)');

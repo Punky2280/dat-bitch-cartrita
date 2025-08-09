@@ -6,6 +6,7 @@ import {
   getSupportedMimeType,
   logMediaDeviceInfo,
 } from "@/utils/mediaUtils";
+import { API_BASE_URL } from "../config/constants";
 import { AudioVisualizer } from "./AudioVisualizer";
 import {
   MediaPermissionHandler,
@@ -170,7 +171,7 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
           console.log("[VoiceToText] FormData created, sending request...");
 
           const response = await fetch(
-            "http://localhost:8000/api/voice-to-text/transcribe",
+            `${API_BASE_URL}/api/voice-to-text/transcribe`,
             {
               method: "POST",
               headers: {

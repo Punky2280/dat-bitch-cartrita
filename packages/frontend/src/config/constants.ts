@@ -1,7 +1,7 @@
 export const API_BASE_URL =
-  import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:8001";
 export const SOCKET_URL =
-  import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:8001";
 
 export const SOCKET_CONFIG = {
   transports: ["polling", "websocket"],

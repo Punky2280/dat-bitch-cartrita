@@ -48,7 +48,7 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      - PORT=8000
+      - PORT=8001
       - POSTGRES_USER=robert
       - POSTGRES_PASSWORD=punky1
       - POSTGRES_DB=dat-bitch-cartrita
@@ -60,7 +60,7 @@ services:
     env_file:
       - packages/backend/.env
     ports:
-      - '8001:8000'
+      - '8001:8001'
     volumes:
       - ./packages/backend/uploads:/usr/src/app/packages/backend/uploads
       - ./packages/backend/logs:/usr/src/app/packages/backend/logs
@@ -75,7 +75,7 @@ services:
       test:
         [
           'CMD-SHELL',
-          'wget --no-verbose --tries=1 --spider http://localhost:8000/health || exit 1',
+          'wget --no-verbose --tries=1 --spider http://localhost:8001/health || exit 1',
         ]
       interval: 30s
       timeout: 10s

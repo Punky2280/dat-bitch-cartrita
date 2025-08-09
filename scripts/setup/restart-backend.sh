@@ -2,12 +2,12 @@
 
 echo "🔄 Restarting Cartrita Backend..."
 
-# Kill any existing Node.js processes on port 8000
-echo "📝 Checking for existing processes on port 8000..."
-EXISTING_PID=$(ss -tlnp | grep :8000 | grep -o 'pid=[0-9]*' | cut -d'=' -f2 | head -1)
+# Kill any existing Node.js processes on port 8001
+echo "📝 Checking for existing processes on port 8001..."
+EXISTING_PID=$(ss -tlnp | grep :8001 | grep -o 'pid=[0-9]*' | cut -d'=' -f2 | head -1)
 
 if [ ! -z "$EXISTING_PID" ]; then
-    echo "🔴 Found existing process (PID: $EXISTING_PID) on port 8000"
+    echo "🔴 Found existing process (PID: $EXISTING_PID) on port 8001"
     echo "🔪 Attempting to stop process..."
     
     # Try to kill gracefully first
@@ -22,7 +22,7 @@ if [ ! -z "$EXISTING_PID" ]; then
     
     echo "✅ Process terminated"
 else
-    echo "✅ No existing processes found on port 8000"
+    echo "✅ No existing processes found on port 8001"
 fi
 
 # Wait a moment for port to be released
@@ -55,7 +55,7 @@ DB_USER=postgres
 DB_PASSWORD=postgres
 
 # Server Configuration
-PORT=8000
+PORT=8001
 NODE_ENV=development
 EOF
     echo "✅ Basic .env file created. Please update with your actual API keys."
@@ -63,7 +63,7 @@ fi
 
 # Start the backend
 echo "🚀 Starting backend server..."
-echo "📊 Backend will run on http://localhost:8000"
+echo "📊 Backend will run on http://localhost:8001"
 echo "📋 Logs will be shown below..."
 echo "============================================"
 

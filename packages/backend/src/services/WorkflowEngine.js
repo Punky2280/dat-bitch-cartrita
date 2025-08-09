@@ -720,7 +720,7 @@ class MCPConnector {
     try {
       // Make request to MCP agent via internal API
       const response = await axios.post(
-        'http://localhost:8000/api/mcp/execute',
+        'http://localhost:8001/api/mcp/execute',
         {
           agent: agentType,
           prompt: prompt || JSON.stringify(previousResults),

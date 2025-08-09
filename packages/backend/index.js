@@ -18,6 +18,8 @@ import CartritaSupervisorAgent from './src/agi/consciousness/EnhancedLangChainCo
 import ServiceInitializer from './src/services/ServiceInitializer.js';
 import Advanced2025MCPInitializer from './src/agi/orchestration/Advanced2025MCPInitializer.js';
 import OpenTelemetryTracing from './src/system/OpenTelemetryTracing.js';
+import openTelemetryIntegration from './src/opentelemetry/OpenTelemetryIntegrationService.js';
+import TelemetryAgent from './src/agi/system/TelemetryAgent.js';
 import SensoryProcessingService from './src/system/SensoryProcessingService.js';
 const RedisService = {
   async initialize() {
@@ -54,6 +56,7 @@ const RedisService = {
 };
 import authenticateTokenSocket from './src/middleware/authenticateTokenSocket.js';
 import authenticateToken from './src/middleware/authenticateToken.js';
+import socketConfig from './socket-config.js';
 
 // --- ROUTE IMPORTS ---
 import authRoutes from './src/routes/auth.js';
@@ -81,7 +84,7 @@ import iteration22Routes from './src/routes/iteration22.js';
 import workflowToolsRoutes from './src/routes/workflowTools.js';
 
 // --- CONFIGURATION ---
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 8001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const DATABASE_URL = process.env.DATABASE_URL;
 
@@ -166,6 +169,7 @@ app.use((req, res, next) => {
 
 // --- SOCKET.IO SETUP ---
 const io = new Server(server, {
+  ...socketConfig,
   cors: {
     origin: allowedOrigins,
     methods: ['GET', 'POST'],
@@ -295,10 +299,28 @@ function setupSocketHandlers() {
             socket.userId,
             text,
             async span => {
+              // Get or create conversation
+              let conversationResult = await pool.query(
+                'SELECT id FROM conversations WHERE user_id = $1 AND is_active = true ORDER BY updated_at DESC LIMIT 1',
+                [socket.userId]
+              );
+              
+              let conversationId;
+              if (conversationResult.rows.length === 0) {
+                // Create new conversation
+                const newConversation = await pool.query(
+                  'INSERT INTO conversations (user_id, title) VALUES ($1, $2) RETURNING id',
+                  [socket.userId, 'Chat Session']
+                );
+                conversationId = newConversation.rows[0].id;
+              } else {
+                conversationId = conversationResult.rows[0].id;
+              }
+
               // Record user message in database
               await pool.query(
-                'INSERT INTO conversations (user_id, speaker, text) VALUES ($1, $2, $3)',
-                [socket.userId, 'user', text]
+                'INSERT INTO conversation_messages (conversation_id, role, content) VALUES ($1, $2, $3)',
+                [conversationId, 'user', text]
               );
 
               // Emit typing indicator
@@ -325,16 +347,34 @@ function setupSocketHandlers() {
               : 'I seem to be having trouble thinking right now. Please try again in a moment.';
 
           if (socket.userId) {
-            await pool.query(
-              'INSERT INTO conversations (user_id, speaker, text, model, response_time_ms) VALUES ($1, $2, $3, $4, $5)',
-              [
-                socket.userId,
-                'cartrita',
-                finalText,
-                response.model || 'core',
-                response.responseTime,
-              ]
+            // Get the conversation ID (should be the same one from above)
+            const conversationResult = await pool.query(
+              'SELECT id FROM conversations WHERE user_id = $1 AND is_active = true ORDER BY updated_at DESC LIMIT 1',
+              [socket.userId]
             );
+            
+            if (conversationResult.rows.length > 0) {
+              const conversationId = conversationResult.rows[0].id;
+              // Save assistant response with metadata
+              const metadata = {
+                model: response.model || 'core',
+                response_time_ms: response.responseTime,
+                tools_used: response.tools_used || [],
+                intent_analysis: response.intent_analysis,
+                performance_score: response.performance_score
+              };
+              
+              await pool.query(
+                'INSERT INTO conversation_messages (conversation_id, role, content, metadata) VALUES ($1, $2, $3, $4)',
+                [conversationId, 'assistant', finalText, JSON.stringify(metadata)]
+              );
+              
+              // Update conversation timestamp
+              await pool.query(
+                'UPDATE conversations SET updated_at = NOW() WHERE id = $1',
+                [conversationId]
+              );
+            }
           }
           socket.emit('typing', { isTyping: false });
           socket.emit('agent_response', {
@@ -393,6 +433,22 @@ function handleAgentError(agentName, error) {
 async function startServer() {
   try {
     console.log('🚀 Initializing Cartrita backend...');
+    
+    // Initialize Integrated OpenTelemetry Service with upstream components merged
+    console.log('📊 Initializing Complete OpenTelemetry Integration with merged upstream components...');
+    try {
+      const integrationResult = await openTelemetryIntegration.initialize();
+      if (integrationResult) {
+        global.openTelemetryIntegration = openTelemetryIntegration; // Store globally for shutdown
+        console.log('✅ Complete OpenTelemetry integration initialized successfully');
+      } else {
+        console.warn('⚠️ OpenTelemetry integration failed, continuing with basic service');
+      }
+    } catch (error) {
+      console.warn('⚠️ OpenTelemetry integration error:', error.message);
+      console.log('✅ Using basic OpenTelemetryTracing class as fallback');
+    }
+    
     await waitForDatabase();
     console.log('🔴 Initializing Redis cache...');
     const redisInitialized = await RedisService.initialize();
@@ -466,7 +522,14 @@ async function gracefulShutdown(signal) {
   console.log(`🔄 Graceful shutdown initiated (${signal})`);
 
   try {
-    // Shutdown Advanced 2025 MCP Orchestrator first
+    // Shutdown Integrated OpenTelemetry Service first
+    console.log('📊 Shutting down OpenTelemetry Integration...');
+    if (global.openTelemetryIntegration) {
+      await global.openTelemetryIntegration.shutdown();
+    }
+    console.log('✅ OpenTelemetry shutdown complete');
+
+    // Shutdown Advanced 2025 MCP Orchestrator
     if (advanced2025Orchestrator) {
       console.log('🌟 Shutting down Advanced 2025 MCP Orchestrator...');
       await Advanced2025MCPInitializer.shutdown();

@@ -4,8 +4,8 @@ import WebSocket from 'ws';
 import fs from 'fs';
 import path from 'path';
 
-const BASE_URL = 'http://localhost:8000';
-const WS_URL = 'ws://localhost:8000';
+const BASE_URL = 'http://localhost:8001';
+const WS_URL = 'ws://localhost:8001';
 
 // Test authentication token((error) {
     // TODO: Implement method
@@ -419,7 +419,7 @@ this.testWebSocketConnectivity();
         r.message.includes('Backend connectivity failed')
 
     ) {
-      console.log('• Ensure backend server is running on port 8000');
+      console.log('• Ensure backend server is running on port 8001');
       console.log('• Check if all required environment variables are set');
 
     if (this.testResults.some(r => r.message.includes('WebSocket'))) {

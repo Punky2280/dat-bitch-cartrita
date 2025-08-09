@@ -56,6 +56,13 @@ export const useChatSocket = (token: string, options: UseChatSocketOptions) => {
   useEffect(() => {
     if (!token) return;
 
+    // Cleanup any existing socket before creating a new one
+    if (socketRef.current) {
+      console.log("🔌 Cleaning up existing socket connection...");
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+
     console.log("🔌 Establishing socket connection...");
 
     const socket = io(SOCKET_URL, {
@@ -117,7 +124,8 @@ export const useChatSocket = (token: string, options: UseChatSocketOptions) => {
 
     socket.on("error", (error: any) => {
       console.error("🚨 Socket error:", error);
-      const errorMessage = error.message || error.type || "Socket error";
+      console.error("🚨 Socket error details:", JSON.stringify(error, null, 2));
+      const errorMessage = error.message || error.type || error.description || "Unknown socket error";
       setConnectionError(`Socket error: ${errorMessage}`);
       setIsTyping(false);
     });
@@ -126,7 +134,7 @@ export const useChatSocket = (token: string, options: UseChatSocketOptions) => {
       socket.disconnect();
       if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
     };
-  }, [token, options, handleIncomingMessage, startPingMonitoring]);
+  }, [token, options.onMessage, options.onConnect, options.onDisconnect, handleIncomingMessage, startPingMonitoring]);
 
   const sendMessage = useCallback((text: string, language = "en") => {
     if (!socketRef.current?.connected) return;

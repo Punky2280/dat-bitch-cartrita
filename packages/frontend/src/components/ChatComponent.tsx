@@ -4,9 +4,9 @@ import React, {
   useRef,
   useCallback,
   useReducer,
+  useMemo,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { VoiceToTextButton } from "./VoiceToTextButton";
 import { useChatSocket } from "../hooks/useChatSocket";
 import { useChatHistory } from "../hooks/useChatHistory";
 import { useAgentMetrics } from "../hooks/useAgentMetrics";
@@ -15,7 +15,6 @@ import { ChatMessages } from "./chat/ChatMessages";
 import { ChatInput } from "./chat/ChatInput";
 import { MessageHistory } from "./chat/MessageHistory";
 import { chatReducer, initialChatState } from "../reducers/chatReducer";
-import { API_BASE_URL } from "../config/constants";
 import type { Message, ChatComponentProps } from "../types/chat";
 
 export const ChatComponent = ({ token }: ChatComponentProps) => {
@@ -28,26 +27,36 @@ export const ChatComponent = ({ token }: ChatComponentProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Memoize hook options to prevent infinite re-renders
+  const socketOptions = useMemo(
+    () => ({
+      onMessage: (message: Message) =>
+        dispatch({ type: "ADD_MESSAGE", payload: message }),
+      onConnect: () => dispatch({ type: "SET_CONNECTED", payload: true }),
+      onDisconnect: () => dispatch({ type: "SET_CONNECTED", payload: false }),
+    }),
+    [],
+  );
+
+  const historyOptions = useMemo(
+    () => ({
+      onHistoryLoaded: (messages: Message[]) =>
+        dispatch({ type: "SET_MESSAGES", payload: messages }),
+    }),
+    [],
+  );
+
   // Custom hooks
   const {
-    socket,
     isConnected,
     connectionError,
     connectionStats,
     isTyping,
     sendMessage: socketSendMessage,
     clearConnectionError,
-  } = useChatSocket(token, {
-    onMessage: (message: Message) =>
-      dispatch({ type: "ADD_MESSAGE", payload: message }),
-    onConnect: () => dispatch({ type: "SET_CONNECTED", payload: true }),
-    onDisconnect: () => dispatch({ type: "SET_CONNECTED", payload: false }),
-  });
+  } = useChatSocket(token, socketOptions);
 
-  const { loadHistory, clearHistory } = useChatHistory(token, {
-    onHistoryLoaded: (messages: Message[]) =>
-      dispatch({ type: "SET_MESSAGES", payload: messages }),
-  });
+  const { loadHistory, clearHistory } = useChatHistory(token, historyOptions);
 
   const { agentMetrics, agentHealth } = useAgentMetrics(token, isConnected);
 

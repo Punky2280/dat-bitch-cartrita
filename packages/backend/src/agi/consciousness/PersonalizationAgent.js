@@ -17,7 +17,7 @@ class PersonalizationAgent extends BaseAgent {
         'preference_learning', 
         'adaptive_responses'
       
-    ], 'A specialist agent that adapts Cartrita\');
+    ], 'A specialist agent that adapts Cartrita\'s behavior based on user preferences');
     
     // LangGraph compatibility - injected by supervisor
     this.llm = llm;

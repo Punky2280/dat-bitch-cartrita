@@ -103,7 +103,7 @@ async function createUserAndToken() {
     console.log('');
     console.log('🧪 Test Commands:');
     console.log(
-      `   curl -H "Authorization: Bearer ${token}" http://localhost:8000/api/health`
+      `   curl -H "Authorization: Bearer ${token}" http://localhost:8001/api/health`
     );
     console.log('');
     console.log('🌐 Frontend Usage:');

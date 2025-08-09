@@ -45,7 +45,7 @@ class CartritaAgentTester {
     return new Promise((resolve, reject) => {
       console.log('🔌 Connecting to Cartrita socket...');
 
-      this.socket = io('http://localhost:8000', {
+      this.socket = io('http://localhost:8001', {
         query: { userId: this.userId },
       });
 

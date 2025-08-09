@@ -3,7 +3,7 @@
 # Test script for Cartrita agents using curl
 # Tests various agent functionalities and tracks delegation
 
-API_BASE="http://localhost:8000"
+API_BASE="http://localhost:8001"
 AUTH_TOKEN=""
 
 echo "🚀 Cartrita Agent Testing Suite"

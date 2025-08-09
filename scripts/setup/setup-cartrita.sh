@@ -163,7 +163,7 @@ create_env_template() {
 # .env.template
 
 # Server Configuration
-PORT=8000
+PORT=8001
 NODE_ENV=development
 
 # PostgreSQL Configuration

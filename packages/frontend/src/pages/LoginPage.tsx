@@ -1,4 +1,5 @@
 import { useState, FormEvent } from "react";
+import { API_BASE_URL } from "../config/constants";
 interface LoginPageProps {
   onLoginSuccess: (token: string) => void;
   onSwitchToRegister: () => void;
@@ -16,7 +17,7 @@ export const LoginPage = ({
     setError("");
     setIsLoading(true);
     try {
-      const res = await fetch("http://localhost:8000/api/auth/login", {
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

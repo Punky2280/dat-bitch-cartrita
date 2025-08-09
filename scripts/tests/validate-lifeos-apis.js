@@ -2,7 +2,7 @@
 
 const axios = require('axios');
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = 'http://localhost:8001';
 
 // Test configuration
 const testConfig = {

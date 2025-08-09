@@ -26,6 +26,6 @@ RUN mkdir -p uploads logs
 # Set environment to production
 ENV NODE_ENV=production
 
-EXPOSE 8000
+EXPOSE 8001
 
 CMD ["npm", "start"]

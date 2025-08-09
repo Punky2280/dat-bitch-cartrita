@@ -7,6 +7,7 @@ import {
   SparklesIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
+import { API_BASE_URL } from "../config/constants";
 import {
   requestCameraPermission,
   FrameCaptureManager,
@@ -207,7 +208,7 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
       }),
     );
 
-    const response = await fetch("http://localhost:8000/api/vision/analyze", {
+    const response = await fetch(`${API_BASE_URL}/api/vision/analyze`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,

@@ -10,7 +10,7 @@ const axios = require('axios');
 
 class CartritaSocketTester {
   constructor() {
-    this.backendUrl = 'http://localhost:8000';
+    this.backendUrl = 'http://localhost:8001';
     this.socket = null;
     this.userId = 4; // Using the newly created user_id=4
     this.authToken = null;

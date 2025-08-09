@@ -10,28 +10,28 @@ echo ""
 # Test 1: Check System Health and Metrics
 echo "🏥 System Health Check"
 echo "----------------------"
-HEALTH=$(curl -s http://localhost:8000/health)
+HEALTH=$(curl -s http://localhost:8001/health)
 echo "Health: $HEALTH" | jq .
 echo ""
 
 # Test 2: Check Agent Status
 echo "🤖 Agent System Status"
 echo "----------------------"
-METRICS=$(curl -s http://localhost:8000/api/agent/metrics)
+METRICS=$(curl -s http://localhost:8001/api/agent/metrics)
 echo "Metrics: $METRICS" | jq .
 echo ""
 
 # Test 3: Check Available Tools
 echo "🔧 Available Agent Tools"
 echo "------------------------"
-TOOLS=$(curl -s http://localhost:8000/api/agent/tools)
+TOOLS=$(curl -s http://localhost:8001/api/agent/tools)
 echo "Tools: $TOOLS" | jq .
 echo ""
 
 # Test 4: Check Agent Health
 echo "💊 Agent Health Status"
 echo "----------------------"
-AGENT_HEALTH=$(curl -s http://localhost:8000/api/agent/health)
+AGENT_HEALTH=$(curl -s http://localhost:8001/api/agent/health)
 echo "Agent Health: $AGENT_HEALTH" | jq .
 echo ""
 

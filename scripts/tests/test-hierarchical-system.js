@@ -39,7 +39,7 @@ function log(level, message) {
 
 class HierarchicalSystemTester {
   constructor() {
-    this.baseUrl = 'http://localhost:8000';
+    this.baseUrl = 'http://localhost:8001';
     this.testResults = {
       passed: 0,
       failed: 0,

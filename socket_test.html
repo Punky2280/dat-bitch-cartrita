@@ -83,7 +83,7 @@
         }
 
         addLog('🔌 Connecting to Socket.IO...');
-        socket = io('http://localhost:8000');
+        socket = io('http://localhost:8001');
 
         socket.on('connect', () => {
           addLog(`✅ Connected! Socket ID: ${socket.id}`);

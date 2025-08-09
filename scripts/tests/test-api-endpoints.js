@@ -3,7 +3,7 @@
 
 console.log('🔍 Testing API Endpoints...');
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'http://localhost:8001';
 
 // Get auth token from localStorage
 const getToken = () => localStorage.getItem('authToken') || 'test-token';

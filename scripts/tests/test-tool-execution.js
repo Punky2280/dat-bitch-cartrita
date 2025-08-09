@@ -36,7 +36,7 @@ class ToolExecutionTester {
       console.log('🔌 Connecting to Cartrita socket...');
 
       // Use proper JWT authentication
-      this.socket = io('http://localhost:8000', {
+      this.socket = io('http://localhost:8001', {
         auth: {
           token:
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo1LCJ1c2VybmFtZSI6InRlc3RhZ2VudCIsImVtYWlsIjoidGVzdEB0ZXN0LmNvbSIsImlhdCI6MTc1NDIwNDk3OCwiZXhwIjoxNzU0MjkxMzc4fQ.knLt-6FagiLdY7QZzKU089PTBHH50W68wJwCi0DQBxQ',

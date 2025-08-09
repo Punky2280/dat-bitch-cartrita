@@ -46,7 +46,7 @@ export const useChatHistory = (
       console.error("Error loading chat history:", error);
       throw error;
     }
-  }, [token, options]);
+  }, [token, options.onHistoryLoaded]);
 
   const clearHistory = useCallback(async () => {
     if (!token) return;

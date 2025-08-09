@@ -103,8 +103,15 @@ class OpenTelemetryTracing {
    */
   async traceOperation(spanName, options, handler) {
     if (!this.initialized || !this.tracer) {
-      // If not initialized, just run the handler without tracing.
-      return handler(null);
+      // If not initialized, provide a mock span object
+      const mockSpan = {
+        setAttributes: () => {},
+        setStatus: () => {},
+        recordException: () => {},
+        end: () => {},
+        setAttribute: () => {}
+      };
+      return handler(mockSpan);
     }
     // `startActiveSpan` automatically handles context and ensures the span is ended.
     return this.tracer.startActiveSpan(spanName, options, async span => {

@@ -5,7 +5,7 @@ const { io } = require('socket.io-client');
 console.log('Testing ambient mode...');
 
 // Create a test socket connection
-const socket = io('http://localhost:8000/ambient', {
+const socket = io('http://localhost:8001/ambient', {
   auth: {
     token: 'test-token', // You'll need a valid token
   },

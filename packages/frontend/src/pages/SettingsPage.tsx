@@ -4,6 +4,7 @@ import { ThemeCustomizer } from "@/components/ThemeCustomizer";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import SystemHealthIndicator from "@/components/SystemHealthIndicator";
 import { useThemeContext, Theme } from "@/context/ThemeContext";
+import { API_BASE_URL } from "../config/constants";
 
 interface SettingsPageProps {
   token: string;
@@ -86,10 +87,10 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
       try {
         // Fetch both user profile and settings in parallel
         const [userResponse, settingsResponse] = await Promise.all([
-          fetch("http://localhost:8000/api/user/me", {
+          fetch(`${API_BASE_URL}/api/user/me`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch("http://localhost:8000/api/settings", {
+          fetch(`${API_BASE_URL}/api/settings`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -208,7 +209,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:8000/api/user/me", {
+      const response = await fetch(`${API_BASE_URL}/api/user/me`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -251,7 +252,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
 
     try {
       const response = await fetch(
-        "http://localhost:8000/api/user/me/password",
+        `${API_BASE_URL}/api/user/me/password`,
         {
           method: "PUT",
           headers: {
@@ -291,7 +292,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:8000/api/settings", {
+      const response = await fetch(`${API_BASE_URL}/api/settings`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -350,7 +351,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:8000/api/settings", {
+      const response = await fetch(`${API_BASE_URL}/api/settings`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -377,7 +378,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     setTheme(newTheme as Theme);
 
     try {
-      await fetch("http://localhost:8000/api/settings", {
+      await fetch(`${API_BASE_URL}/api/settings`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -402,7 +403,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
 
     try {
       const response = await fetch(
-        "http://localhost:8000/api/settings/clear-chat-history",
+        `${API_BASE_URL}/api/settings/clear-chat-history`,
         {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
@@ -425,7 +426,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
   const handleExportData = async () => {
     try {
       const response = await fetch(
-        "http://localhost:8000/api/settings/export-data",
+        `${API_BASE_URL}/api/settings/export-data`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -468,7 +469,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
 
     try {
       const response = await fetch(
-        "http://localhost:8000/api/settings/delete-account",
+        `${API_BASE_URL}/api/settings/delete-account`,
         {
           method: "DELETE",
           headers: {
