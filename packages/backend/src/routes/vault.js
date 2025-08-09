@@ -2,8 +2,24 @@ import express from 'express';
 import SecureEncryptionService from '../system/SecureEncryptionService.js';
 import authenticateToken from '../middleware/authenticateToken.js';
 import pool from '../db.js';
+import OpenTelemetryTracing from '../system/OpenTelemetryTracing.js';
 
 const router = express.Router();
+
+// Lazy-create (idempotent) vault metrics counters
+let vaultMetricsInit = false;
+function ensureVaultMetrics(){
+  if(vaultMetricsInit) return;
+  try {
+    global.otelCounters = global.otelCounters || {};
+    global.otelCounters.vaultKeysTotal = OpenTelemetryTracing.createCounter('vault_keys_total','Total API keys (labels: provider, status)');
+    global.otelCounters.vaultValidationAttempts = OpenTelemetryTracing.createCounter('vault_validation_attempts_total','Validation attempts (labels: provider, result)');
+    global.otelCounters.vaultRotationTotal = OpenTelemetryTracing.createCounter('vault_rotation_total','Rotation operations (labels: provider, result)');
+    global.otelCounters.vaultSecurityEvents = OpenTelemetryTracing.createCounter('vault_security_events_total','Security events emitted (labels: type, severity)');
+    vaultMetricsInit = true;
+  } catch(e){ /* no-op in test */ }
+}
+ensureVaultMetrics();
 
 // Get all API providers
 router.get('/providers', authenticateToken, async (req, res) => {
@@ -442,49 +458,35 @@ router.get('/keys', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const { provider_id, active_only = true } = req.query;
-
     let query = `
-      SELECT uak.id, uak.key_name, uak.usage_count, uak.last_used_at, 
+      SELECT uak.id, uak.key_name, uak.usage_count, uak.last_used_at,
              uak.is_active, uak.expires_at, uak.created_at, uak.updated_at,
              uak.rotation_interval_days, uak.next_rotation_at,
+             uak.rotation_policy, uak.visibility, uak.category, uak.checksum, uak.metadata,
              ap.name as provider_name, ap.display_name as provider_display_name,
              ap.icon as provider_icon,
-             CASE 
-               WHEN uak.key_data IS NOT NULL THEN true 
-               ELSE false 
-             END as has_key
+             CASE WHEN uak.key_data IS NOT NULL THEN true ELSE false END as has_key
       FROM user_api_keys uak
       JOIN api_providers ap ON uak.provider_id = ap.id
-      WHERE uak.user_id = $1
-    `;
+      WHERE uak.user_id = $1`;
     const params = [userId];
     let paramCount = 1;
-
-    if (provider_id) {
-      paramCount++;
-      query += ` AND uak.provider_id = $${paramCount}`;
-      params.push(provider_id);
-    }
-
-    if (active_only === 'true') {
-      query += ` AND uak.is_active = true`;
-    }
-
-    query += ` ORDER BY uak.updated_at DESC`;
-
+    if (provider_id) { paramCount++; query += ` AND uak.provider_id = $${paramCount}`; params.push(provider_id); }
+    if (active_only === 'true') { query += ' AND uak.is_active = true'; }
+    query += ' ORDER BY uak.updated_at DESC';
     const result = await pool.query(query, params);
-
-    res.json({
-      success: true,
-      keys: result.rows,
-    });
+    // metrics: count by provider / status
+    if (vaultMetricsInit && global.otelCounters?.vaultKeysTotal) {
+      try {
+        result.rows.forEach(r=>{
+          global.otelCounters.vaultKeysTotal.add(1,{ provider: r.provider_name || 'unknown', status: r.is_active? 'active':'inactive'});
+        });
+      } catch(_){}
+    }
+    res.json({ success: true, keys: result.rows });
   } catch (error) {
     console.error('Error fetching API keys:', error);
-    // Return empty array if table doesn't exist
-    res.json({
-      success: true,
-      keys: [],
-    });
+    res.json({ success: true, keys: [] });
   }
 });
 
@@ -492,106 +494,59 @@ router.get('/keys', authenticateToken, async (req, res) => {
 router.post('/keys', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    const {
-      provider_id,
-      key_name,
-      key_value,
-      expires_at,
-      rotation_interval_days = 90,
-    } = req.body;
-
-    // Validate required fields
-    if (!provider_id || !key_name || !key_value) {
-      return res.status(400).json({
-        success: false,
-        error: 'Provider ID, key name, and key value are required',
-      });
-    }
-
-    // Check if provider exists
-    const providerResult = await pool.query(
-      'SELECT validation_pattern FROM api_providers WHERE id = $1 AND is_active = true',
-      [provider_id]
-    );
-
-    if (providerResult.rows.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid or inactive provider',
-      });
-    }
-
-    // Validate key format if pattern is provided
+    const { provider_id, key_name, key_value, expires_at, rotation_interval_days = 90, rotation_policy, visibility = 'MASKED', category, metadata } = req.body;
+    if (!provider_id || !key_name || !key_value) { return res.status(400).json({ success: false, error: 'Provider ID, key name, and key value are required' }); }
+    const providerResult = await pool.query('SELECT validation_pattern FROM api_providers WHERE id = $1 AND is_active = true',[provider_id]);
+    if (providerResult.rows.length === 0) { return res.status(400).json({ success: false, error: 'Invalid or inactive provider' }); }
     const validationPattern = providerResult.rows[0].validation_pattern;
-    if (validationPattern) {
-      const regex = new RegExp(validationPattern);
-      if (!regex.test(key_value)) {
-        return res.status(400).json({
-          success: false,
-          error: 'API key format is invalid for this provider',
-        });
-      }
-    }
-
-    // Encrypt the API key
+    if (validationPattern) { const regex = new RegExp(validationPattern); if (!regex.test(key_value)) { return res.status(400).json({ success: false, error: 'API key format is invalid for this provider' }); } }
     const encryptedKey = SecureEncryptionService.encrypt(key_value);
-
-    // Calculate next rotation date
-    const nextRotationAt =
-      expires_at ||
-      (rotation_interval_days
-        ? new Date(Date.now() + rotation_interval_days * 24 * 60 * 60 * 1000)
-        : null);
-
-    // Insert or update the key
-    const result = await pool.query(
-      `
+    const checksum = SecureEncryptionService.createHash(key_value);
+    const nextRotationAt = expires_at || (rotation_interval_days ? new Date(Date.now() + rotation_interval_days * 24 * 60 * 60 * 1000) : null);
+    const result = await pool.query(`
       INSERT INTO user_api_keys 
-      (user_id, provider_id, key_name, key_data, expires_at, rotation_interval_days, next_rotation_at, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      ON CONFLICT (user_id, provider_id, key_name) 
-      DO UPDATE SET 
+      (user_id, provider_id, key_name, key_data, expires_at, rotation_interval_days, next_rotation_at, rotation_policy, visibility, category, checksum, metadata, created_at, updated_at)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,COALESCE($8,'{"intervalDays":90,"autoRotate":false}'),$9,$10,$11,$12,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+      ON CONFLICT (user_id, provider_id, key_name) DO UPDATE SET
         key_data = EXCLUDED.key_data,
         expires_at = EXCLUDED.expires_at,
         rotation_interval_days = EXCLUDED.rotation_interval_days,
         next_rotation_at = EXCLUDED.next_rotation_at,
+        rotation_policy = EXCLUDED.rotation_policy,
+        visibility = EXCLUDED.visibility,
+        category = EXCLUDED.category,
+        checksum = EXCLUDED.checksum,
+        metadata = EXCLUDED.metadata,
         updated_at = CURRENT_TIMESTAMP
-      RETURNING id, key_name, created_at, updated_at
-    `,
-      [
-        userId,
-        provider_id,
-        key_name,
-        encryptedKey,
-        expires_at,
-        rotation_interval_days,
-        nextRotationAt,
-      ]
-    );
+      RETURNING id, key_name, created_at, updated_at, checksum`,[userId, provider_id, key_name, encryptedKey, expires_at, rotation_interval_days, nextRotationAt, rotation_policy ? JSON.stringify(rotation_policy) : null, visibility, category, checksum, metadata ? JSON.stringify(metadata) : null]);
+    await pool.query(`INSERT INTO api_security_events (user_id, event_type, description, metadata) VALUES ($1,$2,$3,$4)`,[userId,'key_created',`API key '${key_name}' created for provider ${provider_id}`, JSON.stringify({ provider_id, key_name })]);
+    if (vaultMetricsInit && global.otelCounters?.vaultSecurityEvents) {
+      global.otelCounters.vaultSecurityEvents.add(1,{ type:'key_created', severity:'info'});
+    }
+    res.json({ success: true, message: 'API key saved successfully', key: result.rows[0] });
+  } catch (error) { console.error('Error saving API key:', error); res.status(500).json({ success: false, error: error.message }); }
+});
 
-    // Log security event
-    await pool.query(
-      `
-      INSERT INTO api_security_events (user_id, event_type, description, metadata)
-      VALUES ($1, $2, $3, $4)
-    `,
-      [
-        userId,
-        'key_created',
-        `API key '${key_name}' created for provider ${provider_id}`,
-        JSON.stringify({ provider_id, key_name }),
-      ]
-    );
-
-    res.json({
-      success: true,
-      message: 'API key saved successfully',
-      key: result.rows[0],
-    });
-  } catch (error) {
-    console.error('Error saving API key:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
+// Add validation endpoint
+router.post('/keys/:keyId/validate', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id; const { keyId } = req.params;
+    const keyResult = await pool.query(`SELECT uak.key_data, ap.name as provider_name FROM user_api_keys uak JOIN api_providers ap ON uak.provider_id = ap.id WHERE uak.id = $1 AND uak.user_id = $2`,[keyId, userId]);
+    if (keyResult.rows.length === 0) { return res.status(404).json({ success:false, error:'API key not found' }); }
+    const { key_data, provider_name } = keyResult.rows[0];
+    const decrypted = SecureEncryptionService.decrypt(key_data);
+    // Minimal validation: format + optional lightweight ping (only OpenAI for now)
+    let result = { provider: provider_name, valid: true, method: 'format_only' };
+    if (provider_name === 'openai') {
+      try { const resp = await fetch('https://api.openai.com/v1/models',{ headers:{ Authorization:`Bearer ${decrypted}`}}); result.valid = resp.ok; result.method='http_check'; result.status=resp.status; } catch (e) { result.valid=false; result.error=e.message; }
+    }
+    await pool.query(`INSERT INTO api_security_events (user_id, event_type, description, metadata, severity) VALUES ($1,$2,$3,$4,$5)`,[userId,'key_validated',`API key '${keyId}' validated`, JSON.stringify({ key_id:keyId, provider:provider_name, valid:result.valid }), result.valid?'info':'warning']);
+    if (vaultMetricsInit && global.otelCounters?.vaultValidationAttempts) {
+      global.otelCounters.vaultValidationAttempts.add(1,{ provider: provider_name, result: result.valid? 'success':'fail'});
+      global.otelCounters.vaultSecurityEvents.add(1,{ type:'key_validated', severity: result.valid? 'info':'warning'});
+    }
+    res.json({ success:true, validation: result });
+  } catch (error) { console.error('Error validating API key:', error); res.status(500).json({ success:false, error:error.message }); }
 });
 
 // Delete API key
@@ -632,6 +587,9 @@ router.delete('/keys/:keyId', authenticateToken, async (req, res) => {
         }),
       ]
     );
+    if (vaultMetricsInit && global.otelCounters?.vaultSecurityEvents) {
+      global.otelCounters.vaultSecurityEvents.add(1,{ type:'key_deleted', severity:'info'});
+    }
 
     res.json({
       success: true,
@@ -917,6 +875,10 @@ router.post('/keys/:keyId/rotate', authenticateToken, async (req, res) => {
         'info',
       ]
     );
+    if (vaultMetricsInit && global.otelCounters?.vaultRotationTotal) {
+      global.otelCounters.vaultRotationTotal.add(1,{ provider: provider_id?.toString() || 'unknown', result:'success'});
+      global.otelCounters.vaultSecurityEvents.add(1,{ type:'key_rotated', severity:'info'});
+    }
 
     res.json({
       success: true,

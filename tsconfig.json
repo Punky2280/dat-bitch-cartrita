@@ -5,6 +5,31 @@
     "moduleResolution": "NodeNext",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
-  }
+  "skipLibCheck": true,
+  "forceConsistentCasingInFileNames": true,
+  "jsx": "react-jsx",
+  "allowSyntheticDefaultImports": true,
+  "resolveJsonModule": true
+  },
+  "include": [
+    "packages/backend/src/**/*.ts",
+    "packages/backend/src/**/*.js",
+    "packages/shared/src/**/*.ts",
+    "packages/shared/src/**/*.js",
+    "packages/orchestrator/src/**/*.ts",
+    "packages/orchestrator/src/**/*.js",
+    "packages/supervisor-intelligence/src/**/*.ts",
+    "packages/supervisor-intelligence/src/**/*.js",
+    "packages/mcp-core/src/**/*.ts",
+    "packages/mcp-testing/src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "packages/backend/src/opentelemetry/upstream/**",
+    "packages/backend/src/opentelemetry/upstream-source/**",
+  "packages/backend/src/opentelemetry/contrib/**",
+  "packages/backend/src/mcp/**",
+    "dist",
+    "build"
+  ]
 }
