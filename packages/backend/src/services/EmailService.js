@@ -795,8 +795,7 @@ class EmailService {
     const bodyText = message.body_text || '';
     
     // Extract key information
-    const hasDeadline = /\b(deadline|due|by|before)\s+(\w+\s+\d+|\d+\/\d+|
-\d+-\d+)\b/.test(bodyText.toLowerCase());
+    const hasDeadline = /\b(deadline|due|by|before)\s+(\w+\s+\d+|\d+\/\d+|\d+-\d+)\b/.test(bodyText.toLowerCase());
     const hasMeeting = /\b(meeting|call|conference)\b/.test(bodyText.toLowerCase());
     const hasAttachment = message.has_attachments;
     
