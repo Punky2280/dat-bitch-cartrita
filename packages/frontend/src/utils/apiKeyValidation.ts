@@ -18,13 +18,15 @@ export function validateApiKey(
     return { isValid: false, message: "API key cannot be empty" };
   }
 
-  // Provider-specific patterns
+  // Provider-specific patterns - Updated to match enhanced presets
   const patterns = {
-    openai: /^sk-[A-Za-z0-9]{20,}$/,
-    anthropic: /^sk-ant-[A-Za-z0-9-]{32,}$/,
+    openai: /^sk-[A-Za-z0-9]{48}$/,
+    anthropic: /^sk-ant-[A-Za-z0-9\-_]{95}$/,
+    'google-cloud': /^[A-Za-z0-9\-_]{39}$/,
     github: /^gh[ps]_[A-Za-z0-9]{36}$/,
     stripe: /^sk_(test_|live_)[A-Za-z0-9]{24,}$/,
-    deepgram: /^[A-Za-z0-9]{40}$/,
+    deepgram: /^[A-Za-z0-9]{32,}$/,
+    elevenlabs: /^[A-Za-z0-9]{32,}$/,
   };
 
   const pattern = patterns[provider as keyof typeof patterns];
@@ -43,14 +45,17 @@ export function validateApiKey(
   if (!pattern.test(trimmedKey)) {
     const errorMessages = {
       openai:
-        'OpenAI API key must start with "sk-" and be at least 20 characters long',
+        'OpenAI API key must start with "sk-" followed by exactly 48 characters',
       anthropic:
-        'Anthropic API key must start with "sk-ant-" and be at least 32 characters long',
+        'Anthropic API key must start with "sk-ant-" followed by 95+ characters',
+      'google-cloud':
+        'Google Cloud API key must be exactly 39 characters (letters, numbers, hyphens, underscores)',
       github:
         'GitHub API key must start with "ghp_" or "ghs_" and be 40 characters total',
       stripe:
         'Stripe API key must start with "sk_test_" or "sk_live_" and be at least 24 characters long',
-      deepgram: "Deepgram API key must be exactly 40 characters long",
+      deepgram: "Deepgram API key must be 32+ alphanumeric characters",
+      elevenlabs: "ElevenLabs API key must be 32+ alphanumeric characters",
     };
 
     return {

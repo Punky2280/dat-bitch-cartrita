@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import ForceGraph3D from "react-force-graph-3d";
 import * as THREE from "three";
-import { useThemedStyles } from "../context/ThemeContext";
+import { useNotify } from "../components/ui/NotificationProvider";
 
 interface KnowledgeHubPageProps {
   token: string;
@@ -58,7 +58,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
   token,
   onBack,
 }) => {
-  const themedStyles = useThemedStyles();
+  const notify = useNotify();
   const [activeView, setActiveView] = useState<
     "overview" | "graph" | "search" | "entries" | "create"
   >("overview");
@@ -121,6 +121,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
       if (graphData.success) setGraphData(transformGraphData(graphData.graph));
     } catch (error) {
       console.error("Error loading knowledge data:", error);
+      notify.error("Failed to load knowledge data", "Please check your connection and try again");
     } finally {
       setLoading(false);
     }
@@ -198,9 +199,13 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
       const data = await response.json();
       if (data.success) {
         setSearchResults(data.results);
+        notify.success(`Found ${data.results.length} results`, `Search completed for "${searchQuery}"`);
+      } else {
+        notify.error("Search failed", data.error || "Unable to complete search");
       }
     } catch (error) {
       console.error("Error searching knowledge:", error);
+      notify.error("Search error", "Please check your connection and try again");
     } finally {
       setIsSearching(false);
     }
@@ -229,9 +234,13 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
         });
         setActiveView("entries");
         loadData();
+        notify.success("Knowledge entry created", `Successfully added "${newEntry.title}"`);
+      } else {
+        notify.error("Failed to create entry", data.error || "Unable to save knowledge entry");
       }
     } catch (error) {
       console.error("Error creating knowledge entry:", error);
+      notify.error("Creation failed", "Please check your connection and try again");
     }
   };
 

@@ -15,6 +15,7 @@ import ReactFlow, {
   useReactFlow,
 } from "reactflow";
 import "reactflow/dist/style.css";
+import { ExecutionLog, WorkflowExecution, NodeDefinition } from "../types/workflow";
 
 interface WorkflowsPageProps {
   token: string;
@@ -37,15 +38,8 @@ interface Workflow {
   updated_at: string;
 }
 
-interface NodeType {
-  type: string;
-  name: string;
-  icon: string;
-  description: string;
-}
-
 interface NodeCategories {
-  [key: string]: NodeType[];
+  [key: string]: NodeDefinition[];
 }
 
 const WorkflowBuilder: React.FC<{
@@ -63,9 +57,19 @@ const WorkflowBuilder: React.FC<{
   );
   const [showNodePalette, setShowNodePalette] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
-  const [executionLogs, setExecutionLogs] = useState<any[]>([]);
+  const [executionLogs, setExecutionLogs] = useState<ExecutionLog[]>([]);
   const [showLogs, setShowLogs] = useState(false);
+  const [pollingTimeoutId, setPollingTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const { project } = useReactFlow();
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingTimeoutId) {
+        clearTimeout(pollingTimeoutId);
+      }
+    };
+  }, [pollingTimeoutId]);
 
   const onConnect = useCallback(
     (params: Edge | Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -85,7 +89,7 @@ const WorkflowBuilder: React.FC<{
       const nodeTypeData = event.dataTransfer.getData("application/reactflow");
 
       if (nodeTypeData && reactFlowBounds) {
-        const nodeType: NodeType = JSON.parse(nodeTypeData);
+        const nodeType: NodeDefinition = JSON.parse(nodeTypeData);
         const position = project({
           x: event.clientX - reactFlowBounds.left,
           y: event.clientY - reactFlowBounds.top,
@@ -203,9 +207,21 @@ const WorkflowBuilder: React.FC<{
       if (result.success) {
         // Poll for execution status
         pollExecutionStatus(result.execution.id);
+      } else {
+        setExecutionLogs([{
+          level: "error",
+          message: result.error || "Failed to start workflow execution",
+          timestamp: new Date().toISOString()
+        }]);
+        setIsExecuting(false);
       }
     } catch (error) {
-      // Handle execution error (e.g., set error state or show notification)
+      console.error("Execution failed:", error);
+      setExecutionLogs([{
+        level: "error",
+        message: `Execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: new Date().toISOString()
+      }]);
       setIsExecuting(false);
     }
   };
@@ -222,17 +238,42 @@ const WorkflowBuilder: React.FC<{
         const execution = result.execution;
 
         if (execution.status === "running") {
-          // Continue polling
-          setTimeout(() => pollExecutionStatus(executionId), 1000);
+          // Continue polling with cleanup
+          const timeoutId = setTimeout(() => pollExecutionStatus(executionId), 1000);
+          setPollingTimeoutId(timeoutId);
         } else {
           // Execution completed
           setIsExecuting(false);
           setExecutionLogs(execution.execution_logs || []);
+          
+          // Clear polling timeout
+          if (pollingTimeoutId) {
+            clearTimeout(pollingTimeoutId);
+            setPollingTimeoutId(null);
+          }
         }
+      } else {
+        setExecutionLogs([{
+          level: "error",
+          message: result.error || "Failed to get execution status",
+          timestamp: new Date().toISOString()
+        }]);
+        setIsExecuting(false);
       }
     } catch (error) {
-      // Error handling: optionally set an error state or show a notification here
+      console.error("Polling failed:", error);
+      setExecutionLogs(prev => [...prev, {
+        level: "error",
+        message: `Polling failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: new Date().toISOString()
+      }]);
       setIsExecuting(false);
+      
+      // Clear polling timeout on error
+      if (pollingTimeoutId) {
+        clearTimeout(pollingTimeoutId);
+        setPollingTimeoutId(null);
+      }
     }
   };
 

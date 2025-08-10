@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useThemedStyles } from "../context/ThemeContext";
 import { validateApiKey } from "../utils/apiKeyValidation";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 
 interface ApiKeyVaultPageProps {
   token: string;
@@ -149,7 +149,6 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
   token,
   onBack,
 }) => {
-  const themedStyles = useThemedStyles();
   const [activeView, setActiveView] = useState<
     "dashboard" | "keys" | "add" | "security" | "analytics"
   >("dashboard");
@@ -170,9 +169,19 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
 
   // Validation state
   const [validationMessage, setValidationMessage] = useState("");
-  const [isValidating, setIsValidating] = useState(false);
 
   const [testResults, setTestResults] = useState<{ [keyId: number]: any }>({});
+  
+  // Delete confirmation dialog state
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    keyId: number | null;
+    keyName: string;
+  }>({
+    isOpen: false,
+    keyId: null,
+    keyName: ""
+  });
 
   // Helper functions for validation and provider info
   const getProviderInfo = (providerId: string) => {
@@ -195,7 +204,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
 
     if (preset) {
       let info = preset.description;
-      if (preset.supported_apis) {
+      if ('supported_apis' in preset && preset.supported_apis) {
         info += `. Supports: ${preset.supported_apis.slice(0, 3).join(", ")}${
           preset.supported_apis.length > 3
             ? ` and ${preset.supported_apis.length - 3} more`
@@ -335,26 +344,33 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
     }
   };
 
-  const handleDeleteKey = async (keyId: number) => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this API key? This action cannot be undone.",
-      )
-    ) {
-      return;
-    }
+  const handleDeleteKey = async (keyId: number, keyName: string) => {
+    setDeleteDialog({
+      isOpen: true,
+      keyId,
+      keyName
+    });
+  };
+
+  const confirmDeleteKey = async () => {
+    if (!deleteDialog.keyId) return;
 
     try {
-      const response = await fetch(`/api/vault/keys/${keyId}`, {
+      const response = await fetch(`/api/vault/keys/${deleteDialog.keyId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
         loadData();
+        setDeleteDialog({ isOpen: false, keyId: null, keyName: "" });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete API key');
       }
     } catch (error) {
       console.error("Error deleting API key:", error);
+      // TODO: Show error notification to user
     }
   };
 
@@ -682,7 +698,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                       {key.is_active ? "⏸️ Disable" : "▶️ Enable"}
                     </button>
                     <button
-                      onClick={() => handleDeleteKey(key.id)}
+                      onClick={() => handleDeleteKey(key.id, key.key_name)}
                       className="px-3 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium transition-colors"
                     >
                       🗑️
@@ -929,6 +945,19 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={() => setDeleteDialog({ isOpen: false, keyId: null, keyName: "" })}
+        onConfirm={confirmDeleteKey}
+        title="Delete API Key"
+        message={`Are you sure you want to delete "${deleteDialog.keyName}"? This action cannot be undone and will permanently remove the API key from your vault.`}
+        confirmText="Delete Key"
+        destructive={true}
+        requireTextConfirmation={true}
+        textToConfirm={deleteDialog.keyName}
+      />
     </div>
   );
 };

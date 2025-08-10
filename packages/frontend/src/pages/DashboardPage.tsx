@@ -4,7 +4,7 @@ import { SettingsPage } from "@/pages/SettingsPage";
 import { WorkflowsPage } from "@/pages/WorkflowsPage";
 import { KnowledgeHubPage } from "@/pages/KnowledgeHubPage";
 import { ApiKeyVaultPage } from "@/pages/ApiKeyVaultPage";
-import PersonalLifeOSPage from "@/pages/PersonalLifeOSPage";
+import { PersonalLifeOSPage } from "@/pages/PersonalLifeOSPage";
 import AboutPage from "@/pages/AboutPage";
 import LicensePage from "@/pages/LicensePage";
 import UserManualPage from "@/pages/UserManualPage";

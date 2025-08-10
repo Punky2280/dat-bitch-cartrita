@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import { ThemeCustomizer } from "@/components/ThemeCustomizer";
-import { LanguageSelector } from "@/components/LanguageSelector";
-import SystemHealthIndicator from "@/components/SystemHealthIndicator";
-import { useThemeContext, Theme } from "@/context/ThemeContext";
-import { API_BASE_URL } from "../config/constants";
+import { useNotify } from "../components/ui/NotificationProvider";
 
 interface SettingsPageProps {
   token: string;
@@ -30,9 +25,15 @@ interface PasswordFormData {
 }
 
 interface PersonalityFormData {
-  sarcasm: number;
-  verbosity: "concise" | "normal" | "detailed";
-  humor: "dry" | "playful" | "dark" | "none";
+  sarcasm_level: number;
+  verbosity: "minimal" | "normal" | "verbose";
+  humor_style: "playful" | "sarcastic" | "witty" | "dry" | "absurd" | "intellectual" | "wholesome" | "edgy" | "dad-jokes" | "observational" | "none";
+  language_preference: string;
+  timezone: string;
+  theme: string;
+  notifications_enabled: boolean;
+  voice_enabled: boolean;
+  ambient_listening: boolean;
 }
 
 interface AudioFormData {
@@ -43,7 +44,7 @@ interface AudioFormData {
 }
 
 export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
-  const { t } = useTranslation();
+  const notify = useNotify();
   const [user, setUser] = useState<User | null>(null);
   const [profileForm, setProfileForm] = useState<ProfileFormData>({
     name: "",
@@ -55,9 +56,15 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     confirmPassword: "",
   });
   const [personalityForm, setPersonalityForm] = useState<PersonalityFormData>({
-    sarcasm: 5,
+    sarcasm_level: 5,
     verbosity: "normal",
-    humor: "playful",
+    humor_style: "playful",
+    language_preference: "en",
+    timezone: "America/New_York",
+    theme: "dark",
+    notifications_enabled: true,
+    voice_enabled: true,
+    ambient_listening: false,
   });
   const [audioForm, setAudioForm] = useState<AudioFormData>({
     voice_responses: false,
@@ -74,10 +81,8 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<
-    "profile" | "password" | "preferences" | "health"
+    "profile" | "password" | "personality" | "preferences" | "health"
   >("profile");
-  const [showThemeCustomizer, setShowThemeCustomizer] = useState(false);
-  const { theme, setTheme } = useThemeContext();
 
   // Load user profile and settings on mount
   useEffect(() => {
@@ -87,10 +92,10 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
       try {
         // Fetch both user profile and settings in parallel
         const [userResponse, settingsResponse] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/user/me`, {
+          fetch("/api/user/me", {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch(`${API_BASE_URL}/api/settings`, {
+          fetch("/api/user/preferences", {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -117,9 +122,15 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
         setProfileForm({ name: userData.name, email: userData.email });
         // Set personality settings with fallbacks
         setPersonalityForm({
-          sarcasm: settingsData.sarcasm ?? 5,
+          sarcasm_level: settingsData.sarcasm_level ?? 5,
           verbosity: settingsData.verbosity || "normal",
-          humor: settingsData.humor || "playful",
+          humor_style: settingsData.humor_style || "playful",
+          language_preference: settingsData.language_preference || "en",
+          timezone: settingsData.timezone || "America/New_York",
+          theme: settingsData.theme || "dark",
+          notifications_enabled: settingsData.notifications_enabled ?? true,
+          voice_enabled: settingsData.voice_enabled ?? true,
+          ambient_listening: settingsData.ambient_listening ?? false,
         });
 
         // Set audio settings with fallbacks
@@ -136,11 +147,16 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
         console.warn("Backend unavailable, using default settings");
 
         const defaultSettings = {
-          sarcasm: 5,
+          sarcasm_level: 5,
           verbosity: "normal" as const,
-          humor: "playful" as const,
-          voice_responses: false,
+          humor_style: "playful" as const,
+          language_preference: "en",
+          timezone: "America/New_York",
+          theme: "dark",
+          notifications_enabled: true,
+          voice_enabled: true,
           ambient_listening: false,
+          voice_responses: false,
           sound_effects: true,
           camera_enabled: false,
         };
@@ -158,9 +174,15 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
 
         // Set default settings
         setPersonalityForm({
-          sarcasm: defaultSettings.sarcasm,
+          sarcasm_level: defaultSettings.sarcasm_level,
           verbosity: defaultSettings.verbosity,
-          humor: defaultSettings.humor,
+          humor_style: defaultSettings.humor_style,
+          language_preference: defaultSettings.language_preference,
+          timezone: defaultSettings.timezone,
+          theme: defaultSettings.theme,
+          notifications_enabled: defaultSettings.notifications_enabled,
+          voice_enabled: defaultSettings.voice_enabled,
+          ambient_listening: defaultSettings.ambient_listening,
         });
 
         setAudioForm({
@@ -172,23 +194,27 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
 
         // Handle specific error cases with better messages
         if (err.message.includes("Failed to fetch")) {
-          setError(
-            "⚠️ Backend temporarily unavailable. Using default settings. Please check that the backend is running on port 8000.",
+          notify.warning(
+            "Backend unavailable", 
+            "Using default settings. Please check backend connection."
           );
         } else if (
           err.message.includes("403") ||
           err.message.includes("Forbidden")
         ) {
-          setError(
-            "🔐 Authentication failed. Please try logging out and logging back in.",
+          notify.error(
+            "Authentication failed", 
+            "Please try logging out and logging back in."
           );
         } else if (err.message.includes("500")) {
-          setError(
-            "🚨 Server error detected. Using default settings. Check backend logs for details.",
+          notify.error(
+            "Server error", 
+            "Using default settings. Check backend logs for details."
           );
         } else {
-          setError(
-            `⚡ Settings loading failed: ${err.message}. Using defaults.`,
+          notify.warning(
+            "Settings loading failed", 
+            `${err.message}. Using defaults.`
           );
         }
       } finally {
@@ -209,7 +235,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     setError("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/user/me`, {
+      const response = await fetch("/api/user/me", {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -223,10 +249,9 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
         throw new Error(data.message || "Failed to update profile");
 
       setUser(data.user);
-      setMessage(t("settings.profileUpdated"));
-      setTimeout(() => setMessage(""), 3000);
+      notify.success("Profile updated", "Your profile information has been saved");
     } catch (err: any) {
-      setError(err.message);
+      notify.error("Profile update failed", err.message);
     } finally {
       setProfileLoading(false);
     }
@@ -240,19 +265,19 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     setError("");
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setError(t("auth.passwordsNoMatch"));
+      notify.error("Password mismatch", "New passwords do not match");
       setPasswordLoading(false);
       return;
     }
     if (passwordForm.newPassword.length < 6) {
-      setError(t("settings.passwordMinLength"));
+      notify.error("Password too short", "Password must be at least 6 characters");
       setPasswordLoading(false);
       return;
     }
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/user/me/password`,
+        "/api/user/me/password",
         {
           method: "PUT",
           headers: {
@@ -270,15 +295,14 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
       if (!response.ok)
         throw new Error(data.message || "Failed to update password");
 
-      setMessage(t("settings.passwordUpdated"));
+      notify.success("Password updated", "Your password has been changed successfully");
       setPasswordForm({
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
       });
-      setTimeout(() => setMessage(""), 3000);
     } catch (err: any) {
-      setError(err.message);
+      notify.error("Password update failed", err.message);
     } finally {
       setPasswordLoading(false);
     }
@@ -292,17 +316,13 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     setError("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/settings`, {
+      const response = await fetch("/api/user/preferences", {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          sarcasm: Number(personalityForm.sarcasm), // Ensure sarcasm is a number
-          verbosity: personalityForm.verbosity,
-          humor: personalityForm.humor,
-        }),
+        body: JSON.stringify(personalityForm),
       });
 
       const data = await response.json();
@@ -311,10 +331,9 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
           data.message || "Failed to update personality settings",
         );
 
-      setMessage("Personality settings updated successfully.");
-      setTimeout(() => setMessage(""), 3000);
+      notify.success("Personality updated", "Your personality settings have been saved");
     } catch (err: any) {
-      setError(err.message);
+      notify.error("Personality update failed", err.message);
     } finally {
       setPersonalityLoading(false);
     }
@@ -351,7 +370,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     setError("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/settings`, {
+      const response = await fetch("/api/user/preferences", {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -364,32 +383,14 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
       if (!response.ok)
         throw new Error(data.message || "Failed to update audio settings");
 
-      setMessage("Audio settings updated successfully.");
-      setTimeout(() => setMessage(""), 3000);
+      notify.success("Audio settings updated", "Your audio preferences have been saved");
     } catch (err: any) {
-      setError(err.message);
+      notify.error("Audio update failed", err.message);
     } finally {
       setAudioLoading(false);
     }
   };
 
-  // Handle theme change with backend persistence
-  const handleThemeChange = async (newTheme: string) => {
-    setTheme(newTheme as Theme);
-
-    try {
-      await fetch(`${API_BASE_URL}/api/settings`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ theme: newTheme }),
-      });
-    } catch (err) {
-      console.error("Failed to save theme to backend:", err);
-    }
-  };
 
   // Quick Actions handlers
   const handleClearChatHistory = async () => {
@@ -403,7 +404,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/settings/clear-chat-history`,
+        "/api/settings/clear-chat-history",
         {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
@@ -414,19 +415,19 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
       if (!response.ok)
         throw new Error(data.error || "Failed to clear chat history");
 
-      setMessage(
-        `Chat history cleared successfully. ${data.deletedCount} messages deleted.`,
+      notify.success(
+        "Chat history cleared", 
+        `${data.deletedCount} messages deleted successfully.`
       );
-      setTimeout(() => setMessage(""), 5000);
     } catch (err: any) {
-      setError(err.message);
+      notify.error("Clear history failed", err.message);
     }
   };
 
   const handleExportData = async () => {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/settings/export-data`,
+        "/api/settings/export-data",
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -448,10 +449,9 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
 
-      setMessage("Data exported successfully.");
-      setTimeout(() => setMessage(""), 3000);
+      notify.success("Data exported", "Your data has been downloaded successfully");
     } catch (err: any) {
-      setError(err.message);
+      notify.error("Export failed", err.message);
     }
   };
 
@@ -469,7 +469,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/settings/delete-account`,
+        "/api/settings/delete-account",
         {
           method: "DELETE",
           headers: {
@@ -488,7 +488,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
       // Redirect to login or home page
       window.location.href = "/";
     } catch (err: any) {
-      setError(err.message);
+      notify.error("Delete account failed", err.message);
     }
   };
 
@@ -553,6 +553,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
             {[
               { key: "profile", label: "Profile", icon: "👤" },
               { key: "password", label: "Password", icon: "🔒" },
+              { key: "personality", label: "Personality", icon: "🤖" },
               { key: "preferences", label: "Preferences", icon: "⚙️" },
               { key: "health", label: "System Health", icon: "🏥" },
             ].map((tab) => (
@@ -719,102 +720,210 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
               </div>
             )}
 
+            {activeTab === "personality" && (
+              <form
+                onSubmit={handlePersonalitySubmit}
+                className="glass-card p-6 rounded-xl"
+              >
+                <h2 className="text-xl font-semibold mb-6 flex items-center space-x-2">
+                  <span>🤖</span>
+                  <span>Cartrita's Personality</span>
+                </h2>
+                <div className="space-y-6">
+                  {/* Sarcasm Slider */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Sarcasm Level:{" "}
+                      <span className="font-bold text-white">
+                        {personalityForm.sarcasm_level}/10
+                      </span>
+                    </label>
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      value={personalityForm.sarcasm_level}
+                      onChange={(e) =>
+                        handlePersonalityChange(
+                          "sarcasm_level",
+                          parseInt(e.target.value, 10),
+                        )
+                      }
+                      className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    <div className="flex justify-between text-xs text-gray-400 mt-1">
+                      <span>Sincere</span>
+                      <span>Balanced</span>
+                      <span>Unfiltered</span>
+                    </div>
+                  </div>
+
+                  {/* Verbosity Dropdown */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Response Length
+                    </label>
+                    <select
+                      value={personalityForm.verbosity}
+                      onChange={(e) =>
+                        handlePersonalityChange("verbosity", e.target.value)
+                      }
+                      className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="minimal">Minimal - Short and to the point</option>
+                      <option value="normal">Normal - Balanced responses</option>
+                      <option value="verbose">Verbose - Detailed explanations</option>
+                    </select>
+                  </div>
+
+                  {/* Enhanced Humor Styles */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Humor Style
+                    </label>
+                    <select
+                      value={personalityForm.humor_style}
+                      onChange={(e) =>
+                        handlePersonalityChange("humor_style", e.target.value)
+                      }
+                      className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="playful">🎭 Playful - Light and fun</option>
+                      <option value="sarcastic">😏 Sarcastic - Witty and sharp</option>
+                      <option value="witty">🧠 Witty - Clever wordplay</option>
+                      <option value="dry">🏜️ Dry - Deadpan delivery</option>
+                      <option value="absurd">🤡 Absurd - Random and silly</option>
+                      <option value="intellectual">🎓 Intellectual - Smart references</option>
+                      <option value="wholesome">😊 Wholesome - Positive and uplifting</option>
+                      <option value="edgy">⚡ Edgy - Bold and provocative</option>
+                      <option value="dad-jokes">👨 Dad Jokes - Puns and groaners</option>
+                      <option value="observational">🔍 Observational - Commentary on life</option>
+                      <option value="none">🚫 None - Serious mode only</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Choose how Cartrita expresses humor in conversations
+                    </p>
+                  </div>
+
+                  {/* Additional Settings Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Language Preference
+                      </label>
+                      <select
+                        value={personalityForm.language_preference}
+                        onChange={(e) =>
+                          handlePersonalityChange("language_preference", e.target.value)
+                        }
+                        className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                      >
+                        <option value="en">English</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="it">Italian</option>
+                        <option value="pt">Portuguese</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Timezone
+                      </label>
+                      <select
+                        value={personalityForm.timezone}
+                        onChange={(e) =>
+                          handlePersonalityChange("timezone", e.target.value)
+                        }
+                        className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                      >
+                        <option value="America/New_York">Eastern Time</option>
+                        <option value="America/Chicago">Central Time</option>
+                        <option value="America/Denver">Mountain Time</option>
+                        <option value="America/Los_Angeles">Pacific Time</option>
+                        <option value="Europe/London">London</option>
+                        <option value="Europe/Paris">Paris</option>
+                        <option value="Asia/Tokyo">Tokyo</option>
+                        <option value="Australia/Sydney">Sydney</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Feature Toggles */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-300">Features</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <label className="flex items-center justify-between p-3 border border-gray-600 rounded-lg">
+                        <span className="text-sm">🔔 Notifications</span>
+                        <input
+                          type="checkbox"
+                          checked={personalityForm.notifications_enabled}
+                          onChange={(e) =>
+                            setPersonalityForm(prev => ({...prev, notifications_enabled: e.target.checked}))
+                          }
+                          className="toggle"
+                        />
+                      </label>
+                      <label className="flex items-center justify-between p-3 border border-gray-600 rounded-lg">
+                        <span className="text-sm">🎤 Voice Responses</span>
+                        <input
+                          type="checkbox"
+                          checked={personalityForm.voice_enabled}
+                          onChange={(e) =>
+                            setPersonalityForm(prev => ({...prev, voice_enabled: e.target.checked}))
+                          }
+                          className="toggle"
+                        />
+                      </label>
+                      <label className="flex items-center justify-between p-3 border border-gray-600 rounded-lg">
+                        <span className="text-sm">👂 Ambient Listening</span>
+                        <input
+                          type="checkbox"
+                          checked={personalityForm.ambient_listening}
+                          onChange={(e) =>
+                            setPersonalityForm(prev => ({...prev, ambient_listening: e.target.checked}))
+                          }
+                          className="toggle"
+                        />
+                      </label>
+                      <label className="flex items-center justify-between p-3 border border-gray-600 rounded-lg">
+                        <span className="text-sm">🌙 Dark Theme</span>
+                        <input
+                          type="checkbox"
+                          checked={personalityForm.theme === "dark"}
+                          onChange={(e) =>
+                            handlePersonalityChange("theme", e.target.checked ? "dark" : "light")
+                          }
+                          className="toggle"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={personalityLoading}
+                    className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold transition-all duration-300 flex items-center justify-center space-x-2"
+                  >
+                    {personalityLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Saving Personality...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>💾</span>
+                        <span>Save Personality Settings</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+
             {activeTab === "preferences" && (
               <div className="space-y-6">
-                {/* --- NEW: Personality Settings Form --- */}
-                <form
-                  onSubmit={handlePersonalitySubmit}
-                  className="glass-card p-6 rounded-xl"
-                >
-                  <h2 className="text-xl font-semibold mb-6 flex items-center space-x-2">
-                    <span>🤖</span>
-                    <span>Cartrita&apos;s Personality</span>
-                  </h2>
-                  <div className="space-y-6">
-                    {/* Sarcasm Slider */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Sarcasm Level:{" "}
-                        <span className="font-bold text-white">
-                          {personalityForm.sarcasm}
-                        </span>
-                      </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="10"
-                        value={personalityForm.sarcasm}
-                        onChange={(e) =>
-                          handlePersonalityChange(
-                            "sarcasm",
-                            parseInt(e.target.value, 10),
-                          )
-                        }
-                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                      />
-                      <div className="flex justify-between text-xs text-gray-400 mt-1">
-                        <span>Sincere</span>
-                        <span>Witty</span>
-                        <span>Unfiltered</span>
-                      </div>
-                    </div>
-
-                    {/* Verbosity Dropdown */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Verbosity
-                      </label>
-                      <select
-                        value={personalityForm.verbosity}
-                        onChange={(e) =>
-                          handlePersonalityChange("verbosity", e.target.value)
-                        }
-                        className="w-full input-enhanced px-4 py-3 rounded-lg"
-                      >
-                        <option value="concise">Concise</option>
-                        <option value="normal">Normal</option>
-                        <option value="detailed">Detailed</option>
-                      </select>
-                    </div>
-
-                    {/* Humor Dropdown */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Humor Style
-                      </label>
-                      <select
-                        value={personalityForm.humor}
-                        onChange={(e) =>
-                          handlePersonalityChange("humor", e.target.value)
-                        }
-                        className="w-full input-enhanced px-4 py-3 rounded-lg"
-                      >
-                        <option value="playful">Playful</option>
-                        <option value="dry">Dry</option>
-                        <option value="dark">Dark</option>
-                        <option value="none">None</option>
-                      </select>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={personalityLoading}
-                      className="btn-skittles px-6 py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                    >
-                      {personalityLoading ? (
-                        <>
-                          <div className="spinner w-4 h-4"></div>
-                          <span>Saving...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>💾</span>
-                          <span>Save Personality</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </form>
 
                 {/* Existing Preferences */}
                 <div className="glass-card p-6 rounded-xl">
@@ -824,15 +933,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                   </h2>
                   <div className="space-y-6">
                     <div className="p-4 border border-gray-600/50 rounded-lg">
-                      <h3 className="font-medium mb-2 flex items-center justify-between">
-                        <span>🎨 Theme Settings</span>
-                        <button
-                          onClick={() => setShowThemeCustomizer(true)}
-                          className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
-                        >
-                          Advanced Customization →
-                        </button>
-                      </h3>
+                      <h3 className="font-medium mb-2">🎨 Theme Settings</h3>
                       <p className="text-sm text-gray-400 mb-4">
                         Customize your visual experience
                       </p>
@@ -842,8 +943,8 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                             type="radio"
                             name="theme"
                             value="dark"
-                            checked={theme === "dark"}
-                            onChange={() => handleThemeChange("dark")}
+                            checked={personalityForm.theme === "dark"}
+                            onChange={() => handlePersonalityChange("theme", "dark")}
                             className="text-blue-600"
                           />
                           <span>Dark Mode</span>
@@ -853,8 +954,8 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                             type="radio"
                             name="theme"
                             value="light"
-                            checked={theme === "light"}
-                            onChange={() => handleThemeChange("light")}
+                            checked={personalityForm.theme === "light"}
+                            onChange={() => handlePersonalityChange("theme", "light")}
                             className="text-blue-600"
                           />
                           <span>Light Mode</span>
@@ -863,46 +964,14 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                           <input
                             type="radio"
                             name="theme"
-                            value="cyberpunk"
-                            checked={theme === "cyberpunk"}
-                            onChange={() => handleThemeChange("cyberpunk")}
+                            value="auto"
+                            checked={personalityForm.theme === "auto"}
+                            onChange={() => handlePersonalityChange("theme", "auto")}
                             className="text-blue-600"
                           />
-                          <span>Cyberpunk</span>
-                        </label>
-                        <label className="flex items-center space-x-3">
-                          <input
-                            type="radio"
-                            name="theme"
-                            value="neon"
-                            checked={theme === "neon"}
-                            onChange={() => handleThemeChange("neon")}
-                            className="text-blue-600"
-                          />
-                          <span>Neon</span>
-                        </label>
-                        <label className="flex items-center space-x-3">
-                          <input
-                            type="radio"
-                            name="theme"
-                            value="minimal"
-                            checked={theme === "minimal"}
-                            onChange={() => handleThemeChange("minimal")}
-                            className="text-blue-600"
-                          />
-                          <span>Minimal</span>
+                          <span>Auto (System)</span>
                         </label>
                       </div>
-                    </div>
-
-                    <div className="p-4 border border-gray-600/50 rounded-lg">
-                      <h3 className="font-medium mb-2">
-                        🌐 {t("settings.languageSettings")}
-                      </h3>
-                      <p className="text-sm text-gray-400 mb-4">
-                        {t("settings.chooseLanguage")}
-                      </p>
-                      <LanguageSelector />
                     </div>
 
                     <form
@@ -910,7 +979,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                       className="p-4 border border-gray-600/50 rounded-lg"
                     >
                       <h3 className="font-medium mb-2 flex items-center justify-between">
-                        <span>🔊 {t("settings.audioSettings")}</span>
+                        <span>🔊 Audio Settings</span>
                         <button
                           type="submit"
                           disabled={audioLoading}
@@ -920,11 +989,11 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                         </button>
                       </h3>
                       <p className="text-sm text-gray-400 mb-4">
-                        {t("settings.configureAudio")}
+                        Configure audio and voice features
                       </p>
                       <div className="space-y-3">
                         <label className="flex items-center justify-between">
-                          <span>{t("settings.voiceResponses")}</span>
+                          <span>Voice Responses</span>
                           <input
                             type="checkbox"
                             checked={audioForm.voice_responses}
@@ -938,7 +1007,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                           />
                         </label>
                         <label className="flex items-center justify-between">
-                          <span>{t("settings.ambientListening")}</span>
+                          <span>Ambient Listening</span>
                           <input
                             type="checkbox"
                             checked={audioForm.ambient_listening}
@@ -966,7 +1035,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                           />
                         </label>
                         <label className="flex items-center justify-between">
-                          <span>{t("settings.soundEffects")}</span>
+                          <span>Sound Effects</span>
                           <input
                             type="checkbox"
                             checked={audioForm.sound_effects}
@@ -987,8 +1056,18 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
             )}
 
             {activeTab === "health" && (
-              <div className="space-y-6">
-                <SystemHealthIndicator token={token} />
+              <div className="glass-card p-6 rounded-xl">
+                <h2 className="text-xl font-semibold mb-6 flex items-center space-x-2">
+                  <span>🏥</span>
+                  <span>System Health</span>
+                </h2>
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">🩺</div>
+                  <h3 className="text-xl font-semibold mb-2">System Health Monitor</h3>
+                  <p className="text-gray-400">
+                    Comprehensive system health monitoring will be displayed here
+                  </p>
+                </div>
               </div>
             )}
           </div>
@@ -1083,11 +1162,6 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
         </div>
       </div>
 
-      {/* Theme Customizer Modal */}
-      <ThemeCustomizer
-        isOpen={showThemeCustomizer}
-        onClose={() => setShowThemeCustomizer(false)}
-      />
     </div>
   );
 };
