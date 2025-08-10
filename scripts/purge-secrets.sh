@@ -10,8 +10,10 @@ fi
 
 TARGET_BRANCH=${1:-main}
 
-echo "🔎 Removing committed .env file across history (if present)..."
-git filter-repo --invert-paths --path .env || true
+echo "🔎 Removing committed .env files across history (root and backend)..."
+git filter-repo --invert-paths \
+  --path .env \
+  --path packages/backend/.env || true
 
 if [ -f secret-replacements.txt ]; then
   echo "🔁 Applying token replacements from secret-replacements.txt ..."
