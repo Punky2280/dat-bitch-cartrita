@@ -32,7 +32,11 @@
   "prepare": "husky",
   "secrets:scan": "detect-secrets scan > .secrets.baseline || true",
   "secrets:audit": "detect-secrets audit .secrets.baseline",
-  "secrets:check": "detect-secrets scan --baseline .secrets.baseline || true"
+    "secrets:check": "detect-secrets scan --baseline .secrets.baseline || true",
+  "docs:reorg": "bash scripts/reorganize-docs.sh",
+    "docs:apply": "DRY_RUN=0 bash scripts/reorganize-docs.sh",
+    "docs:build": "node scripts/build-master-readme.mjs",
+    "docs:journal": "bash scripts/add_journal_entry.sh"
   },
   "devDependencies": {
     "@babel/core": "^7.28.0",
