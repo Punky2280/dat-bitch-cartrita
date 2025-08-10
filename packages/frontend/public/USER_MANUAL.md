@@ -398,39 +398,125 @@ The Knowledge Hub uses **PostgreSQL with semantic search** capabilities for inte
 
 ## Secure API Key Vault
 
-Enterprise-grade credential management with **AES-256 encryption** and comprehensive security features.
+Enterprise-grade credential management with **AES-256-GCM encryption** and comprehensive security features.
 
-### 🔒 **Security Architecture**
+### 🔒 **Advanced Security Architecture**
 
-- **AES-256-CBC Encryption**: Military-grade credential protection
-- **Unique Initialization Vectors**: Each key encrypted differently
-- **Separate Key Storage**: Encryption keys isolated from encrypted data
-- **Comprehensive Audit Logging**: Complete access and modification tracking
+**Encryption & Key Derivation**:
+- **AES-256-GCM**: Authenticated encryption with integrity verification
+- **PBKDF2 Key Derivation**: 100,000 iterations with salt for master key protection
+- **Unique Initialization Vectors**: Each credential encrypted with random IV
+- **Authenticated Encryption**: Built-in tamper detection and integrity checking
 
-### 🛠️ **21+ Supported Providers**
+**Security Variables & Environment**:
+```
+ENCRYPTION_MASTER_KEY=your_master_passphrase  # Base key for PBKDF2 derivation
+JWT_SECRET=your_jwt_secret                    # Session token signing
+DATABASE_URL=postgres://user:pass@host/db     # Encrypted storage backend
+NODE_ENV=production                           # Security mode configuration
+```
 
-Pre-configured support for major services:
+**Database Schema**:
+- **encrypted_key**: AES-256-GCM encrypted credential data
+- **key_hash**: SHA-256 checksum for integrity verification
+- **rotation_policy**: JSON rotation settings and automation rules
+- **visibility**: Masking level (MASKED, HIDDEN, VISIBLE)
+- **metadata**: Provider validation results and usage statistics
+- **audit_log**: Complete access and modification tracking
 
-- **AI Services**: OpenAI, Anthropic, Cohere, Hugging Face
-- **Cloud Platforms**: AWS, Google Cloud, Azure, DigitalOcean
-- **Development Tools**: GitHub, GitLab, Vercel, Netlify
-- **Communication**: Twilio, SendGrid, Slack, Discord
-- **Databases**: MongoDB Atlas, PlanetScale, Supabase
-- **Analytics**: Mixpanel, Segment, Amplitude
+### 🛠️ **50+ Supported Providers**
 
-### ✅ **Real API Key Testing**
+**Comprehensive Provider Catalog** with validation patterns:
 
-- **Live Validation**: Actual API calls to verify key functionality
-- **Service-Specific Tests**: Optimized test requests for each provider
-- **Detailed Response Analysis**: Comprehensive feedback on key status
-- **Automated Monitoring**: Proactive alerts for expired or invalid keys
+**AI & Machine Learning**:
+- OpenAI (sk-[A-Za-z0-9]{32,}), Anthropic, Cohere, Hugging Face (hf_[A-Za-z0-9]{30,})
+- Stability AI, AssemblyAI, Deepgram, ElevenLabs, Replicate
 
-### 📊 **Usage Analytics & Security Monitoring**
+**Cloud Infrastructure**:
+- AWS (AKIA[0-9A-Z]{16}), Google Cloud, Azure, DigitalOcean, Cloudflare
+- Vercel, Netlify, Railway, Render
 
-- **Access Tracking**: Complete logs of key usage and access patterns
-- **Security Alerts**: Unusual access pattern detection
-- **Performance Metrics**: Key usage statistics and trends
-- **Lifecycle Management**: Key rotation reminders and best practices
+**Development & Productivity**:
+- GitHub (gh[pousr]_[A-Za-z0-9]{36,}), GitLab (glpat-), Notion, Jira
+- Linear, Confluence, Airtable, ClickUp, Asana, Trello
+
+**Communication & Messaging**:
+- Twilio (AC[0-9a-fA-F]{32}), SendGrid, Mailgun, Postmark
+- Slack (xox[baprs]-[A-Za-z0-9-]{10,}), Discord
+
+**Data & Analytics**:
+- Stripe (sk_(live|test)_[A-Za-z0-9]{24,}), MongoDB Atlas, Supabase
+- Mixpanel, Segment, Amplitude, Datadog, Sentry
+
+**Search & Databases**:
+- Pinecone ([a-f0-9-]{32,}), Algolia, Meilisearch, Weaviate
+- PostgreSQL, Redis, Elastic, Firebase, Neon
+
+### ✅ **Advanced Validation System**
+
+**Provider-Specific Validation**:
+- **Field Pattern Matching**: Regex validation for each credential field
+- **Multi-Field Providers**: Complex providers like AWS (accessKeyId + secretAccessKey + region)
+- **Live API Testing**: Actual endpoint validation with service-specific calls
+- **Rate Limit Awareness**: Respects provider API limits during validation
+
+**Validation Process**:
+1. **Frontend Validation**: Real-time pattern matching during input
+2. **Backend Verification**: Server-side regex and format validation  
+3. **API Endpoint Testing**: Live service calls with 5-second timeout
+4. **Result Caching**: Validation results stored with TTL for efficiency
+
+### 🔄 **Automated Rotation & Lifecycle Management**
+
+**Rotation Policies**:
+```json
+{
+  "intervalDays": 90,
+  "autoRotate": false,
+  "warningDays": 7,
+  "maxRetries": 3
+}
+```
+
+**Rotation Process**:
+- **Manual Rotation**: Secure credential replacement with validation
+- **Automated Scheduling**: Policy-based rotation with notifications
+- **Re-encryption Script**: Master key rotation with integrity verification
+- **Rollback Capability**: Secure backup and restore procedures
+
+**Key Reencryption** (when master key changes):
+```bash
+OLD_ENCRYPTION_MASTER_KEY=oldpass \
+NEW_ENCRYPTION_MASTER_KEY=newpass \
+node packages/backend/scripts/reencryptVaultKeys.js
+```
+
+### 🔐 **Access Control & Security**
+
+**Authentication & Authorization**:
+- **User-Scoped Keys**: Each user accesses only their credentials
+- **Role-Based Access**: Future RBAC for team credential sharing
+- **Session-Based Security**: JWT tokens with expiration and refresh
+
+**Security Monitoring**:
+- **Access Auditing**: Complete logs of key access and modifications
+- **Anomaly Detection**: Unusual access pattern alerts
+- **Integrity Checking**: Checksum verification on every access
+- **Encrypted Logging**: Sensitive operations logged with encryption
+
+### 📊 **Operational Metrics & Monitoring**
+
+**Vault Metrics**:
+- `vault_credentials_total{provider,status}`: Total credentials by provider
+- `vault_validation_attempts_total{provider,result}`: Validation success rates
+- `vault_rotation_attempts_total{provider,result}`: Rotation operation tracking
+- `vault_encryption_operations_total{operation}`: Crypto operation metrics
+
+**Usage Analytics**:
+- **Provider Usage Patterns**: Most frequently used services
+- **Validation Success Rates**: Per-provider reliability metrics
+- **Rotation Compliance**: Automated policy adherence tracking
+- **Security Event Correlation**: Access pattern analysis
 
 ---
 

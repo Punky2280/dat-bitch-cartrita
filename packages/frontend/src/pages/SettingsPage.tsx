@@ -597,6 +597,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                       }
                       className="w-full input-enhanced px-4 py-3 rounded-lg"
                       placeholder="Enter your full name"
+                      autoComplete="name"
                       required
                     />
                   </div>
@@ -613,6 +614,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                       }
                       className="w-full input-enhanced px-4 py-3 rounded-lg"
                       placeholder="Enter your email address"
+                      autoComplete="email"
                       required
                     />
                   </div>
@@ -658,6 +660,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                       }
                       className="w-full input-enhanced px-4 py-3 rounded-lg"
                       placeholder="Enter your current password"
+                      autoComplete="current-password"
                       required
                     />
                   </div>
@@ -674,6 +677,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                       }
                       className="w-full input-enhanced px-4 py-3 rounded-lg"
                       placeholder="Enter your new password"
+                      autoComplete="new-password"
                       required
                       minLength={6}
                     />
@@ -694,6 +698,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                       }
                       className="w-full input-enhanced px-4 py-3 rounded-lg"
                       placeholder="Confirm your new password"
+                      autoComplete="new-password"
                       required
                       minLength={6}
                     />
