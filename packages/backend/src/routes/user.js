@@ -159,6 +159,34 @@ router.put('/me', authenticateToken, async (req, res) => {
   }
 });
 
+// Update user password
+router.put('/me/password', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { currentPassword, newPassword } = req.body || {};
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'currentPassword and newPassword are required' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters' });
+    }
+    const existing = await db.query('SELECT password_hash FROM users WHERE id = $1', [userId]);
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    const valid = await bcrypt.compare(currentPassword, existing.rows[0].password_hash);
+    if (!valid) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+    const newHash = await bcrypt.hash(newPassword, 10);
+    await db.query('UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [newHash, userId]);
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('[UserRoute] ❌ Error updating password:', error);
+    res.status(500).json({ message: 'Failed to update password' });
+  }
+});
+
 // Get user settings and preferences
 router.get('/settings', authenticateToken, async (req, res) => {
   try {
@@ -298,6 +326,145 @@ router.put('/settings', authenticateToken, async (req, res) => {
       message: 'Failed to update settings',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Preferences Endpoints (Frontend expects /api/user/preferences)
+// These mirror settings but use field names actually sent by the React app
+// (sarcasm_level, verbosity [minimal|normal|verbose], humor_style, language_preference,
+//  theme, notifications_enabled, voice_enabled, ambient_listening plus optional
+//  voice_responses, sound_effects, camera_enabled, timezone)
+// NOTE: DB currently lacks some optional columns (voice_responses, sound_effects,
+// camera_enabled, timezone). We return them with defaults but only persist the
+// columns that exist in user_preferences. A follow-up migration can add them.
+// ---------------------------------------------------------------------------
+
+// Get user preferences (alias separate from /settings for backwards compatibility)
+router.get('/preferences', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const result = await db.query('SELECT * FROM user_preferences WHERE user_id = $1', [userId]);
+    let prefs = result.rows[0];
+    if (!prefs) {
+      // Create a default row (reuse logic from /settings)
+      const insert = await db.query(
+        `INSERT INTO user_preferences (user_id, sarcasm_level, verbosity, humor_style, language_preference, theme, notifications_enabled, voice_enabled, ambient_listening)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+        [userId, 5, 'normal', 'playful', 'en', 'dark', true, true, false]
+      );
+      prefs = insert.rows[0];
+    }
+
+    // Augment with virtual fields not yet persisted
+    const responsePrefs = {
+      sarcasm_level: prefs.sarcasm_level ?? 5,
+      verbosity: prefs.verbosity || 'normal',
+      humor_style: prefs.humor_style || 'playful',
+      language_preference: prefs.language_preference || 'en',
+      theme: prefs.theme || 'dark',
+      notifications_enabled: prefs.notifications_enabled ?? true,
+      voice_enabled: prefs.voice_enabled ?? true,
+      ambient_listening: prefs.ambient_listening ?? false,
+      // Virtual / default (not persisted yet):
+      voice_responses: false,
+      sound_effects: true,
+      camera_enabled: false,
+      timezone: 'America/New_York',
+    };
+
+    res.json(responsePrefs);
+  } catch (error) {
+    console.error('[UserRoute] ❌ Error fetching /preferences:', error);
+    res.status(500).json({ error: 'Failed to fetch preferences' });
+  }
+});
+
+// Update user preferences (maps verbosity synonyms & ignores unknown keys)
+router.put('/preferences', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const {
+      sarcasm_level,
+      verbosity,
+      humor_style,
+      language_preference,
+      theme,
+      notifications_enabled,
+      voice_enabled,
+      ambient_listening,
+      // Optional / virtual fields (not persisted yet)
+      voice_responses,
+      sound_effects,
+      camera_enabled,
+      timezone,
+    } = req.body || {};
+
+    // Validation
+    if (sarcasm_level !== undefined && (sarcasm_level < 0 || sarcasm_level > 10)) {
+      return res.status(400).json({ error: 'sarcasm_level must be 0-10' });
+    }
+    if (verbosity && !['minimal', 'normal', 'verbose'].includes(verbosity)) {
+      return res.status(400).json({ error: 'verbosity must be minimal|normal|verbose' });
+    }
+
+    // Map frontend verbosity to stored values (concise|normal|detailed)
+    const verbosityMap = { minimal: 'concise', normal: 'normal', verbose: 'detailed' };
+    const storedVerbosity = verbosity ? verbosityMap[verbosity] : undefined;
+
+    // Ensure row exists
+    const existing = await db.query('SELECT * FROM user_preferences WHERE user_id = $1', [userId]);
+    if (existing.rows.length === 0) {
+      await db.query(
+        `INSERT INTO user_preferences (user_id, sarcasm_level, verbosity, humor_style, language_preference, theme, notifications_enabled, voice_enabled, ambient_listening)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        [userId, sarcasm_level ?? 5, storedVerbosity || 'normal', humor_style || 'playful', language_preference || 'en', theme || 'dark', notifications_enabled ?? true, voice_enabled ?? true, ambient_listening ?? false]
+      );
+    } else {
+      // Build dynamic update set only for provided fields
+      const fields = [];
+      const values = [userId];
+      let idx = 2;
+      const pushField = (col, val) => { if (val !== undefined) { fields.push(`${col} = $${idx++}`); values.push(val); } };
+      pushField('sarcasm_level', sarcasm_level);
+      pushField('verbosity', storedVerbosity);
+      pushField('humor_style', humor_style);
+      pushField('language_preference', language_preference);
+      pushField('theme', theme);
+      pushField('notifications_enabled', notifications_enabled);
+      pushField('voice_enabled', voice_enabled);
+      pushField('ambient_listening', ambient_listening);
+
+      if (fields.length > 0) {
+        const sql = `UPDATE user_preferences SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE user_id = $1`;
+        await db.query(sql, values);
+      }
+    }
+
+    // Re-fetch row to return consistent state
+    const updated = await db.query('SELECT * FROM user_preferences WHERE user_id = $1', [userId]);
+    const row = updated.rows[0];
+    const responsePrefs = {
+      sarcasm_level: row.sarcasm_level,
+      // Convert stored (concise|normal|detailed) back to minimal|normal|verbose
+      verbosity: row.verbosity === 'concise' ? 'minimal' : row.verbosity === 'detailed' ? 'verbose' : 'normal',
+      humor_style: row.humor_style,
+      language_preference: row.language_preference,
+      theme: row.theme,
+      notifications_enabled: row.notifications_enabled,
+      voice_enabled: row.voice_enabled,
+      ambient_listening: row.ambient_listening,
+      // Echo virtual fields (not persisted yet) with defaults/fallbacks
+      voice_responses: voice_responses ?? false,
+      sound_effects: sound_effects ?? true,
+      camera_enabled: camera_enabled ?? false,
+      timezone: timezone || 'America/New_York',
+    };
+
+    res.json({ message: 'Preferences updated', preferences: responsePrefs });
+  } catch (error) {
+    console.error('[UserRoute] ❌ Error updating /preferences:', error);
+    res.status(500).json({ error: 'Failed to update preferences' });
   }
 });
 
