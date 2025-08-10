@@ -6,6 +6,7 @@ export default defineConfig({
     watch: false,
     environment: 'node',
     reporters: ['default'],
-    silent: false,
+  silent: false,
+  globals: true,
   }
 });

@@ -80,6 +80,23 @@ class OpenTelemetryTracing {
       const { metrics } = await import('@opentelemetry/api');
       this.meter = metrics.getMeter(this.serviceName, this.serviceVersion);
 
+      // Initialize common counters/histograms if not already defined
+      if (!global.otelCounters) global.otelCounters = {};
+      const safeCreateCounter = (key, name, desc) => {
+        if (!global.otelCounters[key]) {
+          try { global.otelCounters[key] = this.createCounter(name, desc); } catch(_) {}
+        }
+      };
+      const safeCreateHistogram = (key, name, desc) => {
+        if (!global.otelCounters[key]) {
+          try { global.otelCounters[key] = this.createHistogram(name, desc); } catch(_) {}
+        }
+      };
+      safeCreateCounter('hfRoutingSuccess','hf_routing_success_total','Successful routed HF inferences');
+      safeCreateCounter('hfRoutingErrors','hf_routing_errors_total','Errored routed HF inferences');
+      safeCreateCounter('hfRoutingFallbacks','hf_routing_fallbacks_total','Fallback occurrences during routing');
+      safeCreateHistogram('hfRoutingLatency','hf_routing_latency_ms','End-to-end routing latency ms');
+
       this.initialized = true;
 
       console.log(

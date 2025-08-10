@@ -9,6 +9,7 @@ import AboutPage from "@/pages/AboutPage";
 import LicensePage from "@/pages/LicensePage";
 import UserManualPage from "@/pages/UserManualPage";
 import LiveChatButton from "@/components/LiveChatButton";
+import ModelSelectorPanel from "@/components/ModelSelectorPanel";
 
 interface DashboardPageProps {
   token: string;
@@ -21,16 +22,20 @@ interface User {
   email: string;
 }
 
-type DashboardView =
-  | "chat"
-  | "settings"
-  | "workflows"
-  | "knowledge"
-  | "vault"
-  | "lifeos"
-  | "about"
-  | "license"
-  | "manual";
+// Dashboard view keys. Using a const tuple + derived union avoids stray token parse issues.
+const DASHBOARD_VIEWS = [
+  "chat",
+  "settings",
+  "workflows",
+  "knowledge",
+  "vault",
+  "lifeos",
+  "about",
+  "license",
+  "manual",
+  "models",
+] as const;
+type DashboardView = typeof DASHBOARD_VIEWS[number];
 
 export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
   const [user, setUser] = useState<User | null>(null);
@@ -306,6 +311,22 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
   if (currentView === "manual") {
     return <UserManualPage onBack={() => setCurrentView("chat")} />;
   }
+  if (currentView === "models") {
+    return (
+      <div className="p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold">Model Router</h1>
+          <button
+            onClick={() => setCurrentView("chat")}
+            className="text-xs px-2 py-1 border rounded"
+          >
+            Back
+          </button>
+        </div>
+        <ModelSelectorPanel />
+      </div>
+    );
+  }
 
   // Show main dashboard
   return (
@@ -373,6 +394,15 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
             >
               <span>⚙️</span>
               <span className="hidden sm:inline">Settings</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentView("models")}
+              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50 flex items-center space-x-2"
+              title="Model Router"
+            >
+              <span>🧩</span>
+              <span className="hidden sm:inline">Models</span>
             </button>
 
             <button

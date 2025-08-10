@@ -3,7 +3,13 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "build:router": "tsc -p tsconfig.router.json",
+    "prestart": "npm run build:router",
     "start": "node .",
+  "dev": "npm run build:router && node .",
+  "build:router:watch": "tsc -p tsconfig.router.json --watch",
+  "serve:watch": "nodemon --watch dist/router --watch src --ext js,json --delay 300ms index.js",
+  "dev:watch": "concurrently -k -n TSC,NODE -c cyan,magenta 'npm:build:router:watch' 'npm:serve:watch'",
     "migrate": "node-pg-migrate up",
     "lint": "eslint . --ext .js --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --ext .js --fix",
@@ -68,8 +74,11 @@
     "@eslint/js": "^9.17.0",
     "eslint": "^9.17.0",
     "eslint-plugin-node": "^11.1.0",
+  "concurrently": "^9.1.0",
+  "nodemon": "^3.1.7",
     "socket.io-client": "^4.8.1",
     "supertest": "^7.1.4",
+    "typescript": "^5.5.4",
     "vitest": "^3.2.4"
   },
   "type": "module"

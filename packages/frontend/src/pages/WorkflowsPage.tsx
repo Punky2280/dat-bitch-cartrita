@@ -16,6 +16,7 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { ExecutionLog, WorkflowExecution, NodeDefinition } from "../types/workflow";
+import { gradients, semantic, colors } from "@/theme/tokens";
 
 interface WorkflowsPageProps {
   token: string;
@@ -108,11 +109,11 @@ const WorkflowBuilder: React.FC<{
           },
           style: {
             background: getNodeColor(nodeType.type),
-            border: "2px solid #1a1a1a",
+            border: `2px solid ${semantic.border}`,
             borderRadius: "12px",
             fontSize: "12px",
             fontWeight: "bold",
-            color: "#ffffff",
+            color: semantic.textInverted,
             width: 180,
             height: 80,
             display: "flex",
@@ -129,21 +130,14 @@ const WorkflowBuilder: React.FC<{
   );
 
   const getNodeColor = (nodeType: string): string => {
-    if (nodeType.startsWith("trigger"))
-      return "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
-    if (nodeType.startsWith("ai-"))
-      return "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)";
-    if (nodeType.startsWith("rag-"))
-      return "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)";
-    if (nodeType.startsWith("mcp-"))
-      return "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)";
-    if (nodeType.startsWith("http-") || nodeType.includes("integration"))
-      return "linear-gradient(135deg, #fa709a 0%, #fee140 100%)";
-    if (nodeType.startsWith("logic-"))
-      return "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)";
-    if (nodeType.startsWith("data-"))
-      return "linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)";
-    return "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
+    if (nodeType.startsWith("trigger")) return gradients.trigger;
+    if (nodeType.startsWith("ai-")) return gradients.ai;
+    if (nodeType.startsWith("rag-")) return gradients.rag;
+    if (nodeType.startsWith("mcp-")) return gradients.mcp;
+    if (nodeType.startsWith("http-") || nodeType.includes("integration")) return gradients.http;
+    if (nodeType.startsWith("logic-")) return gradients.logic;
+    if (nodeType.startsWith("data-")) return gradients.data;
+    return gradients.fallback;
   };
 
   const getDefaultConfig = (nodeType: string): any => {
@@ -351,21 +345,21 @@ const WorkflowBuilder: React.FC<{
             onDragOver={onDragOver}
             connectionMode={ConnectionMode.Loose}
             fitView
-            style={{ background: "#111827" }}
+            style={{ background: semantic.bg }}
           >
             <Background
-              color="#374151"
+              color={colors.gray500}
               gap={20}
               size={1}
-              style={{ backgroundColor: "#111827" }}
+              style={{ backgroundColor: semantic.bg }}
             />
             <Controls />
             <MiniMap
               style={{
-                backgroundColor: "#1F2937",
-                border: "1px solid #374151",
+                backgroundColor: semantic.bgAlt,
+                border: `1px solid ${semantic.border}`,
               }}
-              nodeColor={() => "#3B82F6"}
+              nodeColor={() => semantic.focus}
             />
 
             {/* Top Toolbar */}

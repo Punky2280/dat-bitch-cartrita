@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { colors } from "@/theme/tokens";
 import { useTranslation } from "react-i18next";
 import { useThemeContext } from "@/context/ThemeContext";
 
@@ -26,36 +27,11 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
   );
 
   const themePresets = [
-    {
-      key: "dark",
-      name: "Dark",
-      description: "Classic dark theme with blue accents",
-      preview: "#0a0e1a",
-    },
-    {
-      key: "light",
-      name: "Light",
-      description: "Clean light theme for day usage",
-      preview: "#ffffff",
-    },
-    {
-      key: "cyberpunk",
-      name: "Cyberpunk",
-      description: "Matrix-inspired green glow",
-      preview: "#0d1117",
-    },
-    {
-      key: "neon",
-      name: "Neon",
-      description: "Vibrant neon with purple hues",
-      preview: "#1a0033",
-    },
-    {
-      key: "minimal",
-      name: "Minimal",
-      description: "Clean and distraction-free",
-      preview: "#fafafa",
-    },
+    { key: "dark", name: "Dark", description: "Classic dark theme with blue accents", preview: colors.gray900 },
+    { key: "light", name: "Light", description: "Clean light theme for day usage", preview: colors.white },
+    { key: "cyberpunk", name: "Cyberpunk", description: "Matrix-inspired green glow", preview: colors.gray800 },
+    { key: "neon", name: "Neon", description: "Vibrant neon with purple hues", preview: colors.accentPurple },
+    { key: "minimal", name: "Minimal", description: "Clean and distraction-free", preview: colors.gray100 },
   ];
 
   const handleColorChange = (property: string, value: string) => {

@@ -1,5 +1,6 @@
 // ✅ FIX: This MUST be the absolute first line.
 import './src/loadEnv.js';
+import { isTestEnv, isLightweight } from './src/util/env.js';
 
 console.log('[Index] 🚀 Starting Cartrita backend...');
 
@@ -72,6 +73,7 @@ import voiceToTextRoutes from './src/routes/voiceToText.js';
 import { router as voiceChatRoutes } from './src/routes/voiceChat.js';
 import { router as visionRoutes } from './src/routes/vision.js';
 import settingsRoutes from './src/routes/settings.js';
+import personaRoutes from './src/routes/persona.js';
 import { router as mcpRoutes } from './src/routes/mcp.js';
 import calendarRoutes from './src/routes/calendar.js';
 import emailRoutes from './src/routes/email.js';
@@ -86,13 +88,17 @@ import fineTuningRoutes from './src/routes/fineTuningRoutes.js';
 import huggingfaceRoutes from './src/integrations/huggingface/routes/huggingfaceRoutes.js';
 import agentsRoutes from './src/routes/agents.js';
 import hfBinaryRoutes from './src/routes/hf.js';
+import audioRoutes from './src/routes/audio.js';
+import modelRoutingRoutes from './src/routes/modelRouting.js';
+import personalLifeOSRoutes from './src/routes/personalLifeOS.js';
 
 // --- CONFIGURATION ---
 const PORT = process.env.PORT || 8001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const DATABASE_URL = process.env.DATABASE_URL;
+const LIGHTWEIGHT_TEST = isLightweight();
 
-if (!DATABASE_URL) {
+if (!DATABASE_URL && !LIGHTWEIGHT_TEST) {
   console.error('❌ DATABASE_URL environment variable is required');
   process.exit(1);
 }
@@ -187,7 +193,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use((req, res, next) => {
-  if (NODE_ENV === 'development') {
+  if (NODE_ENV === 'development' && !isTestEnv()) {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   }
   if (
@@ -291,6 +297,7 @@ app.use('/api/voice-to-text', voiceToTextRoutes);
 app.use('/api/voice-chat', voiceChatRoutes);
 app.use('/api/vision', visionRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/persona', personaRoutes);
 app.use('/api/mcp', mcpRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/email', emailRoutes);
@@ -305,6 +312,12 @@ app.use('/api/fine-tuning', fineTuningRoutes);
 app.use('/api/huggingface', huggingfaceRoutes);
 app.use('/api/agents', agentsRoutes);
 app.use('/api/hf', hfBinaryRoutes);
+app.use('/api/audio', audioRoutes);
+app.use('/api/models', modelRoutingRoutes);
+app.use('/api/personal-life-os', personalLifeOSRoutes);
+// New secure key vault unified endpoints (refactored service)
+import keyVaultRoutes from './src/routes/keyVault.js';
+app.use('/api/key-vault', keyVaultRoutes);
 console.log('[Route Registration] ✅ All API routes registered.');
 
 // Explicit override route to guarantee HuggingFace agent names appear in role-call responses.
@@ -544,7 +557,7 @@ async function startServer() {
   try {
     console.log('🚀 Initializing Cartrita backend...');
     // Skip heavy OpenTelemetry initialization in test environment to reduce noise & duplicate registration
-    if (NODE_ENV !== 'test') {
+  if (NODE_ENV !== 'test' && !LIGHTWEIGHT_TEST) {
       console.log('📊 Initializing Complete OpenTelemetry Integration with merged upstream components...');
       try {
         const integrationResult = await openTelemetryIntegration.initialize();
@@ -562,17 +575,31 @@ async function startServer() {
       console.log('🧪 Test mode: Skipping full OpenTelemetry integration');
     }
     
-    await waitForDatabase();
-    console.log('🔴 Initializing Redis cache...');
-    const redisInitialized = await RedisService.initialize();
+    // In mock audio test mode, allow skipping hard DB readiness wait to speed tests
+    if (process.env.AUDIO_PIPELINE_MOCK === '1' || LIGHTWEIGHT_TEST) {
+      console.log('🧪 AUDIO_PIPELINE_MOCK or LIGHTWEIGHT_TEST -> Skipping waitForDatabase (tests use in-memory or lightweight mode)');
+    } else {
+      await waitForDatabase();
+    }
+    let redisInitialized = false;
+    if (process.env.AUDIO_PIPELINE_MOCK === '1' || LIGHTWEIGHT_TEST) {
+      console.log('🧪 AUDIO_PIPELINE_MOCK or LIGHTWEIGHT_TEST -> Skipping Redis initialization');
+    } else {
+      console.log('🔴 Initializing Redis cache...');
+      redisInitialized = await RedisService.initialize();
+    }
     if (redisInitialized) {
       console.log('✅ Redis cache initialized');
     } else {
       console.warn('⚠️ Redis initialization failed, continuing without cache');
     }
-    console.log('🧠 Initializing Hierarchical Supervisor Agent...');
-    await coreAgent.initialize();
-    console.log('✅ Hierarchical Supervisor Agent initialized');
+    if (!LIGHTWEIGHT_TEST) {
+      console.log('🧠 Initializing Hierarchical Supervisor Agent...');
+      await coreAgent.initialize();
+      console.log('✅ Hierarchical Supervisor Agent initialized');
+    } else {
+      console.log('🧪 LIGHTWEIGHT_TEST=1 -> Skipping supervisor agent initialization');
+    }
 
     // Initialize custom counters once OpenTelemetry is active
     try {
@@ -590,14 +617,16 @@ async function startServer() {
       console.warn('[Metrics] Failed to init custom counters', mErr.message);
     }
 
-    console.log('🔧 Initializing services...');
-    try {
-      await ServiceInitializer.initializeServices();
-    } catch (serviceError) {
-      console.warn(
-        '⚠️ Some services failed to initialize, but continuing startup...'
-      );
-      handleAgentError('ServiceInitializer', serviceError);
+    if (!LIGHTWEIGHT_TEST) {
+      console.log('🔧 Initializing services...');
+      try {
+        await ServiceInitializer.initializeServices();
+      } catch (serviceError) {
+        console.warn(
+          '⚠️ Some services failed to initialize, but continuing startup...'
+        );
+        handleAgentError('ServiceInitializer', serviceError);
+      }
 
       console.log('🌟 Initializing Advanced 2025 MCP Orchestrator...');
       try {
@@ -617,7 +646,7 @@ async function startServer() {
       console.log('🎛️  Initializing Hierarchical MCP System...');
       try {
         const { mcpSystem } = await import('./src/mcp/mcp-integration.js');
-        
+
         // Get Redis client if available
         let redisClient = null;
         try {
@@ -645,11 +674,17 @@ async function startServer() {
         console.warn('⚠️ MCP System initialization failed, continuing...');
         handleAgentError('MCPSystem', mcpSystemError);
       }
+    } else {
+      console.log('🧪 LIGHTWEIGHT_TEST=1 -> Skipping service + MCP initialization');
     }
 
     // --- ✅ MODIFICATION IS HERE ---
     // Call the new function to attach socket handlers only AFTER initialization.
-    setupSocketHandlers();
+    if (!LIGHTWEIGHT_TEST) {
+      setupSocketHandlers();
+    } else {
+      console.log('🧪 LIGHTWEIGHT_TEST=1 -> Skipping Socket.IO handlers');
+    }
     console.log(
       performanceMetrics.agentErrors > 0
         ? `⚠️ System initialized with ${performanceMetrics.agentErrors} errors (degraded mode)`
@@ -657,15 +692,20 @@ async function startServer() {
     );
 
     // Only bind the listening socket if not already listening (prevents double-start in tests)
-    if (!server.listening) {
-      server.listen(PORT, () => {
-        console.log(`✅ Cartrita backend is live on port ${PORT}`);
-        console.log(`🌍 Environment: ${NODE_ENV}`);
-        console.log(`🔗 Allowed origins: ${allowedOrigins.join(', ')}`);
-        console.log(
-          `📊 Health check available at: http://localhost:${PORT}/health`
-        );
-      });
+    if (!LIGHTWEIGHT_TEST) {
+      if (!server.listening) {
+        server.listen(PORT, () => {
+          console.log(`✅ Cartrita backend is live on port ${PORT}`);
+          console.log(`🌍 Environment: ${NODE_ENV}`);
+          console.log(`🔗 Allowed origins: ${allowedOrigins.join(', ')}`);
+          console.log(
+            `📊 Health check available at: http://localhost:${PORT}/health`
+          );
+        });
+      }
+    } else {
+      // In lightweight test mode we don't bind a port to avoid EADDRINUSE and speed tests
+      console.log('🧪 LIGHTWEIGHT_TEST=1 -> Skipping HTTP listen (no port binding)');
     }
   } catch (error) {
     console.error('❌ Critical startup failure:', error);
@@ -684,6 +724,8 @@ app.use('*', (req, res) => {
 
 // --- PROCESS LIFECYCLE & GRACEFUL SHUTDOWN ---
 async function gracefulShutdown(signal) {
+  if (global.__SHUTTING_DOWN__) return; // prevent double invocation
+  global.__SHUTTING_DOWN__ = true;
   console.log(`🔄 Graceful shutdown initiated (${signal})`);
 
   try {
@@ -720,17 +762,19 @@ async function gracefulShutdown(signal) {
     console.log('🔌 Closing HTTP server...');
     server.close(() => {
       console.log('✅ Cartrita backend shutdown complete');
-      process.exit(0);
+      if (!LIGHTWEIGHT_TEST) process.exit(0); else console.log('🧪 LIGHTWEIGHT_TEST=1 -> Not exiting process');
     });
 
     // Force exit after 10 seconds if graceful shutdown fails
-    setTimeout(() => {
-      console.log('⚠️ Forced shutdown after timeout');
-      process.exit(1);
-    }, 10000);
+    if (!LIGHTWEIGHT_TEST) {
+      setTimeout(() => {
+        console.log('⚠️ Forced shutdown after timeout');
+        process.exit(1);
+      }, 10000);
+    }
   } catch (error) {
     console.error('❌ Error during graceful shutdown:', error);
-    process.exit(1);
+    if (!LIGHTWEIGHT_TEST) process.exit(1);
   }
 }
 
@@ -738,16 +782,17 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('unhandledRejection', (reason, promise) => {
   console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
-  gracefulShutdown('unhandledRejection');
+  if (!LIGHTWEIGHT_TEST) gracefulShutdown('unhandledRejection');
 });
 process.on('uncaughtException', error => {
   console.error('💥 Uncaught Exception:', error);
-  gracefulShutdown('uncaughtException');
+  if (!LIGHTWEIGHT_TEST) gracefulShutdown('uncaughtException');
 });
 
 // --- START THE APPLICATION ---
 // Auto-start unless running under test (vitest) where manual control preferred
-if (NODE_ENV !== 'test') {
+// Avoid automatic listen during Vitest to prevent EADDRINUSE
+if (!isTestEnv()) {
   startServer();
 }
 

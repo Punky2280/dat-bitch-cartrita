@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { colors } from "@/theme/tokens";
 import {
   EyeIcon,
   EyeSlashIcon,
@@ -241,10 +242,10 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Draw analysis indicators (simple version for now)
-    ctx.strokeStyle = "#00ff88";
+  ctx.strokeStyle = colors.accentMint;
     ctx.lineWidth = 2;
     ctx.font = "16px Arial";
-    ctx.fillStyle = "#00ff88";
+  ctx.fillStyle = colors.accentMint;
 
     // Draw analysis status
     ctx.fillText(`Analysis: ${analysis.summary || "Processing..."}`, 10, 30);

@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist/router",
+    "rootDir": "./src/modelRouting",
+    "declaration": false,
+    "emitDeclarationOnly": false,
+    "noEmit": false
+  },
+  "include": ["src/modelRouting/HuggingFaceRouterService.ts"],
+  "exclude": ["node_modules", "dist"]
+}

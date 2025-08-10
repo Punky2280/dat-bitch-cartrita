@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { colors } from "@/theme/tokens";
 import { MicrophoneIcon, StopIcon } from "@heroicons/react/24/outline";
 import {
   checkMediaSupport,
@@ -350,7 +351,7 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
             audioStream={streamRef.current}
             width={200}
             height={40}
-            barColor="#ef4444"
+            barColor={colors.danger}
             backgroundColor="rgba(0, 0, 0, 0.8)"
             sensitivity={1.2}
           />

@@ -17,6 +17,7 @@ import OpenAI from 'openai';
 import axios from 'axios';
 import cron from 'node-cron';
 import { v4 as uuidv4 } from 'uuid';
+import { shouldQuietLogs } from '../util/env.js';
 
 class EnhancedWorkflowEngine {
   constructor() {
@@ -38,9 +39,11 @@ class EnhancedWorkflowEngine {
     this.initializeNodeHandlers();
     this.initializeScheduler();
 
-    console.log(
-      '[EnhancedWorkflowEngine] 🚀 Real execution system initialized'
-    );
+    if (!shouldQuietLogs()) {
+      console.log(
+        '[EnhancedWorkflowEngine] 🚀 Real execution system initialized'
+      );
+    }
   }
 
   /**
@@ -52,9 +55,11 @@ class EnhancedWorkflowEngine {
       if (typeof this[handlerName] === 'function') {
         this.nodeHandlers.set(nodeType, this[handlerName].bind(this));
       } else {
-        console.warn(
-          `[EnhancedWorkflowEngine] ⚠️ Handler ${handlerName} not implemented for ${nodeType}, using fallback`
-        );
+        if (!shouldQuietLogs() && (process.env.WORKFLOW_DEBUG || process.env.DEBUG_LOGS)) {
+          console.warn(
+            `[EnhancedWorkflowEngine] ⚠️ Handler ${handlerName} not implemented for ${nodeType}, using fallback`
+          );
+        }
         this.nodeHandlers.set(nodeType, this.handleGenericNode.bind(this));
       }
     };
@@ -97,9 +102,11 @@ class EnhancedWorkflowEngine {
     safeRegister('image-analysis', 'handleImageAnalysisNode');
     safeRegister('audio-transcription', 'handleAudioTranscriptionNode');
 
-    console.log(
-      `[EnhancedWorkflowEngine] ✅ Initialized ${this.nodeHandlers.size} node handlers`
-    );
+    if (!shouldQuietLogs()) {
+      console.log(
+        `[EnhancedWorkflowEngine] ✅ Initialized ${this.nodeHandlers.size} node handlers`
+      );
+    }
   }
 
   /**
@@ -111,14 +118,18 @@ class EnhancedWorkflowEngine {
       try {
         await this.processScheduledWorkflows();
       } catch (error) {
-        console.error(
-          '[EnhancedWorkflowEngine] Error processing scheduled workflows:',
-          error
-        );
+        if (!shouldQuietLogs() || process.env.WORKFLOW_DEBUG || process.env.DEBUG_LOGS) {
+          console.error(
+            '[EnhancedWorkflowEngine] Error processing scheduled workflows:',
+            error
+          );
+        }
       }
     });
 
-    console.log('[EnhancedWorkflowEngine] ⏰ Scheduler initialized');
+    if (!shouldQuietLogs()) {
+      console.log('[EnhancedWorkflowEngine] ⏰ Scheduler initialized');
+    }
   }
 
   /**
@@ -126,7 +137,9 @@ class EnhancedWorkflowEngine {
    */
   setCoreAgent(coreAgent) {
     this.coreAgent = coreAgent;
-    console.log('[EnhancedWorkflowEngine] 🤖 Core agent reference set');
+    if (!shouldQuietLogs()) {
+      console.log('[EnhancedWorkflowEngine] 🤖 Core agent reference set');
+    }
   }
 
   /**
@@ -142,9 +155,11 @@ class EnhancedWorkflowEngine {
     const startTime = Date.now();
 
     try {
-      console.log(
-        `[EnhancedWorkflowEngine] 🚀 Executing workflow ${workflowId} (execution: ${executionId})`
-      );
+      if (!shouldQuietLogs()) {
+        console.log(
+          `[EnhancedWorkflowEngine] 🚀 Executing workflow ${workflowId} (execution: ${executionId})`
+        );
+      }
 
       // Get workflow definition
       const workflowResult = await pool.query(
@@ -211,9 +226,11 @@ class EnhancedWorkflowEngine {
       // Cleanup
       this.activeExecutions.delete(executionId);
 
-      console.log(
-        `[EnhancedWorkflowEngine] ✅ Workflow execution completed (${executionTime}ms)`
-      );
+      if (!shouldQuietLogs()) {
+        console.log(
+          `[EnhancedWorkflowEngine] ✅ Workflow execution completed (${executionTime}ms)`
+        );
+      }
 
       return {
         success: true,
@@ -381,9 +398,11 @@ class EnhancedWorkflowEngine {
       throw new Error(`No handler found for node type: ${node.type}`);
     }
 
-    console.log(
-      `[EnhancedWorkflowEngine] 🔄 Executing node: ${node.id} (${node.type})`
-    );
+    if (!shouldQuietLogs()) {
+      console.log(
+        `[EnhancedWorkflowEngine] 🔄 Executing node: ${node.id} (${node.type})`
+      );
+    }
 
     return await handler(node, executionContext);
   }
@@ -674,7 +693,9 @@ class EnhancedWorkflowEngine {
     };
 
     executionContext.logs.push(logEntry);
-    console.log(`[EnhancedWorkflowEngine] 📝 ${event}:`, data);
+    if (!shouldQuietLogs()) {
+      console.log(`[EnhancedWorkflowEngine] 📝 ${event}:`, data);
+    }
   }
 
   /**
@@ -713,9 +734,11 @@ class EnhancedWorkflowEngine {
       `);
 
       for (const schedule of scheduledResult.rows) {
-        console.log(
-          `[EnhancedWorkflowEngine] ⏰ Processing scheduled workflow: ${schedule.workflow_name}`
-        );
+        if (!shouldQuietLogs()) {
+          console.log(
+            `[EnhancedWorkflowEngine] ⏰ Processing scheduled workflow: ${schedule.workflow_name}`
+          );
+        }
 
         try {
           // Execute the workflow
@@ -746,10 +769,12 @@ class EnhancedWorkflowEngine {
         }
       }
     } catch (error) {
-      console.error(
-        '[EnhancedWorkflowEngine] Error processing scheduled workflows:',
-        error
-      );
+      if (!shouldQuietLogs() || process.env.WORKFLOW_DEBUG || process.env.DEBUG_LOGS) {
+        console.error(
+          '[EnhancedWorkflowEngine] Error processing scheduled workflows:',
+          error
+        );
+      }
     }
   }
 
@@ -766,9 +791,11 @@ class EnhancedWorkflowEngine {
    * Generic fallback handler for unimplemented nodes
    */
   async handleGenericNode(nodeData, context, previousOutput) {
-    console.log(
-      `[EnhancedWorkflowEngine] 🔧 Executing generic handler for node type: ${nodeData.type}`
-    );
+    if (!shouldQuietLogs()) {
+      console.log(
+        `[EnhancedWorkflowEngine] 🔧 Executing generic handler for node type: ${nodeData.type}`
+      );
+    }
 
     return {
       success: true,

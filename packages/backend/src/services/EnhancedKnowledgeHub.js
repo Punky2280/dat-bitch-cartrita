@@ -62,6 +62,10 @@ class EnhancedKnowledgeHub {
    * Initialize the knowledge hub with database setup
    */
   async initialize() {
+    if (process.env.LIGHTWEIGHT_TEST === '1') {
+      console.log('[EnhancedKnowledgeHub] 🧪 LIGHTWEIGHT_TEST=1 -> Skipping initialization');
+      return false;
+    }
     try {
       await this.ensureDatabaseSchema();
       await this.testVectorOperations();

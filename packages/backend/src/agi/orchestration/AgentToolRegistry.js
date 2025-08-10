@@ -390,6 +390,71 @@ class AgentToolRegistry {
     } catch (error) {
       console.warn('[AgentToolRegistry] ⚠️ HuggingFace tools not registered:', error.message);
     }
+
+    // --- HuggingFace Model Router Tools ---
+    try {
+      const { default: hfRouter } = await import('../../modelRouting/HuggingFaceRouterService.js');
+      const baseSchema = z.object({
+        prompt: z.string().describe('User prompt / text input'),
+        options: z.any().optional().describe('Routing override options: { taskOverride, max_candidates, temperature, max_new_tokens }')
+      });
+      this.registerTool({
+        name: 'hf_route_inference',
+        description: 'Route a prompt across the HuggingFace model catalog and return best model output with metadata',
+        category: 'huggingface_routing',
+        schema: baseSchema,
+        func: async ({ prompt, options }) => {
+          return await OpenTelemetryTracing.traceOperation('hf.route.tool', { attributes: { 'hf.route.tool': 'inference' } }, async () => {
+            const result = await hfRouter.route(prompt, options || {});
+            return { success: true, ...result };
+          });
+        }
+      });
+      this.registerTool({
+        name: 'hf_embed',
+        description: 'Generate embeddings via routing (forces embedding task)',
+        category: 'huggingface_routing',
+        schema: z.object({ prompt: z.string(), model: z.string().optional() }),
+        func: async ({ prompt, model }) => {
+          return await OpenTelemetryTracing.traceOperation('hf.route.embed', { attributes: { 'hf.route.tool': 'embed' } }, async () => {
+            if (model) {
+              const { default: raw } = await import('axios');
+              const res = await raw.post(`https://api-inference.huggingface.co/models/${model}`, { inputs: prompt }, { headers: { Authorization: `Bearer ${process.env.HF_TOKEN||''}` } });
+              return { success: true, model, embedding: res.data?.[0] || res.data };
+            }
+            const routed = await hfRouter.route(prompt, { taskOverride: 'embedding' });
+            return { success: true, model: routed.model_id, embedding: routed.output };
+          });
+        }
+      });
+      this.registerTool({
+        name: 'hf_rerank',
+        description: 'Rerank documents for a query',
+        category: 'huggingface_routing',
+        schema: z.object({ query: z.string(), documents: z.array(z.string()) }),
+        func: async ({ query, documents }) => {
+          return await OpenTelemetryTracing.traceOperation('hf.route.rerank', { attributes: { 'hf.route.tool': 'rerank' } }, async () => {
+            const routed = await hfRouter.route(query, { taskOverride: 'rerank', documents });
+            return { success: true, model: routed.model_id, ranked: routed.output };
+          });
+        }
+      });
+      this.registerTool({
+        name: 'hf_translate',
+        description: 'Translate text using multilingual routing',
+        category: 'huggingface_routing',
+        schema: z.object({ text: z.string(), source: z.string().optional(), target: z.string().optional() }),
+        func: async ({ text, source, target }) => {
+          return await OpenTelemetryTracing.traceOperation('hf.route.translate', { attributes: { 'hf.route.tool': 'translate' } }, async () => {
+            const routed = await hfRouter.route(`Translate${source?` from ${source}`:''}${target?` to ${target}`:''}: ${text}`, { taskOverride: 'multilingual' });
+            return { success: true, model: routed.model_id, translation: routed.output };
+          });
+        }
+      });
+      console.log('[AgentToolRegistry] ✅ HuggingFace routing tools registered');
+    } catch (err) {
+      console.warn('[AgentToolRegistry] ⚠️ Failed to register routing tools:', err.message);
+    }
   }
 
   /**

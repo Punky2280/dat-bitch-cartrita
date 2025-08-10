@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
+import { colors } from "@/theme/tokens";
 
 interface AudioVisualizerProps {
   isRecording: boolean;
@@ -15,7 +16,7 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
   audioStream,
   width = 300,
   height = 60,
-  barColor = "#00ff88",
+  barColor = colors.accentMint,
   backgroundColor = "rgba(0, 0, 0, 0.2)",
   sensitivity = 1.0,
 }) => {
@@ -160,7 +161,7 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
         height={height}
         className={`audio-visualizer ${isActive ? "active" : "inactive"}`}
         style={{
-          border: `1px solid ${isActive ? barColor : "#333"}`,
+          border: `1px solid ${isActive ? barColor : colors.gray600}`,
           borderRadius: "8px",
           background: backgroundColor,
           transition: "border-color 0.3s ease",

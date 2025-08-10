@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import ForceGraph3D from "react-force-graph-3d";
 import * as THREE from "three";
 import { useNotify } from "../components/ui/NotificationProvider";
+import { colors, semantic } from "@/theme/tokens";
 
 interface KnowledgeHubPageProps {
   token: string;
@@ -168,14 +169,14 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
   };
 
   const getContentTypeColor = (contentType: string): string => {
-    const colors: { [key: string]: string } = {
-      text: "#3B82F6",
-      code: "#10B981",
-      image: "#F59E0B",
-      document: "#8B5CF6",
-      link: "#EF4444",
+    const map: { [key: string]: string } = {
+      text: colors.accentBlue,
+      code: colors.success,
+      image: colors.warning,
+      document: colors.accentPurple,
+      link: colors.danger,
     };
-    return colors[contentType] || "#6B7280";
+    return map[contentType] || colors.gray400;
   };
 
   const handleSearch = async () => {
@@ -489,7 +490,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
                   nodeColor="color"
                   nodeVal="val"
                   linkWidth="value"
-                  backgroundColor="#1F2937"
+                  backgroundColor={semantic.bgAlt}
                   showNavInfo={false}
                   controlType="orbit"
                   onNodeClick={(node: any) => {
@@ -504,7 +505,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
                       canvas.width = 256;
                       canvas.height = 256;
 
-                      context.fillStyle = node.color || "#3B82F6";
+                      context.fillStyle = node.color || colors.accentBlue;
                       context.beginPath();
                       context.arc(128, 128, 100, 0, 2 * Math.PI);
                       context.fill();
@@ -530,7 +531,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
                       // Fallback to simple geometry
                       const geometry = new THREE.SphereGeometry(node.val || 1);
                       const material = new THREE.MeshBasicMaterial({
-                        color: node.color || "#3B82F6",
+                        color: node.color || colors.accentBlue,
                       });
                       return new THREE.Mesh(geometry, material);
                     }
