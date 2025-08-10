@@ -8,12 +8,26 @@ import AudioWizardAgent from './agents/AudioWizardAgent.js';
 import LanguageMaestroAgent from './agents/LanguageMaestroAgent.js';
 import MultiModalOracleAgent from './agents/MultiModalOracleAgent.js';
 import DataSageAgent from './agents/DataSageAgent.js';
+import HuggingFaceRouterService from '../../modelRouting/HuggingFaceRouterService.js';
+import RAGPipelineService from '../../services/rag/RAGPipelineService.js';
 
 export default class AgentOrchestrator {
   constructor() {
     this.agents = new Map();
     this.agentCapabilities = new Map();
     this.isInitialized = false;
+    
+    // Enhanced services
+    this.routerService = new HuggingFaceRouterService();
+    this.ragService = new RAGPipelineService();
+    
+    // Performance tracking
+    this.routingStats = {
+      totalRequests: 0,
+      successfulRequests: 0,
+      averageLatency: 0,
+      fallbacksUsed: 0
+    };
     
     // Task-to-agent mapping
     this.taskAgentMap = {
@@ -121,20 +135,93 @@ export default class AgentOrchestrator {
       throw new Error('Agent orchestrator not initialized');
     }
 
-    // Determine which agent should handle this task
-    const agentName = this.selectAgent(taskType, inputs, options);
-    const agent = this.agents.get(agentName);
-    
-    if (!agent) {
-      throw new Error(`No suitable agent found for task: ${taskType}`);
-    }
+    const startTime = Date.now();
+    this.routingStats.totalRequests++;
 
-    console.log(`[AgentOrchestrator] 📋 Routing ${taskType} to ${agentName}`);
-    
     try {
-      // Route to appropriate agent method based on task type
-      return await this.executeTask(agent, taskType, inputs, options);
+      // Enhanced routing with safety, cost controls, and RAG integration
+      const routingConstraints = {
+        taskOverride: taskType,
+        budget_tier: options.budgetTier || 'standard',
+        min_confidence_threshold: options.minConfidence || 0.3,
+        require_safety_filter: options.requireSafety || false,
+        enable_fallback: options.enableFallback !== false,
+        ...options
+      };
+
+      // Check if this is a RAG-enhanced query
+      if (options.useRAG && options.documentStore) {
+        console.log(`[AgentOrchestrator] 🔍 Executing RAG pipeline for ${taskType}`);
+        
+        const ragResult = await this.ragService.executeRAGPipeline(
+          inputs.text || inputs.query || inputs,
+          options.documentStore,
+          {
+            embeddingModel: options.embeddingModel,
+            rerankModel: options.rerankModel,
+            generationModel: options.generationModel,
+            topKRetrieval: options.topKRetrieval || 20,
+            topKRerank: options.topKRerank || 8,
+            useMultiQuery: options.useMultiQuery || false,
+            includeCitations: options.includeCitations !== false
+          }
+        );
+
+        // Update routing stats
+        const latency = Date.now() - startTime;
+        this.updateRoutingStats(latency, true, ragResult.confidence);
+
+        return {
+          ...ragResult,
+          agent: 'RAGPipeline',
+          routing_method: 'rag_enhanced'
+        };
+      }
+
+      // Determine agent and use enhanced routing
+      const agentName = this.selectAgent(taskType, inputs, options);
+      const agent = this.agents.get(agentName);
+      
+      if (!agent) {
+        throw new Error(`No suitable agent found for task: ${taskType}`);
+      }
+
+      console.log(`[AgentOrchestrator] 📋 Routing ${taskType} to ${agentName} with advanced routing`);
+
+      // Use router service for model selection and execution
+      let result;
+      
+      if (this.isDirectModelTask(taskType)) {
+        // Direct model routing for certain tasks
+        result = await this.routerService.route(
+          this.preparePromptForTask(taskType, inputs),
+          routingConstraints
+        );
+        
+        // Add agent context
+        result.agent = agentName;
+        result.routing_method = 'direct_model';
+      } else {
+        // Agent-mediated execution
+        result = await this.executeTask(agent, taskType, inputs, options);
+        result.agent = agentName;
+        result.routing_method = 'agent_mediated';
+      }
+
+      // Update routing stats
+      const latency = Date.now() - startTime;
+      this.updateRoutingStats(latency, true, result.confidence);
+      
+      if (result.used_fallbacks > 0) {
+        this.routingStats.fallbacksUsed++;
+      }
+
+      return result;
+
     } catch (error) {
+      const latency = Date.now() - startTime;
+      this.updateRoutingStats(latency, false);
+      
       console.error(`[AgentOrchestrator] Task execution failed:`, error);
       throw error;
     }
@@ -383,5 +470,129 @@ export default class AgentOrchestrator {
     }
     
     return results;
+  }
+
+  // Helper methods for enhanced orchestration
+
+  /**
+   * Determine if a task should use direct model routing
+   */
+  isDirectModelTask(taskType) {
+    const directTasks = [
+      'text-generation',
+      'text-classification',
+      'translation',
+      'summarization',
+      'embedding',
+      'rerank',
+      'fill-mask'
+    ];
+    return directTasks.includes(taskType);
+  }
+
+  /**
+   * Prepare prompt for direct model routing
+   */
+  preparePromptForTask(taskType, inputs) {
+    if (typeof inputs === 'string') {
+      return inputs;
+    }
+
+    switch (taskType) {
+      case 'text-classification':
+        return inputs.text || inputs;
+      case 'translation':
+        return `Translate: ${inputs.text || inputs}`;
+      case 'summarization':
+        return `Summarize: ${inputs.text || inputs}`;
+      case 'question-answering':
+        return `Question: ${inputs.question}\nContext: ${inputs.context || ''}`;
+      default:
+        return inputs.text || inputs.prompt || inputs;
+    }
+  }
+
+  /**
+   * Update routing performance statistics
+   */
+  updateRoutingStats(latency, success, confidence = null) {
+    if (success) {
+      this.routingStats.successfulRequests++;
+    }
+    
+    // Update average latency with exponential moving average
+    const alpha = 0.1;
+    this.routingStats.averageLatency = 
+      (alpha * latency) + ((1 - alpha) * this.routingStats.averageLatency);
+  }
+
+  /**
+   * Get enhanced orchestrator statistics
+   */
+  getStats() {
+    const successRate = this.routingStats.totalRequests > 0 
+      ? this.routingStats.successfulRequests / this.routingStats.totalRequests 
+      : 0;
+
+    return {
+      ...this.routingStats,
+      successRate: Math.round(successRate * 100) / 100,
+      ragCacheStats: this.ragService.getCacheStats(),
+      availableModels: this.routerService.getCatalog().length
+    };
+  }
+
+  /**
+   * Enhanced health check with routing service status
+   */
+  async enhancedHealthCheck() {
+    const basicHealth = await this.healthCheck();
+    
+    try {
+      // Test routing service
+      const testPrompt = "Hello, this is a health check.";
+      const routingResult = await this.routerService.route(testPrompt, {
+        max_candidates: 1,
+        min_confidence_threshold: 0,
+        enable_fallback: false
+      });
+
+      basicHealth.routing_service = {
+        status: 'healthy',
+        test_successful: true,
+        model_used: routingResult.model_id,
+        confidence: routingResult.confidence
+      };
+
+    } catch (error) {
+      basicHealth.routing_service = {
+        status: 'unhealthy',
+        error: error.message
+      };
+    }
+
+    // Add RAG service status
+    basicHealth.rag_service = {
+      status: 'healthy',
+      cache_size: this.ragService.getCacheStats().size
+    };
+
+    // Add performance stats
+    basicHealth.performance = this.getStats();
+
+    return basicHealth;
+  }
+
+  /**
+   * Clear all caches and reset stats
+   */
+  clearCaches() {
+    this.ragService.clearCache();
+    this.routingStats = {
+      totalRequests: 0,
+      successfulRequests: 0,
+      averageLatency: 0,
+      fallbacksUsed: 0
+    };
   }
 }

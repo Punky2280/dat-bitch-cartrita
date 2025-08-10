@@ -88,17 +88,109 @@ router.get('/capabilities', requireOrchestrator, async (req, res) => {
 
 /**
  * GET /api/huggingface/health
- * Health check for HF services and agents
+ * Enhanced health check for HF services and agents with routing stats
  */
 router.get('/health', async (req, res) => {
   try {
-    const health = await orchestrator.healthCheck();
+    const health = await orchestrator.enhancedHealthCheck();
     res.status(health.status === 'healthy' ? 200 : 503).json({
       success: health.status === 'healthy',
-      health
+      health,
+      enhanced_features: {
+        rag_pipeline: true,
+        advanced_routing: true,
+        safety_filtering: true,
+        cost_controls: true,
+        model_fallbacks: true
+      }
     });
   } catch (error) {
-    console.error('[HF Routes] Health check failed:', error);
+    console.error('[HF Routes] Enhanced health check failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/huggingface/stats
+ * Get routing and performance statistics
+ */
+router.get('/stats', requireOrchestrator, async (req, res) => {
+  try {
+    const stats = orchestrator.getStats();
+    res.json({
+      success: true,
+      stats,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('[HF Routes] Stats retrieval failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/huggingface/rag
+ * RAG-enhanced query processing
+ */
+router.post('/rag', authenticateToken, requireOrchestrator, async (req, res) => {
+  try {
+    const {
+      query,
+      documentStore,
+      embeddingModel = 'BAAI/bge-large-en-v1.5',
+      rerankModel = 'BAAI/bge-reranker-large',
+      generationModel = 'meta-llama/Meta-Llama-3-8B-Instruct',
+      topKRetrieval = 20,
+      topKRerank = 8,
+      useMultiQuery = false,
+      includeCitations = true,
+      budgetTier = 'standard'
+    } = req.body;
+
+    if (!query) {
+      return res.status(400).json({
+        success: false,
+        error: 'Query is required for RAG processing'
+      });
+    }
+
+    if (!documentStore || !Array.isArray(documentStore)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Document store array is required'
+      });
+    }
+
+    const result = await orchestrator.routeTask('question-answering', 
+      { text: query }, 
+      {
+        useRAG: true,
+        documentStore,
+        embeddingModel,
+        rerankModel,
+        generationModel,
+        topKRetrieval,
+        topKRerank,
+        useMultiQuery,
+        includeCitations,
+        budgetTier
+      }
+    );
+
+    res.json({
+      success: true,
+      result,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('[HF Routes] RAG processing failed:', error);
     res.status(500).json({
       success: false,
       error: error.message
