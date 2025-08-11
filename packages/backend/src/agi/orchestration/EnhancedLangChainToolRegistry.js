@@ -20,7 +20,6 @@ import { BraveSearch } from '@langchain/community/tools/brave_search';
 import { TavilySearchResults } from '@langchain/community/tools/tavily_search';
 import { SerpAPI } from '@langchain/community/tools/serpapi';
 import { SearchApi } from '@langchain/community/tools/searchapi';
-import { WolframAlphaTool } from '@langchain/community/tools/wolframalpha';
 // import { GoogleScholarQueryRun } from '@langchain/community/tools/google_scholar'; // Not available
 
 class EnhancedLangChainToolRegistry {
@@ -397,10 +396,7 @@ class EnhancedLangChainToolRegistry {
       '[FullyFunctionalToolRegistry] 📊 Registering data analysis tools...'
     );
 
-    // Wolfram Alpha
     this.registerTool(
-      new WolframAlphaTool({
-        apiKey: process.env.WOLFRAM_ALPHA_API_KEY || '',
       }),
       {
         category: 'analysis',
@@ -756,7 +752,6 @@ class EnhancedLangChainToolRegistry {
       // Analytics Agent - Data analysis and insights
       analyst: [
         'calculator',
-        'wolfram_alpha',
         'google_finance',
         'yahoo_finance_news',
         'wikipedia_search',

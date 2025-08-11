@@ -1,5 +1,4 @@
 import BaseAgent from '../../system/BaseAgent.js';
-import WolframAlphaService from '../../services/WolframAlphaService.js';
 
 /**
  * ResearcherAgent - Academic research and information gathering specialist with access to multiple databases
@@ -33,14 +32,11 @@ class ResearcherAgent extends BaseAgent {
       'arxiv_search',
       'web_browser',
       'url_scraper',
-      'wolfram_alpha',
       'scientific_analysis',
       'historical_data',
       'factual_computation',
     ];
 
-    // Initialize Wolfram Alpha service
-    this.wolframService = WolframAlphaService;
 
     // Mark as initialized
     this.initialized = true;
@@ -51,7 +47,6 @@ class ResearcherAgent extends BaseAgent {
   }
 
   /**
-   * Build system prompt with Wolfram Alpha integration
    */
   buildSystemPrompt(privateState, state) {
     const userMessage = state.messages[state.messages.length - 1];
@@ -67,23 +62,14 @@ Conduct comprehensive research using all available tools to provide accurate, we
 1. **Analyze the Question:** What specific information or facts does the user want?
 2. **Multi-Source Research:** Use multiple research tools to gather comprehensive data
 3. **Fact Verification:** Cross-reference information from multiple sources
-4. **Computational Analysis:** Use Wolfram Alpha for scientific, historical, and factual computations
 5. **Synthesize Findings:** Present well-organized, accurate results with proper attribution
 
 **YOUR RESEARCH ARSENAL:**
 ${this.config.allowedTools.join(', ')}
 
-**WOLFRAM ALPHA RESEARCH CAPABILITIES:**
-Your wolframService provides powerful computational research tools:
-- Scientific data: Use wolframService.queryScientificData(query) for scientific facts, formulas, properties
-- Historical facts: Use wolframService.queryHistoricalFacts(query) for dates, events, biographical data
-- Geographic info: Use wolframService.queryGeographic(location, infoType) for location data, demographics
-- Unit conversions: Use wolframService.convertUnits() for precise scientific measurements
-- Mathematical analysis: Use wolframService.computeMathematical() for research calculations
 
 **EXECUTION REQUIREMENTS:**
 - ACTUALLY conduct research using multiple tools - don't just describe what you would do
-- Use Wolfram Alpha for factual, scientific, and computational verification
 - Cross-reference findings from different sources
 - Provide specific citations and source attributions
 - Include confidence levels for your findings
@@ -93,7 +79,6 @@ Your wolframService provides powerful computational research tools:
 Provide a comprehensive research report that includes:
 - "Aight, I dug deep into this for you..." (what research you actually performed)
 - Key findings with specific facts, dates, numbers, and sources
-- Wolfram Alpha computational results when relevant
 - Cross-referenced verification from multiple sources
 - Confidence assessment and any limitations or uncertainties
 - Your sassy, knowledgeable research personality throughout

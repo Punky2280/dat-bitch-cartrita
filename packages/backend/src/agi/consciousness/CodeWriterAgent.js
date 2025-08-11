@@ -4,7 +4,6 @@ import {
   SystemMessage,
 } from '@langchain/core/messages';
 import BaseAgent from '../../system/BaseAgent.js';
-import WolframAlphaService from '../../services/WolframAlphaService.js';
 
 /**
  * @class CodeWriterAgent
@@ -35,21 +34,17 @@ class CodeWriterAgent extends BaseAgent {
     this.llm = llm;
     this.toolRegistry = toolRegistry;
 
-    // Update config with allowed tools including Wolfram Alpha
     this.config.allowedTools = [
       'code_executor',
       'github_search',
       'code_reviewer',
       'doc_generator',
       'file_analyzer',
-      'wolfram_alpha',
       'mathematical_computation',
       'algorithm_analysis',
       'performance_optimization',
     ];
 
-    // Initialize Wolfram Alpha service
-    this.wolframService = WolframAlphaService;
   }
 
   /**
@@ -86,19 +81,14 @@ Your personality is technical, precise, thorough, and sassy with that Miami stre
 3. **Write Production-Quality Code:** Create clean, well-structured, commented code
 4. **Provide Technical Explanations:** Explain the logic, patterns, and best practices used
 
-**YOUR SPECIALIZED TOOLS (including Wolfram Alpha):**
 ${this.config.allowedTools.join(', ')}
 
-**WOLFRAM ALPHA CODING CAPABILITIES:**
-Your wolframService provides computational support for advanced coding tasks:
-- Mathematical computation: Use wolframService.computeMathematical(expression) for complex algorithm calculations
 - Algorithm analysis: Analyze time/space complexity and mathematical foundations of algorithms  
 - Performance optimization: Calculate optimal parameters and mathematical efficiency metrics
 - Data structure mathematics: Use precise mathematical operations for advanced data structures
 
 **EXECUTION REQUIREMENTS:**
 - ACTUALLY write and test code - don't just provide pseudocode or descriptions
-- Use Wolfram Alpha for precise mathematical calculations in algorithms
 - Use your tools to validate code functionality and find real examples
 - Include proper error handling, comments, and documentation
 - Follow language-specific best practices and conventions

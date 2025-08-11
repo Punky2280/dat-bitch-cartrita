@@ -7,7 +7,6 @@ import VisualAnalysisService from './VisualAnalysisService.js';
 import MultiModalFusionAgent from '../agi/consciousness/MultiModalFusionAgent.js';
 import WorkflowEngine from './WorkflowEngine.js';
 import MultiModalProcessingService from './MultiModalProcessingService.js'; // Iteration 22
-import WolframAlphaService from './WolframAlphaService.js';
 import WorkflowToolsService from './WorkflowToolsService.js';
 
 /**
@@ -178,21 +177,6 @@ class ServiceInitializer {
         );
       }
 
-      // Initialize Wolfram Alpha Service
-      try {
-        const wolframInitialized = await WolframAlphaService.initialize();
-        if (wolframInitialized) {
-          this.services.wolframAlpha = WolframAlphaService;
-          console.log(
-            '[ServiceInitializer] ✓ Wolfram Alpha Service initialized with full capabilities'
-          );
-        }
-      } catch (error) {
-        console.error(
-          '[ServiceInitializer] Error initializing Wolfram Alpha Service:',
-          error
-        );
-      }
 
       // Initialize Workflow Tools Service
       try {
@@ -222,7 +206,6 @@ class ServiceInitializer {
       console.log('  • Context-aware personality adaptation');
       console.log('  • Workflow automation engine');
       console.log('  • Enhanced LangChain agent orchestration');
-      console.log('  • Wolfram Alpha computational intelligence');
       console.log('  • 1000+ Workflow automation tools with semantic search');
       console.log(
         '  • AI-powered knowledge management and documentation system'

@@ -1,6 +1,21 @@
 # Copilot Project Instructions (Cartrita Multi-Agent OS)
 
-Purpose: Make AI coding agents instantly productive in this repo. Follow these concrete conventions; do not invent new architectures. Keep Cartrita's established personality only where user-facing text is already personality-driven; keep code changes neutral.
+Purpose: Keep AI coding agents instantly productive and consistent with established architecture and recent iteration progress. DO NOT invent new subsystems when extending; prefer additive migrations & specs already defined. Cartrita voice only in user-facing assistant responses; infrastructure code stays neutral.
+
+## 0. Iteration Awareness & Memory Discipline
+When a new iteration (e.g. "iteration 22") begins:
+1. Auto-scan `docs/specs/**` and recent migrations in `db-init/` added after the last comprehensive snapshot (currently `06_comprehensive_cartrita_schema.sql`) plus highest numbered migration (presently `15_create_journal_entries.sql`).
+2. Summarize deltas: new tables, new routes, new specs, UI scaffolds. Persist that summary in your internal working memory for the session (do NOT write to repo unless asked).
+3. Before modifying any domain (workflows, journal, ambient intelligence, fusion, templates), locate its spec under `docs/specs/**` & re-validate assumptions. If spec mismatch detected, halt and request clarification rather than hallucinating fields.
+4. Cross-check any DB column before use: search codebase and migrations; if absent create a new migration instead of editing old files.
+5. Never fabricate API responses; if unsure, implement thin pass-through + TODO referencing spec filename.
+
+Guardrails to reduce hallucination / drift:
+- Always prefer reading existing files (routes/service/migration) before adding new ones for a feature.
+- Keep changes minimal & scoped; describe rationale succinctly in PR.
+- If a spec exists but conflicts with runtime code, align implementation to spec via new migration or incremental refactor doc.
+
+## 1. High-Level Architecture
 
 ## 1. High-Level Architecture
 - Monorepo (npm workspaces) under `packages/` (no turborepo). Core focus: `packages/backend` (Node + Express + LangChain StateGraph supervisor) & `packages/frontend` (React + Vite). Python MCP reference under `py/mcp_core` (types only currently).
@@ -44,7 +59,7 @@ Purpose: Make AI coding agents instantly productive in this repo. Follow these c
 - DO NOT expand persona into infrastructure code (tracing, DB, security modules).
 - DO NOT exceed delegation limits or bypass supervisor finalization logic.
 
-## 5. File Landmarks
+## 5. File Landmarks (Updated)
 - Supervisor: `packages/backend/src/agi/consciousness/EnhancedLangChainCoreAgent.js`
 - Tool Registry: `packages/backend/src/agi/orchestration/AgentToolRegistry.js`
 - HF Bridge Agents: `packages/backend/src/integrations/huggingface/bridge/*Agent.js`
@@ -55,7 +70,20 @@ Purpose: Make AI coding agents instantly productive in this repo. Follow these c
 - MCP Routes: `packages/backend/src/routes/mcp.js`
 - Unix Socket Transport: `packages/backend/src/unix-socket.ts`
 - Exemplary Agent Prompting: `packages/backend/src/agi/consciousness/AnalyticsAgent.js`
-- DB Schemas: `db-init/` (use latest comprehensive snapshot + subsequent migrations)
+- DB Schemas: `db-init/` (apply `00_setup_pgvector.sql` then latest snapshot `06_comprehensive_cartrita_schema.sql` followed by subsequent incremental migrations `07+` .. current highest `15_create_journal_entries.sql`).
+- Recent Additions:
+	- Journal Entries Migration: `15_create_journal_entries.sql` (journal_entries table)
+	- Responsive UI audit plan: `docs/specs/ui/MOBILE_FIRST_COMPONENT_AUDIT_PLAN.md`
+	- Workflow monitoring & templates specs under `docs/specs/workflows/`
+	- Fusion & ambient intelligence plans under `docs/specs/multimodal/` & `docs/specs/intelligence/`
+
+## 5.1 Pending Backend Feature Seeds
+Follow spec-first approach before coding beyond stubs:
+- Journal enrichment pipeline (sentiment/emotion) — see `TASK_JOURNAL_MANAGEMENT_PLAN.md`.
+- Workflow execution streaming (SSE/WebSocket) — see `EXECUTION_MONITORING_UI_PLAN.md`.
+- Fusion aggregation endpoints — implement after artifact schema migration.
+- Ambient policy evaluator — schedule periodic evaluation loop with tracing.
+
 
 ## 6. Extension Guidelines
 - Mirror an existing minimal agent for structure (names, exports, allowedTools) before customizing.
@@ -69,5 +97,15 @@ Purpose: Make AI coding agents instantly productive in this repo. Follow these c
 - Guard supervisor operations with `isInitialized`; return safe fallback if not ready.
 - Do not leak stack traces to users; rely on fallback responses.
 
+## 8. PR / Change Hygiene
+- Single-responsibility commits; migrations isolated.
+- Reference spec file names in commit messages for traceability.
+- If adding a migration: bump numeric prefix; never alter previous migrations.
+- Run lint/type checks where available before pushing.
+
+## 9. Observability Additions
+- Wrap new DB or external API operations in `traceOperation` with domain-prefixed span names.
+- Add counters for new external services or policy evaluation loops.
+
 ---
-Questions or missing patterns? Open an issue or ask for a refinement—keep this file concise and updated when patterns evolve.
+Questions or missing patterns? Propose refinement via PR with concise diff + justification.

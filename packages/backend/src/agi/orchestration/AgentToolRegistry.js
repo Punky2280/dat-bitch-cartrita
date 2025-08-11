@@ -15,6 +15,9 @@
  */
 
 import { DynamicTool } from '@langchain/core/tools';
+import CompositeRegistry from './CompositeRegistry.js';
+import registerSystemTools from './registries/systemRegistry.js';
+// NOTE: CompositeRegistry currently used only for lightweight system tools in tests.
 import { Calculator } from '@langchain/community/tools/calculator';
 // WebBrowser tool removed - using custom implementation
 import { WikipediaQueryRun } from '@langchain/community/tools/wikipedia_query_run';
@@ -47,6 +50,8 @@ import db from '../../db.js';
 class AgentToolRegistry {
   constructor() {
     this.tools = new Map();
+  // Preserve original Zod schemas for regression tests
+  this.rawSchemas = new Map();
     this.agentPermissions = new Map();
     this.initialized = false;
 
@@ -64,20 +69,68 @@ class AgentToolRegistry {
    * Initialize the tool registry with all available tools
    */
   async initialize() {
+    if (process.env.USE_COMPOSITE_REGISTRY === '1') {
+      // Delegate to composite mini-registry architecture
+      const composite = new CompositeRegistry();
+  composite.addMiniRegistry('system', 0, registerSystemTools);
+      await composite.initialize();
+      // Mirror composite state into legacy registry for backward compatibility
+      this.tools = composite.tools;
+      this.rawSchemas = composite.rawSchemas;
+      this.initialized = true;
+      console.log('[AgentToolRegistry] ▶ Delegated to CompositeRegistry (phases executed up to REGISTRY_PHASE_MAX)');
+      return true;
+    }
     try {
       console.log('[AgentToolRegistry] 🛠️ Initializing tool registry...');
+
+      // Helper to timebox potentially heavy sections (external APIs, dynamic imports)
+      const sectionTimeoutMs = (process.env.REGISTRY_SECTION_TIMEOUT_MS && Number(process.env.REGISTRY_SECTION_TIMEOUT_MS)) || (process.env.NODE_ENV === 'test' ? 1200 : 8000);
+      const timebox = async (label, fn) => {
+        const start = Date.now();
+        let timeoutHandle;
+        const timeoutPromise = new Promise(resolve => {
+          timeoutHandle = setTimeout(() => {
+            console.warn(`[AgentToolRegistry] ⏱️ Section timeout reached for ${label} after ${sectionTimeoutMs}ms – continuing without full completion`);
+            resolve('timeout');
+          }, sectionTimeoutMs);
+        });
+        try {
+          const result = await Promise.race([fn(), timeoutPromise]);
+          const dur = Date.now() - start;
+          if (result === 'timeout') {
+            return false; // indicate incomplete
+          }
+          console.log(`[AgentToolRegistry] ✅ Section ${label} completed in ${dur}ms`);
+          return true;
+        } catch (e) {
+          console.warn(`[AgentToolRegistry] ⚠️ Section ${label} error: ${e.message}`);
+          return false;
+        } finally {
+          clearTimeout(timeoutHandle);
+        }
+      };
 
       // Register core system tools
       await this.registerSystemTools();
 
-      // Register agent-specific tools
-      await this.registerAgentTools();
+      // Early exit if only system tools requested (lightweight tests)
+      if (process.env.REGISTRY_TARGET === 'system') {
+        this.initialized = true;
+        console.log('[AgentToolRegistry] 🎯 REGISTRY_TARGET=system -> skipping additional tool groups');
+        return true;
+      }
 
-      // Register utility tools
-      await this.registerUtilityTools();
+      if (process.env.NODE_ENV === 'test' && process.env.MINIMAL_REGISTRY === '1') {
+        this.initialized = true;
+        console.log('[AgentToolRegistry] 🧪 Minimal registry mode active (system tools only)');
+        return true;
+      }
 
-  // Register HuggingFace tools (optional, safe failure)
-  await this.registerHuggingFaceTools();
+      // Timeboxed heavy sections
+      await timebox('registerAgentTools', () => this.registerAgentTools());
+      await timebox('registerUtilityTools', () => this.registerUtilityTools());
+      await timebox('registerHuggingFaceTools', () => this.registerHuggingFaceTools());
 
       this.initialized = true;
       console.log(
@@ -114,9 +167,10 @@ class AgentToolRegistry {
       category: 'system',
       schema: z.object({
         format: z
-          .string()
+          .enum(['ISO', 'eastern', 'friendly'])
           .optional()
-          .describe('Optional format string (default: ISO)'),
+          .default('ISO')
+          .describe('Optional format string (default: ISO | eastern | friendly)'),
       }),
       func: async ({ format = 'ISO' }) => {
         const now = new Date();
@@ -295,9 +349,35 @@ class AgentToolRegistry {
    */
   async registerHuggingFaceTools() {
     try {
-      const { default: AgentOrchestrator } = await import('../../integrations/huggingface/AgentOrchestrator.js');
+      // Timeboxed dynamic import so tests don't hang indefinitely
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), process.env.HF_INIT_TIMEOUT_MS ? Number(process.env.HF_INIT_TIMEOUT_MS) : 3000);
+      let AgentOrchestrator;
+      try {
+        ({ default: AgentOrchestrator } = await import('../../integrations/huggingface/AgentOrchestrator.js'));
+      } catch (e) {
+        console.warn('[AgentToolRegistry] ⚠️ HF orchestrator import failed:', e.message);
+        clearTimeout(timeout);
+        return; // graceful skip
+      }
       const hfOrchestrator = new AgentOrchestrator();
-      await hfOrchestrator.initialize();
+      try {
+        await Promise.race([
+          hfOrchestrator.initialize(),
+          new Promise((_, reject) => controller.signal.addEventListener('abort', () => reject(new Error('hf_init_timeout'))))
+        ]);
+      } catch (e) {
+        if (e.message === 'hf_init_timeout') {
+          console.warn('[AgentToolRegistry] ⚠️ HF orchestrator init timed out; proceeding without HF route tools');
+          clearTimeout(timeout);
+          return;
+        } else {
+          console.warn('[AgentToolRegistry] ⚠️ HF orchestrator init error:', e.message);
+          clearTimeout(timeout);
+          return;
+        }
+      }
+      clearTimeout(timeout);
       global.hfOrchestrator = hfOrchestrator;
       // Create per-task counters (once)
       if (!global.hfTaskCounters && OpenTelemetryTracing && OpenTelemetryTracing.meter) {
@@ -2415,6 +2495,9 @@ Format as structured JSON with clear categories.`;
    */
   registerTool({ name, description, category, schema, func }) {
     try {
+      if (schema) {
+        this.rawSchemas.set(name, schema);
+      }
       const tool = new DynamicTool({
         name: name,
         description: description,

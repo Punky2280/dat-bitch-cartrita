@@ -1,6 +1,5 @@
 import { AIMessage, SystemMessage } from '@langchain/core/messages';
 import BaseAgent from '../../system/BaseAgent.js';
-import WolframAlphaService from '../../services/WolframAlphaService.js';
 
 /**
  * @class ArtistAgent
@@ -30,18 +29,14 @@ class ArtistAgent extends BaseAgent {
     this.llm = llm;
     this.toolRegistry = toolRegistry;
 
-    // Update config with allowed tools including Wolfram Alpha
     this.config.allowedTools = [
       'dalle_3',
       'image_analyzer',
-      'wolfram_alpha',
       'plot_generation',
       'mathematical_visualization',
       'scientific_imagery',
     ];
 
-    // Initialize Wolfram Alpha service
-    this.wolframService = WolframAlphaService;
   }
 
   /**
@@ -72,15 +67,10 @@ Your personality is artistic, creative, imaginative, and sassy with that Miami s
    - Use \`image_analyzer\` tool to analyze existing images if provided
 3. **Provide Artistic Direction:** Explain your creative choices, style decisions, and artistic vision
 
-**YOUR SPECIALIZED TOOLS (including Wolfram Alpha):**
 ${this.config.allowedTools.join(', ')}
 
-**WOLFRAM ALPHA CREATIVE CAPABILITIES:**
-Your wolframService provides mathematical and scientific visualization tools:
-- Plot generation: Use wolframService.generatePlot(expression) to create mathematical graphs and charts for incorporation into artistic works
 - Mathematical visualization: Generate precise geometric patterns, fractals, and mathematical art
 - Scientific imagery: Access data for creating accurate scientific illustrations and infographics
-- Historical research: Use wolframService.queryHistoricalFacts() for historically accurate artistic references
 
 **EXECUTION REQUIREMENTS:**
 - ACTUALLY create images using your \`dalle_3\` tool - don't just describe what you would create

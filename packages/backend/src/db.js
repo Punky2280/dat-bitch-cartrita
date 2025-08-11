@@ -9,48 +9,50 @@ const baseConfig = {
   port: Number(process.env.POSTGRES_PORT) || 5432,
 };
 
-async function selectConfig() {
-  // Try primary first
-  let testPool = new Pool(baseConfig);
-  try {
-    await testPool.query('SELECT 1');
-    testPool.end();
-  console.log('[db] ✅ Primary database reachable');
-    return baseConfig;
-  } catch (err) {
-    // Fallback only for local dev host to mapped port 5435 (or if autofallback flag enabled)
-    if (
-      (process.env.DB_PORT_AUTOFALLBACK === '1' || !process.env.POSTGRES_PORT) &&
-      (baseConfig.host === 'localhost' || baseConfig.host === '127.0.0.1') &&
-      baseConfig.port === 5432
-    ) {
-      console.warn('[db] Primary port 5432 failed, attempting fallback port 5435');
-      const fallback = { ...baseConfig, port: 5435 };
-      testPool = new Pool(fallback);
-      try {
-        await testPool.query('SELECT 1');
-        testPool.end();
-        console.log('[db] ✅ Connected via fallback port 5435');
-        return fallback;
-      } catch (fallbackErr) {
-        console.error('[db] ❌ Fallback port 5435 also failed:', fallbackErr.message);
-        return baseConfig; // return primary anyway; downstream errors will surface
+let pool;
+if (process.env.DB_SKIP === '1' || process.env.NODE_ENV === 'test') {
+  // Lightweight stub for tests / migrations skipped runs
+  pool = {
+    query: async () => ({ rows: [], rowCount: 0 }),
+    end: async () => {},
+    on: () => {},
+  };
+} else {
+  // Create pool immediately with base config (non-blocking)
+  pool = new Pool(baseConfig);
+  pool.on('connect', () => {
+    console.log(`✅ Database connected (${baseConfig.host}:${baseConfig.port})`);
+  });
+  pool.on('error', err => {
+    console.error('❌ Database connection error:', err.message || err);
+  });
+  // Async health check + optional port fallback (non-blocking, no top-level await)
+  (async () => {
+    try {
+      await pool.query('SELECT 1');
+      console.log('[db] ✅ Primary database reachable');
+    } catch (err) {
+      if (
+        (process.env.DB_PORT_AUTOFALLBACK === '1' || !process.env.POSTGRES_PORT) &&
+        (baseConfig.host === 'localhost' || baseConfig.host === '127.0.0.1') &&
+        baseConfig.port === 5432
+      ) {
+        try {
+          console.warn('[db] Primary port 5432 failed, attempting fallback port 5435');
+          const fallback = { ...baseConfig, port: 5435 };
+          const fallbackPool = new Pool(fallback);
+          await fallbackPool.query('SELECT 1');
+          pool.end().catch(()=>{});
+          pool = fallbackPool;
+          console.log('[db] ✅ Connected via fallback port 5435');
+        } catch (fallbackErr) {
+          console.error('[db] ❌ Fallback port 5435 also failed:', fallbackErr.message);
+        }
+      } else {
+        console.error('[db] ❌ Primary database unreachable (continuing):', err.message);
       }
     }
-  console.error('[db] ❌ Primary database unreachable and no fallback criteria met:', err.message);
-    return baseConfig;
-  }
+  })();
 }
-
-const finalConfig = await selectConfig();
-const pool = new Pool(finalConfig);
-
-pool.on('connect', () => {
-  console.log(`✅ Database connected (${finalConfig.host}:${finalConfig.port})`);
-});
-
-pool.on('error', err => {
-  console.error('❌ Database connection error:', err.message || err);
-});
 
 export default pool;

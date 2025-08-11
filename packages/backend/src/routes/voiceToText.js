@@ -64,9 +64,12 @@ router.post(
       );
 
       res.json({
-        success: true,
-        transcription: mockTranscription,
-        timestamp: new Date().toISOString(),
+  success: true,
+  transcript: mockTranscription.text,
+  raw: mockTranscription,
+  tokens: null,
+  model: 'mock-deepgram',
+  timestamp: new Date().toISOString(),
       });
     } catch (error) {
       console.error('[VoiceToText] ❌ Transcription error:', error);

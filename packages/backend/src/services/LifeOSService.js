@@ -14,7 +14,6 @@
 
 import pool from '../db.js';
 import EnhancedLangChainCoreAgent from '../agi/consciousness/EnhancedLangChainCoreAgent.js';
-import WolframAlphaService from './WolframAlphaService.js';
 import OpenAI from 'openai';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -22,7 +21,6 @@ class LifeOSService {
   constructor() {
     this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     this.coreAgent = null; // Will be injected
-    this.wolframService = WolframAlphaService;
 
     // Life OS modules
     this.modules = {

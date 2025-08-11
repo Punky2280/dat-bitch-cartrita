@@ -4,7 +4,6 @@ import {
   SystemMessage,
 } from '@langchain/core/messages';
 import BaseAgent from '../../system/BaseAgent.js';
-import WolframAlphaService from '../../services/WolframAlphaService.js';
 
 /**
  * @class SchedulerAgent
@@ -33,19 +32,15 @@ class SchedulerAgent extends BaseAgent {
     this.llm = llm;
     this.toolRegistry = toolRegistry;
 
-    // Update config with allowed tools including Wolfram Alpha
     this.config.allowedTools = [
       'calendar_manager',
       'time_analyzer',
       'conflict_resolver',
-      'wolfram_alpha',
       'time_zone_conversion',
       'date_calculation',
       'scheduling_optimization',
     ];
 
-    // Initialize Wolfram Alpha service
-    this.wolframService = WolframAlphaService;
 
     this._initializeSchedulingEngine();
   }
@@ -80,19 +75,14 @@ Your personality is organized, efficient, punctual, and sassy with that Miami st
 3. **Coordinate Time Management:** Handle complex scheduling scenarios with multiple participants
 4. **Provide Clear Scheduling:** Give specific times, dates, and calendar confirmations
 
-**YOUR SPECIALIZED TOOLS (including Wolfram Alpha):**
 ${this.config.allowedTools.join(', ')}
 
-**WOLFRAM ALPHA SCHEDULING CAPABILITIES:**
-Your wolframService provides precise time and date calculations for advanced scheduling:
-- Date calculations: Use wolframService.query() for complex date arithmetic and scheduling math
 - Time zone conversions: Calculate exact times across different time zones and daylight savings
 - Duration calculations: Compute precise meeting durations and availability windows
 - Calendar mathematics: Calculate optimal scheduling patterns and recurring event intervals
 
 **EXECUTION REQUIREMENTS:**
 - ACTUALLY create, modify, or analyze calendar events using your tools - don't just suggest times
-- Use Wolfram Alpha for precise time zone calculations and date arithmetic
 - Parse natural language time requests into specific dates and times
 - Check for conflicts and availability using your scheduling tools
 - Handle time zones, recurring events, and complex scheduling scenarios

@@ -12,6 +12,7 @@ import LiveChatButton from "@/components/LiveChatButton";
 import ModelSelectorPanel from "@/components/ModelSelectorPanel";
 import { HuggingFaceIntegrationHub } from "@/components/huggingface/HuggingFaceIntegrationHub";
 import HealthDashboardPage from "@/pages/HealthDashboardPage";
+import EmailInboxPage from "@/pages/EmailInboxPage";
 
 interface DashboardPageProps {
   token: string;
@@ -38,6 +39,7 @@ const DASHBOARD_VIEWS = [
   "models",
   "huggingface",
   "health",
+  "email", // added email inbox
 ] as const;
 type DashboardView = typeof DASHBOARD_VIEWS[number];
 
@@ -371,6 +373,11 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
     return <HealthDashboardPage token={token} onBack={() => setCurrentView("chat")} />;
   }
 
+  // Show email inbox page
+  if (currentView === "email") {
+    return <EmailInboxPage token={token} onBack={() => setCurrentView("chat")} />;
+  }
+
   // Show main dashboard
   return (
     <div className="min-h-screen bg-animated text-white">
@@ -464,6 +471,15 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
             >
               <span>📊</span>
               <span className="hidden sm:inline">Health</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentView("email")}
+              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50 flex items-center space-x-2"
+              title="Email Inbox"
+            >
+              <span>📧</span>
+              <span className="hidden sm:inline">Email</span>
             </button>
 
             <button

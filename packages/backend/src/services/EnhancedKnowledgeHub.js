@@ -19,12 +19,10 @@ import crypto from 'crypto';
 import pdf from 'pdf-parse-fork';
 import mammoth from 'mammoth';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
-import WolframAlphaService from './WolframAlphaService.js';
 
 class EnhancedKnowledgeHub {
   constructor() {
     this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    this.wolframService = WolframAlphaService;
     this.embeddings = null; // Will store embedding model
     this.vectorDimension = 1536; // OpenAI ada-002 dimensions
     this.chunkSize = 1000;
@@ -673,7 +671,7 @@ ANSWER:`;
       // Extract key concepts and entities
       const concepts = await this.extractKeyConcepts(content);
 
-      // Extract factual information using Wolfram Alpha for validation
+      // Extract factual information 
       const facts = await this.extractFactualInformation(content);
 
       // Store extractions
@@ -686,7 +684,7 @@ ANSWER:`;
         {
           type: 'factual_information',
           data: facts,
-          method: 'ai_analysis_wolfram_validation',
+          method: 'ai_analysis',
         },
       ];
 
@@ -765,12 +763,12 @@ ${text.substring(0, 4000)}`;
   }
 
   /**
-   * Extract and validate factual information
+   * Extract factual information
    */
   async extractFactualInformation(text) {
     try {
-      // First extract potential facts with AI
-      const factExtractionPrompt = `Extract factual statements, numbers, dates, and claims from this text that could be verified:
+      // Extract potential facts with AI
+      const factExtractionPrompt = `Extract factual statements, numbers, dates, and claims from this text:
 
 TEXT: ${text.substring(0, 3000)}
 
@@ -778,7 +776,7 @@ Return a JSON array of facts, each with:
 {
   "statement": "the factual claim",
   "type": "statistic|date|scientific_fact|historical_event|mathematical_formula|other",
-  "verifiable": true/false
+  "confidence": 0.8
 }`;
 
       const extraction = await this.openai.chat.completions.create({
@@ -787,7 +785,7 @@ Return a JSON array of facts, each with:
           {
             role: 'system',
             content:
-              'Extract verifiable factual information from text. Return valid JSON array.',
+              'Extract factual information from text. Return valid JSON array.',
           },
           { role: 'user', content: factExtractionPrompt },
         ],
@@ -796,48 +794,9 @@ Return a JSON array of facts, each with:
 
       const extractedFacts = JSON.parse(extraction.choices[0].message.content);
 
-      // Validate some facts with Wolfram Alpha
-      const validatedFacts = [];
-      for (const fact of extractedFacts.slice(0, 3)) {
-        // Limit to avoid rate limits
-        if (
-          fact.verifiable &&
-          (fact.type === 'scientific_fact' ||
-            fact.type === 'mathematical_formula' ||
-            fact.type === 'statistic')
-        ) {
-          try {
-            const wolframResult = await this.wolframService.query(
-              fact.statement
-            );
-            validatedFacts.push({
-              ...fact,
-              wolfram_verification: {
-                verified: wolframResult.success,
-                wolfram_result:
-                  wolframResult.summary || wolframResult.plaintext?.[0],
-              },
-            });
-          } catch (wolframError) {
-            validatedFacts.push({
-              ...fact,
-              wolfram_verification: {
-                verified: false,
-                error: 'Wolfram query failed',
-              },
-            });
-          }
-        } else {
-          validatedFacts.push(fact);
-        }
-      }
-
       return {
         extracted_facts: extractedFacts,
-        validated_facts: validatedFacts,
-        validation_count: validatedFacts.filter(
-          f => f.wolfram_verification?.verified
-        ).length,
+        extraction_method: 'ai_analysis'
       };
     } catch (error) {
       console.error(

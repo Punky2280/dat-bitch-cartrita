@@ -271,6 +271,36 @@ const WorkflowBuilder: React.FC<{
     }
   };
 
+  const [isNarrow, setIsNarrow] = useState(false);
+  useEffect(()=>{
+    const handler = ()=> setIsNarrow(window.innerWidth < 640);
+    handler();
+    window.addEventListener('resize', handler);
+    return ()=> window.removeEventListener('resize', handler);
+  }, []);
+
+  if(isNarrow){
+    return (
+      <div className="min-h-screen bg-gray-900 text-white flex flex-col">
+        <div className="p-4 flex items-center justify-between border-b border-gray-700">
+          <button onClick={()=> window.history.back()} className="text-gray-400 hover:text-white">← Back</button>
+          <span className="text-sm text-gray-500">Mobile View</span>
+        </div>
+        <div className="p-6 space-y-4">
+          <h2 className="text-xl font-semibold">Workflow Builder Unavailable on Small Screens</h2>
+          <p className="text-sm text-gray-400 leading-relaxed">Editing complex graphs is disabled below the small (640px) breakpoint for usability. View execution history & metadata from the Workflows list instead. Rotate your device or use a larger screen to edit.</p>
+          <button onClick={()=> setShowLogs(!showLogs)} className="px-4 py-2 bg-gray-700 rounded-lg text-sm">{showLogs? 'Hide Logs':'Show Logs'}</button>
+          {showLogs && (
+            <div className="border border-gray-700 rounded-lg p-4 max-h-64 overflow-y-auto text-xs space-y-2">
+              {executionLogs.length===0 && <div className="text-gray-500">No logs yet.</div>}
+              {executionLogs.map((l,i)=> <div key={i} className="bg-gray-800/60 px-2 py-1 rounded">{l.timestamp} – {l.message}</div>)}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen bg-gray-900 flex">
       {/* Node Palette */}
@@ -450,6 +480,10 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(
     null,
   );
+  const [showHistoryFor, setShowHistoryFor] = useState<string | null>(null);
+  interface ExecutionRow { id: string; status: string; started_at: string; completed_at?: string; error?: string; }
+  const [executions, setExecutions] = useState<ExecutionRow[]>([]);
+  const [loadingExecutions, setLoadingExecutions] = useState(false);
   const [showBuilder, setShowBuilder] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -572,6 +606,32 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
   });
 
   const categories = [...new Set(workflows.map((w) => w.category)), "all"];
+
+  // Fetch execution history when showHistoryFor changes
+  useEffect(()=>{
+    if(!showHistoryFor) return;
+    let abort = false;
+    const fetchExecutions = async ()=>{
+      setLoadingExecutions(true);
+      try {
+        const res = await fetch(`/api/workflows/${showHistoryFor}/executions?limit=15`, { headers: { Authorization: `Bearer ${token}` }});
+        const data = await res.json();
+        if(!abort && data.executions){
+          setExecutions(data.executions.map((e:any)=>({ id: e.id, status: e.status || 'unknown', started_at: e.started_at || e.created_at, completed_at: e.completed_at, error: e.error })));
+        }
+      } catch (e){ /* silent */ }
+      finally { if(!abort) setLoadingExecutions(false); }
+    };
+    fetchExecutions();
+    const interval = setInterval(fetchExecutions, 10000);
+    return ()=>{ abort = true; clearInterval(interval); };
+  }, [showHistoryFor, token]);
+
+  const statusPill = (status:string)=>{
+    const map: Record<string,string> = { pending: 'bg-gray-700 text-gray-200', running:'bg-blue-600 text-white', completed:'bg-green-600 text-white', failed:'bg-red-600 text-white', canceled:'bg-yellow-600 text-white' };
+    const cls = map[status] || 'bg-gray-600 text-gray-200';
+    return <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${cls}`}>{status}</span>;
+  };
 
   if (loading) {
     return (
@@ -796,7 +856,85 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
                     >
                       🗑️
                     </button>
+                    <button
+                      onClick={()=> setShowHistoryFor(showHistoryFor===workflow.id.toString()? null : workflow.id.toString())}
+                      className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition-colors"
+                    >
+                      {showHistoryFor===workflow.id.toString()? 'Hide' : 'History'}
+                    </button>
                   </div>
+
+                  {showHistoryFor===workflow.id.toString() && (
+                    <div className="mt-6 border-t border-gray-700 pt-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-semibold text-gray-300 flex items-center space-x-2"><span>📜</span><span>Recent Executions</span></h4>
+                        {loadingExecutions && <span className="text-xs text-gray-500 animate-pulse">Refreshing...</span>}
+                      </div>
+                      {/* Desktop Table */}
+                      <div className="overflow-x-auto hidden md:block">
+                        <table className="min-w-full text-xs">
+                          <thead className="bg-gray-700/60 text-gray-300">
+                            <tr>
+                              <th className="text-left px-3 py-2">ID</th>
+                              <th className="text-left px-3 py-2">Status</th>
+                              <th className="text-left px-3 py-2">Started</th>
+                              <th className="text-left px-3 py-2">Completed</th>
+                              <th className="text-left px-3 py-2">Duration</th>
+                              <th className="text-left px-3 py-2">Error</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-700/70">
+                            {executions.length===0 && !loadingExecutions && (
+                              <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-500">No executions yet.</td></tr>
+                            )}
+                            {executions.map(ex=>{
+                              const dur = (ex.started_at && ex.completed_at) ? ( (new Date(ex.completed_at).getTime() - new Date(ex.started_at).getTime())/1000).toFixed(2)+'s' : '—';
+                              return (
+                                <tr key={ex.id} className="hover:bg-gray-700/40">
+                                  <td className="px-3 py-2 font-mono text-[10px]">{ex.id.slice(0,8)}</td>
+                                  <td className="px-3 py-2">{statusPill(ex.status)}</td>
+                                  <td className="px-3 py-2 text-gray-400">{ex.started_at? new Date(ex.started_at).toLocaleTimeString(): '—'}</td>
+                                  <td className="px-3 py-2 text-gray-400">{ex.completed_at? new Date(ex.completed_at).toLocaleTimeString(): '—'}</td>
+                                  <td className="px-3 py-2 text-gray-300">{dur}</td>
+                                  <td className="px-3 py-2 text-red-400 truncate max-w-[160px]" title={ex.error||''}>{ex.error? ex.error.slice(0,40): ''}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                      {/* Mobile Cards */}
+                      <div className="md:hidden space-y-3">
+                        {executions.length===0 && !loadingExecutions && <div className="text-gray-500 text-xs">No executions yet.</div>}
+                        {executions.map(ex=>{
+                          const dur = (ex.started_at && ex.completed_at) ? ( (new Date(ex.completed_at).getTime() - new Date(ex.started_at).getTime())/1000).toFixed(2)+'s' : '—';
+                          return (
+                            <div key={ex.id} className="border border-gray-700 rounded-lg p-3 bg-gray-800/50 text-[11px]">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-mono">{ex.id.slice(0,8)}</span>
+                                {statusPill(ex.status)}
+                              </div>
+                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-gray-400">
+                                <span>Start: {ex.started_at? new Date(ex.started_at).toLocaleTimeString(): '—'}</span>
+                                <span>End: {ex.completed_at? new Date(ex.completed_at).toLocaleTimeString(): '—'}</span>
+                                <span>Dur: {dur}</span>
+                              </div>
+                              {ex.error && <div className="mt-1 text-red-400 truncate" title={ex.error}>{ex.error.slice(0,60)}</div>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="mt-3 text-[10px] text-gray-500">Auto-refresh every 10s (MVP polling)</div>
+                      <div className="mt-4 bg-gray-800/60 border border-gray-700 rounded p-3">
+                        <div className="text-[11px] text-gray-400">Upcoming Monitoring Enhancements:</div>
+                        <ul className="mt-2 text-[11px] text-gray-300 space-y-1 list-disc list-inside">
+                          <li>Real-time streaming via SSE/WebSocket</li>
+                          <li>Node-level progress & timeline visualization</li>
+                          <li>Log streaming with auto-scroll & filters</li>
+                        </ul>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

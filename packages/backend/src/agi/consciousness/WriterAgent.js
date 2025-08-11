@@ -4,7 +4,6 @@ import {
   SystemMessage,
 } from '@langchain/core/messages';
 import BaseAgent from '../../system/BaseAgent.js';
-import WolframAlphaService from '../../services/WolframAlphaService.js';
 
 /**
  * @class WriterAgent
@@ -35,20 +34,16 @@ class WriterAgent extends BaseAgent {
     this.llm = llm;
     this.toolRegistry = toolRegistry;
 
-    // Update config with allowed tools including Wolfram Alpha
     this.config.allowedTools = [
       'grammar_checker',
       'style_analyzer',
       'content_optimizer',
       'plagiarism_checker',
-      'wolfram_alpha',
       'historical_facts',
       'factual_verification',
       'narrative_research',
     ];
 
-    // Initialize Wolfram Alpha service
-    this.wolframService = WolframAlphaService;
   }
 
   /**
@@ -75,19 +70,11 @@ Your style is eloquent, engaging, adaptable, and sassy with that Miami street-sm
 3. **Craft Quality Content:** Create polished, professional writing that meets the request
 4. **Polish & Perfect:** Use tools to refine and elevate the final content
 
-**YOUR SPECIALIZED TOOLS (including Wolfram Alpha):**
 ${this.config.allowedTools.join(', ')}
 
-**WOLFRAM ALPHA WRITING RESEARCH:**
-Your wolframService provides powerful factual research for enhanced writing:
-- Historical facts: Use wolframService.queryHistoricalFacts(query) for accurate dates, events, biographical data
-- Geographic information: Use wolframService.queryGeographic(location, infoType) for location details in stories
-- Scientific accuracy: Use wolframService.queryScientificData(query) for technical writing accuracy
-- Mathematical precision: Use wolframService.computeMathematical(expression) for numerical accuracy in articles
 
 **EXECUTION REQUIREMENTS:**
 - ACTUALLY write complete content using your writing expertise - don't just outline what you would write
-- Use Wolfram Alpha to verify facts, dates, and technical details for accuracy
 - Use your editing tools to polish and refine the content for quality
 - Adapt writing style to match the request: formal, casual, persuasive, creative, technical
 - Include proper structure: intros, body paragraphs, conclusions, transitions

@@ -4,7 +4,6 @@ import {
   SystemMessage,
 } from '@langchain/core/messages';
 import BaseAgent from '../../system/BaseAgent.js';
-import WolframAlphaService from '../../services/WolframAlphaService.js';
 
 /**
  * @class AnalyticsAgent
@@ -34,20 +33,16 @@ class AnalyticsAgent extends BaseAgent {
     this.llm = llm;
     this.toolRegistry = toolRegistry;
 
-    // Update config with allowed tools including Wolfram Alpha
     this.config.allowedTools = [
       'data_analyzer',
       'chart_generator',
       'statistics_engine',
       'calculator',
-      'wolfram_alpha',
       'statistical_analysis',
       'mathematical_computation',
       'plot_generation',
     ];
 
-    // Initialize Wolfram Alpha service
-    this.wolframService = WolframAlphaService;
   }
 
   /**
@@ -105,16 +100,8 @@ Follow this professional workflow to deliver REAL insights:
 4. **Calculate Statistics:** Use \`statistics_engine\` or \`calculator\` tools for mathematical analysis
 5. **Synthesize Results:** Provide detailed findings with specific numbers, trends, and insights
 
-**YOUR SPECIALIZED TOOLS (including Wolfram Alpha):**
 ${this.config.allowedTools.join(', ')}
 
-**WOLFRAM ALPHA CAPABILITIES:**
-You have access to comprehensive Wolfram Alpha computational intelligence through your wolframService:
-- Mathematical computations: Use wolframService.computeMathematical(expression) for complex calculations
-- Statistical analysis: Use wolframService.analyzeStatistics(data, analysisType) for descriptive, inferential statistics
-- Unit conversions: Use wolframService.convertUnits(value, fromUnit, toUnit) for any unit conversion
-- Real-time data: Use wolframService.queryRealTimeData(query) for current market data, weather, etc
-- Plot generation: Use wolframService.generatePlot(expression) for mathematical visualizations
 
 **EXECUTION REQUIREMENTS:**
 - ACTUALLY use your analytical tools - don't just describe what you would do

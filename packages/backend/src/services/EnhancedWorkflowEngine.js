@@ -12,18 +12,24 @@
 
 import pool from '../db.js';
 import EnhancedLangChainCoreAgent from '../agi/consciousness/EnhancedLangChainCoreAgent.js';
-import WolframAlphaService from './WolframAlphaService.js';
 import OpenAI from 'openai';
 import axios from 'axios';
 import cron from 'node-cron';
 import { v4 as uuidv4 } from 'uuid';
 import { shouldQuietLogs } from '../util/env.js';
+// ModelRegistryService will be injected dynamically to avoid import issues
 
 class EnhancedWorkflowEngine {
   constructor() {
-    this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    // Lazy / optional OpenAI initialization to allow test runs without key
+    if (process.env.OPENAI_API_KEY) {
+      this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    } else {
+      this.openai = null; // features requiring OpenAI will guard on null
+    }
     this.coreAgent = null; // Will be injected
-    this.wolframService = WolframAlphaService;
+    this.modelRegistry = null; // Will be injected
+    this.knowledgeHub = null; // Will be injected
 
     // Execution state management
     this.activeExecutions = new Map();
@@ -37,7 +43,9 @@ class EnhancedWorkflowEngine {
     };
 
     this.initializeNodeHandlers();
-    this.initializeScheduler();
+    if (process.env.NODE_ENV !== 'test') {
+      this.initializeScheduler();
+    }
 
     if (!shouldQuietLogs()) {
       console.log(
@@ -79,6 +87,7 @@ class EnhancedWorkflowEngine {
     // Data processing nodes
     safeRegister('rag-embeddings', 'handleRAGEmbeddingsNode');
     safeRegister('rag-search', 'handleRAGSearchNode');
+    safeRegister('rag-qa', 'handleRAGQANode');
     safeRegister('data-transform', 'handleDataTransformNode');
     safeRegister('data-filter', 'handleDataFilterNode');
 
@@ -94,9 +103,6 @@ class EnhancedWorkflowEngine {
     safeRegister('webhook-send', 'handleWebhookSendNode');
     safeRegister('database-query', 'handleDatabaseQueryNode');
 
-    // Wolfram Alpha nodes
-    safeRegister('wolfram-compute', 'handleWolframComputeNode');
-    safeRegister('wolfram-plot', 'handleWolframPlotNode');
 
     // Multi-modal nodes
     safeRegister('image-analysis', 'handleImageAnalysisNode');
@@ -114,6 +120,12 @@ class EnhancedWorkflowEngine {
    */
   initializeScheduler() {
     // Check for scheduled workflows every minute
+    if (process.env.DISABLE_SCHEDULER === '1') {
+      if (!shouldQuietLogs()) {
+        console.log('[EnhancedWorkflowEngine] ⏩ Scheduler disabled for environment');
+      }
+      return;
+    }
     cron.schedule('* * * * *', async () => {
       try {
         await this.processScheduledWorkflows();
@@ -139,6 +151,26 @@ class EnhancedWorkflowEngine {
     this.coreAgent = coreAgent;
     if (!shouldQuietLogs()) {
       console.log('[EnhancedWorkflowEngine] 🤖 Core agent reference set');
+    }
+  }
+
+  /**
+   * Set model registry reference
+   */
+  setModelRegistry(modelRegistry) {
+    this.modelRegistry = modelRegistry;
+    if (!shouldQuietLogs()) {
+      console.log('[EnhancedWorkflowEngine] 🎯 Model registry reference set');
+    }
+  }
+
+  /**
+   * Set knowledge hub reference
+   */
+  setKnowledgeHub(knowledgeHub) {
+    this.knowledgeHub = knowledgeHub;
+    if (!shouldQuietLogs()) {
+      console.log('[EnhancedWorkflowEngine] 🧠 Knowledge hub reference set');
     }
   }
 
@@ -208,14 +240,39 @@ class EnhancedWorkflowEngine {
       // Calculate execution time
       const executionTime = Date.now() - startTime;
 
-      // Update execution record
+      // Derive node metrics
+      executionContext.nodeCount = executionContext.nodeResults?.size || (workflowData.nodes?.length || null);
+      executionContext.successNodeCount = executionContext.nodeResults
+        ? Array.from(executionContext.nodeResults.values()).filter(v => v && !v.error).length
+        : null;
+      executionContext.failedNodeCount = executionContext.nodeResults
+        ? Array.from(executionContext.nodeResults.values()).filter(v => v && v.error).length
+        : null;
+
+      // Update execution record with extended metrics
       await pool.query(
-        'UPDATE workflow_executions SET status = $1, output_data = $2, execution_logs = $3, completed_at = NOW(), execution_time_ms = $4 WHERE id = $5',
+        `UPDATE workflow_executions 
+         SET status = $1,
+             output_data = $2,
+             execution_logs = $3,
+             completed_at = NOW(),
+             execution_time_ms = $4,
+             node_count = COALESCE($5, node_count),
+             success_node_count = COALESCE($6, success_node_count),
+             failed_node_count = COALESCE($7, failed_node_count),
+             latency_bucket = COALESCE($8, latency_bucket),
+             summary_text = COALESCE($9, summary_text)
+         WHERE id = $10`,
         [
           'completed',
           JSON.stringify(result),
           JSON.stringify(executionContext.logs),
           executionTime,
+          executionContext.nodeCount || null,
+          executionContext.successNodeCount || null,
+          executionContext.failedNodeCount || null,
+          this.bucketLatency(executionTime),
+          this.buildExecutionSummary(result, executionTime),
           executionDbId,
         ]
       );
@@ -249,13 +306,34 @@ class EnhancedWorkflowEngine {
       if (executionId && this.activeExecutions.has(executionId)) {
         const context = this.activeExecutions.get(executionId);
         if (context.executionDbId) {
+          const failTime = Date.now() - startTime;
+          context.nodeCount = context.nodeResults?.size || null;
+            context.failedNodeCount = context.nodeResults
+              ? Array.from(context.nodeResults.values()).filter(v => v && v.error).length
+              : null;
           await pool.query(
-            'UPDATE workflow_executions SET status = $1, error_message = $2, execution_logs = $3, completed_at = NOW(), execution_time_ms = $4 WHERE id = $5',
+            `UPDATE workflow_executions 
+             SET status = $1,
+                 error_message = $2,
+                 execution_logs = $3,
+                 completed_at = NOW(),
+                 execution_time_ms = $4,
+                 failed_node_count = COALESCE($5, failed_node_count),
+                 node_count = COALESCE($6, node_count),
+                 latency_bucket = COALESCE($7, latency_bucket),
+                 summary_text = COALESCE($8, summary_text),
+                 failure_type = COALESCE($9, failure_type)
+             WHERE id = $10`,
             [
               'failed',
               error.message,
               JSON.stringify(context.logs),
-              Date.now() - startTime,
+              failTime,
+              context.failedNodeCount || null,
+              context.nodeCount || null,
+              this.bucketLatency(failTime),
+              this.buildExecutionSummary({ error: error.message }, failTime),
+              'engine_error',
               context.executionDbId,
             ]
           );
@@ -271,6 +349,28 @@ class EnhancedWorkflowEngine {
         executionId,
         executionTime: Date.now() - startTime,
       };
+    }
+  }
+
+  // Latency bucket helper
+  bucketLatency(ms) {
+    if (ms == null) return null;
+    if (ms < 500) return 'sub500ms';
+    if (ms < 1000) return 'sub1s';
+    if (ms < 3000) return 'sub3s';
+    if (ms < 5000) return 'sub5s';
+    if (ms < 10000) return 'sub10s';
+    return 'gt10s';
+  }
+
+  // Build short textual summary
+  buildExecutionSummary(result, ms) {
+    try {
+      if (!result) return null;
+      const preview = typeof result === 'string' ? result : JSON.stringify(result).slice(0, 200);
+      return `Duration=${ms}ms Preview=${preview}`;
+    } catch {
+      return null;
     }
   }
 
@@ -423,28 +523,113 @@ class EnhancedWorkflowEngine {
   }
 
   /**
-   * GPT-4 AI node handler
+   * GPT-4 AI node handler with intelligent model selection
    */
   async handleGPTNode(node, executionContext) {
-    const { model = 'gpt-4o', prompt, temperature = 0.7 } = node.data || {};
+    const { 
+      model = 'gpt-4o', 
+      prompt, 
+      temperature = 0.7,
+      useModelRegistry = true,
+      taskType = 'text-generation',
+      maxCostPer1kTokens,
+      maxLatencyMs,
+      qualityWeight = 0.4,
+      costWeight = 0.4,
+      latencyWeight = 0.2
+    } = node.data || {};
 
     if (!prompt) {
       throw new Error('GPT node requires a prompt');
     }
 
+    let selectedModel = model;
+    let modelSelectionResult = null;
+
+    // Use Model Registry for intelligent selection if available and enabled
+    if (this.modelRegistry && useModelRegistry) {
+      try {
+        modelSelectionResult = await this.modelRegistry.selectModel({
+          task_type: taskType,
+          quality_weight: qualityWeight,
+          cost_weight: costWeight,
+          latency_weight: latencyWeight,
+          safety_required: true,
+          commercial_use: true,
+          max_cost_per_1k_tokens: maxCostPer1kTokens,
+          max_latency_ms: maxLatencyMs
+        }, {
+          user_id: executionContext.userId,
+          workflow_run_id: executionContext.executionId,
+          stage: 'ai_generation',
+          supervisor: 'workflow_engine'
+        });
+
+        if (modelSelectionResult.selected) {
+          selectedModel = modelSelectionResult.selected;
+          
+          this.logExecution(executionContext, 'MODEL_SELECTED', {
+            nodeId: node.id,
+            originalModel: model,
+            selectedModel,
+            reason: modelSelectionResult.reason,
+            estimatedCost: modelSelectionResult.estimated_cost_usd
+          });
+        }
+      } catch (modelSelectionError) {
+        console.warn('[EnhancedWorkflowEngine] Model registry selection failed, using fallback:', modelSelectionError.message);
+        // Fallback to specified model
+      }
+    }
+
     // Process template variables in prompt
     const processedPrompt = this.processTemplate(prompt, executionContext);
 
+    // Execute inference through model registry if available, otherwise direct OpenAI
+    if (this.modelRegistry && modelSelectionResult) {
+      try {
+        const inferenceResult = await this.modelRegistry.executeInference(
+          selectedModel,
+          processedPrompt,
+          {
+            temperature,
+            user_id: executionContext.userId,
+            workflow_run_id: executionContext.executionId,
+            stage: 'ai_generation',
+            supervisor: 'workflow_engine'
+          }
+        );
+
+        return {
+          content: inferenceResult.result.text || inferenceResult.result.choices?.[0]?.message?.content,
+          model: selectedModel,
+          usage: inferenceResult.result.usage,
+          cost_usd: inferenceResult.cost_usd,
+          latency_ms: inferenceResult.latency_ms,
+          tokens_used: inferenceResult.tokens_used,
+          model_selection: {
+            original_model: model,
+            selected_model: selectedModel,
+            reason: modelSelectionResult.reason
+          }
+        };
+      } catch (registryError) {
+        console.warn('[EnhancedWorkflowEngine] Model registry execution failed, using direct OpenAI:', registryError.message);
+      }
+    }
+
+    // Fallback to direct OpenAI execution
     const response = await this.openai.chat.completions.create({
-      model,
+      model: selectedModel,
       messages: [{ role: 'user', content: processedPrompt }],
       temperature,
     });
 
     return {
       content: response.choices[0].message.content,
-      model,
+      model: selectedModel,
       usage: response.usage,
+      fallback: true
     };
   }
 
@@ -504,10 +689,17 @@ class EnhancedWorkflowEngine {
   }
 
   /**
-   * RAG embeddings node handler
+   * RAG embeddings node handler with model registry integration
    */
   async handleRAGEmbeddingsNode(node, executionContext) {
-    const { text, model = 'text-embedding-ada-002' } = node.data || {};
+    const { 
+      text, 
+      model = 'text-embedding-ada-002',
+      useModelRegistry = true,
+      qualityWeight = 0.5,
+      costWeight = 0.3,
+      latencyWeight = 0.2
+    } = node.data || {};
 
     if (!text) {
       throw new Error('RAG embeddings node requires text input');
@@ -515,40 +707,206 @@ class EnhancedWorkflowEngine {
 
     const processedText = this.processTemplate(text, executionContext);
 
+    let selectedModel = model;
+    let modelSelectionResult = null;
+
+    // Use Model Registry for embedding model selection if available
+    if (this.modelRegistry && useModelRegistry) {
+      try {
+        modelSelectionResult = await this.modelRegistry.selectModel({
+          task_type: 'embeddings',
+          quality_weight: qualityWeight,
+          cost_weight: costWeight,
+          latency_weight: latencyWeight,
+          safety_required: false, // Embeddings generally don't need safety filtering
+          commercial_use: true
+        }, {
+          user_id: executionContext.userId,
+          workflow_run_id: executionContext.executionId,
+          stage: 'embedding_generation',
+          supervisor: 'workflow_engine'
+        });
+
+        if (modelSelectionResult.selected) {
+          selectedModel = modelSelectionResult.selected;
+          
+          this.logExecution(executionContext, 'EMBEDDING_MODEL_SELECTED', {
+            nodeId: node.id,
+            originalModel: model,
+            selectedModel,
+            reason: modelSelectionResult.reason
+          });
+        }
+      } catch (modelSelectionError) {
+        console.warn('[EnhancedWorkflowEngine] Embedding model selection failed, using fallback:', modelSelectionError.message);
+      }
+    }
+
     const response = await this.openai.embeddings.create({
-      model,
+      model: selectedModel,
       input: processedText,
     });
 
     return {
       embeddings: response.data[0].embedding,
       text: processedText,
-      model,
+      model: selectedModel,
+      model_selection: modelSelectionResult ? {
+        original_model: model,
+        selected_model: selectedModel,
+        reason: modelSelectionResult.reason
+      } : undefined
     };
   }
 
   /**
-   * Wolfram Alpha compute node handler
+   * RAG search node handler with knowledge hub integration
    */
-  async handleWolframComputeNode(node, executionContext) {
-    const { query } = node.data || {};
+  async handleRAGSearchNode(node, executionContext) {
+    if (!this.knowledgeHub) {
+      throw new Error('Knowledge Hub not available for RAG search node');
+    }
+
+    const { 
+      query, 
+      limit = 5,
+      threshold = 0.7,
+      documentIds
+    } = node.data || {};
 
     if (!query) {
-      throw new Error('Wolfram compute node requires a query');
+      throw new Error('RAG search node requires a query');
     }
 
     const processedQuery = this.processTemplate(query, executionContext);
 
-    const result = await this.wolframService.query(processedQuery, {
-      agentRole: 'analyst',
-    });
+    try {
+      const searchResult = await this.knowledgeHub.semanticSearch(
+        executionContext.userId,
+        processedQuery,
+        {
+          limit,
+          threshold,
+          documentIds,
+          includeChunks: true,
+          includeDocuments: true
+        }
+      );
 
-    return {
-      query: processedQuery,
-      result: result.summary || result,
-      success: result.success !== false,
-    };
+      this.logExecution(executionContext, 'RAG_SEARCH_COMPLETED', {
+        nodeId: node.id,
+        query: processedQuery,
+        resultCount: searchResult.resultCount,
+        processingTime: searchResult.processingTime
+      });
+
+      return {
+        query: processedQuery,
+        results: searchResult.results,
+        resultCount: searchResult.resultCount,
+        processingTime: searchResult.processingTime,
+        success: searchResult.success
+      };
+    } catch (error) {
+      this.logExecution(executionContext, 'RAG_SEARCH_FAILED', {
+        nodeId: node.id,
+        query: processedQuery,
+        error: error.message
+      });
+      throw error;
+    }
   }
+
+  /**
+   * RAG Question-Answering node handler combining search + generation
+   */
+  async handleRAGQANode(node, executionContext) {
+    if (!this.knowledgeHub) {
+      throw new Error('Knowledge Hub not available for RAG QA node');
+    }
+
+    const { 
+      question,
+      searchLimit = 5,
+      searchThreshold = 0.7,
+      documentIds,
+      useModelRegistry = true,
+      model = 'gpt-4o',
+      maxTokens = 1000,
+      includeReferences = true
+    } = node.data || {};
+
+    if (!question) {
+      throw new Error('RAG QA node requires a question');
+    }
+
+    const processedQuestion = this.processTemplate(question, executionContext);
+
+    try {
+      // First, search for relevant context
+      const searchResult = await this.knowledgeHub.semanticSearch(
+        executionContext.userId,
+        processedQuestion,
+        {
+          limit: searchLimit,
+          threshold: searchThreshold,
+          documentIds,
+          includeChunks: true,
+          includeDocuments: true
+        }
+      );
+
+      if (!searchResult.success || searchResult.results.length === 0) {
+        return {
+          success: false,
+          question: processedQuestion,
+          answer: "I couldn't find any relevant information in your knowledge base to answer this question.",
+          references: [],
+          searchResults: searchResult
+        };
+      }
+
+      // Generate RAG response using Knowledge Hub
+      const ragResponse = await this.knowledgeHub.generateRAGResponse(
+        executionContext.userId,
+        processedQuestion,
+        searchResult.results,
+        {
+          model,
+          maxTokens,
+          includeReferences
+        }
+      );
+
+      this.logExecution(executionContext, 'RAG_QA_COMPLETED', {
+        nodeId: node.id,
+        question: processedQuestion,
+        searchResultCount: searchResult.resultCount,
+        answerGenerated: ragResponse.success,
+        model: ragResponse.model || model
+      });
+
+      return {
+        success: ragResponse.success,
+        question: processedQuestion,
+        answer: ragResponse.response,
+        references: ragResponse.references || [],
+        model: ragResponse.model,
+        tokenUsage: ragResponse.tokenUsage,
+        searchResults: searchResult,
+        contextLength: ragResponse.contextLength
+      };
+
+    } catch (error) {
+      this.logExecution(executionContext, 'RAG_QA_FAILED', {
+        nodeId: node.id,
+        question: processedQuestion,
+        error: error.message
+      });
+      throw error;
+    }
+  }
+
 
   /**
    * HTTP request node handler

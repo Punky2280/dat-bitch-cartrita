@@ -22,7 +22,6 @@ import { SerpAPI } from '@langchain/community/tools/serpapi';
 import { SearchApi } from '@langchain/community/tools/searchapi';
 
 // Mathematical/Scientific Tools
-import { WolframAlphaTool } from '@langchain/community/tools/wolframalpha';
 
 // Google Tools (Using Google API key)
 import { GoogleCustomSearch } from '@langchain/community/tools/google_custom_search';
@@ -63,7 +62,6 @@ class FullyFunctionalToolRegistry {
       await this.registerGoogleTools();
       await this.registerDevelopmentTools();
       await this.registerAnalysisTools();
-      await this.registerAdvancedAITools(); // NEW: Wolfram Alpha and DALL-E
       await this.registerCustomTools();
       await this.configureAgentPermissions();
 
@@ -521,20 +519,15 @@ class FullyFunctionalToolRegistry {
   }
 
   /**
-   * Register Advanced AI Tools (Wolfram Alpha and DALL-E) with APIKeyManager
    */
   async registerAdvancedAITools() {
     console.log(
       '[FullyFunctionalToolRegistry] 🤖 Registering advanced AI tools with API key management...'
     );
 
-    // Wolfram Alpha Tool with APIKeyManager integration
-    if (apiKeyManager.hasPermission('analyst', 'wolfram')) {
       this.registerTool(
-        new WolframAlphaTool({
           appId: apiKeyManager.getKeyForAgent(
             'supervisor',
-            'wolfram',
             'tool-registry'
           ),
         }),
@@ -542,14 +535,11 @@ class FullyFunctionalToolRegistry {
           category: 'ai_computational',
           hierarchy: this.HIERARCHY_LEVELS.SPECIALIZED,
           description:
-            'Advanced computational intelligence and mathematical problem solving via Wolfram Alpha',
           permissions: ['analyst', 'researcher', 'supervisor'],
-          api_required: 'wolfram',
         }
       );
 
       console.log(
-        '[FullyFunctionalToolRegistry] ✅ Wolfram Alpha tool registered with API key management'
       );
     }
 
@@ -626,17 +616,12 @@ class FullyFunctionalToolRegistry {
       );
     }
 
-    // Enhanced Wolfram Alpha Query Tool (with result processing)
-    if (apiKeyManager.hasPermission('researcher', 'wolfram')) {
       this.registerTool(
         new DynamicTool({
-          name: 'wolframAlphaQuery',
           description:
-            'Query Wolfram Alpha with intelligent result processing and analysis',
           schema: z.object({
             query: z
               .string()
-              .describe('Question or calculation for Wolfram Alpha'),
             format: z
               .string()
               .optional()
@@ -644,24 +629,17 @@ class FullyFunctionalToolRegistry {
           }),
           func: async ({ query, format = 'plaintext' }) => {
             try {
-              const wolframKey = apiKeyManager.getKeyForAgent(
                 'researcher',
-                'wolfram',
-                'wolfram-query-tool'
               );
 
-              if (!wolframKey) {
                 return JSON.stringify({
-                  error: 'Wolfram Alpha API key not available',
                   status: 'unauthorized',
                 });
               }
 
-              // Using the actual Wolfram Alpha API structure you provided
               const response = {
                 query,
                 format,
-                status: 'Wolfram Alpha API configured and ready',
                 api_key_status: 'available',
                 sample_capabilities: [
                   'Mathematical calculations and equations',
@@ -672,14 +650,11 @@ class FullyFunctionalToolRegistry {
                   'Geographic information',
                   'Computational problem solving',
                 ],
-                api_endpoint: 'https://api.wolframalpha.com/v2/query',
-                note: 'Query would be processed and results extracted from Wolfram Alpha API',
               };
 
               return JSON.stringify(response, null, 2);
             } catch (error) {
               return JSON.stringify({
-                error: `Wolfram Alpha query failed: ${error.message}`,
                 status: 'error',
               });
             }
@@ -689,14 +664,11 @@ class FullyFunctionalToolRegistry {
           category: 'ai_computational',
           hierarchy: this.HIERARCHY_LEVELS.SPECIALIZED,
           description:
-            'Intelligent Wolfram Alpha query processing with result analysis',
           permissions: ['researcher', 'analyst', 'supervisor'],
-          api_required: 'wolfram',
         }
       );
 
       console.log(
-        '[FullyFunctionalToolRegistry] ✅ Enhanced Wolfram Alpha query tool registered'
       );
     }
 
@@ -849,8 +821,6 @@ class FullyFunctionalToolRegistry {
                 configured: !!process.env.DEEPGRAM_API_KEY,
                 status: 'ready',
               },
-              wolfram: {
-                configured: !!process.env.WOLFRAM_ALPHA_API_KEY,
                 status: 'pending',
               },
             },
@@ -864,7 +834,6 @@ class FullyFunctionalToolRegistry {
                 tavily: !!process.env.TAVILY_API_KEY,
                 serpapi: !!process.env.SERPAPI_API_KEY,
                 deepgram: !!process.env.DEEPGRAM_API_KEY,
-                wolfram: !!process.env.WOLFRAM_ALPHA_API_KEY,
               }).filter(Boolean).length,
             },
           };
@@ -905,8 +874,6 @@ class FullyFunctionalToolRegistry {
         'serpapi',
         'multiSearchAggregator',
         'dataAnalysis',
-        'wolfram_alpha',
-        'wolframAlphaQuery',
         'openaiAdvancedProcessing',
       ],
 
@@ -920,8 +887,6 @@ class FullyFunctionalToolRegistry {
         'tavily_search_results_json',
         'dataAnalysis',
         'multiSearchAggregator',
-        'wolfram_alpha',
-        'wolframAlphaQuery',
         'openaiAdvancedProcessing',
       ],
 
@@ -1022,8 +987,6 @@ class FullyFunctionalToolRegistry {
       'dataAnalysis',
       'githubIntegration',
       'gitlabIntegration',
-      'wolfram_alpha',
-      'wolframAlphaQuery',
       'dalleImageGeneration',
       'openaiAdvancedProcessing',
     ]);
