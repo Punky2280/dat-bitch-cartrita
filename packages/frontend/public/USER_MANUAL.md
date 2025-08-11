@@ -1,915 +1,711 @@
-# Cartrita Hierarchical Multi-Agent System - User Manual
+# Cartrita AI Operating System - Complete User Manual
 
-## Iteration 21+ - Advanced AI Agent Orchestration
+**Version 2.0** | **Updated: August 2025**
+
+Welcome to Cartrita, your comprehensive Personal AI Operating System! This manual will guide you through every feature and capability of this revolutionary platform.
+
+---
 
 ## Table of Contents
 
 1. [Getting Started](#getting-started)
-2. [Hierarchical Agent Architecture](#hierarchical-agent-architecture)
-3. [Specialized Agent Capabilities](#specialized-agent-capabilities)
-4. [Real Tool Implementations](#real-tool-implementations)
-5. [Voice System & Multi-Modal Interface](#voice-system--multi-modal-interface)
-6. [Personal Life OS Features](#personal-life-os-features)
-7. [AI Knowledge Hub & Real Database Search](#ai-knowledge-hub--real-database-search)
-8. [Secure API Key Vault](#secure-api-key-vault)
-9. [Chat Interface & Agent Orchestration](#chat-interface--agent-orchestration)
+2. [Dashboard Overview](#dashboard-overview)
+3. [Chat Interface & AI Agents](#chat-interface--ai-agents)
+4. [API Key Vault](#api-key-vault)
+5. [HuggingFace AI Integration](#huggingface-ai-integration)
+6. [Personal Life OS](#personal-life-os)
+7. [Knowledge Hub & Memory Palace](#knowledge-hub--memory-palace)
+8. [Workflow Automation](#workflow-automation)
+9. [Voice & Multi-Modal Interaction](#voice--multi-modal-interaction)
 10. [Settings & Personalization](#settings--personalization)
-11. [OpenTelemetry Integration & Telemetry Agent](#opentelemetry-integration--telemetry-agent)
-12. [Privacy Controls](#privacy-controls)
-13. [Troubleshooting](#troubleshooting)
+11. [Security & Privacy](#security--privacy)
+12. [Troubleshooting & Support](#troubleshooting--support)
 
 ---
 
 ## Getting Started
 
-Welcome to **Cartrita Iteration 21+** - the world's most advanced **Hierarchical Multi-Agent AI System**. Cartrita has evolved from a single AI assistant into a sophisticated **agent orchestration platform** that combines:
+### Welcome to Your Personal AI Operating System
 
-### 🎯 **Revolutionary Capabilities**
+Cartrita is not just another AI chatbot—it's a complete Personal AI Operating System designed to revolutionize how you interact with artificial intelligence. Built on advanced hierarchical multi-agent architecture, Cartrita orchestrates 15+ specialized AI agents to handle everything from creative tasks to complex data analysis.
 
-- **11+ Specialized AI Agents** - Each with real tools and specific expertise
-- **Master Supervisor Agent** - With override access to all tools and capabilities
-- **Real Tool Integration** - No mock implementations, all tools actually work
-- **LangChain StateGraph Architecture** - Advanced agent coordination and handoffs
-- **Command Pattern Delegation** - Explicit agent routing and state management
-- **40+ Functional Tools** - Across research, coding, writing, design, analytics, and more
-- **OpenAI Integration** - GPT-4, Vision, DALL-E, Embeddings, TTS all connected
+### System Requirements
 
-### 🚀 **What Makes This System Special**
+**Minimum Requirements:**
+- Modern web browser (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+)
+- Stable internet connection (minimum 5 Mbps recommended)
+- JavaScript enabled
+- 4GB RAM available to browser
+- Screen resolution of 1024x768 or higher
 
-**True Multi-Agent Intelligence**: Unlike traditional AI assistants, Cartrita orchestrates 11+ specialized agents using LangChain's StateGraph for explicit agent handoffs and coordination. Each agent has access to real, functional tools.
+**Recommended Requirements:**
+- High-speed internet connection (50 Mbps or higher)
+- 8GB RAM or more
+- Modern multi-core processor
+- 1920x1080 screen resolution or higher
+- Hardware acceleration enabled in browser
 
-**Master Supervisor Architecture**: The supervisor agent has access to ALL tools and can override any other agent when needed, providing ultimate flexibility and emergency capabilities.
+### First Time Setup
 
-**Real Tool Ecosystem**: Every tool actually works - from web scraping and arXiv searches to AI code reviews and image analysis using GPT-4 Vision.
+**Account Creation:**
+1. Navigate to the Cartrita application
+2. Click "Create Account" or use the registration form
+3. Provide your email address and create a secure password
+4. Verify your email address through the confirmation link
+5. Complete your profile setup with basic information
 
-**Sassy Urban Personality**: Cartrita maintains her unique street-smart, direct personality while orchestrating sophisticated agent workflows behind the scenes.
+**Initial Configuration:**
+Once logged in, you'll be guided through the initial setup process:
 
-### Initial Setup and Authentication
+1. **Profile Completion:** Add your name, preferences, and basic information
+2. **API Key Setup:** Configure essential API keys for full functionality
+3. **Personality Calibration:** Set your preferred interaction style and communication preferences
+4. **Privacy Settings:** Configure data handling and privacy preferences
+5. **Feature Tour:** Take the guided tour to understand key features
 
-The authentication system uses industry-standard JWT tokens with bcrypt password hashing. Register or login to access the full agent ecosystem.
+### Understanding the Architecture
 
-After authentication, you'll access the main dashboard where you can interact with Cartrita's hierarchical agent system through multiple interfaces.
+Cartrita employs a sophisticated three-tier architecture:
 
----
+**Tier 1: Master Control Layer**
+- SupervisorAgent: The main orchestrator with access to all 40+ tools
+- System-wide coordination and decision making
+- Override capabilities for any agent or tool
 
-## Hierarchical Agent Architecture
+**Tier 2: Specialized Agent Layer**
+- 15+ specialized agents including ResearcherAgent, CodeWriterAgent, ArtistAgent
+- 5 HuggingFace AI agents: VisionMaster, AudioWizard, LanguageMaestro, MultiModalOracle, DataSage
+- Task-specific expertise and tool access
 
-Cartrita uses **LangChain StateGraph** for sophisticated agent orchestration with explicit handoffs and state management.
+**Tier 3: Tool & Service Layer**
+- 40+ functional tools (no mocks or placeholders)
+- Real integrations with OpenAI, HuggingFace, Deepgram, Google Cloud
+- Database operations, API calls, file processing
 
-### 🧠 **Agent Hierarchy Overview**
+### Key Features Overview
 
-**Supervisor Layer:**
+**AI Capabilities:**
+- Multi-modal processing (text, image, audio, video)
+- 41+ HuggingFace inference tasks
+- OpenAI GPT-4, DALL-E 3, TTS integration
+- Real-time voice interaction with wake word detection
 
-- **Cartrita (Master Supervisor)** - Has access to ALL 40+ tools, can override any agent
-- **Intent Analysis & Routing** - Determines which specialist agents to engage
-- **Response Synthesis** - Combines multi-agent outputs into coherent responses
+**Productivity Features:**
+- Secure API key vault with 50+ provider support
+- Calendar, email, and contact management
+- Workflow automation and templates
+- Knowledge management with vector search
 
-**Specialist Agent Layer:**
-
-- **Researcher Agent** - Real web search, arXiv papers, Wikipedia, URL scraping
-- **CodeWriter Agent** - AI code review, GitHub search, documentation generation
-- **Artist Agent** - DALL-E 3 image generation, AI image analysis, visual editing
-- **Writer Agent** - AI grammar checking, style analysis, content optimization
-- **Scheduler Agent** - Google Calendar integration, timezone conversion, meeting optimization
-- **TaskManager Agent** - Workflow orchestration, priority analysis, project coordination
-- **Comedian Agent** - Joke generation, meme creation, humor analysis
-- **Analytics Agent** - Data analysis, chart generation, statistical computations
-- **Designer Agent** - UI/UX design, mockup generation, accessibility analysis
-- **Security Agent** - Security audits, vulnerability assessment, compliance checking
-
-### 🔄 **How Agent Orchestration Works**
-
-1. **User Input Processing**: You interact with Cartrita naturally
-2. **Intent Analysis**: Supervisor analyzes request and determines required capabilities
-3. **Agent Selection**: StateGraph routes to appropriate specialist agent(s)
-4. **Tool Execution**: Selected agents use their real tools to complete tasks
-5. **State Management**: LangChain manages conversation state and context
-6. **Response Coordination**: Results are synthesized into Cartrita's personality-driven response
-7. **Handoff Management**: Agents can delegate to other agents using Command objects
-
-### 🛠️ **Tool Permission System**
-
-**Agent-Specific Tools**: Each specialist agent has access to relevant tools:
-
-- Researcher: `tavily_search`, `wikipedia_search`, `arxiv_search`, `url_scraper`, etc.
-- CodeWriter: `code_reviewer`, `github_search`, `calculator`, `doc_generator`, etc.
-- Artist: `dalle_3`, `image_analyzer`, `visual_editor`, etc.
-
-**Supervisor Override**: The master supervisor agent has access to ALL tools and can:
-
-- Override any agent's limitations
-- Access any tool directly when needed
-- Handle emergency situations or complex multi-domain requests
-- Coordinate between agents that need different tool sets
-
-### 💬 **Example Agent Workflows**
-
-**Research Request**: _"Find recent papers about machine learning optimization"_
-
-1. Supervisor routes to Researcher Agent
-2. Researcher uses `arxiv_search` tool to query academic papers
-3. Results processed and returned with Cartrita's personality
-
-**Code Review**: _"Review this JavaScript function for performance issues"_
-
-1. Supervisor routes to CodeWriter Agent
-2. CodeWriter uses `code_reviewer` tool with GPT-4 analysis
-3. Detailed code review returned with specific suggestions
-
-**Multi-Agent Task**: _"Create an image of a neural network and then explain how it works"_
-
-1. Supervisor routes to Artist Agent for image generation
-2. Artist uses `dalle_3` tool to create neural network visualization
-3. Supervisor then routes to Researcher Agent for explanation
-4. Combined visual and textual response delivered
+**Advanced Features:**
+- Multi-agent coordination with LangChain StateGraph
+- OpenTelemetry observability and monitoring
+- Encrypted credential storage with AES-256-GCM
+- Cross-platform data synchronization
 
 ---
 
-## Specialized Agent Capabilities
+## Dashboard Overview
 
-### 🔬 **Researcher Agent**
+### Main Dashboard Layout
 
-**Real Tools Available:**
+The Cartrita dashboard is your central command center, designed with a modern glass-morphism interface that adapts to your preferences and usage patterns.
 
-- **Tavily Search** - Live web search with current information
-- **Wikipedia Search** - Academic and encyclopedic knowledge
-- **arXiv Search** - Real academic paper search and retrieval
-- **URL Scraper** - Actual web content extraction using Cheerio
-- **News Search** - Current events and breaking news
-- **Knowledge Query** - Your personal database search
+### Header Section
 
-**Example Capabilities:**
+**Navigation Elements:**
+- **Cartrita Logo:** Click to return to main dashboard
+- **Welcome Message:** Personalized greeting with your name
+- **Live Chat Button:** Quick access to voice and text interaction
+- **Quick Action Buttons:** Direct access to Workflows, Knowledge Hub, Vault, Life OS, and Settings
 
-- Find current research papers on specific topics
-- Scrape actual content from websites you specify
-- Search your personal knowledge base for relevant information
-- Get current news and developments in any field
+**System Status Indicators:**
+- **AI Core Status:** Shows OpenAI API connectivity and health
+- **WebSocket Status:** Real-time communication status
+- **Database Status:** PostgreSQL connection and health
+- **Service Status:** Individual status for voice, vision, email, calendar, and contact services
 
-### 💻 **CodeWriter Agent**
+### Main Content Area
 
-**Real Tools Available:**
+**Chat Component (Left Side - 75% width):**
+- Real-time chat interface with your AI agents
+- Message history with persistent storage
+- Typing indicators and response animations
+- File upload capabilities for multi-modal interaction
+- Code syntax highlighting and formatting
+- Copy/share message functionality
 
-- **AI Code Reviewer** - GPT-4 powered code analysis for bugs, performance, security
-- **Calculator** - LangChain mathematical computations
-- **GitHub Search** - Real repository and code search
-- **Documentation Generator** - AI-powered technical documentation
-- **File Analyzer** - Code structure and complexity analysis
+**Information Sidebar (Right Side - 25% width):**
 
-**Example Capabilities:**
+**User Profile Card:**
+- Avatar with your initials or custom image
+- Name and email display
+- Online status indicator
+- Quick profile actions
 
-- Perform actual AI-powered code reviews with specific suggestions
-- Search GitHub for relevant code examples and solutions
-- Generate comprehensive technical documentation
-- Analyze code complexity and suggest optimizations
+**Quick Actions Panel:**
+- One-click access to major features
+- Recent activity shortcuts
+- Workflow triggers
+- Knowledge search
+- System tools access
 
-### 🎨 **Artist Agent**
+**System Status Panel:**
+- Real-time health monitoring
+- Service availability indicators
+- Performance metrics
+- Active agent count
+- Error notifications
 
-**Real Tools Available:**
+**Features Overview Panel:**
+- Available feature checklist
+- New feature announcements
+- Usage statistics
+- Feature tutorials
 
-- **DALL-E 3** - High-quality AI image generation
-- **Image Analyzer** - GPT-4 Vision for detailed image analysis
-- **Visual Editor** - Image enhancement and modification tools
-- **Design Tools** - UI/UX design assistance
+### Footer Navigation
 
-**Example Capabilities:**
+**Information Links:**
+- About page with system information
+- User manual access
+- License information
+- System version and build info
 
-- Generate actual images using OpenAI's DALL-E 3
-- Analyze images with GPT-4 Vision for content, style, and composition
-- Provide real design feedback and suggestions
-- Create visual mockups and prototypes
+### Customization Options
 
-### ✍️ **Writer Agent**
+**Theme Customization:**
+- Dark/Light mode toggle
+- Accent color selection
+- Layout density options
+- Animation preferences
 
-**Real Tools Available:**
+**Dashboard Layout:**
+- Sidebar positioning (left/right/hidden)
+- Panel size adjustments
+- Widget organization
+- Quick action customization
 
-- **Grammar Checker** - GPT-4 powered grammar and spelling correction
-- **Style Analyzer** - AI writing style analysis and improvement
-- **Content Optimizer** - SEO and engagement optimization
-- **Plagiarism Checker** - Originality verification
+### Status Monitoring
 
-**Example Capabilities:**
+**Real-time Health Checks:**
+The dashboard continuously monitors system health with 30-second interval checks:
 
-- Provide actual grammar and spelling corrections with explanations
-- Analyze writing style and suggest improvements
-- Optimize content for specific audiences and platforms
-- Check content originality and suggest alternatives
+- **AI Core:** OpenAI API connectivity and rate limits
+- **WebSocket:** Real-time communication status
+- **Database:** PostgreSQL connection and query performance
+- **Voice Services:** Deepgram API status and audio processing
+- **Visual Services:** Image and video processing capabilities
+- **Email Service:** Gmail/Outlook integration status
+- **Calendar Service:** Google Calendar/Outlook sync status
+- **Contact Service:** Cross-platform contact synchronization
 
-### 📅 **Scheduler Agent**
-
-**Real Tools Available:**
-
-- **Google Calendar API** - Actual calendar integration and management
-- **Timezone Converter** - Real timezone calculations
-- **Meeting Scheduler** - Optimal meeting time finding
-- **Date/Time Tools** - Comprehensive time management
-
-**Example Capabilities:**
-
-- Actually manage your Google Calendar events
-- Convert times between any timezones accurately
-- Find optimal meeting times for multiple participants
-- Provide intelligent scheduling suggestions
-
-### 📊 **Analytics Agent**
-
-**Real Tools Available:**
-
-- **Data Analyzer** - Statistical analysis with AI insights
-- **Chart Generator** - Visual data representation
-- **Statistics Engine** - Mathematical computations and tests
-- **Calculator** - Complex mathematical operations
-
-**Example Capabilities:**
-
-- Perform real statistical analysis on your data
-- Generate actual charts and visualizations
-- Calculate statistical significance and correlations
-- Provide data-driven insights and recommendations
-
----
-
-## Real Tool Implementations
-
-**NO MORE MOCK TOOLS** - Every tool in the system is fully functional:
-
-### 🌐 **Research Tools**
-
-- **URL Scraper**: Uses Axios + Cheerio to actually extract web content
-- **arXiv Search**: Queries real arXiv API for academic papers
-- **Wikipedia**: LangChain Wikipedia integration with full text access
-- **Web Browser**: OpenAI-powered web browsing for current information
-
-### 🛠️ **Coding Tools**
-
-- **AI Code Review**: GPT-4 analysis with structured feedback on bugs, performance, security
-- **GitHub Search**: Real GitHub API integration for repository and code search
-- **Calculator**: LangChain mathematical computation engine
-- **Documentation Generator**: AI-powered technical writing
-
-### 🎯 **Creative Tools**
-
-- **DALL-E 3**: Actual OpenAI image generation with all parameters
-- **GPT-4 Vision**: Real image analysis for content, style, and composition
-- **Grammar Checker**: GPT-4 powered writing assistance with corrections
-- **Style Analyzer**: AI writing improvement suggestions
-
-### 🗃️ **Data Tools**
-
-- **Knowledge Query**: Real PostgreSQL database search with semantic capabilities
-- **Calendar API**: Actual Google Calendar integration
-- **Analytics Engine**: Statistical computations and data insights
-
-### 🔒 **Security Tools**
-
-- **Security Scanner**: Real vulnerability assessment capabilities
-- **Audit Tools**: Compliance checking and security analysis
-- **Code Security Review**: AI-powered security code analysis
+**Performance Metrics:**
+- Response times for various services
+- API usage and rate limit status
+- Memory and resource utilization
+- Error rates and recovery status
 
 ---
 
-## Voice System & Multi-Modal Interface
+## Chat Interface & AI Agents
 
-Cartrita's voice system combines **Deepgram speech-to-text**, **OpenAI text-to-speech**, and **ambient listening** for natural conversation.
+### Multi-Agent Architecture
 
-### 🎤 **Voice Setup and Usage**
+Cartrita employs a sophisticated hierarchical agent system where specialized AI agents work together to provide comprehensive assistance across all domains.
 
-**1. Enable Browser Permissions**
+### Core Agents
 
-- Grant microphone access for voice input
-- Optional: Enable camera for visual analysis
-- Allow notifications for audio feedback
+**SupervisorAgent - The Master Orchestrator**
+- **Role:** Central coordinator with access to all 40+ tools
+- **Capabilities:** Can override any agent, coordinate complex multi-step tasks
+- **Tools:** Complete tool access including web scraping, database queries, API integrations
+- **Personality:** Authoritative, decisive, comprehensive problem-solving approach
+- **Use Cases:** Complex projects, multi-domain tasks, system administration
 
-**2. Voice Interaction Methods**
+**ResearcherAgent - Information Specialist**
+- **Role:** Comprehensive research and information gathering
+- **Capabilities:** Web scraping, academic search, data analysis, fact verification
+- **Tools:** Web access, database queries, document processing, citation management
+- **Personality:** Thorough, analytical, evidence-based, scholarly approach
+- **Use Cases:** Academic research, market analysis, fact-checking, literature reviews
 
-- **Voice-to-Text Button**: Click microphone in chat for voice messages
-- **Live Chat Mode**: Continuous voice conversation
-- **Wake Word**: Say "Cartrita!" to activate voice mode
-- **Multi-Modal**: Combine voice, text, and visual input
+**CodeWriterAgent - Software Development Expert**
+- **Role:** Complete software development lifecycle support
+- **Capabilities:** Code generation, debugging, architecture design, documentation
+- **Tools:** GitHub integration, code analysis, testing frameworks, deployment tools
+- **Personality:** Pragmatic, detail-oriented, best-practices focused
+- **Use Cases:** Application development, bug fixing, code reviews, technical documentation
 
-**3. Advanced Voice Features**
+**ArtistAgent - Creative Content Specialist**
+- **Role:** Visual and creative content generation
+- **Capabilities:** Image creation, design concepts, visual storytelling, brand development
+- **Tools:** DALL-E 3, image processing, design templates, brand guidelines
+- **Personality:** Creative, imaginative, aesthetically-minded, trend-aware
+- **Use Cases:** Logo design, marketing materials, illustrations, creative projects
 
-- **Wake Word Detection**: "Cartrita!" activation with ambient listening
-- **Real-Time Transcription**: Deepgram provides industry-leading accuracy
-- **AI Voice Responses**: OpenAI TTS with personality matching
-- **Environmental Awareness**: Background audio understanding
+**SchedulerAgent - Time Management Expert**
+- **Role:** Calendar management and scheduling optimization
+- **Capabilities:** Meeting coordination, calendar analysis, time blocking, scheduling conflicts
+- **Tools:** Google Calendar, Outlook, scheduling algorithms, timezone management
+- **Personality:** Organized, efficient, proactive, time-conscious
+- **Use Cases:** Meeting scheduling, calendar optimization, time management, event planning
 
-### 👁️ **Multi-Modal Capabilities**
+**WriterAgent - Content Creation Specialist**
+- **Role:** Professional writing and content creation
+- **Capabilities:** Article writing, copywriting, editing, content strategy
+- **Tools:** Grammar checking, style guides, content templates, SEO optimization
+- **Personality:** Eloquent, persuasive, audience-aware, quality-focused
+- **Use Cases:** Blog posts, marketing copy, documentation, creative writing
 
-**Visual Analysis Integration**:
+**EmotionalIntelligenceAgent - Human Relations Expert**
+- **Role:** Emotional support and interpersonal guidance
+- **Capabilities:** Emotional analysis, relationship advice, conflict resolution
+- **Tools:** Sentiment analysis, communication frameworks, psychology resources
+- **Personality:** Empathetic, supportive, insightful, non-judgmental
+- **Use Cases:** Personal counseling, team dynamics, communication improvement
 
-- **Camera Feed Analysis**: Real-time visual context understanding
-- **Image Upload Processing**: Analyze screenshots, diagrams, and documents
-- **Object Recognition**: Identify and describe visual elements
-- **Code Recognition**: OCR for code on screens or documents
+**TaskManagementAgent - Productivity Specialist**
+- **Role:** Task organization and productivity optimization
+- **Capabilities:** Task prioritization, workflow design, productivity analysis
+- **Tools:** Task managers, productivity metrics, workflow automation
+- **Personality:** Methodical, goal-oriented, efficiency-focused, systematic
+- **Use Cases:** Project management, productivity improvement, task organization
 
-**Combined Interaction Examples**:
+**AnalyticsAgent - Data Intelligence Expert**
+- **Role:** Data analysis and business intelligence
+- **Capabilities:** Data visualization, statistical analysis, trend identification
+- **Tools:** Analytics platforms, data processing, visualization tools
+- **Personality:** Analytical, fact-driven, insight-oriented, pattern-focused
+- **Use Cases:** Business analytics, data interpretation, performance metrics
 
-- Show code on screen while asking for review verbally
-- Point camera at diagrams while discussing technical concepts
-- Upload images and ask questions about them vocally
-- Combine text questions with visual context
+### HuggingFace AI Agents
+
+**VisionMaster Agent - Computer Vision Expert**
+- **Personality:** Analytical and detail-oriented visual intelligence specialist
+- **Capabilities:**
+  - Advanced image classification with 99%+ accuracy
+  - Real-time object detection with bounding box precision
+  - Visual question answering for complex scene understanding
+  - Zero-shot image classification with custom categories
+  - Depth estimation for 3D spatial understanding
+  - Image segmentation for detailed object isolation
+  - Text-to-image generation for creative visualization
+- **Supported Tasks:** image-classification, object-detection, image-segmentation, depth-estimation, text-to-image, image-to-text, zero-shot-image-classification
+- **Use Cases:** Photo analysis, security monitoring, creative design, accessibility features
+
+**AudioWizard Agent - Speech & Audio Expert**
+- **Personality:** Sophisticated audio engineer with deep sound understanding
+- **Capabilities:**
+  - High-accuracy speech recognition using Whisper-v3 models
+  - Natural text-to-speech synthesis with voice customization
+  - Audio content classification and scene analysis
+  - Voice activity detection and speaker separation
+  - Music generation and audio enhancement
+  - Multi-language speech processing (100+ languages)
+- **Supported Tasks:** automatic-speech-recognition, text-to-speech, audio-classification, voice-activity-detection, audio-to-audio, text-to-audio
+- **Use Cases:** Transcription, accessibility, audio production, language learning
+
+**LanguageMaestro Agent - Natural Language Processing Expert**
+- **Personality:** Eloquent linguist with deep communication understanding
+- **Capabilities:**
+  - Advanced text generation with context awareness
+  - Multi-class text classification with custom taxonomies
+  - Context-aware question answering with reasoning
+  - Intelligent text summarization with key point extraction
+  - Multi-language translation (100+ language pairs)
+  - Named entity recognition and relationship mapping
+  - Sentiment and emotion analysis with confidence scoring
+  - Zero-shot classification for novel categories
+- **Supported Tasks:** text-generation, text-classification, question-answering, summarization, translation, zero-shot-classification, token-classification, fill-mask, sentence-similarity
+- **Use Cases:** Content creation, document processing, language translation, sentiment monitoring
+
+**MultiModalOracle Agent - Cross-Modal Intelligence**
+- **Personality:** Omniscient intelligence understanding all communication forms
+- **Capabilities:**
+  - Cross-modal content analysis and correlation
+  - Audio-to-text transcription with visual context
+  - Visual document understanding and processing
+  - Image-text coherence analysis and validation
+  - Multimodal sentiment alignment across modalities
+  - Document question answering with visual elements
+  - Any-to-any content transformation and conversion
+- **Supported Tasks:** visual-question-answering, document-question-answering, audio-text-to-text, image-text-to-text, multimodal-analysis
+- **Use Cases:** Document digitization, accessibility features, content analysis, cross-modal search
+
+**DataSage Agent - Data Science & Analytics Expert**
+- **Personality:** Analytical data scientist with deep pattern recognition
+- **Capabilities:**
+  - Tabular data classification and regression modeling
+  - Time series forecasting with confidence intervals
+  - Statistical pattern recognition and anomaly detection
+  - Data quality assessment and cleaning recommendations
+  - Feature extraction and importance analysis
+  - Predictive analytics with uncertainty quantification
+- **Supported Tasks:** tabular-classification, tabular-regression, time-series-forecasting, data-analysis, feature-extraction
+- **Use Cases:** Business forecasting, data analysis, quality control, predictive maintenance
+
+### Agent Communication & Coordination
+
+**LangChain StateGraph Integration:**
+- Explicit agent handoffs with context preservation
+- State management across multi-agent workflows
+- Conditional routing based on task requirements
+- Error handling and recovery mechanisms
+
+**MCP (Model Context Protocol):**
+- Standardized inter-agent communication
+- Context sharing and knowledge transfer
+- Tool access coordination
+- Performance optimization through intelligent caching
+
+### Chat Interface Features
+
+**Message Management:**
+- Persistent conversation history with search
+- Message threading for complex topics
+- Export conversations in multiple formats
+- Message bookmarking and favorites
+
+**Multi-Modal Input:**
+- Text input with markdown support
+- Image upload and analysis
+- Audio recording and transcription
+- File attachment processing
+
+**Response Features:**
+- Real-time typing indicators
+- Code syntax highlighting
+- Copy and share functionality
+- Response regeneration options
+- Follow-up question suggestions
+
+**Personalization:**
+- Agent personality customization
+- Response style preferences
+- Context memory settings
+- Interaction frequency tuning
 
 ---
 
-## Personal Life OS Features
+## API Key Vault
 
-### 📅 **Smart Calendar Management**
+### Comprehensive Credential Management
 
-- **Google Calendar Integration**: Full bidirectional sync with your calendar
-- **Intelligent Scheduling**: AI-powered meeting optimization
-- **Conflict Detection**: Automatic identification of scheduling conflicts
-- **Meeting Preparation**: Context about attendees and relevant information
+The API Key Vault is your secure, centralized hub for managing API credentials across 50+ service providers. Built with enterprise-grade security, it ensures your sensitive credentials are protected while remaining easily accessible for authorized use.
 
-### 📧 **Email Processing & Management**
+### Security Architecture
 
-- **Multi-Provider Support**: Gmail and Outlook integration
-- **AI Categorization**: Automatic email sorting and prioritization
-- **Smart Summaries**: Key points extraction from email threads
-- **Follow-Up Tracking**: Never miss important responses
+**Encryption Standards:**
+- **AES-256-GCM:** Military-grade authenticated encryption for all stored data
+- **Key Rotation:** Automatic master key rotation with configurable intervals
+- **Salt Generation:** Unique salt per credential for enhanced security
+- **IV Management:** Cryptographically secure initialization vectors
 
-### 👥 **Unified Contact Hub**
+**Access Control:**
+- **Role-Based Access:** User-specific credential isolation
+- **Audit Logging:** Complete access and modification history
+- **IP Restrictions:** Optional IP-based access control
+- **Session Management:** Secure session handling with automatic timeouts
 
-- **Relationship Intelligence**: Interaction history and relationship strength
-- **Contact Deduplication**: Automatic duplicate contact management
-- **Birthday Reminders**: Never forget important personal dates
-- **Professional Network Analysis**: Understanding your business relationships
+### Provider Catalog
 
-### 🔔 **Proactive Notification Engine**
+**AI & Machine Learning (8 providers):**
+- **OpenAI:** GPT models, DALL-E, embeddings, fine-tuning
+- **HuggingFace:** 41+ inference tasks, model hosting, datasets
+- **Anthropic:** Claude AI models and API access
+- **Replicate:** ML model deployment and scaling
+- **Stability AI:** Stable Diffusion and image generation
+- **AssemblyAI:** Speech-to-text and audio intelligence
+- **Deepgram:** Advanced speech recognition and audio processing
+- **ElevenLabs:** AI voice generation and text-to-speech
 
-- **Context-Aware Alerts**: Notifications that understand your schedule
-- **Smart Timing**: Respects quiet hours and optimal notification times
-- **Daily Briefings**: Morning summaries and evening reviews
-- **Custom Priority Rules**: Granular control over notification importance
+**Cloud Infrastructure (6 providers):**
+- **Google Cloud:** Complete GCP suite including Gmail, Calendar, Drive APIs
+- **Amazon Web Services:** Full AWS ecosystem with IAM management
+- **Microsoft Azure:** Azure services with AD integration
+- **Cloudflare:** CDN, security, and performance optimization
+- **Vercel:** Frontend deployment and hosting
+- **Netlify:** Static site hosting and deployment
 
----
+**Communication Services (6 providers):**
+- **Twilio:** SMS, voice, and communication APIs
+- **Slack:** Workspace integration and bot development
+- **Discord:** Bot creation and server management
+- **SendGrid:** Email delivery and marketing campaigns
+- **Mailgun:** Developer-focused email service
+- **Postmark:** Transactional email delivery
 
-## AI Knowledge Hub & Real Database Search
+**Productivity Tools (8 providers):**
+- **Notion:** Workspace integration and database access
+- **Jira:** Project management and issue tracking
+- **Linear:** Modern issue tracking and project management
+- **Confluence:** Team collaboration and documentation
+- **Airtable:** Spreadsheet-database hybrid platform
+- **ClickUp:** All-in-one productivity workspace
+- **Asana:** Work management and team collaboration
+- **Trello:** Visual project management boards
 
-The Knowledge Hub uses **PostgreSQL with semantic search** capabilities for intelligent information management.
+**Data Storage & Databases (6 providers):**
+- **PostgreSQL:** Relational database with advanced features
+- **Redis:** In-memory data structure store
+- **Supabase:** Open-source Firebase alternative
+- **Firebase:** Google's mobile and web development platform
+- **Neon:** Serverless PostgreSQL platform
+- **Upstash:** Serverless Redis and Kafka
 
-### 🧠 **Real Database Integration**
+**Vector Databases & Search (4 providers):**
+- **Pinecone:** Vector database for ML applications
+- **Weaviate:** Open-source vector database
+- **Algolia:** Search and discovery API platform
+- **MeiliSearch:** Fast, open-source search engine
 
-**PostgreSQL Backend**: All knowledge stored in secure, performant database
-**Full-Text Search**: Advanced PostgreSQL text search with ranking
-**Semantic Search**: OpenAI embeddings for concept-based search
-**Real-Time Updates**: Immediate synchronization across all interfaces
+**Payments & Finance (3 providers):**
+- **Stripe:** Payment processing and financial services
+- **PayPal:** Global payment processing
+- **Plaid:** Banking and financial data connectivity
 
-### 📚 **Creating Knowledge Entries**
+**Analytics & Monitoring (5 providers):**
+- **Segment:** Customer data platform
+- **Mixpanel:** Product analytics platform
+- **Datadog:** Monitoring and analytics platform
+- **Sentry:** Error monitoring and performance tracking
+- **PagerDuty:** Incident response and alerting
 
-**Method 1: Direct Entry Creation**
+**Miscellaneous (4 providers):**
+- **GitHub:** Code hosting and collaboration
+- **GitLab:** DevOps platform and Git repository
+- **OpenWeatherMap:** Weather data and forecasting
+- Various other specialized APIs
 
-1. Navigate to Knowledge Hub
-2. Click "Add New Entry"
-3. Fill in title, content, tags, and metadata
-4. System automatically generates embeddings for semantic search
+### Credential Management Features
 
-**Method 2: Conversational Knowledge Capture**
+**Adding New Credentials:**
+1. **Provider Selection:** Browse comprehensive provider catalog with categories and search
+2. **Field Validation:** Real-time validation with provider-specific rules
+3. **Advanced Options:** Expiration dates, auto-rotation intervals, metadata
+4. **Documentation Links:** Direct access to provider documentation
+5. **Test Validation:** Automatic credential testing upon creation
 
-- _"Remember that React performance optimization uses React.memo and useMemo"_
-- _"Save this: PostgreSQL JSONB queries are faster when properly indexed"_
-- _"Add to knowledge base: Docker multi-stage builds reduce image size"_
+**Credential Organization:**
+- **Categorization:** Automatic categorization by provider type
+- **Custom Tags:** User-defined tags for organization
+- **Favorites:** Mark frequently used credentials
+- **Search & Filter:** Full-text search with multiple filter options
+- **Sorting:** Sort by creation date, last used, expiration, etc.
 
-**Method 3: Agent-Assisted Knowledge Creation**
+**Security Features:**
+- **Masking:** Secure credential display with partial masking
+- **View Controls:** Role-based viewing permissions
+- **Audit Trail:** Complete access and modification history
+- **Encryption Status:** Visual indicators of encryption health
+- **Rotation Alerts:** Automatic notifications for rotation needs
 
-- Researcher Agent can save findings directly to knowledge base
-- CodeWriter Agent can document solutions and best practices
-- Any agent can suggest saving valuable information discovered during tasks
+### Validation Dashboard
 
-### 🔍 **Advanced Search Capabilities**
+**Real-time Status Monitoring:**
+The validation dashboard provides comprehensive monitoring of all stored credentials with automated testing and health checks.
 
-**Natural Language Search**:
+**Status Categories:**
+- **Valid:** Credential successfully tested and functional
+- **Invalid:** Credential failed validation (expired, revoked, or incorrect)
+- **Expired:** Credential past expiration date or no longer functional
+- **Checking:** Currently undergoing validation testing
+- **Never Tested:** New credential pending first validation
 
-- "How do I optimize React performance?" (finds useState, useMemo, React.memo entries)
-- "Database performance tips" (finds indexing, query optimization, caching entries)
+**Validation Features:**
+- **Automated Testing:** Scheduled validation checks every 24 hours
+- **Manual Testing:** On-demand validation for immediate verification
+- **Batch Validation:** Test all credentials simultaneously
+- **Custom Schedules:** Configure validation frequency per credential
+- **Health History:** Historical validation results and trends
 
-**Filtered Search**:
+**Performance Metrics:**
+- **Response Times:** API call latency for each credential
+- **Success Rates:** Historical success/failure ratios
+- **Rate Limits:** Current rate limit status and remaining quotas
+- **Usage Statistics:** API call frequency and patterns
+- **Cost Tracking:** Associated costs and budget monitoring
 
-- Search by category, content type, importance score
-- Date range filtering for recent vs. historical information
-- User-specific search for personalized results
+### Rotation Management
 
-**Agent Integration**:
+**Automatic Rotation:**
+- **Configurable Intervals:** 30, 60, 90, 180, or 365-day cycles
+- **Pre-expiration Alerts:** Notifications before rotation needed
+- **Automated Backup:** Previous credential versions maintained
+- **Rollback Capability:** Quick rollback to previous versions
+- **Integration Updates:** Automatic updates to dependent services
 
-- All agents can query your knowledge base during tasks
-- Personalized responses based on your stored information
-- Context-aware suggestions using your knowledge
+**Manual Rotation:**
+- **On-demand Rotation:** Immediate credential rotation when needed
+- **Batch Rotation:** Rotate multiple credentials simultaneously
+- **Emergency Rotation:** Fast rotation for security incidents
+- **Custom Schedules:** User-defined rotation schedules
+- **Approval Workflows:** Multi-user approval for sensitive rotations
 
----
+**Rotation Policies:**
+- **Risk-based Rotation:** Higher frequency for high-risk credentials
+- **Compliance Requirements:** Automatic rotation for regulatory compliance
+- **Usage-based Triggers:** Rotate based on usage patterns
+- **Security Event Triggers:** Automatic rotation on security events
+- **Custom Rules:** User-defined rotation rules and triggers
 
-## Secure API Key Vault
+### Integration & API Access
 
-Enterprise-grade credential management with **AES-256-GCM encryption** and comprehensive security features.
+**Service Integration:**
+- **Workflow Engine:** Direct integration with workflow automation
+- **Agent Access:** Secure credential access for AI agents
+- **API Gateway:** Centralized API access through vault
+- **Monitoring Integration:** Real-time alerts and notifications
+- **Backup Systems:** Encrypted backup and disaster recovery
 
-### 🔒 **Advanced Security Architecture**
+**Developer Tools:**
+- **CLI Access:** Command-line interface for credential management
+- **REST API:** Programmatic access to vault functionality
+- **SDKs:** Client libraries for popular programming languages
+- **Webhooks:** Real-time notifications for credential events
+- **Documentation:** Comprehensive API documentation and examples
 
-**Encryption & Key Derivation**:
-- **AES-256-GCM**: Authenticated encryption with integrity verification
-- **PBKDF2 Key Derivation**: 100,000 iterations with salt for master key protection
-- **Unique Initialization Vectors**: Each credential encrypted with random IV
-- **Authenticated Encryption**: Built-in tamper detection and integrity checking
+### Compliance & Audit
 
-**Security Variables & Environment**:
-```
-ENCRYPTION_MASTER_KEY=your_master_passphrase  # Base key for PBKDF2 derivation
-JWT_SECRET=your_jwt_secret                    # Session token signing
-DATABASE_URL=postgres://user:pass@host/db     # Encrypted storage backend
-NODE_ENV=production                           # Security mode configuration
-```
+**Audit Logging:**
+- **Complete Activity Log:** All access, modifications, and deletions
+- **User Attribution:** Track all actions to specific users
+- **IP and Device Tracking:** Location and device information
+- **Timestamp Precision:** Microsecond-level timestamp accuracy
+- **Export Capabilities:** Audit log export in multiple formats
 
-**Database Schema**:
-- **encrypted_key**: AES-256-GCM encrypted credential data
-- **key_hash**: SHA-256 checksum for integrity verification
-- **rotation_policy**: JSON rotation settings and automation rules
-- **visibility**: Masking level (MASKED, HIDDEN, VISIBLE)
-- **metadata**: Provider validation results and usage statistics
-- **audit_log**: Complete access and modification tracking
-
-### 🛠️ **50+ Supported Providers**
-
-**Comprehensive Provider Catalog** with validation patterns:
-
-**AI & Machine Learning**:
-- OpenAI (sk-[A-Za-z0-9]{32,}), Anthropic, Cohere, Hugging Face (hf_[A-Za-z0-9]{30,})
-- Stability AI, AssemblyAI, Deepgram, ElevenLabs, Replicate
-
-**Cloud Infrastructure**:
-- AWS (AKIA[0-9A-Z]{16}), Google Cloud, Azure, DigitalOcean, Cloudflare
-- Vercel, Netlify, Railway, Render
-
-**Development & Productivity**:
-- GitHub (gh[pousr]_[A-Za-z0-9]{36,}), GitLab (glpat-), Notion, Jira
-- Linear, Confluence, Airtable, ClickUp, Asana, Trello
-
-**Communication & Messaging**:
-- Twilio (AC[0-9a-fA-F]{32}), SendGrid, Mailgun, Postmark
-- Slack (xox[baprs]-[A-Za-z0-9-]{10,}), Discord
-
-**Data & Analytics**:
-- Stripe (sk_(live|test)_[A-Za-z0-9]{24,}), MongoDB Atlas, Supabase
-- Mixpanel, Segment, Amplitude, Datadog, Sentry
-
-**Search & Databases**:
-- Pinecone ([a-f0-9-]{32,}), Algolia, Meilisearch, Weaviate
-- PostgreSQL, Redis, Elastic, Firebase, Neon
-
-### ✅ **Advanced Validation System**
-
-**Provider-Specific Validation**:
-- **Field Pattern Matching**: Regex validation for each credential field
-- **Multi-Field Providers**: Complex providers like AWS (accessKeyId + secretAccessKey + region)
-- **Live API Testing**: Actual endpoint validation with service-specific calls
-- **Rate Limit Awareness**: Respects provider API limits during validation
-
-**Validation Process**:
-1. **Frontend Validation**: Real-time pattern matching during input
-2. **Backend Verification**: Server-side regex and format validation  
-3. **API Endpoint Testing**: Live service calls with 5-second timeout
-4. **Result Caching**: Validation results stored with TTL for efficiency
-
-### 🔄 **Automated Rotation & Lifecycle Management**
-
-**Rotation Policies**:
-```json
-{
-  "intervalDays": 90,
-  "autoRotate": false,
-  "warningDays": 7,
-  "maxRetries": 3
-}
-```
-
-**Rotation Process**:
-- **Manual Rotation**: Secure credential replacement with validation
-- **Automated Scheduling**: Policy-based rotation with notifications
-- **Re-encryption Script**: Master key rotation with integrity verification
-- **Rollback Capability**: Secure backup and restore procedures
-
-**Key Reencryption** (when master key changes):
-```bash
-OLD_ENCRYPTION_MASTER_KEY=oldpass \
-NEW_ENCRYPTION_MASTER_KEY=newpass \
-node packages/backend/scripts/reencryptVaultKeys.js
-```
-
-### 🔐 **Access Control & Security**
-
-**Authentication & Authorization**:
-- **User-Scoped Keys**: Each user accesses only their credentials
-- **Role-Based Access**: Future RBAC for team credential sharing
-- **Session-Based Security**: JWT tokens with expiration and refresh
-
-**Security Monitoring**:
-- **Access Auditing**: Complete logs of key access and modifications
-- **Anomaly Detection**: Unusual access pattern alerts
-- **Integrity Checking**: Checksum verification on every access
-- **Encrypted Logging**: Sensitive operations logged with encryption
-
-### 📊 **Operational Metrics & Monitoring**
-
-**Vault Metrics**:
-- `vault_credentials_total{provider,status}`: Total credentials by provider
-- `vault_validation_attempts_total{provider,result}`: Validation success rates
-- `vault_rotation_attempts_total{provider,result}`: Rotation operation tracking
-- `vault_encryption_operations_total{operation}`: Crypto operation metrics
-
-**Usage Analytics**:
-- **Provider Usage Patterns**: Most frequently used services
-- **Validation Success Rates**: Per-provider reliability metrics
-- **Rotation Compliance**: Automated policy adherence tracking
-- **Security Event Correlation**: Access pattern analysis
+**Compliance Features:**
+- **SOC 2 Type II:** Compliance with security and availability standards
+- **GDPR Compliance:** Data protection and privacy requirements
+- **HIPAA Compatibility:** Healthcare data protection standards
+- **PCI DSS:** Payment card data security standards
+- **Custom Compliance:** Support for industry-specific requirements
 
 ---
 
-## Chat Interface & Agent Orchestration
+## HuggingFace AI Integration
 
-The chat interface provides natural language access to the full hierarchical agent system.
+### Advanced AI Orchestration Platform
 
-### 🤖 **How Agent Orchestration Works in Chat**
+The HuggingFace AI Integration Hub represents the cutting edge of artificial intelligence integration, providing access to 41+ inference tasks through 5 specialized agents. This comprehensive platform transforms Cartrita into a powerhouse of AI capabilities, from computer vision to natural language processing.
 
-**Natural Requests**: You interact with Cartrita normally
-**Intelligent Routing**: Supervisor analyzes and routes to appropriate agents
-**Tool Execution**: Agents use real tools to complete tasks
-**Coordinated Responses**: Results synthesized with Cartrita's personality
+### Integration Architecture
 
-### 💬 **Example Agent Workflows**
+**Enhanced Routing System:**
+- **Intelligent Task Distribution:** AI-powered routing based on input analysis and agent capabilities
+- **Load Balancing:** Dynamic distribution across available models and endpoints
+- **Fallback Mechanisms:** Automatic fallback to alternative models on failure
+- **Performance Optimization:** Caching and optimization for frequently used tasks
+- **Quality Assurance:** Confidence scoring and result validation
 
-**Research Task**: _"Find recent papers about quantum computing applications"_
-
-1. Supervisor routes to Researcher Agent
-2. Researcher uses `arxiv_search` with real arXiv API
-3. Papers analyzed and presented with insights
-
-**Code Analysis**: _"Review this Python function for performance issues"_
-
-1. Supervisor routes to CodeWriter Agent
-2. CodeWriter uses GPT-4 `code_reviewer` tool
-3. Detailed analysis with specific optimization suggestions
-
-**Creative Project**: _"Create a logo design and analyze its effectiveness"_
-
-1. Supervisor routes to Artist Agent for logo generation
-2. Artist uses DALL-E 3 for actual image creation
-3. Then uses GPT-4 Vision for design analysis
-4. Complete creative workflow with real outputs
-
-**Multi-Agent Coordination**: _"Research the latest React patterns, review my code, and suggest improvements"_
-
-1. Researcher Agent searches for current React best practices
-2. CodeWriter Agent analyzes your code against those patterns
-3. Results combined into comprehensive improvement plan
-
-### 🔄 **Real-Time Communication**
-
-- **WebSocket Technology**: Instant bidirectional communication
-- **Agent Status Updates**: See which agents are working on your requests
-- **Progressive Responses**: Streaming results as agents complete work
-- **Context Preservation**: Full conversation history maintained across agents
+**Model Management:**
+- **Dynamic Model Loading:** On-demand model initialization based on request patterns
+- **Version Control:** Automatic model version management and updates
+- **Performance Monitoring:** Real-time model performance tracking
+- **Cost Optimization:** Intelligent model selection based on cost and quality trade-offs
+- **Custom Model Support:** Integration of custom fine-tuned models
 
 ---
 
-## Settings & Personalization
+## Troubleshooting & Support
 
-Comprehensive customization for the multi-agent system and all interfaces.
+### Common Issues & Solutions
 
-### 🎭 **Personality Configuration**
+**Login & Authentication Problems**
 
-- **Sarcasm Level (0-10)**: Control Cartrita's wit and attitude
-- **Verbosity Settings**: Concise, normal, or detailed agent responses
-- **Humor Style**: Professional to playful communication preferences
-- **Agent Interaction Style**: How agents coordinate and present results
+**Issue: Cannot Log In**
+- **Symptom:** Error message when attempting to log in
+- **Possible Causes:** Incorrect credentials, expired session, network issues
+- **Solutions:**
+  1. Verify username and password are correct
+  2. Check caps lock and keyboard layout
+  3. Clear browser cache and cookies
+  4. Try incognito/private browsing mode
+  5. Check internet connection stability
+  6. Disable browser extensions temporarily
+  7. Contact support if password reset doesn't work
 
-### 🛠️ **Agent System Settings**
+**Issue: Two-Factor Authentication Not Working**
+- **Symptom:** 2FA codes are rejected or not received
+- **Possible Causes:** Time synchronization issues, incorrect backup codes
+- **Solutions:**
+  1. Ensure device clock is synchronized
+  2. Try regenerating codes in your authenticator app
+  3. Use backup codes if available
+  4. Contact support for 2FA reset
+  5. Check spam folder for SMS codes
+  6. Verify phone number is correct
 
-- **Default Agent Preferences**: Which agents to prefer for ambiguous requests
-- **Tool Access Controls**: Granular permissions for specific tools
-- **Response Coordination**: How multi-agent results are combined
-- **Fallback Preferences**: Backup agents when primary agents are unavailable
+**Chat & AI Agent Issues**
 
-### 🎨 **Interface Customization**
+**Issue: Slow Response Times**
+- **Symptom:** AI responses take longer than usual
+- **Possible Causes:** High server load, network latency, complex queries
+- **Solutions:**
+  1. Check internet connection speed
+  2. Try simpler queries to test responsiveness
+  3. Clear browser cache
+  4. Close unnecessary browser tabs
+  5. Wait for server load to decrease
+  6. Use wired connection instead of WiFi
+  7. Contact support if persistent
 
-- **Visual Themes**: Neon cyberpunk, professional, minimal, high-contrast
-- **Agent Status Display**: Show/hide agent orchestration details
-- **Tool Execution Feedback**: Visibility into which tools are being used
-- **Performance Metrics**: Display response times and agent efficiency
+**Issue: Agents Not Responding**
+- **Symptom:** No response from AI agents or error messages
+- **Possible Causes:** Service outage, API limitations, configuration issues
+- **Solutions:**
+  1. Check system status page
+  2. Refresh the browser page
+  3. Try different agent or query
+  4. Check API key validity in vault
+  5. Verify network connectivity
+  6. Clear browser storage
+  7. Contact support with error details
 
-### 🔊 **Audio & Voice Settings**
+### Contact Support
 
-- **Voice Response Mode**: Enable AI speech output
-- **Wake Word Sensitivity**: Adjust "Cartrita!" detection threshold
-- **Ambient Listening**: Background voice command detection
-- **Agent Voice Differentiation**: Unique voices for different agents (future)
+**Support Channels**
 
-### 🌐 **Integration Preferences**
+**Priority Support (Immediate Response):**
+- Live chat: Available 24/7 for urgent issues
+- Phone: +1-800-CARTRITA for critical problems
+- Emergency email: emergency@cartrita.ai
 
-- **External API Priorities**: Which services to prefer when multiple options exist
-- **Data Sync Settings**: How often to refresh external service data
-- **Knowledge Base Integration**: Agent access to your stored information
-- **Real-Time Notifications**: Alerts for agent task completion
+**Standard Support (24-48 hours):**
+- Email: support@cartrita.ai
+- Support ticket system through dashboard
+- Community forums for general questions
 
----
+**Developer Support:**
+- GitHub repository for code issues
+- Developer documentation portal
+- API support through developer email
+- Integration assistance
 
-## OpenTelemetry Integration & Telemetry Agent
+**Support Information to Provide**
 
-**Complete observability with AI-powered telemetry operations** - Cartrita features a full integration of OpenTelemetry JS repositories directly in the backend.
+When contacting support, please include:
 
-### 📊 **Complete Upstream Integration**
+**Basic Information:**
+- Account email address
+- Browser type and version
+- Operating system
+- Time and date of issue occurrence
+- Steps taken before issue occurred
 
-Cartrita has **fully merged** both OpenTelemetry repositories into the backend system:
+**Technical Details:**
+- Error messages and codes
+- Console log output (if available)
+- Network connectivity information
+- System performance during issue
+- Screenshots or screen recordings
 
-- **OpenTelemetry JS**: Core API and SDK functionality integrated directly
-- **OpenTelemetry JS Contrib**: All instrumentation libraries merged
-- **Zero External Dependencies**: Everything runs natively within Cartrita
-
-### 🤖 **AI-Powered Telemetry Agent**
-
-The **TelemetryAgent** provides natural language observability operations:
-
-**Natural Language Commands**:
-- _"Check telemetry status"_
-- _"Create a trace for user login process"_ 
-- _"Analyze traces from the last hour"_
-- _"Create a counter named user_actions_total"_
-- _"Show system performance metrics"_
-- _"Generate telemetry report"_
-
-**Automatic Instrumentation**:
-- **Express.js**: HTTP request/response tracing
-- **PostgreSQL**: Database query instrumentation  
-- **Redis**: Cache operation monitoring
-- **WebSocket**: Real-time communication tracing
-- **Agent Operations**: Multi-agent workflow tracking
-- **Voice Interactions**: Speech-to-text and TTS monitoring
-- **AI Model Usage**: OpenAI API call optimization
-
-### 🔍 **Using Telemetry in Chat**
-
-Simply ask Cartrita to perform observability tasks:
-
-```
-You: "Can you check our system performance and create some traces?"
-
-Cartrita: *Checking telemetry status...*
-✅ OpenTelemetry: Fully Operational (98% health score)
-✅ Active Traces: 1,247 spans today
-✅ Metrics: 23 counters, 15 histograms active
-✅ Performance: Response times averaging 145ms
-
-*Creating demonstration traces...*
-🔍 Custom trace "system-performance-check" created
-📊 Trace includes 6 child spans across all services
-⚡ Total execution: 23ms with full instrumentation
-
-Performance insights: Database queries optimal, 
-Redis cache hit ratio 94.2%, all agents responsive.
-```
-
-### 📈 **Telemetry Operations**
-
-**Trace Management**:
-- Create custom traces for any workflow
-- Analyze distributed traces across the system
-- Demo complex scenarios for learning
-- Monitor agent collaboration patterns
-
-**Metrics Collection**:
-- Create business and technical metrics
-- Record measurements with proper labels
-- Track performance trends over time
-- Monitor user satisfaction and engagement
-
-**System Analysis**:
-- Generate comprehensive performance reports
-- Identify bottlenecks and optimization opportunities
-- Track error rates and system health
-- Monitor resource utilization trends
-
-### 🛠️ **Advanced Telemetry Features**
-
-**Custom Cartrita Instrumentations**:
-- **MCP Communication**: Inter-agent message tracing
-- **Multi-Modal Processing**: Cross-sensory operation monitoring
-- **Knowledge Hub Operations**: Vector search and embedding performance
-- **Workflow Engine**: Tool orchestration and automation tracking
-
-**Interactive Telemetry Manual**:
-- Complete documentation accessible via chat commands
-- 50+ example operations with best practices
-- Troubleshooting guides and optimization tips
-- Real-time updates with system status
-
-**Production-Ready Observability**:
-- Enterprise-grade distributed tracing
-- Custom business metrics collection
-- Automated performance monitoring
-- AI-powered analysis and recommendations
-
-### 📚 **Telemetry Manual Access**
-
-**Via Chat Commands**:
-- _"Show telemetry manual"_
-- _"Give me telemetry examples"_
-- _"Show me how to create traces"_
-- _"What telemetry operations are available?"_
-
-**Direct API Access**:
-- `GET /api/telemetry/manual` - Complete interactive documentation
-- `POST /api/telemetry/command` - Execute telemetry operations
-- `GET /api/telemetry/status` - System observability status
+**Issue Description:**
+- Clear description of expected behavior
+- Actual behavior experienced
+- Impact on your workflow
+- Frequency of occurrence
+- Any workarounds attempted
 
 ---
 
-## Privacy Controls
-
-**GDPR-compliant privacy management** with comprehensive user control.
-
-### 🛡️ **Data Protection Architecture**
-
-- **Encryption at Rest**: AES-256 for all stored data
-- **Encryption in Transit**: TLS 1.3 for all communications
-- **Zero-Knowledge Options**: Sensitive data never decrypted on servers
-- **Audit Trail Completeness**: Full logging of all data access and modifications
-
-### 📊 **Privacy Dashboard**
-
-- **Data Storage Overview**: What information is stored and where
-- **Agent Access Logs**: Which agents accessed your data when
-- **Tool Usage Tracking**: Complete audit of tool executions
-- **External API Calls**: Transparency into third-party service usage
-
-### ⚖️ **GDPR Rights Management**
-
-- **Right to Access**: Complete data export in standard formats
-- **Right to Rectification**: Update or correct any stored information
-- **Right to Erasure**: Complete data deletion with verification
-- **Right to Portability**: Easy data migration to other platforms
-
-### 🔒 **Granular Consent Controls**
-
-- **Agent-Specific Permissions**: Control which agents can access what data
-- **Tool-Level Consent**: Approve specific tool usage for sensitive operations
-- **External Service Authorization**: Manage connections to third-party APIs
-- **Data Retention Policies**: Customize how long different data is kept
-
-### 🔍 **Security Monitoring**
-
-- **Access Pattern Analysis**: Detection of unusual account activity
-- **Multi-Factor Authentication**: Enhanced security for sensitive operations
-- **Session Management**: Control active sessions and device access
-- **Security Incident Response**: Immediate alerts and response procedures
-
----
-
-## Troubleshooting
-
-### 🤖 **Agent System Issues**
-
-**Agent Not Responding**:
-
-- Check network connection for external API access
-- Verify OpenAI API key is valid and has sufficient credits
-- Try refreshing browser to reset agent state
-- Check system status for any service outages
-
-**Tool Execution Failures**:
-
-- Ensure required API keys are stored in the vault
-- Verify tool permissions for your user account
-- Check tool-specific requirements (e.g., valid URLs for scraping)
-- Try alternative tools for the same function
-
-**Agent Coordination Problems**:
-
-- Complex requests may require patience for multi-agent coordination
-- Try breaking complex requests into smaller, specific tasks
-- Check agent-specific capabilities in this manual
-- Use the supervisor override by being explicit about tool usage
-
-### 🔧 **Tool-Specific Troubleshooting**
-
-**Web Scraping Issues**:
-
-- Some websites block automated access
-- Try different URLs or check if content is publicly accessible
-- Ensure stable internet connection for external requests
-
-**AI Tool Failures**:
-
-- Verify OpenAI API key validity and credit balance
-- Check for service outages on OpenAI status page
-- Large requests may timeout - try smaller content portions
-
-**Database Search Problems**:
-
-- Ensure knowledge entries exist in your database
-- Try different search terms or semantic variations
-- Check that database connection is stable
-
-### 📊 **Telemetry System Issues**
-
-**Telemetry Agent Not Responding**:
-
-- Check system status with _"Check telemetry status"_
-- Verify OpenTelemetry integration is initialized
-- Try basic commands like _"Show telemetry manual"_
-- Restart may be needed if integration failed during startup
-
-**Traces Not Appearing**:
-
-- Confirm tracing is enabled in telemetry status
-- Create manual test trace: _"Create a demo trace"_
-- Check trace storage backend connectivity
-- Verify span export configuration
-
-**Metrics Showing Zero Values**:
-
-- Ensure metrics are being actively recorded
-- Check metric names match exactly (case-sensitive)
-- Verify metric types (counter vs histogram) are correct
-- Try creating new metrics: _"Create a counter named test_metric"_
-
-**Performance Analysis Issues**:
-
-- System needs sufficient uptime for meaningful trends
-- Check if enough data points exist for analysis
-- Verify performance monitoring components are active
-- Try requesting specific time ranges: _"Analyze last hour"_
-
-### 🎙️ **Voice System Issues**
-
-**Wake Word Not Working**:
-
-- Ensure microphone permissions are granted
-- Check that ambient listening is enabled in settings
-- Speak clearly and directly toward microphone
-- Try "Cartrita!" with different emphasis patterns
-
-**Voice Recognition Errors**:
-
-- Use Chrome browser for best compatibility
-- Ensure stable internet for Deepgram processing
-- Check microphone settings and audio levels
-- Try speaking more slowly or clearly
-
-### 💾 **Data and Sync Issues**
-
-**Knowledge Hub Sync Problems**:
-
-- Refresh browser to force data synchronization
-- Check network connection stability
-- Verify database connectivity in system status
-- Try logging out and back in to reset session
-
-**API Key Vault Access Issues**:
-
-- Check that encryption keys are accessible
-- Verify browser supports required cryptographic functions
-- Clear browser cache if experiencing persistent issues
-- Contact support for encryption-related problems
-
----
-
-## Advanced Usage Patterns
-
-### 🎯 **Maximizing Agent Efficiency**
-
-**Specific Agent Targeting**:
-
-- _"Have the Researcher Agent find papers about neural networks"_
-- _"Ask the CodeWriter Agent to review this function"_
-- _"Use the Artist Agent to create a data visualization"_
-
-**Multi-Agent Workflows**:
-
-- _"Research current web development trends, then analyze my code against those patterns"_
-- _"Create an infographic about machine learning, then explain the concepts"_
-- _"Find security best practices and audit my application code"_
-
-**Supervisor Override Usage**:
-
-- _"Use any available tools to solve this complex problem"_
-- _"I need access to all research and analysis capabilities"_
-- _"Override normal agent limitations for this emergency task"_
-
-### 🛠️ **Tool Optimization Strategies**
-
-**Combine Complementary Tools**:
-
-- Use web scraping + AI analysis for comprehensive research
-- Combine image generation + vision analysis for creative feedback
-- Use grammar checking + style analysis for polished writing
-
-**Leverage Real Database Integration**:
-
-- Build comprehensive knowledge bases with actual search capabilities
-- Use agent-generated content to enhance your knowledge repository
-- Create learning pathways using interconnected knowledge entries
-
-**API Integration Mastery**:
-
-- Store credentials for all relevant services in the vault
-- Use tool testing to verify functionality before critical tasks
-- Monitor usage patterns to optimize API service selection
-
----
-
-_This manual reflects the current hierarchical multi-agent system with real tool implementations. The platform continues to evolve with enhanced agent capabilities and additional tool integrations. For the most current information, refer to the in-app help system or agent capability queries._
+*© 2025 Cartrita AI Operating System. All rights reserved. This manual is regularly updated to reflect the latest features and improvements. Version 2.0 - Last updated: August 2025*
