@@ -22,6 +22,7 @@ export const useChatSocket = (token: string, options: UseChatSocketOptions) => {
 
   const socketRef = useRef<Socket | null>(null);
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stableHandlersRef = useRef(options);
 
   const startPingMonitoring = useCallback(() => {
     if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
@@ -47,29 +48,19 @@ export const useChatSocket = (token: string, options: UseChatSocketOptions) => {
         performance_score: data.performance_score,
         request_id: data.request_id,
       };
-      options.onMessage(newMessage);
+      stableHandlersRef.current.onMessage(newMessage);
       setIsTyping(false);
     },
-    [options],
+    []
   );
 
   useEffect(() => {
+    stableHandlersRef.current = options; // always latest but ref identity stable
+  }, [options]);
+
+  useEffect(() => {
     if (!token) return;
-
-    // Cleanup any existing socket before creating a new one
-    if (socketRef.current) {
-      console.log("🔌 Cleaning up existing socket connection...");
-      socketRef.current.disconnect();
-      socketRef.current = null;
-    }
-
-    console.log("🔌 Establishing socket connection...");
-
-    const socket = io(SOCKET_URL, {
-      ...SOCKET_CONFIG,
-      auth: { token },
-    });
-
+    const socket = io(SOCKET_URL, { ...SOCKET_CONFIG, auth: { token } });
     socketRef.current = socket;
 
     socket.on("connect", () => {
@@ -82,7 +73,7 @@ export const useChatSocket = (token: string, options: UseChatSocketOptions) => {
         connected: true,
         reconnectAttempts: 0,
       }));
-      options.onConnect();
+      stableHandlersRef.current.onConnect();
       startPingMonitoring();
     });
 
@@ -90,32 +81,20 @@ export const useChatSocket = (token: string, options: UseChatSocketOptions) => {
       console.log("🔌 Disconnected:", reason);
       setIsConnected(false);
       setConnectionStats((prev) => ({ ...prev, connected: false, latency: 0 }));
-      options.onDisconnect();
-
+      stableHandlersRef.current.onDisconnect();
       if (reason === "transport close" || reason === "transport error") {
-        console.log("🔄 Transport issue detected, will retry with polling");
         setConnectionError("Connection lost, retrying...");
       }
     });
 
     socket.on("connect_error", (error: any) => {
-      console.error("❌ Connection error:", error);
-      const errorMessage =
-        error.message || error.type || "Unknown connection error";
-      setConnectionError(`Connection failed: ${errorMessage}`);
-      setConnectionStats((prev) => ({
-        ...prev,
-        reconnectAttempts: prev.reconnectAttempts + 1,
-      }));
+      console.error("🚨 Connect error:", error);
+      setConnectionError("Connection failed, please try again later.");
     });
 
     socket.on("pong", (startTime: number) => {
       const latency = Date.now() - startTime;
-      setConnectionStats((prev) => ({
-        ...prev,
-        latency,
-        lastPing: new Date(),
-      }));
+      setConnectionStats((prev) => ({ ...prev, latency }));
     });
 
     socket.on("agent_response", handleIncomingMessage);
@@ -134,7 +113,7 @@ export const useChatSocket = (token: string, options: UseChatSocketOptions) => {
       socket.disconnect();
       if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
     };
-  }, [token, options.onMessage, options.onConnect, options.onDisconnect, handleIncomingMessage, startPingMonitoring]);
+  }, [token, handleIncomingMessage, startPingMonitoring]);
 
   const sendMessage = useCallback((text: string, language = "en") => {
     if (!socketRef.current?.connected) return;

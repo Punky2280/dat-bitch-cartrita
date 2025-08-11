@@ -6,6 +6,7 @@ import React, {
   useRef,
 } from "react";
 import { io, Socket } from "socket.io-client";
+import { SOCKET_URL, SOCKET_CONFIG } from "../config/constants";
 
 type PermissionState = "prompt" | "granted" | "denied";
 
@@ -147,8 +148,10 @@ export const AmbientProvider: React.FC<{ children: ReactNode }> = ({
       setPermission("granted");
       setIsEnabled(true);
 
-      // Connect to ambient socket
-      const socket = io("/ambient", {
+      // Connect to ambient namespace on backend explicitly (avoid relying on dev server host)
+      const ambientUrl = `${SOCKET_URL}/ambient`;
+      const socket = io(ambientUrl, {
+        ...SOCKET_CONFIG,
         auth: { token },
         query: {
           audioEnabled: effectiveSettings.audioEnabled,

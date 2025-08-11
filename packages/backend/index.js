@@ -6,6 +6,19 @@ console.log('[Index] 🚀 Starting Cartrita backend...');
 
 import express from 'express';
 import http from 'http';
+// Optional early OpenTelemetry pre-initialization to reduce instrumentation load-order warnings.
+// Set PREINIT_OTEL=1 before starting to enable.
+if (process.env.PREINIT_OTEL === '1') {
+  try {
+    const { default: OpenTelemetryTracing } = await import('./src/system/OpenTelemetryTracing.js');
+    if (!OpenTelemetryTracing.initialized) {
+      await OpenTelemetryTracing.initialize();
+      console.log('[PreInit] OpenTelemetryTracing initialized early (PREINIT_OTEL=1)');
+    }
+  } catch (e) {
+    console.warn('[PreInit] Failed early OTel init:', e.message);
+  }
+}
 import { Server } from 'socket.io';
 import cors from 'cors';
 import { Pool } from 'pg';
@@ -13,6 +26,8 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
+import { redactSecrets } from './src/middleware/redactSecrets.js';
+import APIKeyManager from './src/services/APIKeyManager.js';
 
 // --- AGENT & SERVICE IMPORTS ---
 import CartritaSupervisorAgent from './src/agi/consciousness/EnhancedLangChainCoreAgent.js';
@@ -191,6 +206,17 @@ app.use(
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Redact secrets from all outgoing responses
+app.use(redactSecrets);
+
+// Early key configuration validation (non-fatal): logs if overlay missing required mappings
+try {
+  if (APIKeyManager && typeof APIKeyManager.validateConfiguration === 'function') {
+    APIKeyManager.validateConfiguration();
+  }
+} catch (cfgErr) {
+  console.warn('[KeyConfig] Validation warning:', cfgErr.message);
+}
 
 app.use((req, res, next) => {
   if (NODE_ENV === 'development' && !isTestEnv()) {
@@ -318,6 +344,24 @@ app.use('/api/personal-life-os', personalLifeOSRoutes);
 // New secure key vault unified endpoints (refactored service)
 import keyVaultRoutes from './src/routes/keyVault.js';
 app.use('/api/key-vault', keyVaultRoutes);
+// Internal sanitized key permission/status route (no raw secrets)
+app.get('/api/internal/keys/status', (req, res) => {
+  try {
+    if (!APIKeyManager || !APIKeyManager.getStatus) return res.status(503).json({ success:false, error:'Key manager unavailable'});
+    const status = APIKeyManager.getStatus();
+    // Remove any accidental direct secret values if present (should not be) by hashing
+    const safe = { ...status };
+    if (safe.activeKeys) {
+  // Lazy require crypto synchronously (ESM import not needed for built-in here)
+  const cryptoModule = require('crypto');
+  safe.activeKeyHashes = Object.fromEntries(Object.entries(safe.activeKeys).map(([k,v]) => [k, cryptoModule.createHash('sha256').update(String(v)).digest('hex').slice(0,16)]));
+      delete safe.activeKeys;
+    }
+    return res.json({ success:true, data: safe });
+  } catch (e) {
+    return res.status(500).json({ success:false, error:'Failed to read key status' });
+  }
+});
 console.log('[Route Registration] ✅ All API routes registered.');
 
 // Explicit override route to guarantee HuggingFace agent names appear in role-call responses.
@@ -553,7 +597,13 @@ function handleAgentError(agentName, error) {
   // ... (handleAgentError logic remains the same)
 }
 
+let _serverStarting = false;
 async function startServer() {
+  if (_serverStarting || server.listening) {
+    console.log('⚠️ startServer called but server already starting/listening');
+    return;
+  }
+  _serverStarting = true;
   try {
     console.log('🚀 Initializing Cartrita backend...');
     // Skip heavy OpenTelemetry initialization in test environment to reduce noise & duplicate registration
@@ -694,14 +744,48 @@ async function startServer() {
     // Only bind the listening socket if not already listening (prevents double-start in tests)
     if (!LIGHTWEIGHT_TEST) {
       if (!server.listening) {
-        server.listen(PORT, () => {
-          console.log(`✅ Cartrita backend is live on port ${PORT}`);
-          console.log(`🌍 Environment: ${NODE_ENV}`);
-          console.log(`🔗 Allowed origins: ${allowedOrigins.join(', ')}`);
-          console.log(
-            `📊 Health check available at: http://localhost:${PORT}/health`
-          );
-        });
+        console.log('🛰 Preparing to call server.listen. Stack (trimmed):');
+        const stackLines = new Error().stack?.split('\n').slice(0,5).join('\n');
+        if (stackLines) console.log(stackLines);
+        const attemptListen = (p, attempt=0) => {
+          try {
+            server.listen(p, () => {
+              console.log(`✅ Cartrita backend is live on port ${p}${p!==PORT?` (fallback from ${PORT})`:''}`);
+              console.log(`🌍 Environment: ${NODE_ENV}`);
+              console.log(`🔗 Allowed origins: ${allowedOrigins.join(', ')}`);
+              console.log(`📊 Health check available at: http://localhost:${p}/health`);
+            });
+            server.on('error', err => {
+              if (err.code === 'EADDRINUSE' && process.env.PORT_FALLBACK === '1') {
+                server.removeAllListeners('listening');
+                const next = p + 1;
+                if (next <= p + 10) {
+                  console.warn(`⚠️ Port ${p} in use, trying ${next}...`);
+                  // Need to create a new server instance when listen failed mid-flight
+                } else {
+                  console.error('❌ Exceeded fallback attempts; aborting.');
+                  process.exit(1);
+                }
+              }
+            });
+          } catch (e) {
+            if (e.code === 'EADDRINUSE' && process.env.PORT_FALLBACK === '1') {
+              const next = p + 1;
+              if (attempt < 10) {
+                console.warn(`⚠️ Port ${p} in use (sync), retrying on ${next}`);
+                return attemptListen(next, attempt+1);
+              } else {
+                console.error('❌ Exhausted port fallback attempts.');
+                process.exit(1);
+              }
+            } else {
+              throw e;
+            }
+          }
+        };
+        attemptListen(PORT);
+      } else {
+        console.log('⚠️ server.listen skipped: already listening');
       }
     } else {
       // In lightweight test mode we don't bind a port to avoid EADDRINUSE and speed tests
@@ -710,15 +794,35 @@ async function startServer() {
   } catch (error) {
     console.error('❌ Critical startup failure:', error);
     process.exit(1);
+  } finally {
+    _serverStarting = false;
   }
 }
 
 // --- ERROR HANDLING & 404 --- (This section is moved down to group with other process handlers)
 app.use((err, req, res, next) => {
-  // ... (error handling logic remains the same)
+  try {
+    const status = err.status || err.statusCode || 500;
+    const payload = {
+      error: err.publicMessage || 'Internal server error',
+      code: err.code || undefined,
+      status,
+    };
+    if (process.env.NODE_ENV !== 'production') {
+      payload.detail = err.message;
+    }
+    if (status >= 500) {
+      console.error('[ExpressError]', err); // keep stack in server logs only
+    }
+    res.status(status).json(payload);
+  } catch (handlerErr) {
+    console.error('[ExpressErrorHandlerFailure]', handlerErr);
+    res.status(500).json({ error: 'Fatal error handler failure' });
+  }
 });
 
-app.use('*', (req, res) => {
+// Express 5 uses path-to-regexp v6; '*' bare pattern can throw. Use a regex catch-all.
+app.use(/.*/, (req, res) => {
   res.status(404).json({ error: 'Endpoint not found', path: req.originalUrl });
 });
 
@@ -792,8 +896,11 @@ process.on('uncaughtException', error => {
 // --- START THE APPLICATION ---
 // Auto-start unless running under test (vitest) where manual control preferred
 // Avoid automatic listen during Vitest to prevent EADDRINUSE
-if (!isTestEnv()) {
+if (!isTestEnv() && process.env.AUTOSTART !== '0') {
+  console.log('🔁 AUTOSTART enabled (set AUTOSTART=0 to disable auto launch)');
   startServer();
+} else if (process.env.AUTOSTART === '0') {
+  console.log('⏸ AUTOSTART=0 -> Backend will not auto-start (manual startServer() required)');
 }
 
 // Export handles for tests or external orchestrators

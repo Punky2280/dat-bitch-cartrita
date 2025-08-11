@@ -10,8 +10,8 @@
 import { trace, metrics, context, SpanKind, SpanStatusCode } from '@opentelemetry/api';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
-import pkg from '@opentelemetry/resources';
-const { Resource } = pkg;
+import resourcesPkg from '@opentelemetry/resources';
+const { resourceFromAttributes, defaultResource } = resourcesPkg;
 import semanticPkg from '@opentelemetry/semantic-conventions';
 const { SemanticResourceAttributes } = semanticPkg;
 
@@ -79,8 +79,9 @@ class OpenTelemetryIntegrationService {
         try {
             console.log('[OpenTelemetryIntegration] 📦 Initializing upstream OpenTelemetry components...');
             
-            // Create enhanced resource with Cartrita metadata
-            const resource = new Resource({
+            // Create enhanced resource with Cartrita metadata (v2 API)
+            const base = defaultResource();
+            const attrResource = resourceFromAttributes({
                 [SemanticResourceAttributes.SERVICE_NAME]: 'cartrita-integrated-telemetry',
                 [SemanticResourceAttributes.SERVICE_VERSION]: '2025.1.0',
                 [SemanticResourceAttributes.SERVICE_NAMESPACE]: 'cartrita',
@@ -90,6 +91,7 @@ class OpenTelemetryIntegrationService {
                 'cartrita.telemetry.agent': 'enabled',
                 'cartrita.system.type': 'advanced-agi-orchestrator'
             });
+            const resource = resourceFromAttributes({ ...base.attributes, ...attrResource.attributes });
 
             // Initialize NodeSDK with auto-instrumentations
             this.sdk = new NodeSDK({

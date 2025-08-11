@@ -1,6 +1,6 @@
 import axios from 'axios';
 import keyVaultService from '../security/keyVaultService.js';
-import OpenTelemetryTracing from '../system/OpenTelemetryTracing.js';
+import OpenTelemetryTracing from '../../system/OpenTelemetryTracing.js';
 
 export default class RAGPipelineService {
   constructor() {

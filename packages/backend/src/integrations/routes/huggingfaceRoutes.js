@@ -511,4 +511,21 @@ router.get('/tasks', requireOrchestrator, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/huggingface/stats
+ * Provide basic orchestrator stats (duplicate route file parity)
+ */
+router.get('/stats', requireOrchestrator, async (req, res) => {
+  try {
+    if (typeof orchestrator.getStats === 'function') {
+      const stats = orchestrator.getStats();
+      return res.json({ success: true, stats, timestamp: new Date().toISOString() });
+    }
+    // Fallback minimal stats
+    res.json({ success: true, stats: { initialized: true }, timestamp: new Date().toISOString() });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 export default router;

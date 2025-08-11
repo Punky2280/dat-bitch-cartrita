@@ -13,10 +13,13 @@
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { ConsoleSpanExporter } from '@opentelemetry/sdk-trace-node';
+import { OTLPTraceExporter as OTLPTraceExporterHTTP } from '@opentelemetry/exporter-trace-otlp-http';
+import { OTLPTraceExporter as OTLPTraceExporterGRPC } from '@opentelemetry/exporter-trace-otlp-grpc';
+import { OTLPMetricExporter as OTLPMetricExporterHTTP } from '@opentelemetry/exporter-metrics-otlp-http';
 import { PeriodicExportingMetricReader, ConsoleMetricExporter } from '@opentelemetry/sdk-metrics';
 import resourcesPkg from '@opentelemetry/resources';
 import semanticConventionsPkg from '@opentelemetry/semantic-conventions';
-const { Resource } = resourcesPkg;
+const { resourceFromAttributes, defaultResource } = resourcesPkg;
 const { SemanticResourceAttributes } = semanticConventionsPkg;
 import otelApiPkg from '@opentelemetry/api';
 const { trace, metrics, context, SpanKind, SpanStatusCode } = otelApiPkg;
@@ -67,7 +70,7 @@ class EnhancedOpenTelemetryService {
             await this.initializeDatabase();
 
             // Enhanced resource with Cartrita-specific attributes
-            const enhancedResource = new Resource({
+            const enhancedResource = resourceFromAttributes({
                 [SemanticResourceAttributes.SERVICE_NAME]: process.env.OTEL_SERVICE_NAME || 'cartrita-advanced-2025-mcp',
                 [SemanticResourceAttributes.SERVICE_VERSION]: process.env.SERVICE_VERSION || '2025.1.0',
                 [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV || 'development',
@@ -80,11 +83,20 @@ class EnhancedOpenTelemetryService {
             });
 
             // Configure the enhanced SDK
+            const traceExporter = (() => {
+                if (process.env.OTEL_EXPORTER_OTLP_TRACES_PROTOCOL === 'grpc') return new OTLPTraceExporterGRPC();
+                if (process.env.OTEL_EXPORTER_OTLP_ENDPOINT || process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT) return new OTLPTraceExporterHTTP();
+                return new ConsoleSpanExporter();
+            })();
+            const metricExporter = (() => {
+                if (process.env.OTEL_EXPORTER_OTLP_ENDPOINT || process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT) return new OTLPMetricExporterHTTP();
+                return new ConsoleMetricExporter();
+            })();
             this.sdk = new NodeSDK({
                 resource: enhancedResource,
-                traceExporter: new ConsoleSpanExporter(),
+                traceExporter,
                 metricReader: new PeriodicExportingMetricReader({
-                    exporter: new ConsoleMetricExporter(),
+                    exporter: metricExporter,
                     exportIntervalMillis: 5000,
                 }),
                 instrumentations: [getNodeAutoInstrumentations({

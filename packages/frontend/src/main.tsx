@@ -6,6 +6,7 @@ import { NotificationProvider } from "@/components/ui/NotificationProvider";
 import "./index.css";
 import "./i18n";
 import { AmbientProvider } from "@/context/AmbientContext";
+import "./setup/apiBaseFetchShim";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

@@ -1,0 +1,1081 @@
+{
+  "generated_at": "2025-08-10T23:19:55.277Z",
+  "root": "/home/robbie/development/dat-bitch-cartrita",
+  "total_findings": 78,
+  "unique_values": 58,
+  "guidance": "No raw secrets printed. Use hashes to correlate & rotate. Verify false positives manually.",
+  "items": [
+    {
+      "hash": "9b6d39e19506b826607e73ef88d67fc69e2e800d01cefe53a75d23f26227f6b3",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "${OP...KEY}"
+      ],
+      "count": 4,
+      "occurrences": [
+        {
+          "file": "docker-compose.mcp.yml",
+          "line": 135,
+          "key": "OPENAI_API_KEY"
+        },
+        {
+          "file": "docker-compose.mcp.yml",
+          "line": 172,
+          "key": "OPENAI_API_KEY"
+        },
+        {
+          "file": "docs/whitepapers/Cartrita_Hierarchical_MCP_Transformation_Whitepaper_ASCII.md",
+          "line": 1310,
+          "key": "OPENAI_API_KEY"
+        },
+        {
+          "file": "docs/whitepapers/Cartrita_Hierarchical_MCP_Transformation_Whitepaper_ASCII.md",
+          "line": 2031,
+          "key": "OPENAI_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "d31920214330a411ff61921c24c273c9d2001551bc33d90654bc942ca1e71ee8",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "${OP...ION}"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docker-compose.mcp.yml",
+          "line": 136,
+          "key": "OPENAI_ORGANIZATION"
+        }
+      ]
+    },
+    {
+      "hash": "ae90544f575c26c9afb782a80e991ad57f27ddc7d96d7cadee202e221d598eb2",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "${DE...KEY}"
+      ],
+      "count": 3,
+      "occurrences": [
+        {
+          "file": "docker-compose.mcp.yml",
+          "line": 171,
+          "key": "DEEPGRAM_API_KEY"
+        },
+        {
+          "file": "docs/whitepapers/Cartrita_Hierarchical_MCP_Transformation_Whitepaper_ASCII.md",
+          "line": 1322,
+          "key": "DEEPGRAM_API_KEY"
+        },
+        {
+          "file": "docs/whitepapers/Cartrita_Hierarchical_MCP_Transformation_Whitepaper_ASCII.md",
+          "line": 2053,
+          "key": "DEEPGRAM_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "31ca8893b056fb7e857c10eb256a07896bfa2e190941f8b5449af432841793b5",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "oldp...ss \\"
+      ],
+      "count": 3,
+      "occurrences": [
+        {
+          "file": "docs/maintenance/VAULT_REENCRYPTION.md",
+          "line": 16,
+          "key": "ENCRYPTION_MASTER_KEY"
+        },
+        {
+          "file": "docs/project-manuals/PROJECT_UPDATES.md",
+          "line": 77,
+          "key": "ENCRYPTION_MASTER_KEY"
+        },
+        {
+          "file": "packages/frontend/public/USER_MANUAL.md",
+          "line": 489,
+          "key": "ENCRYPTION_MASTER_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "09af8240136bb36be0f6ef5911745e896ce5da981745fb89c0f90cb94d34519a",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "newp...ss \\"
+      ],
+      "count": 3,
+      "occurrences": [
+        {
+          "file": "docs/maintenance/VAULT_REENCRYPTION.md",
+          "line": 17,
+          "key": "ENCRYPTION_MASTER_KEY"
+        },
+        {
+          "file": "docs/project-manuals/PROJECT_UPDATES.md",
+          "line": 78,
+          "key": "ENCRYPTION_MASTER_KEY"
+        },
+        {
+          "file": "packages/frontend/public/USER_MANUAL.md",
+          "line": 490,
+          "key": "ENCRYPTION_MASTER_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "a1da90b79edf55b06315e0cba10cda570452e2462eeb4748edf447057a23cabf",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "newp...rets"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/maintenance/VAULT_REENCRYPTION.md",
+          "line": 31,
+          "key": "ENCRYPTION_MASTER_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "5f77ba1addf3d3205e2880e583c8fc5222cb5346b1d55fe36e5852181666451b",
+      "detectors": [
+        "github",
+        "env_assign"
+      ],
+      "samples": [
+        "ghp_...Be5H"
+      ],
+      "count": 3,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/API_KEYS_RESTORED.md",
+          "line": 29
+        },
+        {
+          "file": "docs/project-manuals/API_KEYS_RESTORED.md",
+          "line": 29,
+          "key": "GITHUB_TOKEN"
+        },
+        {
+          "file": "docs/project-manuals/VAULT_TESTING_GUIDE.md",
+          "line": 28
+        }
+      ]
+    },
+    {
+      "hash": "e5e130b0b1819ce44b062c6417d962a3561db56e0f5c022944bbc5a49151fbe4",
+      "detectors": [
+        "hf_hub"
+      ],
+      "samples": [
+        "hf_A...7890"
+      ],
+      "count": 3,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/API_KEYS_RESTORED.md",
+          "line": 23
+        },
+        {
+          "file": "docs/project-manuals/API_KEYS_RESTORED.md",
+          "line": 23
+        },
+        {
+          "file": "docs/project-manuals/VAULT_TESTING_GUIDE.md",
+          "line": 19
+        }
+      ]
+    },
+    {
+      "hash": "e6a7ee6b7b70a32fa8e84abddc9e44bbb9ab7ec0cfceb3ffe7d928a3a9caf99e",
+      "detectors": [
+        "google_api",
+        "env_assign"
+      ],
+      "samples": [
+        "AIza...tuvw"
+      ],
+      "count": 3,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/API_KEYS_RESTORED.md",
+          "line": 34
+        },
+        {
+          "file": "docs/project-manuals/API_KEYS_RESTORED.md",
+          "line": 34,
+          "key": "GOOGLE_API_KEY"
+        },
+        {
+          "file": "docs/project-manuals/VAULT_TESTING_GUIDE.md",
+          "line": 29
+        }
+      ]
+    },
+    {
+      "hash": "ff7bec2c950882749ada844357552b0cc756ad1cd6171be6762ae60c2d3217d2",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "sk-p...H0YA"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/API_KEYS_RESTORED.md",
+          "line": 7,
+          "key": "OPENAI_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "e69455b9bcf59977295d3fce70aaeed3f472f2564dac8f70556efdf1384c4816",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "sk-p...-yKs"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/API_KEYS_RESTORED.md",
+          "line": 8,
+          "key": "OPENAI_FINETUNING_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "7c49f232b0fc34c8e67562a4c2b93641f52f75e0f1920d728c1c7859651a57c8",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "lsv2...6ae1"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/API_KEYS_RESTORED.md",
+          "line": 13,
+          "key": "LANGCHAIN_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "9381dcd872367b12c08e6a48b7bbed58995536a3da8774e61dbc3be9c1e7445f",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "8b78...b0ea"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/API_KEYS_RESTORED.md",
+          "line": 18,
+          "key": "DEEPGRAM_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "6c43c2bf0031e77af29cc7f88e3effc91e0f0a5ef298f8f4c8d688cafd33010d",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "1234....com"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/API_KEYS_RESTORED.md",
+          "line": 35,
+          "key": "GOOGLE_CLIENT_ID"
+        }
+      ]
+    },
+    {
+      "hash": "ec24bfd030403d604e436d9f83a40269ea5383e73ff5c8d03f04fe211fb76455",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "GOCS...2345"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/API_KEYS_RESTORED.md",
+          "line": 36,
+          "key": "GOOGLE_CLIENT_SECRET"
+        }
+      ]
+    },
+    {
+      "hash": "754b06e4b8d2853bb2ce6c9361b738f22850d65861a446b2ca004e70608ed897",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "cart....com"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/API_KEYS_RESTORED.md",
+          "line": 37,
+          "key": "GOOGLE_SERVICE_ACCOUNT_EMAIL"
+        }
+      ]
+    },
+    {
+      "hash": "1008df7374716dd2a8f0da84d0752b2a6bfa2bdc448b632b1af0e5617d9aa60a",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "cart...3456"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/API_KEYS_RESTORED.md",
+          "line": 38,
+          "key": "GOOGLE_PROJECT_ID"
+        }
+      ]
+    },
+    {
+      "hash": "ced65d50bb3991e38a4cc429bdf151ce08b9345f475e8f0c24b1e65008fc831d",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "tvly...7890"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/API_KEYS_RESTORED.md",
+          "line": 43,
+          "key": "TAVILY_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "3cd4655c3ac80b5ee005749a70d613cfa63bd88ae50ecaad82786a9415b7b1e1",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "1a2b...9s0t"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/API_KEYS_RESTORED.md",
+          "line": 44,
+          "key": "SERPAPI_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "6f49ced9c4d90f3a743e8f9f7af1a20d236ac1b198f8992e9dc476082693ff68",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "a1b2...o5p6"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/API_KEYS_RESTORED.md",
+          "line": 45,
+          "key": "GNEWS_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "661c46d3a94a0f2c9aa21432e215bd90e8c8cc092073366c84825506f03779b1",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "A8B7...KQRE"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/API_KEYS_RESTORED.md",
+          "line": 46,
+          "key": "WOLFRAM_ALPHA_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "c7201e0b1895792d32ddc4a6f67a0672e6beb8d229579256b5169a2c6fe42862",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "32_b... key"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/ENCRYPTED_KEY_VAULT_GUIDE.md",
+          "line": 29,
+          "key": "ENCRYPTION_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "d95ef396b79a3a16505b88231364d16d9f08a8c195c4b9adb72421fb82669cf0",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "old_...re \\"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/ENCRYPTED_KEY_VAULT_GUIDE.md",
+          "line": 159,
+          "key": "ENCRYPTION_MASTER_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "781f4ef7fb0dfa04adfa811f143af3fa563565e25a104d79c4094d5c09bf52ff",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "new_...re \\"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/ENCRYPTED_KEY_VAULT_GUIDE.md",
+          "line": 160,
+          "key": "ENCRYPTION_MASTER_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "a318573d9a535601d85beb35864ec63a2d86a2e7d7c09fdb07a22f5139e9ef49",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "# Va... key"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/ENCRYPTED_KEY_VAULT_GUIDE.md",
+          "line": 215,
+          "key": "ENCRYPTION_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "c07426a2003aa1fa89d67dd74b85b2dd03af8a33799db3f830a3e7cfd10cf3f1",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "→ Mo...ider"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/ENCRYPTED_KEY_VAULT_GUIDE.md",
+          "line": 221,
+          "key": "OPENAI_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "6419f0748c5629c1779f72c2e254a3f22b163240a41315600d88b4aa53dbfbfa",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "→ Mo...ider"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/ENCRYPTED_KEY_VAULT_GUIDE.md",
+          "line": 222,
+          "key": "DEEPGRAM_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "927ef51d877cac7f725ef669f269ac7444548cbae624775e280ef4ef798f9cdc",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "→ Mo...ider"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/ENCRYPTED_KEY_VAULT_GUIDE.md",
+          "line": 223,
+          "key": "GITHUB_TOKEN"
+        }
+      ]
+    },
+    {
+      "hash": "9e7bf3bfb76078b8107e040cba79a7da18d98300a53cbc895ea4af505d77beea",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "→ Mo...ider"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/ENCRYPTED_KEY_VAULT_GUIDE.md",
+          "line": 224,
+          "key": "GOOGLE_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "ff21ed6454ae5439bb01310299a830cdedc7702c4a020fd6edc1aaf712f8578f",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "${EN...ault"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/ENCRYPTED_KEY_VAULT_GUIDE.md",
+          "line": 314,
+          "key": "ENCRYPTION_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "bd300069fb0903a6bd9b782a57a111c766cb0c98203f802512e48881bdcb19b4",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "\"you...key\""
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/README-MCP.md",
+          "line": 74,
+          "key": "OPENAI_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "f08b69144c02f1279be054d4b5d68da32e531853bad6170a34f2dba06a6157aa",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "\"you...key\""
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/README-MCP.md",
+          "line": 76,
+          "key": "DEEPGRAM_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "bfe3d426fcfcfa827e8f3353e608db55bfbd3693e71e99fd093146a41ac339df",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "your...-key"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/README-MCP.md",
+          "line": 281,
+          "key": "OPENAI_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "b5317630677c77020080a64061b938471b777982641ba887879e8b469fcd5897",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "your...g-id"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/README-MCP.md",
+          "line": 282,
+          "key": "OPENAI_ORGANIZATION"
+        }
+      ]
+    },
+    {
+      "hash": "c103be6417112d399cada92326df45beceed6bdf89942dc3aa7a24991f5208f4",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "your...-key"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/README-MCP.md",
+          "line": 284,
+          "key": "DEEPGRAM_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "ac91d2e3e2c925cda7e28e379018a30e392f352e9daf562357be46cc8b35cec8",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "sk-.... TTS"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/README.md",
+          "line": 480,
+          "key": "OPENAI_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "de5d2a5e22ee81f729ae4e9f1c7ae91a1ad9fc4fed6d90ad1fb3e3b0ecb68ce6",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "... ...text"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/README.md",
+          "line": 481,
+          "key": "DEEPGRAM_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "5092f119eef5f3ac8d66ffef7b923172ec4baf98f7172cec7f310b87b791dbe3",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "... ...tion"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "docs/project-manuals/README.md",
+          "line": 482,
+          "key": "GOOGLE_CLIENT_ID"
+        }
+      ]
+    },
+    {
+      "hash": "315b7f737aaf24036c4d047714c598f352053f61ab1a0882903341bb41a7c9c9",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "${GO..._ID}"
+      ],
+      "count": 2,
+      "occurrences": [
+        {
+          "file": "docs/whitepapers/Cartrita_Hierarchical_MCP_Transformation_Whitepaper_ASCII.md",
+          "line": 1333,
+          "key": "GOOGLE_CLIENT_ID"
+        },
+        {
+          "file": "docs/whitepapers/Cartrita_Hierarchical_MCP_Transformation_Whitepaper_ASCII.md",
+          "line": 2069,
+          "key": "GOOGLE_CLIENT_ID"
+        }
+      ]
+    },
+    {
+      "hash": "e6caa276658798dc17da2520cc597e21514b0de0160c88821d10486f78e9eceb",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "${GO...RET}"
+      ],
+      "count": 2,
+      "occurrences": [
+        {
+          "file": "docs/whitepapers/Cartrita_Hierarchical_MCP_Transformation_Whitepaper_ASCII.md",
+          "line": 1334,
+          "key": "GOOGLE_CLIENT_SECRET"
+        },
+        {
+          "file": "docs/whitepapers/Cartrita_Hierarchical_MCP_Transformation_Whitepaper_ASCII.md",
+          "line": 2070,
+          "key": "GOOGLE_CLIENT_SECRET"
+        }
+      ]
+    },
+    {
+      "hash": "e1bb8f87afc65bc8ea4fd32a10ec0d72c4a7ba978aebaa2e4c306ac4ab3ba665",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "oldp..._KEY"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "packages/backend/scripts/reencryptVaultKeys.js",
+          "line": 5,
+          "key": "ENCRYPTION_MASTER_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "144d884b15d852ca2f883309b606cfd3503ce08d49e0c1691db65b9f144f57c0",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "proc...ey';"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "packages/backend/scripts/tests/test-agent-compliance.js",
+          "line": 16,
+          "key": "OPENAI_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "9c6fc28afc28d96bc5c7a305c4830bc432b313d53a6ae663248bdc46eb9fc2e3",
+      "detectors": [
+        "google_api"
+      ],
+      "samples": [
+        "AIza...cFb4"
+      ],
+      "count": 3,
+      "occurrences": [
+        {
+          "file": "packages/backend/src/agi/orchestration/AgentToolRegistry.js",
+          "line": 1445
+        },
+        {
+          "file": "packages/backend/src/services/GoogleAPIService.js",
+          "line": 6
+        },
+        {
+          "file": "packages/frontend/src/pages/ApiKeyVaultPage.tsx",
+          "line": 90
+        }
+      ]
+    },
+    {
+      "hash": "35f60b53e095e6c7810cdffb885f9094c4916fa863bd2b5f1ba7d2b60c128821",
+      "detectors": [
+        "bearer_generic"
+      ],
+      "samples": [
+        "31ad...5269"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/resource-detector-aws/test/detectors/AwsEksDetector.test.ts",
+          "line": 43
+        }
+      ]
+    },
+    {
+      "hash": "38a17561ee755b65f53594c5b9c62c8577e1e2baeea64edcb7e72d9557fac859",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "'wor...oo';"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/resource-detector-github/test/detectors/GitHubDetector.test.ts",
+          "line": 45,
+          "key": "GITHUB_WORKFLOW"
+        }
+      ]
+    },
+    {
+      "hash": "f01b0dc019c854ed04279b43683cacf1021b753e9c3ecce29d9ba85bbb4500d4",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "'run...oo';"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/resource-detector-github/test/detectors/GitHubDetector.test.ts",
+          "line": 46,
+          "key": "GITHUB_RUN_ID"
+        }
+      ]
+    },
+    {
+      "hash": "a4c17e9af6e3554bc1afce3f3badef6f5d47d3c3510e9cc5f273898c1ebf122d",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "'oct...at';"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/resource-detector-github/test/detectors/GitHubDetector.test.ts",
+          "line": 48,
+          "key": "GITHUB_ACTOR"
+        }
+      ]
+    },
+    {
+      "hash": "c2c00b1631cc84374f72a0e0540f4f6af35a58d316eff4073b9702463ef306ca",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "'git...ha';"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/resource-detector-github/test/detectors/GitHubDetector.test.ts",
+          "line": 49,
+          "key": "GITHUB_SHA"
+        }
+      ]
+    },
+    {
+      "hash": "6a58072811ebcd505b33007a50abae45a427c9d5d46c49cbc4dbcbf17ccbb5fa",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "'git...ef';"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/resource-detector-github/test/detectors/GitHubDetector.test.ts",
+          "line": 50,
+          "key": "GITHUB_REF"
+        }
+      ]
+    },
+    {
+      "hash": "d86e0f7c5617b5df78571ed581f7243c7523e678a9e695633373bc0a5146ff34",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "'ref...oo';"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/resource-detector-github/test/detectors/GitHubDetector.test.ts",
+          "line": 51,
+          "key": "GITHUB_HEAD_REF"
+        }
+      ]
+    },
+    {
+      "hash": "4b380c657612886b6157d53bcd62c1709e2637d765f7618b98d82cf74beb2a80",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "'ref...ar';"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "packages/backend/src/opentelemetry/upstream-source/opentelemetry-js-contrib/packages/resource-detector-github/test/detectors/GitHubDetector.test.ts",
+          "line": 52,
+          "key": "GITHUB_BASE_REF"
+        }
+      ]
+    },
+    {
+      "hash": "46eb12352e801d0b8907174aa272b0d9d4a414fef2e1c8be66ceab11910d7fd0",
+      "detectors": [
+        "github"
+      ],
+      "samples": [
+        "ghp_...xxxx"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "packages/backend/src/routes/vault.js",
+          "line": 304
+        }
+      ]
+    },
+    {
+      "hash": "1a5d44a2dca19669d72edf4c4f1c27c4c1ca4b4408fbb17f6ce4ad452d78ddb3",
+      "detectors": [
+        "aws_access_key"
+      ],
+      "samples": [
+        "AKIA...MPLE"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "packages/backend/src/routes/vault.js",
+          "line": 162
+        }
+      ]
+    },
+    {
+      "hash": "1d5b67be5185a336c011f6764ff0d38a91879e398f2b1ce56a9e18472240d321",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "your...here"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "scripts/setup/restart-backend.sh",
+          "line": 47,
+          "key": "OPENAI_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "7a342dce0aa8f42871db38a8d87db15fd8bdedb5c4136089788dd0be8e63fa58",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "your...here"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "scripts/setup/restart-backend.sh",
+          "line": 48,
+          "key": "DEEPGRAM_API_KEY"
+        }
+      ]
+    },
+    {
+      "hash": "e560493226b7f09518631e36a421722d162beee44a940ac1121c1721fa8e086a",
+      "detectors": [
+        "env_assign"
+      ],
+      "samples": [
+        "cart...kend"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "scripts/setup/setup-cartrita.sh",
+          "line": 189,
+          "key": "LANGCHAIN_PROJECT"
+        }
+      ]
+    },
+    {
+      "hash": "bb9db9360faf21930313f6245ef090d0c8880797def8343e5fcfab8e116caeb7",
+      "detectors": [
+        "jwt_like"
+      ],
+      "samples": [
+        "eyJh...GWx4"
+      ],
+      "count": 2,
+      "occurrences": [
+        {
+          "file": "scripts/tests/simple-chat-test.js",
+          "line": 4
+        },
+        {
+          "file": "scripts/tests/test-socket-connection.js",
+          "line": 4
+        }
+      ]
+    },
+    {
+      "hash": "5b481658740ad7b91cfdc3f4a4392b652bbb33647c531437b64bb60701f1df27",
+      "detectors": [
+        "jwt_like"
+      ],
+      "samples": [
+        "eyJh...QBxQ"
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "file": "scripts/tests/test-tool-execution.js",
+          "line": 42
+        }
+      ]
+    }
+  ]
+}

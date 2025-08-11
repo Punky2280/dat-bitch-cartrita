@@ -10,6 +10,8 @@ import LicensePage from "@/pages/LicensePage";
 import UserManualPage from "@/pages/UserManualPage";
 import LiveChatButton from "@/components/LiveChatButton";
 import ModelSelectorPanel from "@/components/ModelSelectorPanel";
+import { HuggingFaceIntegrationHub } from "@/components/huggingface/HuggingFaceIntegrationHub";
+import HealthDashboardPage from "@/pages/HealthDashboardPage";
 
 interface DashboardPageProps {
   token: string;
@@ -34,6 +36,8 @@ const DASHBOARD_VIEWS = [
   "license",
   "manual",
   "models",
+  "huggingface",
+  "health",
 ] as const;
 type DashboardView = typeof DASHBOARD_VIEWS[number];
 
@@ -328,6 +332,45 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
     );
   }
 
+  // Show HuggingFace Integration Hub
+  if (currentView === "huggingface") {
+    return (
+      <div className="min-h-screen bg-animated text-white">
+        <header className="glass-card border-b border-gray-600/50 p-4">
+          <div className="max-w-7xl mx-auto flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gradient">
+                HuggingFace AI Integration
+              </h1>
+              <p className="text-gray-400 mt-1">
+                Advanced AI capabilities with enhanced routing and multimodal processing
+              </p>
+            </div>
+            <button
+              onClick={() => setCurrentView("chat")}
+              className="bg-purple-600/80 hover:bg-purple-600 px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
+            >
+              <span>←</span>
+              <span>Back to Dashboard</span>
+            </button>
+          </div>
+        </header>
+        
+        <main className="max-w-7xl mx-auto p-6">
+          <HuggingFaceIntegrationHub 
+            token={token}
+            className="w-full"
+          />
+        </main>
+      </div>
+    );
+  }
+
+  // Show health dashboard
+  if (currentView === "health") {
+    return <HealthDashboardPage token={token} onBack={() => setCurrentView("chat")} />;
+  }
+
   // Show main dashboard
   return (
     <div className="min-h-screen bg-animated text-white">
@@ -403,6 +446,24 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
             >
               <span>🧩</span>
               <span className="hidden sm:inline">Models</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentView("huggingface")}
+              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50 flex items-center space-x-2"
+              title="HuggingFace AI Hub"
+            >
+              <span>🤗</span>
+              <span className="hidden sm:inline">HF AI</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentView("health")}
+              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50 flex items-center space-x-2"
+              title="System Health"
+            >
+              <span>📊</span>
+              <span className="hidden sm:inline">Health</span>
             </button>
 
             <button
@@ -484,6 +545,13 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
                 >
                   <span>⚙️</span>
                   <span>Account Settings</span>
+                </button>
+                <button
+                  onClick={() => setCurrentView("huggingface")}
+                  className="w-full text-left p-3 rounded-lg hover:bg-gray-800/50 transition-colors flex items-center space-x-3"
+                >
+                  <span>🤗</span>
+                  <span>HuggingFace AI Hub</span>
                 </button>
                 <button className="w-full text-left p-3 rounded-lg hover:bg-gray-800/50 transition-colors flex items-center space-x-3">
                   <span>🗑️</span>

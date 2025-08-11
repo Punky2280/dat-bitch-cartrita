@@ -1,18 +1,23 @@
+// Unified backend base URL resolution.
+// Prefer explicit websocket URL if provided, else fall back to HTTP backend URL.
+// Keep final fallback to localhost:8001 (backend default PORT).
 export const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:8001";
 export const SOCKET_URL =
-  import.meta.env.VITE_BACKEND_URL || "http://localhost:8001";
+  import.meta.env.VITE_BACKEND_WS_URL ||
+  import.meta.env.VITE_BACKEND_URL ||
+  "http://localhost:8001";
 
 export const SOCKET_CONFIG = {
-  transports: ["polling", "websocket"],
+  transports: ["websocket", "polling"],
   withCredentials: true,
-  timeout: 30000,
-  forceNew: true,
+  timeout: 20000,
+  forceNew: false,
   reconnection: true,
-  reconnectionDelay: 2000,
-  reconnectionDelayMax: 10000,
-  randomizationFactor: 0.5,
-  reconnectionAttempts: 10,
+  reconnectionDelay: 1500,
+  reconnectionDelayMax: 8000,
+  randomizationFactor: 0.4,
+  reconnectionAttempts: 6,
 };
 
 export const CHAT_SUGGESTIONS = [

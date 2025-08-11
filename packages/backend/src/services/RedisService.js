@@ -8,10 +8,21 @@ class RedisService {
     this.retryCount = 0;
     this.maxRetries = 5;
     this.retryDelay = 1000;
+  this.disabled = false;
+  this.warned = false;
+  this.readyPromise = null;
   }
 
   async initialize() {
-    try {
+    if (process.env.DISABLE_REDIS === '1') {
+      this.disabled = true;
+      if (!this.warned) {
+        console.warn('[Redis] ⚠️ DISABLE_REDIS=1 -> Redis service disabled by env');
+        this.warned = true;
+      }
+      return false;
+    }
+  try {
       const redisUrl =
         process.env.REDIS_URL ||
         `redis://${process.env.REDIS_HOST || 'localhost'}:${
@@ -33,7 +44,10 @@ class RedisService {
       });
 
       this.client.on('error', err => {
-        console.error('[Redis] Client error:', err);
+        if (!this.warned) {
+          console.error('[Redis] Client error:', err.message || err);
+          this.warned = true;
+        }
         this.isConnected = false;
       });
 
@@ -48,13 +62,79 @@ class RedisService {
         this.isConnected = false;
       });
 
-      await this.client.connect();
-      return true;
+      const attemptPrimary = async () => {
+        try {
+          await this.client.connect();
+          return true;
+        } catch (primaryErr) {
+          const wantAutoFallback = process.env.REDIS_PORT_AUTOFALLBACK === '1';
+          const explicitPort = !!process.env.REDIS_PORT;
+          const primaryWas6379 = redisUrl.includes('6379');
+          // Conditions: either no explicit port & primary was 6379 OR auto-fallback flag explicitly enabled
+          if ((primaryWas6379 && !explicitPort) || wantAutoFallback) {
+            const fallbackUrl = redisUrl.replace(/:[0-9]+/, ':6380');
+            console.warn(`[Redis] Primary port failed (${primaryErr.message || primaryErr}); attempting fallback: ${fallbackUrl}`);
+            try {
+              this.client = createClient({ url: fallbackUrl });
+              await this.client.connect();
+              console.log('[Redis] ✅ Connected on fallback port 6380');
+              this.isConnected = true;
+              return true;
+            } catch (fallbackErr) {
+              console.warn('[Redis] Fallback connection failed:', fallbackErr.message || fallbackErr);
+              // propagate original error to drive retries
+              throw primaryErr;
+            }
+          }
+          throw primaryErr;
+        }
+      };
+
+      const connectWithRetries = async () => {
+        while (this.retryCount <= this.maxRetries && !this.isConnected) {
+          const ok = await attemptPrimary().catch(err => {
+            this.retryCount++;
+            if (this.retryCount > this.maxRetries) {
+              if (!this.warned) {
+                console.warn('[Redis] ❌ Exhausted retries:', err.message || err);
+                this.warned = true;
+              }
+              return false;
+            }
+            const delay = Math.min(this.retryCount * this.retryDelay, 5000);
+            if (!this.warned) {
+              console.warn(`[Redis] ⚠️ Retry ${this.retryCount}/${this.maxRetries} in ${delay}ms (${err.message || err})`);
+            }
+            return new Promise(r => setTimeout(() => r(undefined), delay));
+          });
+          if (ok) return true;
+        }
+        return this.isConnected;
+      };
+
+      this.readyPromise = connectWithRetries();
+      const final = await this.readyPromise;
+      if (final) return true;
+      throw new Error('Redis connection retries exhausted');
     } catch (error) {
-      console.error('[Redis] ❌ Failed to initialize:', error);
+      if (!this.warned) {
+        console.warn('[Redis] ❌ Failed to initialize (continuing without cache):', error.message || error);
+        this.warned = true;
+      }
       this.isConnected = false;
+      this.disabled = true;
       return false;
     }
+  }
+
+  async waitForReady(timeoutMs = 10000) {
+    if (this.isConnected) return true;
+    if (!this.readyPromise) return false;
+    let to;
+    const timeout = new Promise(res => { to = setTimeout(() => res(false), timeoutMs); });
+    const result = await Promise.race([this.readyPromise, timeout]);
+    clearTimeout(to);
+    return result;
   }
 
   async healthCheck() {

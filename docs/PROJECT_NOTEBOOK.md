@@ -8,6 +8,22 @@ This notebook tracks the development progress, architectural decisions, and impl
 
 ## 🎯 Project Overview
 
+> Reformatted (2025-08-11) for clarity. Added a quick Table of Contents below.
+
+### Table of Contents
+1. Project Overview
+2. Current Status
+3. Architecture Deep Dive
+4. Technical Implementation Details
+5. Metrics & Analytics
+6. Development Challenges & Solutions
+7. Future Development Roadmap
+8. Development Notes
+9. Team & Contributions
+10. Resources & References
+11. Project Statistics
+
+
 ### Vision Statement
 Transform human-AI interaction through a sophisticated hierarchical multi-agent system that provides personalized, secure, and intelligent assistance across all aspects of digital life.
 
@@ -593,3 +609,96 @@ CREATE TABLE user_api_keys (
 **Next Update Scheduled:** August 25, 2025
 **Update Frequency:** Bi-weekly
 **Maintained By:** Robbie Allen (@robbieallen)
+
+---
+
+## 🔮 Detailed Upcoming Feature Requirements (Draft)
+
+This section expands 17 requested feature areas into actionable requirements. Each lists Purpose, MVP scope, Extended scope, Data Entities, Key Interactions, Metrics, Dependencies, and Risks.
+
+### 1. Credential Rotation Scheduling Interface
+Purpose: Policy-driven automated rotation & auditing of credentials.
+MVP: Credential list (provider, key name, last rotated, next due, status); rotation policy editor (intervalDays, autoRotate, graceDays); manual rotate action; overdue warnings; masked display with reveal audit.
+Extended: Policy templates, bulk apply, calendar view, retry w/ exponential backoff, dry-run simulation, webhook notifications.
+Entities: credential, rotation_policy, rotation_event.
+Metrics: automated_rotation_rate, overdue_credentials, rotation_failure_rate.
+Dependencies: Vault tables, background job scheduler.
+Risks: Key exposure, duplicate rotations under race.
+
+### 2. Masking / Security Controls Interface
+MVP: Per-credential masking toggle (masked/partial/reveal-once), reveal confirmation modal, session logging.
+Extended: Field-level policies, time-bound reveal tokens, anomaly detection signals.
+Dependencies: Existing encryption & audit log service.
+
+### 3. Enhanced Personality Settings
+MVP Traits: tone, formality, empathy, proactivity, creativity, humor, verbosity (0–5 sliders); preview pane.
+Extended: Context-aware switching, adaptive learning, scenario templates.
+Entity: personality_profile { traits JSON, version }.
+
+### 4. Extended Personality Trait Editor (40+ combinations)
+Approach: Combine 8 axes -> generate canonical trait vector; managed presets; validation for extremes.
+Extended: Sandbox conversation preview & delta diff viewer.
+
+### 5. Health Check Dashboard (≥4 visualizations)
+MVP Charts: service uptime sparkline, API latency histogram, error rate line, DB connections gauge.
+Extended: Incident correlation timeline, agent tool latency heatmap.
+Source: OTEL / Prometheus metrics endpoint.
+
+### 6. Real-Time System Health Visualization
+WebSocket streaming w/ fallback polling; diff-based UI updates; threshold coloring; pause/resume feed.
+
+### 7. Knowledge Category UI (Filtering & Search)
+MVP: Sidebar categories, search box, results list (title/snippet/tags), add/edit category dialog.
+Extended: Faceted filters (source type, freshness), bulk reclassify, suggestion engine.
+
+### 8. Category-Based Knowledge Organization Interface
+Drag & drop between categories; merge/split dialog; category health badges (doc count, stale %).
+
+### 9. Enhanced Calendar Integration UI
+Unified multi-provider view; conflict detection; focus score per day; availability heatmap.
+
+### 10. AI Email Categorization Interface
+MVP Buckets: Action, Waiting, Reference, Personal, Other; classification explanation; batch triage assist.
+Extended: User correction feedback loop; SLA timers; sentiment overlay.
+
+### 11. Contact Management (Cross-Platform Sync)
+Aggregate contacts; duplicate merge; relationship score (frequency + sentiment trend).
+
+### 12. Task & Journal Management (Sentiment)
+Unified tasks & journal timeline; sentiment tagging; mood trend visualization; privacy/local-only flag.
+
+### 13. Visual Workflow Builder (Drag & Drop)
+MVP Nodes: Input, ToolCall, AgentDelegation, Condition, Delay, Output; pan/zoom; JSON export.
+Extended: Version history, collaborative cursors, inline test execution, breakpoint nodes.
+
+### 14. Execution Monitoring & Debugging
+Timeline list; per-node logs; structured output panel; retry node; filter by status/duration.
+
+### 15. Workflow Templates & Sharing
+Template metadata & tagging; import/export; version diff display; usage metrics.
+
+### 16. Cross-Modal Data Fusion Displays
+Composite panel: text summary + image annotation + audio waveform + entity list.
+Contract: fusion_payload { modalities[], alignmentRefs[], synthesized_summary }.
+
+### 17. Ambient Intelligence Controls
+Global thresholds (CPU, queue depth, latency); automation toggles (auto-scale, auto-rotate); quiet hours schedule.
+
+### 18. Mobile-First Responsive Components
+Audit existing components; introduce layout primitives (Stack, Grid, ResponsivePanel); mobile nav bar; gesture shortcuts.
+
+### Phase Grouping
+Phase 1: (1,2,17) Security & Observability Foundations
+Phase 2: (3,4,7,8,12) Personalization & Knowledge
+Phase 3: (5,6,13,14,15) Workflow & Monitoring
+Phase 4: (9,10,11) Productivity Surfaces
+Phase 5: (16,18) Advanced UX & Multimodal
+
+### Cross-Cutting Non-Functional Requirements
+- Accessibility WCAG AA
+- P95 UI action latency < 250ms
+- 85%+ new module test coverage
+- Structured audit events for security actions
+- Graceful degradation offline (read-only where possible)
+
+---

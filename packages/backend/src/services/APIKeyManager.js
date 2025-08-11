@@ -2,6 +2,8 @@
 // Secure API key management service for Cartrita agents
 
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * APIKeyManager - Secure API key distribution for agents
@@ -21,7 +23,7 @@ class APIKeyManager {
    * Initialize API key permissions for different agent roles
    */
   initializeKeyPermissions() {
-    return {
+  const defaults = {
       // Core supervisor has access to all keys
       supervisor: {
         openai: process.env.OPENAI_API_KEY,
@@ -95,7 +97,50 @@ class APIKeyManager {
         openai: process.env.OPENAI_API_KEY,
       },
     };
+
+    // Attempt overlay from config/api-key-permissions.json
+    try {
+      const cfgPath = path.resolve(process.cwd(), 'config', 'api-key-permissions.json');
+      if (fs.existsSync(cfgPath)) {
+        const raw = fs.readFileSync(cfgPath, 'utf8');
+        const overlay = JSON.parse(raw);
+        Object.entries(overlay).forEach(([role, services]) => {
+          if (role.startsWith('_')) return; // skip meta keys
+          defaults[role] = defaults[role] || {};
+          Object.entries(services).forEach(([svc, allowed]) => {
+            if (!allowed) { delete defaults[role][svc]; return; }
+            // map boolean true to env variable value
+            if (allowed === true) {
+              const envName = APIKeyManager.serviceToEnvVar(svc);
+              defaults[role][svc] = process.env[envName];
+            }
+          });
+        });
+        console.log('[APIKeyManager] 🔄 Permissions overlay applied from config/api-key-permissions.json');
+      }
+    } catch (err) {
+      console.warn('[APIKeyManager] ⚠️ Failed loading permissions config:', err.message);
+    }
+    return defaults;
   }
+  static serviceToEnvVar(name){
+    switch(name){
+      case 'openai': return 'OPENAI_API_KEY';
+      case 'google': return 'GOOGLE_API_KEY';
+      case 'google_oauth_client_id': return 'GOOGLE_CLIENT_ID';
+      case 'google_oauth_secret': return 'GOOGLE_CLIENT_SECRET';
+      case 'deepgram': return 'DEEPGRAM_API_KEY';
+      case 'github': return 'GITHUB_TOKEN';
+      case 'gitlab': return 'GITLAB_TOKEN';
+      case 'tavily': return 'TAVILY_API_KEY';
+      case 'serpapi': return 'SERPAPI_API_KEY';
+      case 'gnews': return 'GNEWS_API_KEY';
+      case 'langchain': return 'LANGCHAIN_API_KEY';
+      case 'wolfram': return 'WOLFRAM_ALPHA_API_KEY';
+      default: return name.toUpperCase();
+    }
+  }
+
 
   /**
    * Get API key for specific agent and service

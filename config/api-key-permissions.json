@@ -1,0 +1,12 @@
+{
+  "_comment": "Editable role->service map. Null or missing entries mean no access. Merge overlays built-in defaults.",
+  "supervisor": {"openai": true, "github": true, "gitlab": true, "deepgram": true, "tavily": true, "wolfram": true},
+  "researcher": {"tavily": true, "serpapi": true, "gnews": true, "wolfram": true},
+  "analyst": {"openai": true, "wolfram": true, "tavily": true},
+  "writer": {"openai": true},
+  "voice": {"openai": true, "deepgram": true},
+  "artist": {"openai": true},
+  "scheduler": {"openai": true, "google": true},
+  "codewriter": {"openai": true, "github": true},
+  "default": {"openai": true}
+}

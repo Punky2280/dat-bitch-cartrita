@@ -15,6 +15,7 @@
   "scripts": {
     "dev": "npm run dev --workspace=frontend",
     "dev:backend": "npm run dev --workspace=backend",
+  "dev:full": "concurrently -k -n BACKEND,FRONTEND -c magenta,cyan 'npm:dev:backend' 'npm:dev'",
   "dev:mcp": "npm run dev --workspace=orchestrator",
     "build": "npm run build --workspaces --if-present",
     "start": "npm run start --workspace=backend",
@@ -37,6 +38,10 @@
     "docs:apply": "DRY_RUN=0 bash scripts/reorganize-docs.sh",
     "docs:build": "node scripts/build-master-readme.mjs",
     "docs:journal": "bash scripts/add_journal_entry.sh"
+  ,"scan:keys": "node scripts/security/scan-api-keys.mjs > key-inventory.json"
+  ,"keys:rotate": "node scripts/security/rotate-keys.mjs"
+  ,"secrets:precommit": "node scripts/security/precommit-secret-check.mjs"
+  ,"keys:status": "curl -s localhost:${PORT:-8001}/api/internal/keys/status || true"
   },
   "devDependencies": {
     "@babel/core": "^7.28.0",

@@ -55,26 +55,64 @@ class EnhancedKnowledgeHub {
       'text/csv',
     ];
 
-    console.log('[EnhancedKnowledgeHub] 🧠 Advanced RAG system initialized');
+  this.disabled = false;
+  this.initAttempted = false;
+  this.ready = false;
+  this.retryCount = 0;
+  this.maxRetries = Number(process.env.KH_MAX_RETRIES || 10);
+  this.retryDelayMs = Number(process.env.KH_RETRY_DELAY_MS || 3000);
+  if (process.env.KH_FAST_RETRY === '1') {
+    // Developer fast retry profile: quicker feedback loop
+    this.maxRetries = Math.min(this.maxRetries, 4);
+    this.retryDelayMs = Math.min(this.retryDelayMs, 1000);
+    console.log('[EnhancedKnowledgeHub] ⚡ KH_FAST_RETRY=1 -> Using fast retry profile');
+  }
+  console.log('[EnhancedKnowledgeHub] 🧠 Advanced RAG system constructed');
   }
 
   /**
    * Initialize the knowledge hub with database setup
    */
   async initialize() {
+    this.initAttempted = true;
     if (process.env.LIGHTWEIGHT_TEST === '1') {
       console.log('[EnhancedKnowledgeHub] 🧪 LIGHTWEIGHT_TEST=1 -> Skipping initialization');
+      this.disabled = true;
       return false;
     }
-    try {
-      await this.ensureDatabaseSchema();
-      await this.testVectorOperations();
-      console.log('[EnhancedKnowledgeHub] ✅ RAG system ready');
-      return true;
-    } catch (error) {
-      console.error('[EnhancedKnowledgeHub] ❌ Initialization failed:', error);
+    if (process.env.DISABLE_KNOWLEDGE_HUB === '1') {
+      console.warn('[EnhancedKnowledgeHub] ⚠️ DISABLE_KNOWLEDGE_HUB=1 -> Service disabled by env');
+      this.disabled = true;
       return false;
     }
+    const attemptInit = async () => {
+      try {
+        await this.ensureDatabaseSchema();
+        await this.testVectorOperations();
+        this.ready = true;
+        console.log('[EnhancedKnowledgeHub] ✅ RAG system ready');
+        return true;
+      } catch (error) {
+        this.retryCount++;
+        const transient = error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT';
+        const willRetry = transient && this.retryCount <= this.maxRetries;
+        if (willRetry) {
+          const delay = this.retryDelayMs * this.retryCount;
+            console.warn(`[EnhancedKnowledgeHub] ⚠️ Init attempt ${this.retryCount} failed (${error.message || error}) - retrying in ${delay}ms`);
+          await this.delay(delay);
+          return attemptInit();
+        }
+        if (process.env.KNOWLEDGE_HUB_OPTIONAL === '1') {
+          console.warn('[EnhancedKnowledgeHub] ❌ Initialization failed but continuing (optional mode):', error.message);
+          this.disabled = true;
+          return false;
+        }
+        console.error('[EnhancedKnowledgeHub] ❌ Initialization failed (giving up):', error.message || error);
+        this.disabled = true;
+        return false;
+      }
+    };
+    return attemptInit();
   }
 
   /**
@@ -1004,6 +1042,10 @@ Return a JSON array of facts, each with:
     return {
       service: 'EnhancedKnowledgeHub',
       version: '3.0',
+  disabled: this.disabled,
+  ready: this.ready,
+  retries: this.retryCount,
+  init_attempted: this.initAttempted,
       supported_formats: this.supportedFormats,
       vector_dimension: this.vectorDimension,
       chunk_config: {

@@ -13,9 +13,11 @@ export default defineConfig({
         target: process.env.VITE_BACKEND_URL || 'http://localhost:8001', 
         changeOrigin: true 
       },
+      // WebSocket proxy must keep HTTP(S) scheme; ws:// scheme here can break upgrade handling.
       '/socket.io': { 
-        target: process.env.VITE_BACKEND_URL?.replace('http', 'ws') || 'ws://localhost:8001', 
-        ws: true 
+        target: process.env.VITE_BACKEND_URL || 'http://localhost:8001',
+        ws: true,
+        changeOrigin: true,
       },
     },
   },

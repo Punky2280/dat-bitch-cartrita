@@ -18,7 +18,7 @@ export default class AgentOrchestrator {
     this.isInitialized = false;
     
     // Enhanced services
-    this.routerService = new HuggingFaceRouterService();
+    this.routerService = HuggingFaceRouterService;
     this.ragService = new RAGPipelineService();
     
     // Performance tracking

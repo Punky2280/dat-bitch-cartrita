@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { validateApiKey } from "../utils/apiKeyValidation";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { ProviderCatalog, type Provider } from "../components/vault/ProviderCatalog";
+import { CredentialForm, type CredentialFormData } from "../components/vault/CredentialForm";
+import { ValidationDashboard } from "../components/vault/ValidationDashboard";
+import { SecurityMaskingControls, MaskMode } from "../components/vault/SecurityMaskingControls";
 
 interface ApiKeyVaultPageProps {
   token: string;
@@ -150,8 +154,16 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
   onBack,
 }) => {
   const [activeView, setActiveView] = useState<
-    "dashboard" | "keys" | "add" | "security" | "analytics"
+    | "dashboard"
+    | "keys"
+    | "add"
+    | "security"
+    | "analytics"
+    | "validation"
+    | "catalog"
+    | "rotation"
   >("dashboard");
+  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [providers, setProviders] = useState<ApiProvider[]>([]);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
@@ -169,6 +181,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
 
   // Validation state
   const [validationMessage, setValidationMessage] = useState("");
+  const [maskModes, setMaskModes] = useState<{[keyId:number]: MaskMode}>({});
 
   const [testResults, setTestResults] = useState<{ [keyId: number]: any }>({});
   
@@ -441,8 +454,11 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
               { id: "dashboard", name: "Dashboard", icon: "📊" },
               { id: "keys", name: "API Keys", icon: "🔑" },
               { id: "add", name: "Add Key", icon: "➕" },
+              { id: "rotation", name: "Rotation", icon: "🔄" },
               { id: "security", name: "Security Events", icon: "🛡️" },
               { id: "analytics", name: "Usage Analytics", icon: "📈" },
+              { id: "catalog", name: "Provider Catalog", icon: "📚" },
+              { id: "validation", name: "Validation Status", icon: "✅" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -647,6 +663,25 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                   </div>
 
                   <div className="space-y-3 mb-4">
+                    {/* Masking / reveal controls */}
+                    <SecurityMaskingControls
+                      maskedValue={"************" + (key.key_name.slice(-4) || "XXXX")}
+                      mode={maskModes[key.id] || 'MASKED'}
+                      onMaskChange={(m)=> setMaskModes(prev=>({...prev,[key.id]:m}))}
+                      onReveal={async ()=>{
+                        // Placeholder reveal endpoint (to be implemented securely)
+                        try {
+                          const resp = await fetch(`/api/vault/keys/${key.id}/reveal`, { headers:{ Authorization:`Bearer ${token}` }});
+                          if(!resp.ok) return null;
+                          const data = await resp.json();
+                          return data.full_key || null;
+                        } catch { return null; }
+                      }}
+                      onCopy={(val)=>{
+                        // TODO: add audit event emit
+                        console.log('Copied credential value length', val.length);
+                      }}
+                    />
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-400">Usage:</span>
                       <span className="text-white">
@@ -732,153 +767,77 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
           </div>
         )}
 
-        {activeView === "add" && (
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-gray-800 rounded-xl p-6">
-              <h2 className="text-xl font-bold mb-6">Add New API Key</h2>
+        {activeView === "add" && !selectedProvider && (
+          <ProviderCatalog
+            onSelectProvider={(provider) => {
+              setSelectedProvider(provider);
+            }}
+            selectedProvider={selectedProvider}
+            className="w-full"
+          />
+        )}
 
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Provider
-                  </label>
-                  <select
-                    value={newKey.provider_id}
-                    onChange={(e) =>
-                      setNewKey({ ...newKey, provider_id: e.target.value })
-                    }
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500"
-                  >
-                    <option value="">Select a provider...</option>
-                    {providers.map((provider) => (
-                      <option key={provider.id} value={provider.id}>
-                        {provider.icon} {provider.display_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+        {activeView === "add" && selectedProvider && (
+          <CredentialForm
+            provider={selectedProvider}
+            onSubmit={async (data) => {
+              try {
+                const response = await fetch("/api/vault/keys", {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    provider_name: selectedProvider.name,
+                    key_name: data.keyName,
+                    credential_data: data.fields,
+                    expires_at: data.expiresAt || null,
+                    rotation_interval_days: data.rotationIntervalDays || null,
+                    metadata: data.metadata || {}
+                  }),
+                });
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Key Name
-                  </label>
-                  <input
-                    type="text"
-                    value={newKey.key_name}
-                    onChange={(e) =>
-                      setNewKey({ ...newKey, key_name: e.target.value })
-                    }
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-green-500"
-                    placeholder="e.g., Production OpenAI Key"
-                  />
-                </div>
+                const result = await response.json();
+                if (result.success) {
+                  setSelectedProvider(null);
+                  setActiveView("keys");
+                  loadData();
+                  return true;
+                } else {
+                  alert(result.error);
+                  return false;
+                }
+              } catch (error) {
+                console.error("Error adding API key:", error);
+                alert("Failed to add API key");
+                return false;
+              }
+            }}
+            onCancel={() => {
+              setSelectedProvider(null);
+              setActiveView("keys");
+            }}
+            className="max-w-4xl mx-auto"
+          />
+        )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    API Key *
-                  </label>
-                  <input
-                    type="password"
-                    value={newKey.api_key}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setNewKey({ ...newKey, api_key: value });
+        {activeView === "catalog" && (
+          <ProviderCatalog
+            onSelectProvider={(provider) => {
+              setSelectedProvider(provider);
+              setActiveView("add");
+            }}
+            selectedProvider={selectedProvider}
+            className="w-full"
+          />
+        )}
 
-                      // Real-time validation
-                      if (value && newKey.provider_id) {
-                        const validation = validateApiKey(
-                          newKey.provider_id,
-                          value,
-                        );
-                        setValidationMessage(
-                          validation.isValid ? "" : validation.message || "",
-                        );
-                      } else {
-                        setValidationMessage("");
-                      }
-                    }}
-                    className={`w-full px-4 py-3 glass-card border rounded-lg text-white placeholder-gray-400 focus:outline-none transition-colors ${
-                      validationMessage
-                        ? "border-red-500 focus:border-red-400"
-                        : "border-gray-600/50 focus:border-blue-500"
-                    }`}
-                    placeholder={
-                      newKey.provider_id
-                        ? getProviderPlaceholder(newKey.provider_id)
-                        : "Enter your API key..."
-                    }
-                  />
-                  {validationMessage && (
-                    <p className="mt-2 text-sm text-red-400 flex items-center space-x-1">
-                      <span>⚠️</span>
-                      <span>{validationMessage}</span>
-                    </p>
-                  )}
-                  {newKey.provider_id &&
-                    getProviderInfo(newKey.provider_id) && (
-                      <div className="mt-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                        <p className="text-sm text-blue-300 flex items-start space-x-2">
-                          <span className="text-blue-400 mt-0.5">📝</span>
-                          <span>{getProviderInfo(newKey.provider_id)}</span>
-                        </p>
-                      </div>
-                    )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Expires At (Optional)
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={newKey.expires_at}
-                      onChange={(e) =>
-                        setNewKey({ ...newKey, expires_at: e.target.value })
-                      }
-                      className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Auto-rotation (Days)
-                    </label>
-                    <input
-                      type="number"
-                      value={newKey.rotation_interval_days}
-                      onChange={(e) =>
-                        setNewKey({
-                          ...newKey,
-                          rotation_interval_days: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-green-500"
-                      placeholder="90"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex space-x-4">
-                  <button
-                    onClick={handleAddKey}
-                    disabled={
-                      !newKey.provider_id || !newKey.key_name || !newKey.api_key
-                    }
-                    className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 rounded-lg font-semibold transition-colors"
-                  >
-                    Add API Key
-                  </button>
-                  <button
-                    onClick={() => setActiveView("keys")}
-                    className="px-6 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg font-semibold transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+        {activeView === "validation" && (
+          <ValidationDashboard
+            token={token}
+            className="w-full"
+          />
         )}
 
         {activeView === "security" && (
@@ -941,6 +900,125 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                 here. This includes API call frequency, response times, token
                 usage, and cost analysis.
               </p>
+            </div>
+          </div>
+        )}
+
+        {activeView === "rotation" && (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold flex items-center space-x-2">
+              <span>🔄</span><span>Credential Rotation Scheduling</span>
+            </h2>
+            <p className="text-gray-400 max-w-3xl">
+              Define and manage automatic rotation policies for your stored credentials. Rotation reduces exposure risk and enforces compliance.
+            </p>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 space-y-6">
+                <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2">
+                    <span>🗓️</span><span>Policies</span>
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left text-gray-400 border-b border-gray-700">
+                          <th className="py-2 pr-4">Credential</th>
+                          <th className="py-2 pr-4">Interval</th>
+                          <th className="py-2 pr-4">Last Rotated</th>
+                          <th className="py-2 pr-4">Next Due</th>
+                          <th className="py-2 pr-4">Auto</th>
+                          <th className="py-2 pr-4">Status</th>
+                          <th className="py-2 pr-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {apiKeys.slice(0,10).map((key) => {
+                          // Placeholder policy mapping; real data will come from rotation policy endpoint.
+                          const intervalDays = 90; // TODO fetch
+                          const lastRotated = key.last_used_at || key.created_at;
+                          const nextDue = new Date(new Date(lastRotated).getTime() + intervalDays*24*60*60*1000);
+                          const overdue = nextDue.getTime() < Date.now();
+                          return (
+                            <tr key={key.id} className="border-b border-gray-800 hover:bg-gray-750/40">
+                              <td className="py-2 pr-4">
+                                <div className="flex items-center space-x-2">
+                                  <span>{getProviderIcon(key.provider_icon)}</span>
+                                  <span className="font-medium">{key.key_name}</span>
+                                </div>
+                              </td>
+                              <td className="py-2 pr-4">{intervalDays}d</td>
+                              <td className="py-2 pr-4">{new Date(lastRotated).toLocaleDateString()}</td>
+                              <td className={`py-2 pr-4 ${overdue ? 'text-yellow-400 font-semibold' : ''}`}>{nextDue.toLocaleDateString()}</td>
+                              <td className="py-2 pr-4">✅</td>
+                              <td className="py-2 pr-4">{overdue ? 'Due' : 'On Track'}</td>
+                              <td className="py-2 pr-4 text-right space-x-2">
+                                <button className="px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs">Rotate Now</button>
+                                <button className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">Edit</button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-3">Showing first 10 credentials. Policy CRUD & pagination forthcoming.</div>
+                </div>
+
+                <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2">
+                    <span>🛠️</span><span>Create / Edit Policy</span>
+                  </h3>
+                  <form className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-1">
+                      <label className="block text-xs uppercase tracking-wide text-gray-400 mb-1">Credential</label>
+                      <select className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-green-500">
+                        <option value="">Select…</option>
+                        {apiKeys.map(k => <option key={k.id} value={k.id}>{k.key_name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs uppercase tracking-wide text-gray-400 mb-1">Interval (days)</label>
+                      <input type="number" min={1} defaultValue={90} className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-green-500" />
+                    </div>
+                    <div>
+                      <label className="block text-xs uppercase tracking-wide text-gray-400 mb-1">Grace Period (days)</label>
+                      <input type="number" min={0} defaultValue={5} className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-green-500" />
+                    </div>
+                    <div className="flex items-center space-x-2 md:col-span-1">
+                      <input id="autoRotate" type="checkbox" defaultChecked className="h-4 w-4 rounded bg-gray-700 border-gray-600" />
+                      <label htmlFor="autoRotate" className="text-sm text-gray-300">Auto Rotate</label>
+                    </div>
+                    <div className="md:col-span-2 flex space-x-2">
+                      <button type="button" className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium">Save Policy</button>
+                      <button type="button" className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium">Reset</button>
+                    </div>
+                  </form>
+                  <div className="text-xs text-gray-500 mt-3">Form is non-functional placeholder; will connect to /api/vault/rotation-policies endpoints.</div>
+                </div>
+              </div>
+
+              <aside className="space-y-6">
+                <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                  <h3 className="text-sm font-semibold mb-2 uppercase tracking-wide text-gray-400">Summary</h3>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-center justify-between"><span>Automated Policies</span><span className="text-green-400 font-medium">—</span></li>
+                    <li className="flex items-center justify-between"><span>Overdue</span><span className="text-yellow-400 font-medium">—</span></li>
+                    <li className="flex items-center justify-between"><span>Failures (24h)</span><span className="text-red-400 font-medium">0</span></li>
+                  </ul>
+                  <div className="mt-4 text-xs text-gray-500">Metrics will appear once backend rotation service is implemented.</div>
+                </div>
+                <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                  <h3 className="text-sm font-semibold mb-2 uppercase tracking-wide text-gray-400">Planned Features</h3>
+                  <ul className="list-disc list-inside text-xs text-gray-400 space-y-1">
+                    <li>Policy templates (e.g., High Sensitivity 30d)</li>
+                    <li>Bulk apply policies</li>
+                    <li>Calendar visualization</li>
+                    <li>Rotation simulation (dry run)</li>
+                    <li>Webhook notifications</li>
+                  </ul>
+                </div>
+              </aside>
             </div>
           </div>
         )}

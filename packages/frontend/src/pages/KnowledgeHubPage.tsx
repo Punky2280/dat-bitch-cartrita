@@ -61,7 +61,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
 }) => {
   const notify = useNotify();
   const [activeView, setActiveView] = useState<
-    "overview" | "graph" | "search" | "entries" | "create"
+    "overview" | "graph" | "search" | "entries" | "create" | "categories"
   >("overview");
   const [entries, setEntries] = useState<KnowledgeEntry[]>([]);
   const [clusters, setClusters] = useState<KnowledgeCluster[]>([]);
@@ -311,6 +311,7 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
               { id: "search", name: "Semantic Search", icon: "🔍" },
               { id: "entries", name: "All Entries", icon: "📚" },
               { id: "create", name: "Create Entry", icon: "✏️" },
+              { id: "categories", name: "Categories", icon: "🏷️" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -829,6 +830,77 @@ export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {activeView === "categories" && (
+          <div className="space-y-6">
+            <div className="bg-gray-800 rounded-xl p-6">
+              <h2 className="text-xl font-bold mb-4 flex items-center space-x-2">
+                <span>🏷️</span>
+                <span>Category Management (Preview)</span>
+              </h2>
+              <p className="text-sm text-gray-400 mb-6">Organize knowledge entries into hierarchical categories. Drag & drop reordering and bulk assignment will be added in a later iteration.</p>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-gray-200">Existing Categories</h3>
+                    <button className="text-xs px-2 py-1 bg-purple-600/60 hover:bg-purple-600 rounded transition-colors">Refresh</button>
+                  </div>
+                  <ul className="divide-y divide-gray-700 border border-gray-700 rounded-lg overflow-hidden">
+                    {categories.map(cat => (
+                      <li key={cat} className="flex items-center justify-between px-4 py-2 hover:bg-gray-700/40 text-sm">
+                        <div className="flex items-center space-x-2">
+                          <span className="cursor-grab text-gray-500">⋮⋮</span>
+                          <span className="text-gray-200">{cat}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-400">{entries.filter(e=>e.category===cat).length}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <button className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded">Rename</button>
+                          <button className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded">Merge</button>
+                          <button className="text-xs px-2 py-1 bg-red-600/70 hover:bg-red-600 rounded">Delete</button>
+                        </div>
+                      </li>
+                    ))}
+                    {categories.length === 0 && (
+                      <li className="px-4 py-4 text-center text-xs text-gray-500">No categories yet.</li>
+                    )}
+                  </ul>
+                </div>
+                <div className="space-y-6">
+                  <div className="bg-gray-700/40 p-4 rounded-lg">
+                    <h4 className="font-semibold mb-3 text-sm text-gray-200">Create Category</h4>
+                    <input type="text" placeholder="e.g. research/ai" className="w-full mb-3 px-3 py-2 bg-gray-800 border border-gray-600 rounded text-sm focus:outline-none focus:border-purple-500" />
+                    <button className="w-full py-2 bg-purple-600 hover:bg-purple-700 rounded text-sm font-semibold">Add</button>
+                  </div>
+                  <div className="bg-gray-700/40 p-4 rounded-lg">
+                    <h4 className="font-semibold mb-3 text-sm text-gray-200">Bulk Assign (Coming Soon)</h4>
+                    <p className="text-xs text-gray-400 mb-3">Select entries and assign them to categories in bulk.</p>
+                    <button className="w-full py-2 bg-gray-600 cursor-not-allowed rounded text-sm opacity-60">Bulk Assign Disabled</button>
+                  </div>
+                  <div className="bg-gray-700/40 p-4 rounded-lg">
+                    <h4 className="font-semibold mb-3 text-sm text-gray-200">Hierarchy (Planned)</h4>
+                    <ul className="text-xs text-gray-400 space-y-1 list-disc list-inside">
+                      <li>Parent / child nesting</li>
+                      <li>Automatic inheritance</li>
+                      <li>Aggregation analytics</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="glass-card p-6 rounded-xl">
+              <h3 className="text-lg font-semibold mb-2 flex items-center space-x-2"><span>🛠️</span><span>Upcoming Category Features</span></h3>
+              <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
+                <li>Drag-and-drop reorder & nested hierarchy editing</li>
+                <li>Color labels and icons per category</li>
+                <li>Semantic auto-suggested categories for new entries</li>
+                <li>Merge & split operations with preview impact</li>
+                <li>Category-level access control & sharing</li>
+                <li>Analytics: usage frequency, recency heat map</li>
+              </ul>
             </div>
           </div>
         )}

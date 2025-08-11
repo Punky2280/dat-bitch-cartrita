@@ -14,10 +14,10 @@ const knowledgeHub = new EnhancedKnowledgeHub();
 knowledgeHub.initialize().then(success => {
   if (success) {
     console.log('[Knowledge] ✅ Enhanced Knowledge Hub initialized');
+  } else if (knowledgeHub.disabled) {
+    console.warn('[Knowledge] ⚠️ Knowledge Hub disabled or optional initialization skipped');
   } else {
-    console.error(
-      '[Knowledge] ❌ Enhanced Knowledge Hub initialization failed'
-    );
+    console.error('[Knowledge] ❌ Enhanced Knowledge Hub initialization failed (fatal)');
   }
 });
 
@@ -97,6 +97,9 @@ const upload = multer({
 // Enhanced semantic search with RAG
 router.get('/search', authenticateToken, async (req, res) => {
   try {
+    if (!knowledgeHub.ready) {
+      return res.status(503).json({ success: false, error: 'Knowledge Hub not ready', retry_after_ms: 2000 });
+    }
     const {
       q: query,
       limit = 10,
@@ -193,6 +196,9 @@ router.post(
   upload.single('file'),
   async (req, res) => {
     try {
+      if (!knowledgeHub.ready) {
+        return res.status(503).json({ success: false, error: 'Knowledge Hub not ready', retry_after_ms: 5000 });
+      }
       const { title, category = 'general', tags = '' } = req.body;
       const userId = req.user.id;
       const file = req.file;

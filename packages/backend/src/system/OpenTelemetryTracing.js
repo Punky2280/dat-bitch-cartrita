@@ -20,8 +20,13 @@ import {
 } from '@opentelemetry/api';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { ConsoleSpanExporter } from '@opentelemetry/sdk-trace-node';
+import { OTLPTraceExporter as OTLPTraceExporterHTTP } from '@opentelemetry/exporter-trace-otlp-http';
+import { OTLPTraceExporter as OTLPTraceExporterGRPC } from '@opentelemetry/exporter-trace-otlp-grpc';
+import { OTLPMetricExporter as OTLPMetricExporterHTTP } from '@opentelemetry/exporter-metrics-otlp-http';
+// sdk-metrics still provides reader + console exporter; API unchanged for v2
 import metricsPkg from '@opentelemetry/sdk-metrics';
-import { Resource } from '@opentelemetry/resources';
+import resourcesPkg from '@opentelemetry/resources';
+const { resourceFromAttributes, defaultResource } = resourcesPkg;
 import { buildBaseResourceAttributes } from './otelSemantic.js';
 const { PeriodicExportingMetricReader, ConsoleMetricExporter } = metricsPkg;
 
@@ -57,28 +62,49 @@ class OpenTelemetryTracing {
       );
 
       // Follow official Node.js SDK pattern with exporters and metric readers
-      const resource = new Resource(buildBaseResourceAttributes(process.env));
+  const baseAttrs = buildBaseResourceAttributes(process.env);
+  // defaultResource is a function returning a resource instance
+  const baseResource = defaultResource();
+  const attrResource = resourceFromAttributes(baseAttrs);
+  // Some older helpers lack merge; simulate by creating a new resourceFromAttributes that combines
+  const combinedResource = resourceFromAttributes({ ...baseResource.attributes, ...attrResource.attributes });
+      // Decide exporters (OTLP HTTP/GRPC) based on env, else console
+      const traceExporter = (() => {
+        if (process.env.OTEL_EXPORTER_OTLP_TRACES_PROTOCOL === 'grpc') {
+          return new OTLPTraceExporterGRPC();
+        }
+        if (process.env.OTEL_EXPORTER_OTLP_ENDPOINT || process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT) {
+          return new OTLPTraceExporterHTTP();
+        }
+        return options.traceExporter || new ConsoleSpanExporter();
+      })();
+      const metricExporter = (() => {
+        if (process.env.OTEL_EXPORTER_OTLP_ENDPOINT || process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT) {
+          return new OTLPMetricExporterHTTP();
+        }
+        return new ConsoleMetricExporter();
+      })();
       this.sdk = new NodeSDK({
         serviceName: this.serviceName,
         serviceVersion: this.serviceVersion,
-        traceExporter: options.traceExporter || new ConsoleSpanExporter(),
+        traceExporter,
         metricReader:
           options.metricReader ||
           new PeriodicExportingMetricReader({
-            exporter: new ConsoleMetricExporter(),
+            exporter: metricExporter,
             exportIntervalMillis: 30000, // Export metrics every 30 seconds
           }),
         instrumentations: [getNodeAutoInstrumentations()],
-        resource,
+        resource: combinedResource,
       });
 
       await this.sdk.start();
 
-      this.tracer = trace.getTracer(this.serviceName, this.serviceVersion);
+  this.tracer = trace.getTracer(this.serviceName, this.serviceVersion);
 
       // Get the meter for custom metrics
-      const { metrics } = await import('@opentelemetry/api');
-      this.meter = metrics.getMeter(this.serviceName, this.serviceVersion);
+  const { metrics } = await import('@opentelemetry/api');
+  this.meter = metrics.getMeter(this.serviceName, this.serviceVersion);
 
       // Initialize common counters/histograms if not already defined
       if (!global.otelCounters) global.otelCounters = {};

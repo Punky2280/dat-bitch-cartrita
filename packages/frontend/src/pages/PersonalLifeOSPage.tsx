@@ -82,7 +82,7 @@ export const PersonalLifeOSPage: React.FC<PersonalLifeOSPageProps> = ({
 }) => {
   const notify = useNotify();
   const [activeView, setActiveView] = useState<
-    "dashboard" | "calendar" | "tasks" | "contacts" | "metrics" | "integrations"
+    "dashboard" | "calendar" | "tasks" | "contacts" | "metrics" | "integrations" | "calendar_plus"
   >("dashboard");
 
   // State
@@ -376,6 +376,7 @@ export const PersonalLifeOSPage: React.FC<PersonalLifeOSPageProps> = ({
               { id: "contacts", name: "Contacts", icon: "👥" },
               { id: "metrics", name: "Life Metrics", icon: "📊" },
               { id: "integrations", name: "Integrations", icon: "🔗" },
+              { id: "calendar_plus", name: "Calendar+", icon: "🗓️" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -720,6 +721,95 @@ export const PersonalLifeOSPage: React.FC<PersonalLifeOSPageProps> = ({
             </div>
           </div>
         )}
+
+        {activeView === "calendar" && (
+          <div className="space-y-6">
+            <div className="bg-gray-800 rounded-xl p-6">
+              <h2 className="text-xl font-bold mb-4 flex items-center space-x-2"><span>📅</span><span>Calendar (Basic)</span></h2>
+              <p className="text-sm text-gray-400 mb-4">Upcoming events list. Enhanced visualization available under Calendar+.</p>
+              <div className="space-y-3 max-h-[420px] overflow-y-auto pr-2">
+                {upcomingEvents.map(ev => (
+                  <div key={ev.id} className="border border-gray-700 rounded-lg p-4 hover:border-blue-500 transition-colors">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-white">{ev.summary || 'Untitled Event'}</h3>
+                        <div className="text-xs text-gray-400 mt-1">{new Date(ev.start.dateTime).toLocaleString()} → {new Date(ev.end.dateTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                        {ev.location && <div className="text-xs text-gray-500 mt-1">📍 {ev.location}</div>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {upcomingEvents.length === 0 && <div className="text-xs text-gray-500 text-center py-8">No events loaded.</div>}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeView === "calendar_plus" && (
+          <div className="space-y-8">
+            <div className="bg-gray-800 rounded-xl p-6">
+              <h2 className="text-xl font-bold mb-2 flex items-center space-x-2"><span>🗓️</span><span>Calendar+ (Preview)</span></h2>
+              <p className="text-sm text-gray-400 mb-6">Advanced temporal visualization, load balancing, and focus planning (simulated placeholders).</p>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Timeline */}
+                <div className="lg:col-span-2">
+                  <h3 className="text-sm font-semibold text-gray-300 mb-3">Today Timeline</h3>
+                  <div className="relative border border-gray-700 rounded-lg p-4 h-[320px] overflow-hidden bg-gray-900/40">
+                    <div className="absolute left-8 top-0 bottom-0 w-px bg-gradient-to-b from-blue-500/60 to-purple-500/40" />
+                    {upcomingEvents.slice(0,8).map((ev,i)=>{
+                      const start = new Date(ev.start.dateTime);
+                      const hour = start.getHours() + start.getMinutes()/60;
+                      const top = (hour/24)*300 + 10; // 300px virtual timeline
+                      return (
+                        <div key={ev.id} style={{ top }} className="absolute left-10 right-2 group">
+                          <div className="inline-block bg-blue-600/80 group-hover:bg-blue-600 rounded px-3 py-1 text-xs shadow transition-colors">
+                            <span className="font-semibold mr-2">{start.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                            <span>{ev.summary || 'Event'}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {upcomingEvents.length === 0 && <div className="text-xs text-gray-500 text-center mt-24">No events to visualize.</div>}
+                  </div>
+                </div>
+                {/* Heat Map */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-300 mb-3">Weekly Density (Sim)</h3>
+                  <div className="grid grid-cols-7 gap-1 text-[10px] mb-2">
+                    {['M','T','W','T','F','S','S'].map(d=> <div key={d} className="text-center text-gray-500">{d}</div>)}
+                  </div>
+                  <div className="grid grid-cols-7 gap-1">
+                    {Array.from({length:28}).map((_,i)=>{
+                      const v = (i*37)%9; // pseudo density
+                      const color = v===0? 'bg-gray-800' : v<3? 'bg-blue-900' : v<6? 'bg-blue-600' : 'bg-purple-600';
+                      return <div key={i} className={`w-7 h-7 rounded ${color} flex items-center justify-center text-[8px] text-white/70`}>{v>0? v:''}</div>;
+                    })}
+                  </div>
+                  <div className="flex items-center space-x-2 mt-3 text-[10px] text-gray-400">
+                    <span className="bg-blue-900 w-4 h-3 rounded" />
+                    <span>Low</span>
+                    <span className="bg-blue-600 w-4 h-3 rounded" />
+                    <span>Med</span>
+                    <span className="bg-purple-600 w-4 h-3 rounded" />
+                    <span>High</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-800 rounded-xl p-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2"><span>🛠️</span><span>Upcoming Calendar+ Features</span></h3>
+              <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
+                <li>AI conflict detection & focus block suggestions</li>
+                <li>Load balance view (color-coded intensity bands)</li>
+                <li>Smart grouping of back-to-back micro-meetings</li>
+                <li>Context-aware prep buffer recommendation</li>
+                <li>Deep link edits & RSVP inline actions</li>
+              </ul>
+            </div>
+          </div>
+        )}
+
       </div>
 
       {/* AI Suggestions Panel */}

@@ -14,7 +14,8 @@ import {
 } from '@opentelemetry/api';
 import { MeterProvider as SDKMeterProvider } from '@opentelemetry/sdk-metrics';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
-import { Resource } from '@opentelemetry/resources';
+import resourcesPkg from '@opentelemetry/resources';
+const { resourceFromAttributes, defaultResource } = resourcesPkg;
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 
 /**
@@ -60,13 +61,14 @@ export class MCPMetrics {
 
   private constructor(enablePrometheus = true, prometheusPort = 9090) {
     // Initialize meter provider with resource information
-    const resource = Resource.default().merge(
-      new Resource({
-        [SemanticResourceAttributes.SERVICE_NAME]: 'cartrita-mcp',
-        [SemanticResourceAttributes.SERVICE_VERSION]: '1.0.0',
-        [SemanticResourceAttributes.SERVICE_NAMESPACE]: 'cartrita',
-      })
-    );
+    // Build resource using v2 helpers
+    const base = defaultResource();
+    const attrRes = resourceFromAttributes({
+      [SemanticResourceAttributes.SERVICE_NAME]: 'cartrita-mcp',
+      [SemanticResourceAttributes.SERVICE_VERSION]: '1.0.0',
+      [SemanticResourceAttributes.SERVICE_NAMESPACE]: 'cartrita',
+    });
+    const resource = resourceFromAttributes({ ...base.attributes, ...attrRes.attributes });
 
     const meterProvider = new SDKMeterProvider({
       resource,

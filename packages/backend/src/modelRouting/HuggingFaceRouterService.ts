@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import axios, { AxiosRequestConfig } from 'axios';
-import OpenTelemetryTracing from '../system/OpenTelemetryTracing.js';
+const OpenTelemetryTracing = require('../system/OpenTelemetryTracing.js').default;
 
 export interface ModelEntry {
   idx: number;
@@ -91,8 +91,8 @@ function recordOutcome(id: string, ok: boolean) {
   success.set(id, (success.get(id) ?? 0) + (ok ? 1 : 0));
   errors.set(id, (errors.get(id) ?? 0) + (ok ? 0 : 1));
   try {
-    if (ok) global.otelCounters?.hfRoutingSuccess?.add(1, { model: id });
-    else global.otelCounters?.hfRoutingErrors?.add(1, { model: id });
+    if (ok) (global as any).otelCounters?.hfRoutingSuccess?.add(1, { model: id });
+    else (global as any).otelCounters?.hfRoutingErrors?.add(1, { model: id });
   } catch(_) {}
 }
 function reliability(id: string) {
@@ -477,7 +477,7 @@ export class HuggingFaceRouterService {
           if (conf < minConfidence && usedFallbacks < 3 && opts.enable_fallback !== false) {
             console.log(`Model ${m.repo_id} confidence ${conf} below threshold ${minConfidence}, trying fallback`);
             usedFallbacks++;
-            global.otelCounters?.hfRoutingFallbacks?.add(1, { reason: 'low_conf', model: m.repo_id });
+            (global as any).otelCounters?.hfRoutingFallbacks?.add(1, { reason: 'low_conf', model: m.repo_id });
             continue;
           }
           
@@ -515,7 +515,7 @@ export class HuggingFaceRouterService {
           console.error(`Model ${m.repo_id} failed:`, e.message);
           lastErr = e;
           usedFallbacks++;
-          global.otelCounters?.hfRoutingFallbacks?.add(1, { reason: 'error', model: m.repo_id });
+          (global as any).otelCounters?.hfRoutingFallbacks?.add(1, { reason: 'error', model: m.repo_id });
           continue;
         }
       }
