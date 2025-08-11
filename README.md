@@ -80,10 +80,10 @@ nano packages/backend/.env
 
 **Required API Keys:**
 ```env
-OPENAI_API_KEY=your_openai_key_here
-HUGGINGFACE_API_TOKEN=your_huggingface_pro_token_here
-DEEPGRAM_API_KEY=your_deepgram_key_here
-DATABASE_URL=postgresql://user:pass@localhost:5432/cartrita
+OPENAI_API_KEY=your_openai_api_key_here
+HUGGINGFACE_API_TOKEN=your_huggingface_token_here  
+DEEPGRAM_API_KEY=your_deepgram_api_key_here
+DATABASE_URL=postgresql://username:password@localhost:5432/cartrita
 ```
 
 ### 3. Database Setup

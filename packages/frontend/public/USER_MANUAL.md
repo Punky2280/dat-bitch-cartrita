@@ -410,7 +410,7 @@ The API Key Vault is your secure, centralized hub for managing API credentials a
 
 **AI & Machine Learning (8 providers):**
 - **OpenAI:** GPT models, DALL-E, embeddings, fine-tuning
-- **HuggingFace:** 41+ inference tasks, model hosting, datasets
+- **HuggingFace:** 41+ inference tasks, model hosting, datasets  
 - **Anthropic:** Claude AI models and API access
 - **Replicate:** ML model deployment and scaling
 - **Stability AI:** Stable Diffusion and image generation
