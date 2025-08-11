@@ -3,10 +3,10 @@ import { Pool } from 'pg';
 
 const baseConfig = {
   user: process.env.POSTGRES_USER || 'robert',
-  host: process.env.POSTGRES_HOST || 'db',
+  host: process.env.POSTGRES_HOST || 'localhost',
   database: process.env.POSTGRES_DB || 'dat-bitch-cartrita',
   password: process.env.POSTGRES_PASSWORD || 'punky1',
-  port: Number(process.env.POSTGRES_PORT) || 5432,
+  port: Number(process.env.POSTGRES_PORT) || 5435,
 };
 
 let pool;

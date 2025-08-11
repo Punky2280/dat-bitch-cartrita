@@ -13,6 +13,8 @@
     "packages/mcp-testing"
   ],
   "scripts": {
+  "dev:token": "node scripts/dev/get-auth-token.js",
+  "dev:validate-users": "node scripts/dev/validate-users.js",
     "dev": "npm run dev --workspace=frontend",
     "dev:backend": "npm run dev --workspace=backend",
   "dev:full": "concurrently -k -n BACKEND,FRONTEND -c magenta,cyan 'npm:dev:backend' 'npm:dev'",

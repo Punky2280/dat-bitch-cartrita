@@ -3,12 +3,10 @@ import {
   CameraIcon,
   StopIcon,
   PhotoIcon,
-  EyeIcon,
   AdjustmentsHorizontalIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
-  ArrowPathIcon,
-  SparklesIcon
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import {
   MediaPermissionHandler,

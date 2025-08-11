@@ -1,5 +1,8 @@
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
+// Fallback: if running from JS build (no TS transpile this boot) and this file is required
+// ensure any runtime that dynamically required the compiled JS will find parity exports.
+// (No-op here; placeholder comment documents conditional build system.)
 import axios from 'axios';
 const OpenTelemetryTracing = require('../system/OpenTelemetryTracing.js').default;
 // Load enhanced catalog with cost tiers and quality scores

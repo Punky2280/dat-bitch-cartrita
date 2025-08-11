@@ -2,15 +2,13 @@ import React, { useState, useRef, useCallback } from 'react';
 import {
   SpeakerWaveIcon,
   MicrophoneIcon,
-  MusicalNoteIcon,
   PlayIcon,
   PauseIcon,
   StopIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
   ArrowPathIcon,
-  AdjustmentsHorizontalIcon,
-  DocumentArrowUpIcon
+  AdjustmentsHorizontalIcon
 } from '@heroicons/react/24/outline';
 import { AudioVisualizer } from '../AudioVisualizer';
 

@@ -20,6 +20,7 @@ function authenticateToken(req, res, next) {
         id: 'test-admin',
         name: 'Test Admin',
         email: 'test-admin@example.com',
+        role: 'admin',
         is_admin: true,
       };
       return next();
@@ -29,6 +30,7 @@ function authenticateToken(req, res, next) {
         id: 'test-user',
         name: 'Test User',
         email: 'test-user@example.com',
+        role: 'user',
         is_admin: false,
       };
       return next();
@@ -56,7 +58,9 @@ function authenticateToken(req, res, next) {
       id: decodedPayload.sub,
       name: decodedPayload.name,
       email: decodedPayload.email,
-      // Respect payload flag when present (e.g., tests or seeded tokens)
+      role: decodedPayload.role || 'user',
+      iss: decodedPayload.iss,
+      aud: decodedPayload.aud,
       is_admin: decodedPayload.is_admin === true,
     };
 

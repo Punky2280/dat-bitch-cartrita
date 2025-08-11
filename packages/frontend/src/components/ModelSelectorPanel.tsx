@@ -1,8 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Card } from './ui/card';
-import { Select } from './ui/select';
 import { Button } from './ui/button';
-import { Tabs } from './ui/tabs';
 
 interface ModelCatalogEntry {
   idx: number;

@@ -10,22 +10,29 @@ type AuthView = "login" | "register";
 
 function App() {
   const [token, setToken] = useState<string | null>(
-    localStorage.getItem("authToken"),
+    localStorage.getItem("token"),
   );
   const [authView, setAuthView] = useState<AuthView>("login");
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("authToken");
+    // Migration: Move old authToken to new token key
+    const oldToken = localStorage.getItem("authToken");
+    if (oldToken && !localStorage.getItem("token")) {
+      localStorage.setItem("token", oldToken);
+      localStorage.removeItem("authToken");
+    }
+    
+    const storedToken = localStorage.getItem("token");
     if (storedToken) setToken(storedToken);
   }, []);
 
   const handleLogin = (newToken: string) => {
-    localStorage.setItem("authToken", newToken);
+    localStorage.setItem("token", newToken);
     setToken(newToken);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("authToken");
+    localStorage.removeItem("token");
     setToken(null);
     setAuthView("login");
   };

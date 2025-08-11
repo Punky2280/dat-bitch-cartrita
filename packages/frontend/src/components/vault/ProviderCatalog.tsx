@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { semantic, gradients, colors } from '@/theme/tokens';
+import { gradients } from '@/theme/tokens';
 
 interface ProviderField {
   name: string;

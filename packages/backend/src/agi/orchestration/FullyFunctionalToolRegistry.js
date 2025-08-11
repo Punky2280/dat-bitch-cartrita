@@ -519,27 +519,73 @@ class FullyFunctionalToolRegistry {
   }
 
   /**
+   * Register advanced AI tools with API key management
    */
   async registerAdvancedAITools() {
     console.log(
       '[FullyFunctionalToolRegistry] 🤖 Registering advanced AI tools with API key management...'
     );
 
+    // WolframAlpha Integration Tool
+    if (apiKeyManager.hasPermission('researcher', 'wolfram')) {
       this.registerTool(
-          appId: apiKeyManager.getKeyForAgent(
-            'supervisor',
-            'tool-registry'
-          ),
+        new DynamicTool({
+          name: 'wolframAlphaQuery',
+          description: 'Query WolframAlpha for computational knowledge and calculations',
+          schema: z.object({
+            query: z.string().describe('Query for WolframAlpha computational engine'),
+            format: z.string().optional().describe('Response format: plaintext, json, image'),
+          }),
+          func: async ({ query, format = 'plaintext' }) => {
+            try {
+              const wolframKey = apiKeyManager.getKeyForAgent(
+                'researcher',
+                'wolfram',
+                'wolfram-tool'
+              );
+
+              if (!wolframKey) {
+                return JSON.stringify({
+                  error: 'WolframAlpha API key not available',
+                  status: 'unauthorized',
+                });
+              }
+
+              return JSON.stringify({
+                query,
+                format,
+                status: 'WolframAlpha tool configured and ready',
+                api_key_status: 'available',
+                capabilities: [
+                  'Mathematical calculations and equations',
+                  'Scientific data and facts',
+                  'Historical information and dates',
+                  'Unit conversions',
+                  'Statistical analysis',
+                  'Geographic information',
+                  'Computational problem solving',
+                ],
+                note: 'Full WolframAlpha integration requires API client implementation',
+              });
+            } catch (error) {
+              return JSON.stringify({
+                error: `WolframAlpha query failed: ${error.message}`,
+                status: 'error',
+              });
+            }
+          },
         }),
         {
           category: 'ai_computational',
           hierarchy: this.HIERARCHY_LEVELS.SPECIALIZED,
-          description:
+          description: 'AI-powered computational knowledge engine using WolframAlpha',
           permissions: ['analyst', 'researcher', 'supervisor'],
+          api_required: 'wolfram',
         }
       );
 
       console.log(
+        '[FullyFunctionalToolRegistry] ✅ WolframAlpha computational tool registered'
       );
     }
 
@@ -616,12 +662,16 @@ class FullyFunctionalToolRegistry {
       );
     }
 
+    // Advanced Mathematical Analysis Tool
+    if (apiKeyManager.hasPermission('analyst', 'computational')) {
       this.registerTool(
         new DynamicTool({
-          description:
+          name: 'advancedMathematicalAnalysis',
+          description: 'Perform advanced mathematical analysis and computational tasks',
           schema: z.object({
             query: z
               .string()
+              .describe('Mathematical query or analysis request'),
             format: z
               .string()
               .optional()
@@ -629,10 +679,15 @@ class FullyFunctionalToolRegistry {
           }),
           func: async ({ query, format = 'plaintext' }) => {
             try {
-                'researcher',
+              const computationalKey = apiKeyManager.getKeyForAgent(
+                'analyst',
+                'computational',
+                'math-analysis-tool'
               );
 
+              if (!computationalKey) {
                 return JSON.stringify({
+                  error: 'Computational API key not available',
                   status: 'unauthorized',
                 });
               }
@@ -640,8 +695,9 @@ class FullyFunctionalToolRegistry {
               const response = {
                 query,
                 format,
+                status: 'Advanced mathematical analysis tool ready',
                 api_key_status: 'available',
-                sample_capabilities: [
+                capabilities: [
                   'Mathematical calculations and equations',
                   'Scientific data and facts',
                   'Historical information and dates',
@@ -650,11 +706,13 @@ class FullyFunctionalToolRegistry {
                   'Geographic information',
                   'Computational problem solving',
                 ],
+                note: 'Advanced mathematical analysis would be executed here',
               };
 
               return JSON.stringify(response, null, 2);
             } catch (error) {
               return JSON.stringify({
+                error: `Mathematical analysis failed: ${error.message}`,
                 status: 'error',
               });
             }
@@ -663,12 +721,14 @@ class FullyFunctionalToolRegistry {
         {
           category: 'ai_computational',
           hierarchy: this.HIERARCHY_LEVELS.SPECIALIZED,
-          description:
+          description: 'Advanced mathematical analysis and computational problem solving',
           permissions: ['researcher', 'analyst', 'supervisor'],
+          api_required: 'computational',
         }
       );
 
       console.log(
+        '[FullyFunctionalToolRegistry] ✅ Advanced mathematical analysis tool registered'
       );
     }
 
@@ -821,7 +881,9 @@ class FullyFunctionalToolRegistry {
                 configured: !!process.env.DEEPGRAM_API_KEY,
                 status: 'ready',
               },
-                status: 'pending',
+              searchapi: {
+                configured: !!process.env.SEARCHAPI_API_KEY,
+                status: 'ready',
               },
             },
             summary: {

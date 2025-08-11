@@ -50,6 +50,8 @@ export const LoginPage = ({
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
           <input
+            id="login-email"
+            name="email"
             type="email"
             placeholder="Email"
             value={email}
@@ -59,6 +61,8 @@ export const LoginPage = ({
             required
           />
           <input
+            id="login-password"
+            name="password"
             type="password"
             placeholder="Password"
             value={password}

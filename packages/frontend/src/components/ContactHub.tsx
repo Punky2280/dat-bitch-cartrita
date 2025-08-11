@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -11,33 +11,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Users,
-  RefreshCw,
-  Search,
-  Plus,
-  Edit,
-  Trash2,
-  Phone,
-  Mail,
-  MapPin,
-  Building,
-  Calendar,
-  Star,
-  MessageCircle,
-  Camera,
-  UserCheck,
-  Activity,
-  Gift,
-  Tag,
-} from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Users, RefreshCw, Search, Plus, Phone, Mail, Building, Calendar, Star, MessageCircle, UserCheck, Activity, Gift } from "lucide-react";
 
 interface Contact {
   id: string;
@@ -464,12 +439,9 @@ const ContactHub: React.FC = () => {
           </div>
         ) : (
           contacts.map((contact) => (
-            <Card
-              key={contact.id}
-              className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => openContactDetails(contact)}
-            >
-              <CardContent className="p-4">
+            <div key={contact.id} onClick={() => openContactDetails(contact)} className="hover:shadow-md transition-shadow cursor-pointer">
+              <Card>
+                <CardContent className="p-4">
                 <div className="flex items-start space-x-3">
                   {/* Avatar */}
                   <div className="flex-shrink-0">
@@ -558,8 +530,9 @@ const ContactHub: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           ))
         )}
       </div>

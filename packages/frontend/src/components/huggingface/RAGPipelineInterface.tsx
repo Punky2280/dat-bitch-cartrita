@@ -3,14 +3,9 @@ import {
   DocumentIcon,
   DocumentTextIcon,
   TrashIcon,
-  PlusIcon,
   MagnifyingGlassIcon,
-  SparklesIcon,
-  ClockIcon,
-  InformationCircleIcon,
-  XMarkIcon
+  SparklesIcon
 } from '@heroicons/react/24/outline';
-import { CheckCircleIcon } from '@heroicons/react/24/solid';
 
 interface Document {
   id: string;
@@ -68,8 +63,8 @@ export const RAGPipelineInterface: React.FC<RAGPipelineInterfaceProps> = ({
   const [embeddingModel, setEmbeddingModel] = useState('BAAI/bge-large-en-v1.5');
   const [rerankModel, setRerankModel] = useState('BAAI/bge-reranker-large');
   const [generationModel, setGenerationModel] = useState('meta-llama/Meta-Llama-3-8B-Instruct');
-  const [topKRetrieval, setTopKRetrieval] = useState(20);
-  const [topKRerank, setTopKRerank] = useState(8);
+  const [topKRetrieval] = useState(20); // static for now
+  const [topKRerank] = useState(8); // static for now
   const [useMultiQuery, setUseMultiQuery] = useState(false);
   const [includeCitations, setIncludeCitations] = useState(true);
   const [budgetTier, setBudgetTier] = useState<'economy' | 'standard' | 'premium'>('standard');

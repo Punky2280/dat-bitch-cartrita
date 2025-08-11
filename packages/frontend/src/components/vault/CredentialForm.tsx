@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { semantic, gradients } from '@/theme/tokens';
+import { gradients } from '@/theme/tokens';
 import type { Provider, ProviderField } from './ProviderCatalog';
 
 interface ValidationResult {

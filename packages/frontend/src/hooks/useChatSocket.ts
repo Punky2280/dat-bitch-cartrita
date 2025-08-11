@@ -60,6 +60,10 @@ export const useChatSocket = (token: string, options: UseChatSocketOptions) => {
 
   useEffect(() => {
     if (!token) return;
+    if (token.split('.').length !== 3) {
+      console.warn('🔒 Skipping socket connect: malformed token');
+      return;
+    }
     const socket = io(SOCKET_URL, { ...SOCKET_CONFIG, auth: { token } });
     socketRef.current = socket;
 

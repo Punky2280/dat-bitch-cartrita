@@ -10,9 +10,14 @@ export const useChatHistory = (
   token: string,
   options: UseChatHistoryOptions,
 ) => {
+  const malformed = !token || token.split(".").length !== 3;
   const loadHistory = useCallback(async () => {
     if (!token) {
       console.warn("📭 No token available for chat history request");
+      return;
+    }
+    if (malformed) {
+      console.warn("📭 Skipping chat history; token malformed");
       return;
     }
 
@@ -30,11 +35,9 @@ export const useChatHistory = (
       console.log("📡 Chat history response status:", response.status);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ Chat history error response:", errorText);
-        throw new Error(
-          `Failed to load history: ${response.status} ${response.statusText}`,
-        );
+        const errText = await response.text();
+        console.warn("❌ Chat history fetch blocked (non-ok)", response.status, errText);
+        return; // Do not throw to avoid promise rejection spam
       }
 
       const data = await response.json();
@@ -43,10 +46,9 @@ export const useChatHistory = (
       const conversations = data.conversations || [];
       options.onHistoryLoaded(conversations);
     } catch (error) {
-      console.error("Error loading chat history:", error);
-      throw error;
+      console.warn("Error loading chat history (suppressed):", error);
     }
-  }, [token, options.onHistoryLoaded]);
+  }, [token, malformed, options.onHistoryLoaded]);
 
   const clearHistory = useCallback(async () => {
     if (!token) return;

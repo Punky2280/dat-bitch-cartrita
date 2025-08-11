@@ -16,7 +16,7 @@ export const EmailInboxPage = ({ token, onBack }: EmailInboxPageProps) => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [unreadOnly, setUnreadOnly] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  // removed unused refreshing state
   // Mobile bucket toggle
   const [activeMobileBucket, setActiveMobileBucket] = useState<string>(CATEGORY_BUCKETS[0].id);
   const [isNarrow, setIsNarrow] = useState(false);

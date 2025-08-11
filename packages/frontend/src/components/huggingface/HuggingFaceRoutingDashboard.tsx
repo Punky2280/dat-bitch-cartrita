@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   ChartBarIcon,
   ClockIcon,
-  CurrencyDollarIcon,
-  ShieldCheckIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
   XCircleIcon,

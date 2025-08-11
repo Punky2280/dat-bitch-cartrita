@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { semantic, gradients, colors } from '@/theme/tokens';
 
 interface ValidationStatus {
   id: number;

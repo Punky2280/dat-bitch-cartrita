@@ -5,7 +5,12 @@
     "rootDir": "./src/modelRouting",
     "declaration": false,
     "emitDeclarationOnly": false,
-    "noEmit": false
+    "noEmit": false,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "NodeNext",
+    "module": "NodeNext"
   },
   "include": ["src/modelRouting/HuggingFaceRouterService.ts"],
   "exclude": ["node_modules", "dist"]

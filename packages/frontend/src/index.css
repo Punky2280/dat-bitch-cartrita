@@ -14,6 +14,10 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Text size adjust ordering for cross-browser (legacy first) */
+  -ms-text-size-adjust: 100%; /* IE 10+ (mostly irrelevant now) */
+  text-size-adjust: 100%; /* Modern spec */
+  -webkit-text-size-adjust: 100%; /* Safari / iOS */
 }
 
 /* Dynamic theme variables - will be overridden by ThemeContext */

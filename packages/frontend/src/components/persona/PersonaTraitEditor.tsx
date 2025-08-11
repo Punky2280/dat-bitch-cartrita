@@ -84,12 +84,15 @@ export const PersonaTraitEditor: React.FC = () => {
     {loading && <div>Loading...</div>}
     {error && <div style={{ color:'red' }}>{error}</div>}
     <div style={{ display:'grid', gap:'0.75rem' }}>
-      {sliderTraits.map(t => (
-        <label key={t.key} style={{ display:'flex', flexDirection:'column' }}>
-          <span>{t.label}: {persona[t.key]}</span>
-          <input type="range" min={t.min} max={t.max} step={t.step} value={persona[t.key]} onChange={e=>onSlider(t.key, Number(e.target.value))} />
-        </label>
-      ))}
+      {sliderTraits.map(t => {
+        const val = persona[t.key] as unknown as number; // numeric by design
+        return (
+          <label key={t.key} style={{ display:'flex', flexDirection:'column' }}>
+            <span>{t.label}: {val}</span>
+            <input type="range" min={t.min} max={t.max} step={t.step} value={val} onChange={e=>onSlider(t.key, Number(e.target.value))} />
+          </label>
+        );
+      })}
     </div>
     <div style={{ marginTop:'1rem' }}>
       <h3>Interaction Modes</h3>

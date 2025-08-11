@@ -126,7 +126,9 @@ export class VoiceActivityDetector {
     }
 
     // Get frequency data
-    this.analyser.getByteFrequencyData(this.dataArray);
+  // TypeScript sometimes narrows underlying buffer to ArrayBufferLike (e.g., SharedArrayBuffer in some envs)
+  // Cast to any for Web Audio API compatibility
+  this.analyser.getByteFrequencyData(this.dataArray as any);
 
     // Calculate current volume (RMS of frequency data)
     let sum = 0;

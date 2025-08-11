@@ -5,11 +5,11 @@
     "moduleResolution": "NodeNext",
     "strict": true,
     "esModuleInterop": true,
-  "skipLibCheck": true,
-  "forceConsistentCasingInFileNames": true,
-  "jsx": "react-jsx",
-  "allowSyntheticDefaultImports": true,
-  "resolveJsonModule": true
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "jsx": "react-jsx",
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true
   },
   "include": [
     "packages/backend/src/**/*.ts",
@@ -26,7 +26,7 @@
   "exclude": [
     "node_modules",
     "packages/backend/src/opentelemetry/upstream/**",
-    "packages/backend/src/opentelemetry/upstream-source/**",
+  "packages/backend/src/opentelemetry/upstream-source/**",
   "packages/backend/src/opentelemetry/contrib/**",
   "packages/backend/src/mcp/**",
     "dist",

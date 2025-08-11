@@ -6,10 +6,10 @@
  */
 
 import { expect } from 'chai';
-import pool from '../src/db.js';
-import MultiModalProcessingService from '../src/services/MultiModalProcessingService.js';
-import EnhancedMCPCoordinator from '../src/agi/system/EnhancedMCPCoordinator.js';
-import MCPMessage from '../src/system/protocols/MCPMessage.js';
+import pool from '../../src/db.js';
+import MultiModalProcessingService from '../../src/services/MultiModalProcessingService.js';
+import EnhancedMCPCoordinator from '../../src/agi/system/EnhancedMCPCoordinator.js';
+import MCPMessage from '../../src/system/protocols/MCPMessage.js';
 
 class Iteration22TestSuite {
   constructor() {

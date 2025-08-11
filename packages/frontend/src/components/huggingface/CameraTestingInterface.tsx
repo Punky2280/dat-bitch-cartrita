@@ -2,16 +2,12 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   CameraIcon,
   PhotoIcon,
-  EyeIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
   ArrowPathIcon,
   AdjustmentsHorizontalIcon,
-  PlayIcon,
-  PauseIcon,
   StopIcon,
-  TrashIcon,
-  DocumentArrowDownIcon
+  TrashIcon
 } from '@heroicons/react/24/outline';
 
 interface CameraTestResult {
@@ -50,12 +46,7 @@ interface TestSettings {
   auto_capture_interval: number;
 }
 
-const DEFAULT_TEST_SCENARIOS = [
-  { type: 'image-classification', description: 'Test basic image classification' },
-  { type: 'object-detection', description: 'Detect and locate objects in images' },
-  { type: 'image-to-text', description: 'Generate descriptions from images' },
-  { type: 'visual-question-answering', description: 'Answer questions about images' }
-];
+// Removed unused DEFAULT_TEST_SCENARIOS constant
 
 const TEST_QUESTIONS = [
   "What objects can you see in this image?",

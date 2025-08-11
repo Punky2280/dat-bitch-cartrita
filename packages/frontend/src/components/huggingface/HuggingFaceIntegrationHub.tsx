@@ -6,7 +6,6 @@ import {
   MicrophoneIcon,
   CameraIcon,
   DocumentTextIcon,
-  Cog6ToothIcon,
   BeakerIcon
 } from '@heroicons/react/24/outline';
 

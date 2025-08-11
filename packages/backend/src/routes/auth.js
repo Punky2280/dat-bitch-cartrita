@@ -68,22 +68,39 @@ router.post('/register', async (req, res) => {
 
     // Create user
     const result = await db.query(
-      'INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, name, email, created_at',
-      [finalUsername, email, hashedPassword]
+      'INSERT INTO users (name, email, password_hash, role, is_admin) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, role, is_admin, created_at',
+      [finalUsername, email, hashedPassword, 'user', false]
     );
 
     const user = result.rows[0];
 
-    // Generate JWT token (registration)
-    const token = jwt.sign(
-      {
-        sub: user.id, // Standard JWT subject claim
-        name: user.name,
-        email: user.email,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+    // Check if user should be admin based on email patterns
+    const adminPatterns = ['@cartrita.com', '@admin.', 'robert@example.com'];
+    const shouldBeAdmin = adminPatterns.some(pattern => 
+      pattern.startsWith('@') ? email.includes(pattern) : email === pattern
     );
+
+    // Update role if admin
+    if (shouldBeAdmin) {
+      await db.query(
+        'UPDATE users SET role = $1, is_admin = $2 WHERE id = $3',
+        ['admin', true, user.id]
+      );
+      user.role = 'admin';
+      user.is_admin = true;
+    }
+
+    // Generate JWT token (registration)
+    const baseClaims = {
+      sub: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      is_admin: user.is_admin,
+      iss: 'cartrita-auth',
+      aud: 'cartrita-clients',
+    };
+    const token = jwt.sign(baseClaims, process.env.JWT_SECRET, { expiresIn: '24h' });
 
     console.log(`[Auth] User registered: ${finalUsername} (ID: ${user.id})`);
 
@@ -94,6 +111,8 @@ router.post('/register', async (req, res) => {
         id: user.id,
         username: user.username,
         email: user.email,
+        role: user.role,
+        is_admin: user.is_admin,
         created_at: user.created_at,
       },
       token,
@@ -123,7 +142,7 @@ router.post('/login', async (req, res) => {
 
     // Find user by email OR name (case-insensitive)
     const result = await db.query(
-      `SELECT id, name, email, password_hash
+      `SELECT id, name, email, password_hash, role, is_admin
        FROM users
        WHERE LOWER(email) = LOWER($1) OR LOWER(name) = LOWER($1)
        LIMIT 1`,
@@ -148,15 +167,16 @@ router.post('/login', async (req, res) => {
     }
 
     // Generate JWT token (login)
-    const token = jwt.sign(
-      {
-        sub: user.id, // Standard JWT subject claim
-        name: user.name,
-        email: user.email,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    const baseClaims = {
+      sub: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role || 'user',
+      is_admin: user.is_admin || false,
+      iss: 'cartrita-auth',
+      aud: 'cartrita-clients',
+    };
+    const token = jwt.sign(baseClaims, process.env.JWT_SECRET, { expiresIn: '24h' });
 
     console.log(`[Auth] User logged in: ${user.name} (ID: ${user.id})`);
 
@@ -174,6 +194,8 @@ router.post('/login', async (req, res) => {
         username: user.name,
         name: user.name,
         email: user.email,
+        role: user.role || 'user',
+        is_admin: user.is_admin || false,
       },
       token,
     });
@@ -204,12 +226,115 @@ router.get('/verify', (req, res) => {
         id: decoded.sub,
         username: decoded.name,
         email: decoded.email,
+        role: decoded.role,
+        is_admin: decoded.is_admin,
+        iss: decoded.iss,
+        aud: decoded.aud,
       },
     });
   } catch (error) {
     res.status(401).json({
       error: 'Invalid token',
     });
+  }
+});
+
+// Admin gate helper (lightweight – relies on token claims set via authenticateToken middleware)
+function requireAdmin(req, res, next) {
+  // authenticateToken will already have run globally for /api/* except public paths
+  if (!req.user) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  if (!req.user.is_admin) {
+    return res.status(403).json({ error: 'Forbidden: admin only' });
+  }
+  next();
+}
+
+// --- Dev Utilities: List users (no sensitive hashes) ---
+router.get('/users', async (req, res) => {
+  if (process.env.NODE_ENV === 'production' && process.env.ENABLE_DEV_AUTH_ENDPOINTS !== '1') {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  try {
+    const result = await db.query('SELECT id, name, email, created_at FROM users ORDER BY id ASC LIMIT 500');
+    res.json({ success: true, users: result.rows });
+  } catch (err) {
+    console.error('[Auth] Users list error:', err.message);
+    res.status(500).json({ error: 'Failed to list users' });
+  }
+});
+
+// --- Dev Utilities: Validate users (issue ephemeral token per user) ---
+router.post('/validate-users', async (req, res) => {
+  if (process.env.NODE_ENV === 'production' && process.env.ENABLE_DEV_AUTH_ENDPOINTS !== '1') {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  try {
+    const result = await db.query('SELECT id, name, email FROM users ORDER BY id ASC LIMIT 200');
+    const users = result.rows;
+    const validations = users.map(u => {
+      try {
+        const token = jwt.sign({ sub: u.id, name: u.name, email: u.email, iss: 'cartrita-auth', aud: 'cartrita-clients' }, process.env.JWT_SECRET, { expiresIn: '5m' });
+        return { id: u.id, email: u.email, name: u.name, token, ok: true };
+      } catch (e) {
+        return { id: u.id, email: u.email, name: u.name, ok: false, error: e.message };
+      }
+    });
+    res.json({ success: true, count: validations.length, validations });
+  } catch (err) {
+    console.error('[Auth] Validate users error:', err.message);
+    res.status(500).json({ error: 'Failed to validate users' });
+  }
+});
+
+// --- Admin: comprehensive validation across all users (verifies ability to sign & decode) ---
+router.post('/admin/validate-all', requireAdmin, async (req, res) => {
+  try {
+    const result = await db.query('SELECT id, name, email FROM users ORDER BY id ASC LIMIT 5000');
+    const issues = [];
+    const summary = [];
+    for (const u of result.rows) {
+      try {
+        const token = jwt.sign({ sub: u.id, name: u.name, email: u.email, iss: 'cartrita-auth', aud: 'cartrita-clients' }, process.env.JWT_SECRET, { expiresIn: '15m' });
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (decoded.sub?.toString() !== u.id.toString()) {
+          issues.push({ id: u.id, email: u.email, issue: 'subject_mismatch' });
+        }
+        summary.push({ id: u.id, email: u.email, ok: true });
+      } catch (e) {
+        issues.push({ id: u.id, email: u.email, issue: 'sign_or_verify_failed', error: e.message });
+        summary.push({ id: u.id, email: u.email, ok: false });
+      }
+    }
+    res.json({ success: true, total: result.rows.length, issues_count: issues.length, issues, summary });
+  } catch (e) {
+    console.error('[Auth] admin/validate-all error', e);
+    res.status(500).json({ error: 'Failed to validate all users' });
+  }
+});
+
+// --- Admin: reissue fresh 24h tokens for a provided list of user IDs ---
+router.post('/admin/reissue', requireAdmin, async (req, res) => {
+  try {
+    const { user_ids } = req.body || {};
+    if (!Array.isArray(user_ids) || user_ids.length === 0) {
+      return res.status(400).json({ error: 'user_ids array required' });
+    }
+    const result = await db.query('SELECT id, name, email FROM users WHERE id = ANY($1::int[])', [user_ids]);
+    const tokens = [];
+    for (const u of result.rows) {
+      try {
+        const token = jwt.sign({ sub: u.id, name: u.name, email: u.email, iss: 'cartrita-auth', aud: 'cartrita-clients' }, process.env.JWT_SECRET, { expiresIn: '24h' });
+        tokens.push({ id: u.id, email: u.email, token });
+      } catch (e) {
+        tokens.push({ id: u.id, email: u.email, error: e.message });
+      }
+    }
+    res.json({ success: true, count: tokens.length, tokens });
+  } catch (e) {
+    console.error('[Auth] admin/reissue error', e);
+    res.status(500).json({ error: 'Failed to reissue tokens' });
   }
 });
 

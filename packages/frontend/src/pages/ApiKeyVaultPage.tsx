@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { validateApiKey } from "../utils/apiKeyValidation";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { ProviderCatalog, type Provider } from "../components/vault/ProviderCatalog";
-import { CredentialForm, type CredentialFormData } from "../components/vault/CredentialForm";
+import { CredentialForm } from "../components/vault/CredentialForm";
 import { ValidationDashboard } from "../components/vault/ValidationDashboard";
 import { SecurityMaskingControls, MaskMode } from "../components/vault/SecurityMaskingControls";
 
@@ -55,99 +54,6 @@ interface SecurityEvent {
   ip_address: string;
 }
 
-// Enhanced provider presets with Google Cloud API configurations
-const ENHANCED_PROVIDER_PRESETS = {
-  openai: {
-    name: "OpenAI",
-    icon: "🤖",
-    keyFormat: /^sk-[A-Za-z0-9]{32,}$/,
-    keyExample: "sk-1234567890abcdef...",
-    description: "AI language models and embeddings",
-    required_fields: ["api_key"],
-    validation: {
-      api_key: {
-        pattern: "^sk-[A-Za-z0-9]{32,}$",
-        message:
-          'OpenAI API key must start with "sk-" followed by 32+ alphanumeric characters',
-      },
-    },
-  },
-  anthropic: {
-    name: "Anthropic (Claude)",
-    icon: "🧠",
-    keyFormat: /^sk-ant-[A-Za-z0-9\-_]{32,}$/,
-    keyExample: "sk-ant-api03-1234567890abcdef...",
-    description: "Claude AI assistant API",
-    required_fields: ["api_key"],
-    validation: {
-      api_key: {
-        pattern: "^sk-ant-[A-Za-z0-9\\-_]{32,}$",
-        message:
-          'Anthropic API key must start with "sk-ant-" followed by 32+ characters',
-      },
-    },
-  },
-  "google-cloud": {
-    name: "Google Cloud APIs",
-    icon: "☁️",
-    keyFormat: /^[A-Za-z0-9\-_]{39}$/,
-    keyExample: "AIzaSyDp-cMne4eJ-EtV68iNlypHdssyZ76cFb4",
-    description:
-      "All Google Cloud APIs including Gmail, Calendar, Contacts, Docs, Sheets, BigQuery, and more",
-    required_fields: ["api_key"],
-    supported_apis: [
-      "Gmail API",
-      "Google Calendar API",
-      "Google Contacts API (People API)",
-      "Google Docs API",
-      "Google Sheets API",
-      "BigQuery API",
-      "Google Cloud Storage API",
-      "Google Maps API",
-      "Google Drive API",
-      "Cloud Monitoring API",
-      "Cloud Logging API",
-      "Service Management API",
-      "Service Usage API",
-      "Analytics Hub API",
-    ],
-    validation: {
-      api_key: {
-        pattern: "^[A-Za-z0-9\\-_]{39}$",
-        message:
-          "Google Cloud API key must be exactly 39 characters (letters, numbers, hyphens, underscores)",
-      },
-    },
-  },
-  deepgram: {
-    name: "Deepgram",
-    icon: "🎤",
-    keyFormat: /^[A-Za-z0-9]{32,}$/,
-    keyExample: "1234567890abcdef...",
-    description: "Speech-to-text API",
-    required_fields: ["api_key"],
-    validation: {
-      api_key: {
-        pattern: "^[A-Za-z0-9]{32,}$",
-        message: "Deepgram API key must be 32+ alphanumeric characters",
-      },
-    },
-  },
-  elevenlabs: {
-    name: "ElevenLabs",
-    icon: "🗣️",
-    keyFormat: /^[A-Za-z0-9]{32,}$/,
-    keyExample: "1234567890abcdef...",
-    description: "Text-to-speech API",
-    required_fields: ["api_key"],
-    validation: {
-      api_key: {
-        pattern: "^[A-Za-z0-9]{32,}$",
-        message: "ElevenLabs API key must be 32+ alphanumeric characters",
-      },
-    },
-  },
-};
 
 export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
   token,
@@ -169,18 +75,9 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
   const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Add key form state
-  const [newKey, setNewKey] = useState({
-    provider_id: "",
-    key_name: "",
-    api_key: "",
-    metadata: {} as any,
-    expires_at: "",
-    rotation_interval_days: "",
-  });
+  // removed legacy add key form state (handled via CredentialForm component)
 
-  // Validation state
-  const [validationMessage, setValidationMessage] = useState("");
+  // (Removed unused validationMessage state)
   const [maskModes, setMaskModes] = useState<{[keyId:number]: MaskMode}>({});
 
   const [testResults, setTestResults] = useState<{ [keyId: number]: any }>({});
@@ -197,59 +94,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
   });
 
   // Helper functions for validation and provider info
-  const getProviderInfo = (providerId: string) => {
-    const selectedProvider = providers.find(
-      (p) => p.id.toString() === providerId,
-    );
-    if (!selectedProvider) return null;
-
-    const providerName = selectedProvider.name.toLowerCase();
-    const preset =
-      ENHANCED_PROVIDER_PRESETS[
-        providerName as keyof typeof ENHANCED_PROVIDER_PRESETS
-      ] ||
-      ENHANCED_PROVIDER_PRESETS[
-        providerName.replace(
-          /\s+/g,
-          "-",
-        ) as keyof typeof ENHANCED_PROVIDER_PRESETS
-      ];
-
-    if (preset) {
-      let info = preset.description;
-      if ('supported_apis' in preset && preset.supported_apis) {
-        info += `. Supports: ${preset.supported_apis.slice(0, 3).join(", ")}${
-          preset.supported_apis.length > 3
-            ? ` and ${preset.supported_apis.length - 3} more`
-            : ""
-        }.`;
-      }
-      return info;
-    }
-
-    return selectedProvider.description;
-  };
-
-  const getProviderPlaceholder = (providerId: string) => {
-    const selectedProvider = providers.find(
-      (p) => p.id.toString() === providerId,
-    );
-    if (!selectedProvider) return "Enter your API key...";
-
-    const providerName = selectedProvider.name.toLowerCase();
-    const preset =
-      ENHANCED_PROVIDER_PRESETS[
-        providerName as keyof typeof ENHANCED_PROVIDER_PRESETS
-      ] ||
-      ENHANCED_PROVIDER_PRESETS[
-        providerName.replace(
-          /\s+/g,
-          "-",
-        ) as keyof typeof ENHANCED_PROVIDER_PRESETS
-      ];
-
-    return preset ? preset.keyExample : "Enter your API key...";
-  };
+  // removed unused helper functions getProviderInfo/getProviderPlaceholder
 
   useEffect(() => {
     loadData();
@@ -286,43 +131,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
     }
   };
 
-  const handleAddKey = async () => {
-    try {
-      const response = await fetch("/api/vault/keys", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...newKey,
-          provider_id: parseInt(newKey.provider_id),
-          rotation_interval_days: newKey.rotation_interval_days
-            ? parseInt(newKey.rotation_interval_days)
-            : null,
-        }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setNewKey({
-          provider_id: "",
-          key_name: "",
-          api_key: "",
-          metadata: {},
-          expires_at: "",
-          rotation_interval_days: "",
-        });
-        setActiveView("keys");
-        loadData();
-      } else {
-        alert(data.error);
-      }
-    } catch (error) {
-      console.error("Error adding API key:", error);
-      alert("Failed to add API key");
-    }
-  };
+  // removed unused handleAddKey (form submission handled inline in CredentialForm)
 
   const handleTestKey = async (keyId: number) => {
     try {

@@ -2,11 +2,9 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { 
   MicrophoneIcon, 
   StopIcon, 
-  SpeakerWaveIcon,
   AdjustmentsHorizontalIcon,
   ExclamationTriangleIcon,
-  CheckCircleIcon,
-  InformationCircleIcon
+  CheckCircleIcon
 } from "@heroicons/react/24/outline";
 import {
   checkMediaSupport,
@@ -232,15 +230,7 @@ export const EnhancedVoiceToTextButton: React.FC<EnhancedVoiceToTextButtonProps>
           const formData = new FormData();
           formData.append("audio", audioBlob, "recording.webm");
 
-          // Add STT settings
-          const sttOptions = {
-            model: settings.model,
-            language: settings.language !== 'auto' ? settings.language : undefined,
-            enable_confidence: settings.enable_confidence,
-            enable_alternatives: settings.enable_alternatives,
-            noise_reduction: settings.noise_reduction,
-            auto_punctuation: settings.auto_punctuation
-          };
+          // (STT settings object earlier planned for options; currently unused and removed)
 
           const response = await fetch('/api/huggingface/audio', {
             method: 'POST',

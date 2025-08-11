@@ -163,7 +163,8 @@ export class WakeWordDetector {
   private getCurrentAudioLevel(): number {
     if (!this.analyser || !this.dataArray) return 0;
 
-    this.analyser.getByteFrequencyData(this.dataArray);
+  // Cast dataArray to any to avoid TS ArrayBuffer vs ArrayBufferLike mismatch
+  this.analyser.getByteFrequencyData(this.dataArray as any);
 
     // Calculate RMS
     let sum = 0;

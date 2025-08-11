@@ -1,5 +1,6 @@
+version: '3.9'
+
 services:
-  # PostgreSQL Database - Using pgvector-enabled PostgreSQL
   postgres:
     image: pgvector/pgvector:pg16
     container_name: cartrita-db-new
@@ -22,7 +23,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis Cache
   redis:
     image: redis:7-alpine
     container_name: cartrita-redis-new
@@ -39,7 +39,31 @@ services:
       timeout: 5s
       retries: 3
 
-  # Backend API
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.102.0
+    container_name: cartrita-otel-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otel-collector-config.yml"]
+    environment:
+      OTEL_EXPORTER_OTLP_HTTP_ENDPOINT: "${OTEL_EXPORTER_OTLP_HTTP_ENDPOINT:-}"
+      OTEL_EXPORTER_OTLP_HEADERS: "${OTEL_EXPORTER_OTLP_HEADERS:-}"
+    volumes:
+      - ./config/otel-collector-config.yml:/etc/otel-collector-config.yml:ro
+    ports:
+      - '4317:4317'
+      - '4318:4318'
+      - '8889:8889'
+      - '13133:13133'
+      - '1777:1777'
+      - '55679:55679'
+    networks:
+      - cartrita-network
+    healthcheck:
+      test: ['CMD-SHELL', 'wget --no-verbose --tries=1 --spider http://localhost:13133/ || exit 1']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   backend:
     build:
       context: .
@@ -57,15 +81,16 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - DATABASE_URL=postgresql://robert:punky1@postgres:5432/dat-bitch-cartrita
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
     env_file:
       - packages/backend/.env
     ports:
       - '8001:8001'
     volumes:
-      # Bind mount backend source for live code edits (dev convenience)
       - ./packages/backend:/usr/src/app/packages/backend
       - ./packages/backend/uploads:/usr/src/app/packages/backend/uploads
       - ./packages/backend/logs:/usr/src/app/packages/backend/logs
+      - /usr/src/app/packages/backend/node_modules
     networks:
       - cartrita-network
     depends_on:
@@ -73,17 +98,14 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      otel-collector:
+        condition: service_started
     healthcheck:
-      test:
-        [
-          'CMD-SHELL',
-          'wget --no-verbose --tries=1 --spider http://localhost:8001/health || exit 1',
-        ]
+      test: ['CMD-SHELL', 'wget --no-verbose --tries=1 --spider http://localhost:8001/health || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # Frontend (Development server with hot reload)
   frontend:
     build:
       context: .

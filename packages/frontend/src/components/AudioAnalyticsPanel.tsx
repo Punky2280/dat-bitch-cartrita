@@ -8,7 +8,6 @@ import React, { useState, useRef, useEffect } from "react";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "./ui/card";
@@ -17,18 +16,7 @@ import { Progress } from "./ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Badge } from "./ui/badge";
 import { Alert, AlertDescription } from "./ui/alert";
-import {
-  Upload,
-  Mic,
-  Users,
-  Activity,
-  Overlap,
-  Play,
-  Pause,
-  Download,
-  Settings,
-  Info,
-} from "lucide-react";
+import { Upload, Mic, Users, Activity, Play, Pause, Info } from "lucide-react";
 
 interface AudioAnalysisResult {
   diarization?: Array<{
@@ -60,6 +48,7 @@ interface AudioAnalysisResult {
   overlapStats?: {
     totalOverlapTime: number;
     overlapRatio: number;
+  overlapSegments?: number;
   };
 }
 
@@ -75,6 +64,7 @@ const AudioAnalyticsPanel: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [selectedTab, setSelectedTab] = useState("overview");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -292,6 +282,8 @@ const AudioAnalyticsPanel: React.FC = () => {
     if (!analysisResult?.speechStats) return null;
 
     const { speechStats } = analysisResult;
+  // Derive silence time if not provided (fallback using duration - totalSpeechTime when duration known)
+  const derivedSilenceTime = (speechStats as any).silenceTime ?? (duration ? Math.max(0, duration - speechStats.totalSpeechTime) : 0);
 
     return (
       <Card>
@@ -322,7 +314,7 @@ const AudioAnalyticsPanel: React.FC = () => {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span>Silence Time:</span>
-                <span>{formatTime(speechStats.silenceTime)}</span>
+                <span>{formatTime(derivedSilenceTime)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Silence Ratio:</span>
@@ -346,7 +338,7 @@ const AudioAnalyticsPanel: React.FC = () => {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
-            <Overlap className="w-5 h-5" />
+            <Activity className="w-5 h-5" />
             Overlapped Speech Analysis
           </CardTitle>
         </CardHeader>
@@ -369,6 +361,7 @@ const AudioAnalyticsPanel: React.FC = () => {
             <div className="flex justify-between">
               <span>Overlap Segments:</span>
               <span>{overlapStats.overlapSegments}</span>
+              <span>{overlapStats.overlapSegments ?? 0}</span>
             </div>
           </div>
         </CardContent>
@@ -384,10 +377,10 @@ const AudioAnalyticsPanel: React.FC = () => {
             <Mic className="w-8 h-8" />
             Advanced Audio Analytics
           </CardTitle>
-          <CardDescription>
+          <p className="text-sm text-gray-600">
             Powered by pyannote.audio - Speaker diarization, voice activity
             detection, and overlapped speech analysis
-          </CardDescription>
+          </p>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* File Upload Section */}
@@ -457,7 +450,7 @@ const AudioAnalyticsPanel: React.FC = () => {
             )}
 
             {error && (
-              <Alert variant="destructive">
+              <Alert className="border-red-300 bg-red-50 text-red-800">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
@@ -524,7 +517,11 @@ const AudioAnalyticsPanel: React.FC = () => {
 
           {/* Analysis Results */}
           {analysisResult && (
-            <Tabs defaultValue="overview" className="w-full">
+            <Tabs
+              value={selectedTab}
+              onValueChange={setSelectedTab}
+              className="w-full"
+            >
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="speakers">Speakers</TabsTrigger>

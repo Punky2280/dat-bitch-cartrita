@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   MagnifyingGlassIcon, 
   FunnelIcon, 
-  ChevronDownIcon,
   StarIcon,
   CpuChipIcon,
   CloudIcon,
@@ -11,7 +10,6 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
-import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 
 interface ModelEntry {
   idx: number;
@@ -70,7 +68,7 @@ export const HuggingFaceModelCatalog: React.FC<ModelCatalogProps> = ({
       try {
         const response = await fetch('/api/huggingface/capabilities');
         if (response.ok) {
-          const data = await response.json();
+          await response.json(); // response data currently unused (sample data below)
           // For demo, we'll create sample data based on our enhanced catalog
           const sampleModels: ModelEntry[] = [
             {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ChatComponent } from "@/components/ChatComponent";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { WorkflowsPage } from "@/pages/WorkflowsPage";
@@ -43,11 +43,42 @@ const DASHBOARD_VIEWS = [
 ] as const;
 type DashboardView = typeof DASHBOARD_VIEWS[number];
 
+// Safe JWT decode helper (no external libs) – tolerates malformed or non-JWT tokens.
+const safeDecodeJwt = (maybeJwt: string | null | undefined): any | null => {
+  if (!maybeJwt || typeof maybeJwt !== "string") return null;
+  const parts = maybeJwt.split(".");
+  if (parts.length !== 3) return null; // Not a standard JWT
+  try {
+    const payload = parts[1]
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+    // Pad base64 if needed
+    const pad = payload.length % 4;
+    const padded = pad ? payload + "=".repeat(4 - pad) : payload;
+    const json = atob(padded);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+};
+
 export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<DashboardView>("chat");
-  const [systemStatus, setSystemStatus] = useState({
+  const isValidToken = !!safeDecodeJwt(token);
+  interface ServiceState { status: string; message: string }
+  interface SystemStatus {
+    ai_core: ServiceState;
+    websocket: ServiceState;
+    database: ServiceState;
+    voice_service: ServiceState;
+    visual_service: ServiceState;
+    email_service: ServiceState;
+    calendar_service: ServiceState;
+    contacts_service: ServiceState;
+  }
+  const [systemStatus, setSystemStatus] = useState<SystemStatus>({
     ai_core: { status: "checking", message: "Checking AI Core..." },
     websocket: { status: "checking", message: "Checking WebSocket..." },
     database: { status: "checking", message: "Checking Database..." },
@@ -70,52 +101,24 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
     },
   });
 
+  const initializeUser = useCallback(() => {
+    const payload = safeDecodeJwt(token);
+    if (payload) {
+      setUser({
+        id: payload.userId || payload.sub || payload.id || 0,
+        name: payload.name || payload.username || "User",
+        email: payload.email || "No email provided",
+      });
+    } else {
+      // Malformed or missing token: remain unauthenticated but don't hard crash/loop.
+      setUser(null);
+    }
+    setLoading(false);
+  }, [token]);
+
   useEffect(() => {
     const fetchUserData = async () => {
-      try {
-        // Validate token format
-        if (!token || typeof token !== "string") {
-          throw new Error("Invalid token format");
-        }
-
-        const tokenParts = token.split(".");
-        if (tokenParts.length !== 3) {
-          throw new Error("Token does not have 3 parts");
-        }
-
-        // Safely decode and parse the payload
-        const base64Payload = tokenParts[1];
-        let decodedPayload;
-
-        try {
-          decodedPayload = atob(base64Payload);
-        } catch (decodeError) {
-          throw new Error("Failed to decode token payload");
-        }
-
-        let payload;
-        try {
-          payload = JSON.parse(decodedPayload);
-        } catch (parseError) {
-          throw new Error("Failed to parse token payload as JSON");
-        }
-
-        // Validate payload structure
-        if (!payload || typeof payload !== "object") {
-          throw new Error("Invalid payload structure");
-        }
-
-        setUser({
-          id: payload.userId || payload.sub || payload.id,
-          name: payload.name || payload.username || "User",
-          email: payload.email || "No email provided",
-        });
-      } catch (error) {
-        console.error("Error parsing token:", error);
-        onLogout();
-      } finally {
-        setLoading(false);
-      }
+      initializeUser();
     };
 
     const checkSystemStatus = async () => {
@@ -192,15 +195,13 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
       } catch (error) {
         console.error("Failed to fetch health status:", error);
         // Set all services to error state
-        setSystemStatus((prev) =>
-          Object.keys(prev).reduce(
-            (acc, key) => ({
-              ...acc,
-              [key]: { status: "error", message: "Health Check Failed" },
-            }),
-            {},
-          ),
-        );
+        setSystemStatus((prev) => {
+          const next: SystemStatus = { ...prev } as SystemStatus;
+          (Object.keys(next) as (keyof SystemStatus)[]).forEach((k) => {
+            next[k] = { status: "error", message: "Health Check Failed" };
+          });
+          return next;
+        });
       }
 
       // Check individual service endpoints
@@ -248,7 +249,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
       }
     };
 
-    fetchUserData();
+  fetchUserData();
     checkSystemStatus();
 
     // Set up periodic status checks
@@ -264,6 +265,28 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
           <div className="flex items-center space-x-3">
             <div className="spinner"></div>
             <span className="text-white text-xl">Loading dashboard...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Unauthenticated / invalid token view (graceful)
+  if (!isValidToken) {
+    return (
+      <div className="min-h-screen bg-animated flex items-center justify-center text-white">
+        <div className="glass-card p-8 rounded-xl max-w-md space-y-6">
+          <h1 className="text-2xl font-bold text-gradient">Authentication Required</h1>
+          <p className="text-gray-300 text-sm leading-relaxed">
+            Your session token is missing or invalid. Please sign in again to access the Cartrita dashboard features.
+          </p>
+          <div className="flex space-x-4">
+            <button
+              onClick={onLogout}
+              className="bg-purple-600/80 hover:bg-purple-600 px-4 py-2 rounded-lg transition-colors"
+            >
+              Go to Login
+            </button>
           </div>
         </div>
       </div>

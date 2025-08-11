@@ -102,14 +102,7 @@ export const PersonalLifeOSPage: React.FC<PersonalLifeOSPageProps> = ({
   const [contactSearch, setContactSearch] = useState("");
   const [selectedContactIds, setSelectedContactIds] = useState<string[]>([]);
   const [contactProviderFilter, setContactProviderFilter] = useState<string>("all");
-  const [isNarrow, setIsNarrow] = useState(false);
-
-  useEffect(()=>{
-    const handler = ()=> setIsNarrow(window.innerWidth < 640); // sm breakpoint
-    handler();
-    window.addEventListener('resize', handler);
-    return ()=> window.removeEventListener('resize', handler);
-  }, []);
+  // removed unused isNarrow responsive state hook
 
   // Task creation
   const [newTask, setNewTask] = useState({
@@ -782,7 +775,7 @@ export const PersonalLifeOSPage: React.FC<PersonalLifeOSPageProps> = ({
                   <h3 className="text-sm font-semibold text-gray-300 mb-3">Today Timeline</h3>
                   <div className="relative border border-gray-700 rounded-lg p-4 h-[320px] overflow-hidden bg-gray-900/40">
                     <div className="absolute left-8 top-0 bottom-0 w-px bg-gradient-to-b from-blue-500/60 to-purple-500/40" />
-                    {upcomingEvents.slice(0,8).map((ev,i)=>{
+                    {upcomingEvents.slice(0,8).map((ev)=>{
                       const start = new Date(ev.start.dateTime);
                       const hour = start.getHours() + start.getMinutes()/60;
                       const top = (hour/24)*300 + 10; // 300px virtual timeline

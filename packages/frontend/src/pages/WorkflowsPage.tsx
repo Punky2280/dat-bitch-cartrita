@@ -15,7 +15,7 @@ import ReactFlow, {
   useReactFlow,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { ExecutionLog, WorkflowExecution, NodeDefinition } from "../types/workflow";
+import { ExecutionLog, NodeDefinition } from "../types/workflow";
 import { gradients, semantic, colors } from "@/theme/tokens";
 
 interface WorkflowsPageProps {

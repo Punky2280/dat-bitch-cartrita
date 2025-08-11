@@ -72,6 +72,8 @@ export const RegisterPage = ({
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <input
+            id="register-name"
+            name="name"
             type="text"
             placeholder="Full Name"
             value={name}
@@ -82,6 +84,8 @@ export const RegisterPage = ({
           />
 
           <input
+            id="register-email"
+            name="email"
             type="email"
             placeholder="Email"
             value={email}
@@ -92,6 +96,8 @@ export const RegisterPage = ({
           />
 
           <input
+            id="register-password"
+            name="password"
             type="password"
             placeholder="Password"
             value={password}
@@ -99,10 +105,12 @@ export const RegisterPage = ({
             className="w-full bg-gray-900 text-white p-3 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
             autoComplete="new-password"
             required
-            minLength={6}
+            minLength={8}
           />
 
           <input
+            id="register-confirm-password"
+            name="confirmPassword"
             type="password"
             placeholder="Confirm Password"
             value={confirmPassword}
@@ -110,7 +118,7 @@ export const RegisterPage = ({
             className="w-full bg-gray-900 text-white p-3 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
             autoComplete="new-password"
             required
-            minLength={6}
+            minLength={8}
           />
 
           {error && (

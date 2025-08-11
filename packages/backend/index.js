@@ -280,8 +280,44 @@ app.get('/', (req, res) =>
   })
 );
 
+// --- SIMPLE HEALTH ROUTE (previously placeholder & caused hanging requests) ---
 app.get('/health', async (req, res) => {
-  // ... (health check logic remains the same)
+  try {
+    const started = performanceMetrics.startTime;
+    const uptimeSeconds = Math.floor((Date.now() - started) / 1000);
+    let dbOk = false;
+    // Attempt a very fast query but don't hang request if pool not ready
+    if (pool && pool.query) {
+      try {
+        const q = await Promise.race([
+          pool.query('SELECT 1').then(r => !!r.rows),
+          new Promise(resolve => setTimeout(() => resolve(false), 150)),
+        ]);
+        dbOk = q === true;
+      } catch (_) {}
+    }
+    let redisOk = false;
+    try {
+      if (RedisService && typeof RedisService.healthCheck === 'function') {
+        const r = await Promise.race([
+          RedisService.healthCheck(),
+          new Promise(resolve => setTimeout(() => resolve({ status: 'timeout' }), 150)),
+        ]);
+        redisOk = r && (r.status === 'healthy' || r.status === 'ok');
+      }
+    } catch(_) {}
+    const agentReady = !!coreAgent?.isInitialized;
+    const ok = dbOk || agentReady; // allow partial readiness
+    res.status(ok ? 200 : 503).json({
+      success: true,
+      status: ok ? 'healthy' : 'initializing',
+      uptime: uptimeSeconds,
+      services: { db: { ok: dbOk }, redis: { ok: redisOk }, agent: { ok: agentReady } },
+      meta: { version: '2.1.0', environment: NODE_ENV },
+    });
+  } catch (e) {
+    res.status(500).json({ success:false, error:'health_failed', detail: e.message });
+  }
 });
 
 app.get('/metrics', (req, res) => {

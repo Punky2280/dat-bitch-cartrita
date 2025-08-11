@@ -37,6 +37,55 @@ services:
       - cartrita-network-dev
     command: redis-server --appendonly yes
 
+  # OpenTelemetry Collector (dev)
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.102.0
+    container_name: cartrita-otel-collector-dev
+    restart: unless-stopped
+    command: ["--config=/etc/otel-collector-config.yml"]
+    environment:
+      OTEL_EXPORTER_OTLP_HTTP_ENDPOINT: "${OTEL_EXPORTER_OTLP_HTTP_ENDPOINT:-}"
+      OTEL_EXPORTER_OTLP_HEADERS: "${OTEL_EXPORTER_OTLP_HEADERS:-}"
+    volumes:
+      - ./config/otel-collector-config.yml:/etc/otel-collector-config.yml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "8889:8889"
+      - "13133:13133"
+      - "1777:1777"
+      - "55679:55679"
+    networks:
+      - cartrita-network-dev
+
+  # (Optional) Backend dev override via back-end container (if desired in dev compose)
+  backend:
+    extends:
+      file: docker-compose.yml
+      service: backend
+    environment:
+      - NODE_ENV=development
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=robert
+      - POSTGRES_PASSWORD=punky1
+      - POSTGRES_DB=dat-bitch-cartrita
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DATABASE_URL=postgresql://robert:punky1@db:5432/dat-bitch-cartrita
+    volumes:
+      - ./packages/backend:/usr/src/app/packages/backend
+      - ./packages/backend/uploads:/usr/src/app/packages/backend/uploads
+      - ./packages/backend/logs:/usr/src/app/packages/backend/logs
+      - /usr/src/app/packages/backend/node_modules
+    depends_on:
+      - db
+      - redis
+      - otel-collector
+    ports:
+      - "8001:8001"
+
 volumes:
   postgres_data_dev:
     driver: local
