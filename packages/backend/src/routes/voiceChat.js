@@ -102,6 +102,14 @@ router.post('/synthesize', authenticateToken, async (req, res) => {
   }
 });
 
+// Backward-compatible alias: /api/voice-chat/speak -> /synthesize
+router.post('/speak', authenticateToken, async (req, res, next) => {
+  // Delegate to synthesize handler by calling next route with modified url if needed
+  // Simply call the same logic by copying body
+  req.url = '/synthesize';
+  next();
+});
+
 /**
  * @route POST /api/voice-chat/transcribe
  * @desc  Transcribe short audio clip (multipart/form-data field: audio | base64 field: audio_base64)

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   MicrophoneIcon,
   StopIcon,
@@ -7,6 +7,7 @@ import {
   VideoCameraIcon,
 } from "@heroicons/react/24/outline";
 import { API_BASE_URL } from "../config/constants";
+import FloatingMediaOverlay from "./ui/FloatingMediaOverlay";
 
 interface LiveChatButtonProps {
   token: string;
@@ -22,6 +23,20 @@ interface LiveChatState {
   isSpeaking: boolean;
   currentTranscript: string;
   wakeWordDetected: boolean;
+  sentiment?: {
+    emotion: string;
+    confidence: number;
+    valence: number; // -1 to 1 (negative to positive)
+  };
+  contextAwareness: {
+    backgroundAnalysis: boolean;
+    visualContext: boolean;
+    emotionalContext: boolean;
+  };
+  adaptiveResponse: {
+    responseStyle: 'empathetic' | 'analytical' | 'casual' | 'professional';
+    responseLength: 'brief' | 'moderate' | 'detailed';
+  };
 }
 
 export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
@@ -37,6 +52,15 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
     isSpeaking: false,
     currentTranscript: "",
     wakeWordDetected: false,
+    contextAwareness: {
+      backgroundAnalysis: false,
+      visualContext: false,
+      emotionalContext: false,
+    },
+    adaptiveResponse: {
+      responseStyle: 'casual',
+      responseLength: 'moderate',
+    },
   });
 
   const [showModeSelector, setShowModeSelector] = useState(false);
@@ -44,6 +68,11 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
     null,
   );
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [audioOnlyStream, setAudioOnlyStream] = useState<MediaStream | null>(
+    null,
+  );
+  const [showOverlay, setShowOverlay] = useState(false);
+  const currentAudioMime = useRef<string | undefined>(undefined);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -51,17 +80,27 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
       if (stream) {
         stream.getTracks().forEach((track) => track.stop());
       }
+      if (audioOnlyStream) {
+        audioOnlyStream.getTracks().forEach((track) => track.stop());
+      }
       if (mediaRecorder && mediaRecorder.state !== "inactive") {
         mediaRecorder.stop();
       }
     };
-  }, [stream, mediaRecorder]);
+  }, [stream, audioOnlyStream, mediaRecorder]);
 
   const startLiveChat = async (mode: "voice" | "text" | "multimodal") => {
     try {
       setChatState((prev) => ({ ...prev, isProcessing: true }));
 
       if (mode === "voice" || mode === "multimodal") {
+        // If any previous stream/recorder exists, stop them to avoid device busy
+        if (stream) {
+          try { stream.getTracks().forEach((t) => t.stop()); } catch (_) {}
+        }
+        if (mediaRecorder && mediaRecorder.state !== "inactive") {
+          try { mediaRecorder.stop(); } catch (_) {}
+        }
         // Check if getUserMedia is available
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
           throw new Error("Media devices not supported in this browser");
@@ -92,7 +131,7 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
         const mediaStream =
           await navigator.mediaDevices.getUserMedia(constraints);
 
-        console.log("[LiveChatButton] Media access granted");
+  console.log("[LiveChatButton] Media access granted");
         console.log(
           "[LiveChatButton] Audio tracks:",
           mediaStream.getAudioTracks().length,
@@ -102,15 +141,41 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
           mediaStream.getVideoTracks().length,
         );
 
-        setStream(mediaStream);
+  // Defer setting stream/overlay until recorder starts successfully
 
-        // Set up media recorder for voice detection
-        const recorder = new MediaRecorder(mediaStream, {
-          mimeType: "audio/webm",
-        });
+        // Validate stream and pick supported mime type
+        if (!mediaStream || mediaStream.getTracks().length === 0) {
+          throw new Error("Invalid or inactive MediaStream");
+        }
+        // Build dedicated audio-only stream for recording to avoid recorder errors when video is also present
+        const audioStream = new MediaStream(mediaStream.getAudioTracks());
+        let selectedMime: string | undefined = undefined;
+        const audioPreferred = [
+          "audio/webm;codecs=opus",
+          "audio/webm",
+          "audio/ogg;codecs=opus",
+          "audio/ogg",
+        ];
+        for (const mt of audioPreferred) {
+          if ((window as any).MediaRecorder?.isTypeSupported?.(mt)) {
+            selectedMime = mt;
+            break;
+          }
+        }
+        const recorder = new MediaRecorder(
+          audioStream,
+          selectedMime ? { mimeType: selectedMime } : undefined,
+        );
+        currentAudioMime.current = selectedMime || "audio/webm";
 
         let audioChunks: Blob[] = [];
 
+        recorder.onerror = (e: any) => {
+          console.error("[LiveChatButton] MediaRecorder error:", e?.error || e);
+        };
+        recorder.onstart = () => {
+          console.log("[LiveChatButton] MediaRecorder started with", selectedMime || "(browser default)");
+        };
         recorder.ondataavailable = (event) => {
           if (event.data.size > 0) {
             audioChunks.push(event.data);
@@ -122,13 +187,24 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
 
             // Check for wake word periodically
             if (audioChunks.length >= 2) {
-              checkForWakeWord(audioChunks.slice(-2));
+              checkForWakeWord(audioChunks.slice(-2), currentAudioMime.current);
             }
           }
         };
 
-        recorder.start(500); // Collect data every 500ms
+        try {
+          recorder.start(500); // Collect data every 500ms
+        } catch (e: any) {
+          console.error("[LiveChatButton] Failed to start MediaRecorder:", e?.message || e);
+          // Ensure camera/mic are turned off on failure
+          try { audioStream.getTracks().forEach((t) => t.stop()); } catch (_) {}
+          try { mediaStream.getTracks().forEach((t) => t.stop()); } catch (_) {}
+          throw e;
+        }
         setMediaRecorder(recorder);
+        setAudioOnlyStream(audioStream);
+        setStream(mediaStream);
+        setShowOverlay(mode === "multimodal");
       }
 
       setChatState((prev) => ({
@@ -150,6 +226,14 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
     } catch (error) {
       console.error("[LiveChatButton] Failed to start live chat:", error);
       setChatState((prev) => ({ ...prev, isProcessing: false }));
+  // Defensive teardown on partial start so camera doesn't persist
+  try { mediaRecorder && mediaRecorder.state !== "inactive" && mediaRecorder.stop(); } catch (_) {}
+  try { audioOnlyStream && audioOnlyStream.getTracks().forEach((t) => t.stop()); } catch (_) {}
+  try { stream && stream.getTracks().forEach((t) => t.stop()); } catch (_) {}
+  setMediaRecorder(null);
+  setAudioOnlyStream(null);
+  setStream(null);
+  setShowOverlay(false);
 
       if (error instanceof Error) {
         if (error.name === "NotAllowedError") {
@@ -179,9 +263,13 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
     try {
       setChatState((prev) => ({ ...prev, isProcessing: true }));
 
-      if (stream) {
+  if (stream) {
         stream.getTracks().forEach((track) => track.stop());
         setStream(null);
+      }
+      if (audioOnlyStream) {
+        audioOnlyStream.getTracks().forEach((track) => track.stop());
+        setAudioOnlyStream(null);
       }
 
       if (mediaRecorder && mediaRecorder.state !== "inactive") {
@@ -189,7 +277,7 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
         setMediaRecorder(null);
       }
 
-      setChatState({
+  setChatState({
         isActive: false,
         mode: null,
         isListening: false,
@@ -198,6 +286,7 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
         currentTranscript: "",
         wakeWordDetected: false,
       });
+  setShowOverlay(false);
 
       await playDeactivationMessage();
     } catch (error) {
@@ -206,11 +295,11 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
     }
   };
 
-  const checkForWakeWord = async (audioChunks: Blob[]) => {
+  const checkForWakeWord = async (audioChunks: Blob[], mime?: string) => {
     if (chatState.wakeWordDetected) return;
 
     try {
-      const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+      const audioBlob = new Blob(audioChunks, { type: mime || "audio/webm" });
 
       if (audioBlob.size < 1000) return; // Too small to analyze
 
@@ -250,6 +339,17 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
       console.error("[LiveChatButton] Wake word detection error:", error);
     }
   };
+
+  // Hide overlay if user stops camera from browser UI or track ends
+  useEffect(() => {
+    if (!stream) return;
+    const onEnded = () => setShowOverlay(false);
+    const vids = stream.getVideoTracks();
+    vids.forEach((t) => t.addEventListener("ended", onEnded));
+    return () => {
+      vids.forEach((t) => t.removeEventListener("ended", onEnded));
+    };
+  }, [stream]);
 
   const activateVoiceMode = async (initialCommand?: string) => {
     try {
@@ -434,6 +534,13 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
 
   return (
     <div className="relative">
+      {/* Floating video overlay for multimodal */}
+      <FloatingMediaOverlay
+        stream={stream}
+        visible={showOverlay}
+        position="center"
+        onClose={() => setShowOverlay(false)}
+      />
       {/* Main Button */}
       <button
         onClick={toggleModeSelector}

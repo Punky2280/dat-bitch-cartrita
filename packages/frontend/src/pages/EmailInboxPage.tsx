@@ -1,8 +1,20 @@
 import { useEffect, useState } from 'react';
+import { useNotify } from '../components/ui/NotificationProvider';
 
 interface EmailInboxPageProps { token: string; onBack: () => void; }
 
-interface EmailMessage { id: string; from: string; subject: string; preview: string; timestamp: string; read: boolean; category: string; ai_summary?: string; confidence?: number; priority?: 'high'|'normal'|'low'; }
+interface EmailMessage {
+  id: string;
+  from: string;
+  subject: string;
+  preview: string;
+  timestamp: string;
+  read: boolean;
+  category: string;
+  ai_summary?: string;
+  confidence?: number;
+  priority?: 'high'|'normal'|'low';
+}
 
 const CATEGORY_BUCKETS = [
   { id: 'action_required', name: 'Action Needed', icon: '⚠️' },
@@ -10,53 +22,74 @@ const CATEGORY_BUCKETS = [
   { id: 'low_priority', name: 'Low Priority', icon: '🌙' }
 ];
 
+// Removed mock data - using real API data only
+
 export const EmailInboxPage = ({ token, onBack }: EmailInboxPageProps) => {
+  const notify = useNotify();
   const [messages, setMessages] = useState<EmailMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [unreadOnly, setUnreadOnly] = useState(false);
-  // removed unused refreshing state
-  // Mobile bucket toggle
   const [activeMobileBucket, setActiveMobileBucket] = useState<string>(CATEGORY_BUCKETS[0].id);
   const [isNarrow, setIsNarrow] = useState(false);
 
-  useEffect(()=>{
-    const handler = ()=> setIsNarrow(window.innerWidth < 1024); // < lg breakpoint
+  useEffect(() => {
+    const handler = () => setIsNarrow(window.innerWidth < 1024);
     handler();
     window.addEventListener('resize', handler);
-    return ()=> window.removeEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
   }, []);
 
   const loadMessages = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/email/messages?limit=40&unread_only=${unreadOnly}`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`/api/email/messages?limit=40&unread_only=${unreadOnly}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (res.ok) {
         const data = await res.json();
-        const mapped: EmailMessage[] = (data.messages || []).map((m: any) => ({
-          id: m.id,
-            from: m.from,
-            subject: m.subject,
-            preview: m.preview,
-            timestamp: m.timestamp,
-            read: m.read,
-            category: m.category || 'misc',
-            ai_summary: m.ai_summary,
-            confidence: Math.random()*0.3 + 0.65, // placeholder
-            priority: Math.random() > 0.8 ? 'high' : Math.random() > 0.4 ? 'normal' : 'low'
+        const list: EmailMessage[] = (data?.messages || data?.data || []).map((m: any, idx: number) => ({
+          id: m.id || `msg_${idx}`,
+          from: m.from || m.sender || 'Unknown sender',
+          subject: m.subject || 'No subject',
+          preview: m.preview || m.snippet || m.body?.substring(0, 100) || 'No preview available',
+          timestamp: m.timestamp || m.date || new Date().toISOString(),
+          read: !!m.read,
+          category: m.category || 'misc',
+          ai_summary: m.ai_summary || `Auto-categorized as ${m.category || 'misc'}`,
+          confidence: m.confidence || 0.8,
+          priority: (m.priority || 'normal') as EmailMessage['priority']
         }));
-        setMessages(mapped);
+        setMessages(unreadOnly ? list.filter(m => !m.read) : list);
+        
+        if (list.length === 0) {
+          notify.info('Inbox Empty', unreadOnly ? 'No unread messages found' : 'No messages in inbox');
+        } else {
+          notify.success('Inbox Loaded', `Found ${list.length} messages`);
+        }
+      } else {
+        const errorText = await res.text();
+        notify.error('API Error', `Failed to load messages: ${res.status} ${errorText}`);
+        setMessages([]);
       }
-    } catch (e) {
-      console.error('Failed to load messages', e);
-    } finally { setLoading(false); }
+    } catch (error) {
+      console.error('Email fetch error:', error);
+      notify.error('Network Error', 'Unable to connect to email service');
+      setMessages([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(()=>{ loadMessages(); }, [token, unreadOnly]);
+  useEffect(() => { loadMessages(); }, [token, unreadOnly]);
 
   const toggleSelect = (id: string) => {
-    setSelected(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   };
 
   const bulkMarkRead = () => {
@@ -71,7 +104,6 @@ export const EmailInboxPage = ({ token, onBack }: EmailInboxPageProps) => {
   const bucketed = CATEGORY_BUCKETS.map(bucket => ({
     bucket,
     items: messages.filter(m => {
-      // Simple mapping: map existing categories into our 3 demo buckets
       if (bucket.id === 'action_required') return ['welcome','personal','finance','security'].includes(m.category) || m.priority==='high';
       if (bucket.id === 'updates') return ['notifications','updates','system'].includes(m.category) || m.priority==='normal';
       if (bucket.id === 'low_priority') return ['promotions','misc','low','marketing'].includes(m.category) || m.priority==='low';
@@ -102,7 +134,6 @@ export const EmailInboxPage = ({ token, onBack }: EmailInboxPageProps) => {
         </div>
       </header>
 
-      {/* Bulk Bar */}
       {selected.size > 0 && (
         <div className="sticky top-0 z-40 bg-purple-900/70 backdrop-blur border-b border-purple-500/40 text-sm">
           <div className="max-w-7xl mx-auto px-6 py-2 flex items-center justify-between">
@@ -116,7 +147,6 @@ export const EmailInboxPage = ({ token, onBack }: EmailInboxPageProps) => {
       )}
 
       <main className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Mobile segmented control */}
         {isNarrow && (
           <div className="lg:hidden mb-4 flex items-center justify-between gap-2">
             {CATEGORY_BUCKETS.map(b=> (
@@ -137,7 +167,7 @@ export const EmailInboxPage = ({ token, onBack }: EmailInboxPageProps) => {
                 {items.map(m => {
                   const isSelected = selected.has(m.id);
                   return (
-                    <div key={m.id} className={`border border-gray-700 rounded-lg p-3 group hover:border-purple-500 transition-colors relative ${!m.read ? 'bg-gray-800/70' : 'bg-gray-800/40'}`}> 
+                    <div key={m.id} className={`border border-gray-700 rounded-lg p-3 group hover:border-purple-500 transition-colors relative ${!m.read ? 'bg-gray-800/70' : 'bg-gray-800/40'}`}>
                       <div className="flex items-start justify-between">
                         <div className="flex-1 cursor-pointer" onClick={()=> setExpandedId(expandedId===m.id? null : m.id)}>
                           <div className="flex items-center space-x-2">
