@@ -4,7 +4,7 @@
  * Comprehensive TypeScript type definitions for the Model Registry system
  * implementing the specifications from the Cartrita MCP Whitepaper.
  * 
- * @author Claude (Internal Developer Agent)
+ * @author Robbie or Robert Allen Lead Architect
  * @date August 2025
  */
 

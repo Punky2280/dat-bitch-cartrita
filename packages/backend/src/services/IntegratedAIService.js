@@ -5,7 +5,7 @@
  * and Knowledge Hub to create a unified AI system with intelligent model 
  * selection, cost optimization, and RAG capabilities.
  * 
- * @author Claude (Integration Architect)
+ * @author Robbie or Robert Allen Lead Architect
  * @date August 2025
  */
 

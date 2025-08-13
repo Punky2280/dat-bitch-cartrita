@@ -584,214 +584,25 @@ The validation dashboard provides comprehensive monitoring of all stored credent
 
 ## HuggingFace AI Integration
 
-### Revolutionary AI-Powered Platform
+### Advanced AI Orchestration Platform
 
-The HuggingFace AI Integration represents a complete transformation of Cartrita into a production-ready AI platform. With direct access to HuggingFace Inference Providers API, Cartrita now offers real AI capabilities with state-of-the-art models including DeepSeek V3, Stable Diffusion XL, and Whisper Large V3.
+The HuggingFace AI Integration Hub represents the cutting edge of artificial intelligence integration, providing access to 41+ inference tasks through 5 specialized agents. This comprehensive platform transforms Cartrita into a powerhouse of AI capabilities, from computer vision to natural language processing.
 
-### Core AI Services
+### Integration Architecture
 
-**Chat Completion & Language Models**
-- **DeepSeek V3-0324:** Latest breakthrough model for advanced reasoning
-- **Llama 3.1 (8B/70B):** Meta's powerful instruction-following models
-- **Mistral 7B:** Efficient high-performance language model
-- **SmolLM3-3B:** Fast, lightweight model for quick responses
-- **OpenAI-compatible API endpoints:** Seamless integration with existing tools
+**Enhanced Routing System:**
+- **Intelligent Task Distribution:** AI-powered routing based on input analysis and agent capabilities
+- **Load Balancing:** Dynamic distribution across available models and endpoints
+- **Fallback Mechanisms:** Automatic fallback to alternative models on failure
+- **Performance Optimization:** Caching and optimization for frequently used tasks
+- **Quality Assurance:** Confidence scoring and result validation
 
-**Image Generation & Vision**
-- **Stable Diffusion XL:** Professional-quality image generation
-- **FLUX.1 Dev/Schnell:** Cutting-edge diffusion models
-- **LLaVA 1.5/1.6:** Advanced vision-language understanding
-- **Real-time image analysis:** Object detection, scene understanding, OCR
-- **Custom image generation:** Text prompts to high-quality visuals
-
-**Speech & Audio Processing**  
-- **Whisper Large V3:** State-of-the-art speech recognition
-- **Real-time voice processing:** Wake word detection, VAD
-- **Multi-language support:** 100+ languages supported
-- **Audio transcription:** WAV, MP3, FLAC format support
-- **Voice activity detection:** RMS and spectral analysis
-
-**Embeddings & Search**
-- **Multilingual E5 Large:** 1024-dimensional embeddings
-- **MPNet Base V2:** Sentence similarity and semantic search
-- **Vector operations:** Cosine similarity, clustering, classification
-- **Real-time embedding creation:** Sub-second processing times
-
-### Technical Implementation
-
-**HuggingFace Router Service**
-The core service uses JavaScript fetch API for direct communication with HuggingFace Inference Providers:
-
-```javascript
-// Real implementation powering the platform
-async chatCompletion(params) {
-  const response = await fetch(`${this.baseURL}/v1/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${this.hfToken}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      messages: params.messages,
-      model: params.model,
-      temperature: params.temperature || 0.7,
-      max_tokens: params.max_tokens || 2000
-    })
-  });
-  return await response.json();
-}
-```
-
-**API Endpoints Available**
-- **`/api/huggingface/chat/completions`** - Chat with AI models
-- **`/api/huggingface/text-to-image`** - Generate images from text
-- **`/api/huggingface/embeddings`** - Create vector embeddings
-- **`/api/huggingface/audio`** - Speech-to-text transcription
-- **`/api/huggingface/vision/chat`** - Vision-language chat
-- **`/api/huggingface/rag`** - Retrieval-augmented generation
-
-**Verified Performance Metrics**
-- **Chat Response Time:** ~11 seconds (DeepSeek V3)
-- **Image Generation:** ~8 seconds (Stable Diffusion XL)
-- **Embeddings Creation:** ~440ms (Multilingual E5)
-- **Speech Recognition:** Real-time processing
-- **Service Uptime:** 100% operational status
-
-### Model Catalog
-
-**Chat Models Available:**
-```json
-{
-  "deepseek-v3": "deepseek-ai/DeepSeek-V3-0324",
-  "llama-3.1-8b": "meta-llama/Llama-3.1-8B-Instruct", 
-  "llama-3.1-70b": "meta-llama/Llama-3.1-70B-Instruct",
-  "mistral-7b": "mistralai/Mistral-7B-Instruct-v0.3",
-  "smollm3-3b": "HuggingFaceTB/SmolLM3-3B:hf-inference"
-}
-```
-
-**Image Generation Models:**
-```json
-{
-  "stable-diffusion-xl": "stabilityai/stable-diffusion-xl-base-1.0",
-  "flux-1-dev": "black-forest-labs/FLUX.1-dev",
-  "flux-1-schnell": "black-forest-labs/FLUX.1-schnell"
-}
-```
-
-**Embedding Models:**
-```json
-{
-  "multilingual-e5-large": "intfloat/multilingual-e5-large",
-  "all-mpnet-base-v2": "sentence-transformers/all-mpnet-base-v2"
-}
-```
-
-**Speech Models:**
-```json
-{
-  "whisper-large-v3": "openai/whisper-large-v3",
-  "whisper-medium": "openai/whisper-medium"
-}
-```
-
-### Usage Examples
-
-**Chat Completion:**
-```javascript
-const response = await fetch('/api/huggingface/chat/completions', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    model: 'deepseek-v3',
-    messages: [
-      { role: 'user', content: 'Explain quantum computing' }
-    ],
-    temperature: 0.7,
-    max_tokens: 1500
-  })
-});
-```
-
-**Image Generation:**
-```javascript
-const response = await fetch('/api/huggingface/text-to-image', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    prompt: 'A beautiful sunset over mountains',
-    model: 'stable-diffusion-xl',
-    width: 1024,
-    height: 1024
-  })
-});
-```
-
-**Create Embeddings:**
-```javascript
-const response = await fetch('/api/huggingface/embeddings', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    inputs: 'Hello, this is a test sentence',
-    model: 'multilingual-e5-large'
-  })
-});
-```
-
-### Advanced Features
-
-**Rate Limiting & Performance**
-- **Token Bucket Algorithm:** Intelligent API rate management
-- **Exponential Backoff:** Automatic retry logic with smart delays
-- **Concurrent Request Handling:** Multi-request processing
-- **Usage Analytics:** Track API calls and performance metrics
-
-**Error Handling & Monitoring**
-- **Comprehensive Logging:** Detailed request/response tracking
-- **Health Monitoring:** Real-time service health checks
-- **Fallback Responses:** Mock responses during API unavailability
-- **Error Recovery:** Automatic retry mechanisms with circuit breakers
-
-**Production-Ready Architecture**
-- **Environment Variable Management:** Secure credential handling
-- **Service Isolation:** Independent service containers
-- **Monitoring Integration:** OpenTelemetry observability
-- **Scalability:** Horizontal scaling support
-
-### Integration with Cartrita Features
-
-**Voice Interface Integration**
-- **Wake Word Detection:** "Hey Cartrita" activation
-- **Voice Activity Detection:** RMS and spectral analysis
-- **Real-time Transcription:** Whisper Large V3 integration
-- **Session Management:** Multi-user concurrent sessions
-
-**Chat Interface Enhancement**
-- **Real AI Responses:** No more placeholder content
-- **Model Selection:** Dynamic model switching
-- **Streaming Support:** Real-time response streaming
-- **Context Awareness:** Conversation memory and continuity
-
-**Workflow Automation**
-- **AI Task Integration:** Automated AI task processing
-- **Batch Processing:** Multi-request workflow support
-- **Custom Pipelines:** User-defined AI workflows
-- **Result Aggregation:** Combine multiple AI outputs
-
-### Getting Started with HuggingFace Features
-
-**Quick Setup:**
-1. **API Key Configuration:** Add HF_TOKEN to your environment
-2. **Service Verification:** Use `/api/huggingface/health` endpoint
-3. **Test Connection:** Try `/api/huggingface/test` for validation
-4. **Explore Capabilities:** Use `/api/huggingface/capabilities` for model listing
-
-**Best Practices:**
-- **Model Selection:** Choose appropriate models for your use case
-- **Rate Limiting:** Respect API limits and use token bucket wisely
-- **Error Handling:** Implement proper error handling in your applications
-- **Performance Optimization:** Cache results when possible
+**Model Management:**
+- **Dynamic Model Loading:** On-demand model initialization based on request patterns
+- **Version Control:** Automatic model version management and updates
+- **Performance Monitoring:** Real-time model performance tracking
+- **Cost Optimization:** Intelligent model selection based on cost and quality trade-offs
+- **Custom Model Support:** Integration of custom fine-tuned models
 
 ---
 

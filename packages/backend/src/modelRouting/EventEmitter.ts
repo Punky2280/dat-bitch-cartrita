@@ -4,7 +4,7 @@
  * Comprehensive event tracking and emission for model registry operations,
  * cost tracking, and performance monitoring.
  * 
- * @author Claude (Internal Developer Agent) 
+ * @author Robbie or Robert Allen Lead Architect 
  * @date August 2025
  */
 

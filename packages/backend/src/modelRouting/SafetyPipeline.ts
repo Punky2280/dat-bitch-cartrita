@@ -4,7 +4,7 @@
  * Comprehensive safety system implementing pre-generation classification,
  * post-generation moderation, and audit trails as specified in the whitepaper.
  * 
- * @author Claude (Internal Developer Agent)
+ * @author Robbie or Robert Allen Lead Architect
  * @date August 2025
  */
 

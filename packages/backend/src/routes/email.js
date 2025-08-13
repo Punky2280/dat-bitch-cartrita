@@ -9,8 +9,8 @@ const router = express.Router();
 
 // Rate limiting for email endpoints
 const emailLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: process.env.NODE_ENV === 'production' ? 15 * 60 * 1000 : 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 100 : 300, // allow more in dev to prevent noisy 429s
   message: { error: 'Too many email requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,

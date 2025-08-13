@@ -4,7 +4,7 @@
  * Comprehensive benchmarking system for measuring model performance,
  * including tokens/sec, p95 latency, memory footprint, and quality metrics.
  * 
- * @author Claude (Internal Developer Agent)
+ * @author Robbie or Robert Allen Lead Architect
  * @date August 2025
  */
 

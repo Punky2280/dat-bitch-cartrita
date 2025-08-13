@@ -16,6 +16,7 @@ import { EnhancedVoiceToTextButton } from './EnhancedVoiceToTextButton';
 import { EnhancedCameraButton } from './EnhancedCameraButton';
 import { AudioTestingInterface } from './AudioTestingInterface';
 import { CameraTestingInterface } from './CameraTestingInterface';
+import { CompatibilityShowcase } from '../ui/CompatibilityShowcase';
 
 interface HuggingFaceIntegrationHubProps {
   token: string;
@@ -141,10 +142,13 @@ export const HuggingFaceIntegrationHub: React.FC<HuggingFaceIntegrationHubProps>
     switch (activeTab) {
       case 'dashboard':
         return (
-          <HuggingFaceRoutingDashboard
-            token={token}
-            className="w-full"
-          />
+          <div className="space-y-6">
+            <HuggingFaceRoutingDashboard
+              token={token}
+              className="w-full"
+            />
+            <CompatibilityShowcase className="w-full" />
+          </div>
         );
 
       case 'models':

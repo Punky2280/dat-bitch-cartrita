@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { ChatComponent } from "@/components/ChatComponent";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { WorkflowsPage } from "@/pages/WorkflowsPage";
-import { KnowledgeHubPage } from "@/pages/KnowledgeHubPage";
+import KnowledgeHubPage from "@/pages/KnowledgeHubPage";
 import { ApiKeyVaultPage } from "@/pages/ApiKeyVaultPage";
 import { PersonalLifeOSPage } from "@/pages/PersonalLifeOSPage";
 import AboutPage from "@/pages/AboutPage";
@@ -13,6 +13,8 @@ import ModelSelectorPanel from "@/components/ModelSelectorPanel";
 import { HuggingFaceIntegrationHub } from "@/components/huggingface/HuggingFaceIntegrationHub";
 import HealthDashboardPage from "@/pages/HealthDashboardPage";
 import EmailInboxPage from "@/pages/EmailInboxPage";
+import { AIProvidersPage } from "@/pages/AIProvidersPage";
+import { AIPowerCard } from "@/components/ui/AIPowerCard";
 
 interface DashboardPageProps {
   token: string;
@@ -32,32 +34,32 @@ const DASHBOARD_VIEWS = [
   "workflows",
   "knowledge",
   "vault",
-  "lifeos",
-  "about",
-  "license",
   "manual",
   "models",
   "huggingface",
   "health",
   "email", // added email inbox
+  "lifeos",
+  "about",
+  "license",
+  "aiproviders",
 ] as const;
+
 type DashboardView = typeof DASHBOARD_VIEWS[number];
 
-// Safe JWT decode helper (no external libs) – tolerates malformed or non-JWT tokens.
 const safeDecodeJwt = (maybeJwt: string | null | undefined): any | null => {
-  if (!maybeJwt || typeof maybeJwt !== "string") return null;
-  const parts = maybeJwt.split(".");
-  if (parts.length !== 3) return null; // Not a standard JWT
   try {
-    const payload = parts[1]
-      .replace(/-/g, "+")
-      .replace(/_/g, "/");
-    // Pad base64 if needed
+    if (!maybeJwt) return null;
+    const parts = maybeJwt.split(".");
+    if (parts.length !== 3) return null; // Not a standard JWT
+
+    // Base64URL decode the payload (index 1)
+    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
     const pad = payload.length % 4;
     const padded = pad ? payload + "=".repeat(4 - pad) : payload;
     const json = atob(padded);
     return JSON.parse(json);
-  } catch {
+  } catch (e) {
     return null;
   }
 };
@@ -277,7 +279,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
       <div className="min-h-screen bg-animated flex items-center justify-center text-white">
         <div className="glass-card p-8 rounded-xl max-w-md space-y-6">
           <h1 className="text-2xl font-bold text-gradient">Authentication Required</h1>
-          <p className="text-gray-300 text-sm leading-relaxed">
+          <p className="text-slate-300 text-sm leading-relaxed">
             Your session token is missing or invalid. Please sign in again to access the Cartrita dashboard features.
           </p>
           <div className="flex space-x-4">
@@ -361,13 +363,13 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
   if (currentView === "huggingface") {
     return (
       <div className="min-h-screen bg-animated text-white">
-        <header className="glass-card border-b border-gray-600/50 p-4">
+    <header className="glass-card border-b border-slate-600/50 p-4">
           <div className="max-w-7xl mx-auto flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gradient">
                 HuggingFace AI Integration
               </h1>
-              <p className="text-gray-400 mt-1">
+      <p className="text-slate-400 mt-1">
                 Advanced AI capabilities with enhanced routing and multimodal processing
               </p>
             </div>
@@ -401,17 +403,22 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
     return <EmailInboxPage token={token} onBack={() => setCurrentView("chat")} />;
   }
 
+  // Show AI Providers Hub
+  if (currentView === "aiproviders") {
+    return <AIProvidersPage token={token} onBack={() => setCurrentView("chat")} />;
+  }
+
   // Show main dashboard
   return (
     <div className="min-h-screen bg-animated text-white">
       {/* Header */}
-      <header className="glass-card border-b border-gray-600/50 p-4">
+  <header className="glass-card border-b border-slate-600/50 p-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gradient">
               Dat Bitch Cartrita
             </h1>
-            <p className="text-gray-400 mt-1">Welcome back, {user?.name} 👋</p>
+    <p className="text-slate-400 mt-1">Welcome back, {user?.name} 👋</p>
           </div>
 
           <div className="flex items-center space-x-4">
@@ -426,7 +433,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
 
             <button
               onClick={() => setCurrentView("workflows")}
-              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50 flex items-center space-x-2"
+      className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 flex items-center space-x-2"
               title="Workflows"
             >
               <span>🚀</span>
@@ -435,7 +442,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
 
             <button
               onClick={() => setCurrentView("knowledge")}
-              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50 flex items-center space-x-2"
+      className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 flex items-center space-x-2"
               title="Knowledge Hub"
             >
               <span>🧠</span>
@@ -444,7 +451,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
 
             <button
               onClick={() => setCurrentView("vault")}
-              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50 flex items-center space-x-2"
+      className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 flex items-center space-x-2"
               title="API Key Vault"
             >
               <span>🔐</span>
@@ -453,7 +460,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
 
             <button
               onClick={() => setCurrentView("lifeos")}
-              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50 flex items-center space-x-2"
+      className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 flex items-center space-x-2"
               title="Personal Life OS"
             >
               <span>🏠</span>
@@ -462,7 +469,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
 
             <button
               onClick={() => setCurrentView("settings")}
-              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50 flex items-center space-x-2"
+      className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 flex items-center space-x-2"
               title="Settings"
             >
               <span>⚙️</span>
@@ -471,7 +478,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
 
             <button
               onClick={() => setCurrentView("models")}
-              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50 flex items-center space-x-2"
+      className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 flex items-center space-x-2"
               title="Model Router"
             >
               <span>🧩</span>
@@ -480,7 +487,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
 
             <button
               onClick={() => setCurrentView("huggingface")}
-              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50 flex items-center space-x-2"
+      className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 flex items-center space-x-2"
               title="HuggingFace AI Hub"
             >
               <span>🤗</span>
@@ -488,8 +495,17 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
             </button>
 
             <button
+              onClick={() => setCurrentView("aiproviders")}
+      className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 flex items-center space-x-2"
+              title="Multi-Provider AI Hub"
+            >
+              <span>🤖</span>
+              <span className="hidden sm:inline">AI Hub</span>
+            </button>
+
+            <button
               onClick={() => setCurrentView("health")}
-              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50 flex items-center space-x-2"
+      className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 flex items-center space-x-2"
               title="System Health"
             >
               <span>📊</span>
@@ -498,7 +514,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
 
             <button
               onClick={() => setCurrentView("email")}
-              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50 flex items-center space-x-2"
+      className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 flex items-center space-x-2"
               title="Email Inbox"
             >
               <span>📧</span>
@@ -534,7 +550,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
                 </div>
                 <div>
                   <h3 className="font-semibold">{user?.name}</h3>
-                  <p className="text-sm text-gray-400">{user?.email}</p>
+                  <p className="text-sm text-slate-400">{user?.email}</p>
                 </div>
               </div>
               <div className="flex items-center space-x-2 text-sm">
@@ -552,56 +568,69 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
               <div className="space-y-3">
                 <button
                   onClick={() => setCurrentView("workflows")}
-                  className="w-full text-left p-3 rounded-lg hover:bg-gray-800/50 transition-colors flex items-center space-x-3"
+                  className="w-full text-left p-3 rounded-lg hover:bg-slate-800/50 transition-colors flex items-center space-x-3"
                 >
                   <span>🚀</span>
                   <span>Workflow Automation</span>
                 </button>
                 <button
                   onClick={() => setCurrentView("knowledge")}
-                  className="w-full text-left p-3 rounded-lg hover:bg-gray-800/50 transition-colors flex items-center space-x-3"
+                  className="w-full text-left p-3 rounded-lg hover:bg-slate-800/50 transition-colors flex items-center space-x-3"
                 >
                   <span>🧠</span>
                   <span>Knowledge Hub</span>
                 </button>
                 <button
                   onClick={() => setCurrentView("vault")}
-                  className="w-full text-left p-3 rounded-lg hover:bg-gray-800/50 transition-colors flex items-center space-x-3"
+                  className="w-full text-left p-3 rounded-lg hover:bg-slate-800/50 transition-colors flex items-center space-x-3"
                 >
                   <span>🔐</span>
                   <span>API Key Vault</span>
                 </button>
                 <button
                   onClick={() => setCurrentView("lifeos")}
-                  className="w-full text-left p-3 rounded-lg hover:bg-gray-800/50 transition-colors flex items-center space-x-3"
+                  className="w-full text-left p-3 rounded-lg hover:bg-slate-800/50 transition-colors flex items-center space-x-3"
                 >
                   <span>🏠</span>
                   <span>Personal Life OS</span>
                 </button>
                 <button
                   onClick={() => setCurrentView("settings")}
-                  className="w-full text-left p-3 rounded-lg hover:bg-gray-800/50 transition-colors flex items-center space-x-3"
+                  className="w-full text-left p-3 rounded-lg hover:bg-slate-800/50 transition-colors flex items-center space-x-3"
                 >
                   <span>⚙️</span>
                   <span>Account Settings</span>
                 </button>
                 <button
                   onClick={() => setCurrentView("huggingface")}
-                  className="w-full text-left p-3 rounded-lg hover:bg-gray-800/50 transition-colors flex items-center space-x-3"
+                  className="w-full text-left p-3 rounded-lg hover:bg-slate-800/50 transition-colors flex items-center space-x-3"
                 >
                   <span>🤗</span>
                   <span>HuggingFace AI Hub</span>
                 </button>
-                <button className="w-full text-left p-3 rounded-lg hover:bg-gray-800/50 transition-colors flex items-center space-x-3">
+                <button
+                  onClick={() => setCurrentView("aiproviders")}
+                  className="w-full text-left p-3 rounded-lg hover:bg-slate-800/50 transition-colors flex items-center space-x-3"
+                >
+                  <span>🤖</span>
+                  <span>Multi-Provider AI Hub</span>
+                </button>
+                <button className="w-full text-left p-3 rounded-lg hover:bg-slate-800/50 transition-colors flex items-center space-x-3">
                   <span>🗑️</span>
                   <span>Clear Chat History</span>
                 </button>
-                <button className="w-full text-left p-3 rounded-lg hover:bg-gray-800/50 transition-colors flex items-center space-x-3">
+                <button className="w-full text-left p-3 rounded-lg hover:bg-slate-800/50 transition-colors flex items-center space-x-3">
                   <span>🎨</span>
                   <span>Customize Theme</span>
                 </button>
               </div>
             </div>
+
+            {/* AI Power Showcase */}
+            <AIPowerCard 
+              className="w-full"
+              onNavigateToAI={() => setCurrentView("aiproviders")}
+            />
 
             {/* System Status */}
             <div className="glass-card p-6 rounded-xl">
@@ -612,7 +641,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
               <div className="space-y-3 text-sm">
                 {Object.entries(systemStatus).map(([key, status]) => {
                   const getStatusColor = (status: string) => {
-                    switch (status) {
+          switch (status) {
                       case "online":
                         return "text-green-400";
                       case "offline":
@@ -620,12 +649,12 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
                       case "error":
                         return "text-yellow-400";
                       default:
-                        return "text-gray-400";
+            return "text-slate-400";
                     }
                   };
 
                   const getBgColor = (status: string) => {
-                    switch (status) {
+          switch (status) {
                       case "online":
                         return "bg-green-500";
                       case "offline":
@@ -633,7 +662,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
                       case "error":
                         return "bg-yellow-500";
                       default:
-                        return "bg-gray-500";
+            return "bg-slate-500";
                     }
                   };
 
@@ -663,7 +692,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
                       key={key}
                       className="flex justify-between items-center"
                     >
-                      <span className="text-gray-400">
+                      <span className="text-slate-400">
                         {getDisplayName(key)}
                       </span>
                       <span
@@ -684,7 +713,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
                   );
                 })}
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Sub-Agents</span>
+                  <span className="text-slate-400">Sub-Agents</span>
                   <span className="text-blue-400">4 Active</span>
                 </div>
               </div>
@@ -722,7 +751,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
                   <span>Ambient Listening</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-gray-500">⏳</span>
+                  <span className="text-slate-500">⏳</span>
                   <span>Video Analysis</span>
                 </div>
               </div>
@@ -732,12 +761,12 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-600/50 mt-12">
+      <footer className="border-t border-slate-600/50 mt-12">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-center items-center space-x-6">
             <button
               onClick={() => setCurrentView("about")}
-              className="text-gray-400 hover:text-white transition-colors text-sm flex items-center space-x-1"
+              className="text-slate-400 hover:text-white transition-colors text-sm flex items-center space-x-1"
             >
               <span>ℹ️</span>
               <span>About Me</span>
@@ -745,7 +774,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
 
             <button
               onClick={() => setCurrentView("manual")}
-              className="text-gray-400 hover:text-white transition-colors text-sm flex items-center space-x-1"
+              className="text-slate-400 hover:text-white transition-colors text-sm flex items-center space-x-1"
             >
               <span>📖</span>
               <span>User Manual</span>
@@ -753,13 +782,13 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
 
             <button
               onClick={() => setCurrentView("license")}
-              className="text-gray-400 hover:text-white transition-colors text-sm flex items-center space-x-1"
+              className="text-slate-400 hover:text-white transition-colors text-sm flex items-center space-x-1"
             >
               <span>⚖️</span>
               <span>License</span>
             </button>
 
-            <div className="text-gray-500 text-xs">
+            <div className="text-slate-500 text-xs">
               © 2025 Dat Bitch Cartrita • Iteration 21
             </div>
           </div>

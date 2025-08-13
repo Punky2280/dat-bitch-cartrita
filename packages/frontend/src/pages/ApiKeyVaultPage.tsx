@@ -213,7 +213,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-500 mx-auto"></div>
           <p className="text-white text-xl mt-4">Loading API Key Vault...</p>
@@ -225,12 +225,12 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
   return (
     <div className="min-h-screen bg-animated text-white">
       {/* Header */}
-      <header className="glass-card border-b border-gray-600/50 p-6">
+  <header className="glass-card border-b border-slate-600/50 p-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
               onClick={onBack}
-              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50"
+      className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50"
             >
               ← Back
             </button>
@@ -238,7 +238,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
               <h1 className="text-3xl font-bold text-gradient">
                 🔐 Secure API Key Vault
               </h1>
-              <p className="text-gray-400 mt-1">
+      <p className="text-slate-400 mt-1">
                 Centralized, encrypted storage for all your API keys and secrets
               </p>
             </div>
@@ -256,7 +256,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
       </header>
 
       {/* Navigation Tabs */}
-      <div className="bg-gray-800 border-b border-gray-700">
+  <div className="bg-slate-800 border-b border-slate-700">
         <div className="max-w-7xl mx-auto px-6">
           <nav className="flex space-x-8">
             {[
@@ -272,10 +272,10 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
               <button
                 key={tab.id}
                 onClick={() => setActiveView(tab.id as any)}
-                className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
+        className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
                   activeView === tab.id
                     ? "border-green-500 text-green-400"
-                    : "border-transparent text-gray-400 hover:text-white hover:border-gray-300"
+          : "border-transparent text-slate-400 hover:text-white hover:border-slate-300"
                 }`}
               >
                 <span className="mr-2">{tab.icon}</span>
@@ -337,7 +337,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
             {/* Recent Activity & Security Alerts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Recent Keys */}
-              <div className="bg-gray-800 rounded-xl p-6">
+              <div className="bg-slate-800 rounded-xl p-6">
                 <h2 className="text-xl font-bold mb-4 flex items-center space-x-2">
                   <span>🕒</span>
                   <span>Recently Added Keys</span>
@@ -346,7 +346,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                   {apiKeys.slice(0, 5).map((key) => (
                     <div
                       key={key.id}
-                      className="flex items-center justify-between p-4 border border-gray-700 rounded-lg"
+                      className="flex items-center justify-between p-4 border border-slate-700 rounded-lg"
                     >
                       <div className="flex items-center space-x-3">
                         <span className="text-2xl">
@@ -354,7 +354,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                         </span>
                         <div>
                           <h3 className="font-semibold">{key.key_name}</h3>
-                          <p className="text-sm text-gray-400">
+                          <p className="text-sm text-slate-400">
                             {key.provider_display_name}
                           </p>
                         </div>
@@ -369,7 +369,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                         >
                           {key.is_active ? "Active" : "Inactive"}
                         </div>
-                        <div className="text-gray-500 mt-1">
+                        <div className="text-slate-500 mt-1">
                           {new Date(key.created_at).toLocaleDateString()}
                         </div>
                       </div>
@@ -379,7 +379,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
               </div>
 
               {/* Security Events */}
-              <div className="bg-gray-800 rounded-xl p-6">
+              <div className="bg-slate-800 rounded-xl p-6">
                 <h2 className="text-xl font-bold mb-4 flex items-center space-x-2">
                   <span>🛡️</span>
                   <span>Recent Security Events</span>
@@ -388,7 +388,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                   {securityEvents.slice(0, 5).map((event) => (
                     <div
                       key={event.id}
-                      className="flex items-start space-x-3 p-4 border border-gray-700 rounded-lg"
+                      className="flex items-start space-x-3 p-4 border border-slate-700 rounded-lg"
                     >
                       <div
                         className={`px-2 py-1 rounded text-xs font-medium ${getSeverityColor(
@@ -401,7 +401,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                         <p className="text-sm text-white">
                           {event.description}
                         </p>
-                        <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
+                        <div className="flex items-center space-x-4 text-xs text-slate-500 mt-1">
                           <span>
                             {new Date(event.created_at).toLocaleString()}
                           </span>
@@ -425,7 +425,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                 API Keys ({apiKeys.length})
               </h2>
               <div className="flex items-center space-x-4">
-                <select className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
+                <select className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-green-500">
                   <option value="">All Providers</option>
                   {providers.map((provider) => (
                     <option key={provider.id} value={provider.name}>
@@ -440,7 +440,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
               {apiKeys.map((key) => (
                 <div
                   key={key.id}
-                  className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-green-500 transition-colors"
+                  className="bg-slate-800 border border-slate-700 rounded-xl p-6 hover:border-green-500 transition-colors"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-3">
@@ -451,7 +451,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                         <h3 className="font-semibold text-lg">
                           {key.key_name}
                         </h3>
-                        <p className="text-sm text-gray-400">
+                        <p className="text-sm text-slate-400">
                           {key.provider_display_name}
                         </p>
                       </div>
@@ -492,13 +492,13 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                       }}
                     />
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-400">Usage:</span>
+                      <span className="text-slate-400">Usage:</span>
                       <span className="text-white">
                         {key.usage_count} requests
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-400">Last used:</span>
+                      <span className="text-slate-400">Last used:</span>
                       <span className="text-white">
                         {key.last_used_at
                           ? new Date(key.last_used_at).toLocaleDateString()
@@ -507,7 +507,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                     </div>
                     {key.usage_stats && (
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-400">Success rate:</span>
+                        <span className="text-slate-400">Success rate:</span>
                         <span className="text-green-400">
                           {key.usage_stats.total_requests > 0
                             ? (
@@ -655,9 +655,9 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
 
             <div className="space-y-4">
               {securityEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="bg-gray-800 border border-gray-700 rounded-lg p-6"
+                    <div
+                      key={event.id}
+                      className="bg-slate-800 border border-slate-700 rounded-lg p-6"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-4">
@@ -672,10 +672,10 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                         <h3 className="font-semibold text-lg">
                           {event.event_type.replace("_", " ").toUpperCase()}
                         </h3>
-                        <p className="text-gray-300 mt-1">
+                        <p className="text-slate-300 mt-1">
                           {event.description}
                         </p>
-                        <div className="flex items-center space-x-6 text-sm text-gray-500 mt-2">
+                        <div className="flex items-center space-x-6 text-sm text-slate-500 mt-2">
                           <span>
                             🕒 {new Date(event.created_at).toLocaleString()}
                           </span>
@@ -699,12 +699,12 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
         {activeView === "analytics" && (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Usage Analytics</h2>
-            <div className="bg-gray-800 rounded-xl p-6 text-center">
+            <div className="bg-slate-800 rounded-xl p-6 text-center">
               <div className="text-6xl mb-4">📊</div>
               <h3 className="text-xl font-semibold mb-2">
                 Analytics Dashboard
               </h3>
-              <p className="text-gray-400">
+              <p className="text-slate-400">
                 Detailed usage analytics and cost tracking will be displayed
                 here. This includes API call frequency, response times, token
                 usage, and cost analysis.
@@ -718,20 +718,20 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
             <h2 className="text-2xl font-bold flex items-center space-x-2">
               <span>🔄</span><span>Credential Rotation Scheduling</span>
             </h2>
-            <p className="text-gray-400 max-w-3xl">
+            <p className="text-slate-400 max-w-3xl">
               Define and manage automatic rotation policies for your stored credentials. Rotation reduces exposure risk and enforces compliance.
             </p>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-6">
-                <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
                   <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2">
                     <span>🗓️</span><span>Policies</span>
                   </h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="text-left text-gray-400 border-b border-gray-700">
+                        <tr className="text-left text-slate-400 border-b border-slate-700">
                           <th className="py-2 pr-4">Credential</th>
                           <th className="py-2 pr-4">Interval</th>
                           <th className="py-2 pr-4">Last Rotated</th>
@@ -749,7 +749,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                           const nextDue = new Date(new Date(lastRotated).getTime() + intervalDays*24*60*60*1000);
                           const overdue = nextDue.getTime() < Date.now();
                           return (
-                            <tr key={key.id} className="border-b border-gray-800 hover:bg-gray-750/40">
+                            <tr key={key.id} className="border-b border-slate-800 hover:bg-slate-800/40">
                               <td className="py-2 pr-4">
                                 <div className="flex items-center space-x-2">
                                   <span>{getProviderIcon(key.provider_icon)}</span>
@@ -763,7 +763,7 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                               <td className="py-2 pr-4">{overdue ? 'Due' : 'On Track'}</td>
                               <td className="py-2 pr-4 text-right space-x-2">
                                 <button className="px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs">Rotate Now</button>
-                                <button className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">Edit</button>
+                                <button className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs">Edit</button>
                               </td>
                             </tr>
                           );
@@ -771,55 +771,55 @@ export const ApiKeyVaultPage: React.FC<ApiKeyVaultPageProps> = ({
                       </tbody>
                     </table>
                   </div>
-                  <div className="text-xs text-gray-500 mt-3">Showing first 10 credentials. Policy CRUD & pagination forthcoming.</div>
+                  <div className="text-xs text-slate-500 mt-3">Showing first 10 credentials. Policy CRUD & pagination forthcoming.</div>
                 </div>
 
-                <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
                   <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2">
                     <span>🛠️</span><span>Create / Edit Policy</span>
                   </h3>
                   <form className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="md:col-span-1">
-                      <label className="block text-xs uppercase tracking-wide text-gray-400 mb-1">Credential</label>
-                      <select className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-green-500">
+                      <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1">Credential</label>
+                      <select className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-green-500">
                         <option value="">Select…</option>
                         {apiKeys.map(k => <option key={k.id} value={k.id}>{k.key_name}</option>)}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs uppercase tracking-wide text-gray-400 mb-1">Interval (days)</label>
-                      <input type="number" min={1} defaultValue={90} className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-green-500" />
+                      <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1">Interval (days)</label>
+                      <input type="number" min={1} defaultValue={90} className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-green-500" />
                     </div>
                     <div>
-                      <label className="block text-xs uppercase tracking-wide text-gray-400 mb-1">Grace Period (days)</label>
-                      <input type="number" min={0} defaultValue={5} className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-green-500" />
+                      <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1">Grace Period (days)</label>
+                      <input type="number" min={0} defaultValue={5} className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-green-500" />
                     </div>
                     <div className="flex items-center space-x-2 md:col-span-1">
-                      <input id="autoRotate" type="checkbox" defaultChecked className="h-4 w-4 rounded bg-gray-700 border-gray-600" />
-                      <label htmlFor="autoRotate" className="text-sm text-gray-300">Auto Rotate</label>
+                      <input id="autoRotate" type="checkbox" defaultChecked className="h-4 w-4 rounded bg-slate-700 border-slate-600" />
+                      <label htmlFor="autoRotate" className="text-sm text-slate-300">Auto Rotate</label>
                     </div>
                     <div className="md:col-span-2 flex space-x-2">
                       <button type="button" className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium">Save Policy</button>
-                      <button type="button" className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium">Reset</button>
+                      <button type="button" className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium">Reset</button>
                     </div>
                   </form>
-                  <div className="text-xs text-gray-500 mt-3">Form is non-functional placeholder; will connect to /api/vault/rotation-policies endpoints.</div>
+                  <div className="text-xs text-slate-500 mt-3">Form is non-functional placeholder; will connect to /api/vault/rotation-policies endpoints.</div>
                 </div>
               </div>
 
               <aside className="space-y-6">
-                <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-                  <h3 className="text-sm font-semibold mb-2 uppercase tracking-wide text-gray-400">Summary</h3>
+                <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                  <h3 className="text-sm font-semibold mb-2 uppercase tracking-wide text-slate-400">Summary</h3>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-center justify-between"><span>Automated Policies</span><span className="text-green-400 font-medium">—</span></li>
                     <li className="flex items-center justify-between"><span>Overdue</span><span className="text-yellow-400 font-medium">—</span></li>
                     <li className="flex items-center justify-between"><span>Failures (24h)</span><span className="text-red-400 font-medium">0</span></li>
                   </ul>
-                  <div className="mt-4 text-xs text-gray-500">Metrics will appear once backend rotation service is implemented.</div>
+                  <div className="mt-4 text-xs text-slate-500">Metrics will appear once backend rotation service is implemented.</div>
                 </div>
-                <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-                  <h3 className="text-sm font-semibold mb-2 uppercase tracking-wide text-gray-400">Planned Features</h3>
-                  <ul className="list-disc list-inside text-xs text-gray-400 space-y-1">
+                <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                  <h3 className="text-sm font-semibold mb-2 uppercase tracking-wide text-slate-400">Planned Features</h3>
+                  <ul className="list-disc list-inside text-xs text-slate-400 space-y-1">
                     <li>Policy templates (e.g., High Sensitivity 30d)</li>
                     <li>Bulk apply policies</li>
                     <li>Calendar visualization</li>

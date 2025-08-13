@@ -12,6 +12,7 @@ import {
   MediaPermissionHandler,
   MediaPermissionState,
 } from '../MediaPermissionHandler';
+import FloatingMediaOverlay from '../ui/FloatingMediaOverlay';
 
 interface VisionAnalysisResult {
   task_type: string;
@@ -107,6 +108,7 @@ export const EnhancedCameraButton: React.FC<EnhancedCameraButtonProps> = ({
   const [error, setError] = useState<string>('');
   const [lastResult, setLastResult] = useState<VisionAnalysisResult | null>(null);
   const [captureCount, setCaptureCount] = useState(0);
+  const [showOverlay, setShowOverlay] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -161,6 +163,7 @@ export const EnhancedCameraButton: React.FC<EnhancedCameraButtonProps> = ({
       }
 
       setIsStreaming(true);
+  setShowOverlay(true);
 
       // Setup auto-capture if enabled
       if (settings.auto_capture) {
@@ -209,6 +212,7 @@ export const EnhancedCameraButton: React.FC<EnhancedCameraButtonProps> = ({
 
   setIsStreaming(false);
   videoReadyRef.current = false;
+  setShowOverlay(false);
   setTimeout(() => { stopGuardRef.current = false; }, 100); // allow future starts
   }, []);
 
@@ -372,6 +376,12 @@ export const EnhancedCameraButton: React.FC<EnhancedCameraButtonProps> = ({
 
   return (
     <div className={`relative ${className}`}>
+      <FloatingMediaOverlay
+        stream={streamRef.current}
+        visible={showOverlay}
+        position="center"
+        onClose={() => setShowOverlay(false)}
+      />
       {/* Main Button */}
       <button
         onClick={handleClick}

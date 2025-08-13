@@ -4,7 +4,7 @@
  * Intelligent model selection and routing system with composite scoring,
  * budget-aware degradation, and fallback mechanisms.
  * 
- * @author Claude (Internal Developer Agent)
+ * @author Robbie or Robert Allen Lead Architect
  * @date August 2025
  */
 

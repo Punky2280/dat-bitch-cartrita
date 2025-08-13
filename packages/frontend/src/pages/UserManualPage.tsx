@@ -167,13 +167,13 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
     : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-blue-900">
+  <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-blue-900">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <button
             onClick={onBack || (() => window.history.back())}
-            className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            className="flex items-center space-x-2 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
           >
             <ArrowLeftIcon className="w-5 h-5" />
             <span>Back</span>
@@ -181,7 +181,7 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
 
           <div className="flex items-center space-x-2">
             <BookOpenIcon className="w-8 h-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
               User Manual
             </h1>
           </div>
@@ -191,13 +191,13 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
           {/* Search Bar */}
           <div className="mb-8">
             <div className="relative">
-              <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search the manual..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -205,8 +205,8 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Table of Contents */}
             <div className="lg:col-span-1">
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg sticky top-8">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-lg sticky top-8">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
                   Table of Contents
                 </h2>
 
@@ -218,7 +218,7 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
                       className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                         selectedSection === section.id
                           ? "bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100"
-                          : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                       }`}
                     >
                       <div className="flex items-center space-x-3">
@@ -232,8 +232,8 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
                 </nav>
 
                 {searchTerm && (
-                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-600">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       {filteredSections.length} section(s) match "{searchTerm}"
                     </p>
                   </div>
@@ -244,19 +244,19 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
             {/* Content Area */}
             <div className="lg:col-span-2">
               {loading ? (
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-lg text-center">
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-lg text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600 dark:text-gray-300">
+                  <p className="text-slate-600 dark:text-slate-300">
                     Loading user manual...
                   </p>
                 </div>
               ) : error ? (
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-lg text-center">
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-lg text-center">
                   <div className="text-red-500 mb-4">⚠️</div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
                     Error Loading Manual
                   </h2>
-                  <p className="text-gray-600 dark:text-gray-300 mb-4">
+                  <p className="text-slate-600 dark:text-slate-300 mb-4">
                     {error}
                   </p>
                   <button
@@ -267,8 +267,8 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
                   </button>
                 </div>
               ) : currentContent ? (
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-lg">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-lg">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">
                     {currentContent.title}
                   </h2>
 
@@ -285,7 +285,7 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
                           return (
                             <h3
                               key={index}
-                              className="text-lg font-semibold text-gray-900 dark:text-white mt-6 mb-3"
+                              className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3"
                             >
                               {trimmedParagraph.slice(4)}
                             </h3>
@@ -300,7 +300,7 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
                           return (
                             <h3
                               key={index}
-                              className="text-lg font-semibold text-gray-900 dark:text-white mt-6 mb-3"
+                              className="text-lg font-semibold text-slate-900 dark:text-white mt-6 mb-3"
                             >
                               {trimmedParagraph.slice(2, -2)}
                             </h3>
@@ -328,7 +328,7 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
                               {allItems.map((item, itemIndex) => (
                                 <li
                                   key={itemIndex}
-                                  className="text-gray-600 dark:text-gray-300"
+                                  className="text-slate-600 dark:text-slate-300"
                                 >
                                   {item.trim()}
                                 </li>
@@ -350,7 +350,7 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
                               {items.map((item, itemIndex) => (
                                 <li
                                   key={itemIndex}
-                                  className="text-gray-600 dark:text-gray-300"
+                                  className="text-slate-600 dark:text-slate-300"
                                 >
                                   {item.trim()}
                                 </li>
@@ -372,7 +372,7 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
                               {items.map((item, itemIndex) => (
                                 <li
                                   key={itemIndex}
-                                  className="text-gray-600 dark:text-gray-300"
+                                  className="text-slate-600 dark:text-slate-300"
                                 >
                                   {item.trim()}
                                 </li>
@@ -390,9 +390,9 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
                           return (
                             <pre
                               key={index}
-                              className="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 mb-4 overflow-x-auto"
+                              className="bg-slate-100 dark:bg-slate-900 rounded-lg p-4 mb-4 overflow-x-auto"
                             >
-                              <code className="text-sm text-gray-800 dark:text-gray-200">
+                              <code className="text-sm text-slate-800 dark:text-slate-200">
                                 {code}
                               </code>
                             </pre>
@@ -411,7 +411,7 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
                               return (
                                 <code
                                   key={partIndex}
-                                  className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm"
+                                  className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-sm"
                                 >
                                   {part}
                                 </code>
@@ -439,7 +439,7 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
                         return (
                           <p
                             key={index}
-                            className="text-gray-600 dark:text-gray-300 mb-4 leading-relaxed"
+                            className="text-slate-600 dark:text-slate-300 mb-4 leading-relaxed"
                           >
                             {processInlineMarkdown(trimmedParagraph)}
                           </p>
@@ -449,12 +449,12 @@ const UserManualPage: React.FC<UserManualPageProps> = ({ onBack }) => {
                   </div>
                 </div>
               ) : (
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-lg text-center">
-                  <BookOpenIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-lg text-center">
+                  <BookOpenIcon className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
                     Cartrita User Manual
                   </h2>
-                  <p className="text-gray-600 dark:text-gray-300 mb-6">
+                  <p className="text-slate-600 dark:text-slate-300 mb-6">
                     Select a section from the table of contents to get started,
                     or use the search bar to find specific information.
                   </p>

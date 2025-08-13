@@ -77,8 +77,8 @@ export const RAGPipelineInterface: React.FC<RAGPipelineInterfaceProps> = ({
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit
-        setError(`File ${file.name} is too large (max 10MB)`);
+      if (file.size > 50 * 1024 * 1024) { // 50MB limit
+        setError(`File ${file.name} is too large (max 50MB)`);
         continue;
       }
 
@@ -250,7 +250,7 @@ export const RAGPipelineInterface: React.FC<RAGPipelineInterfaceProps> = ({
               </button>
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-              Supports text files, PDFs, and JSON (max 10MB each)
+              Supports text files, PDFs, and JSON (max 50MB each)
             </p>
           </div>
 
@@ -361,8 +361,9 @@ export const RAGPipelineInterface: React.FC<RAGPipelineInterfaceProps> = ({
               </div>
 
               <div className="flex items-center space-x-4 text-sm">
-                <label className="flex items-center space-x-2">
+                <label htmlFor="rag-multi-query" className="flex items-center space-x-2">
                   <input
+                    id="rag-multi-query"
                     type="checkbox"
                     checked={useMultiQuery}
                     onChange={(e) => setUseMultiQuery(e.target.checked)}
@@ -371,8 +372,9 @@ export const RAGPipelineInterface: React.FC<RAGPipelineInterfaceProps> = ({
                   <span className="text-gray-700 dark:text-gray-300">Multi Query</span>
                 </label>
                 
-                <label className="flex items-center space-x-2">
+                <label htmlFor="rag-citations" className="flex items-center space-x-2">
                   <input
+                    id="rag-citations"
                     type="checkbox"
                     checked={includeCitations}
                     onChange={(e) => setIncludeCitations(e.target.checked)}

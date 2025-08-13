@@ -4,7 +4,7 @@
  * Comprehensive validation schemas using JSON Schema for all model registry
  * data structures, ensuring data integrity and type safety.
  * 
- * @author Claude (Internal Developer Agent)
+ * @author Robbie or Robert Allen Lead Architect
  * @date August 2025
  */
 

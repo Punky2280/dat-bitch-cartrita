@@ -4,7 +4,9 @@
 
 import express from 'express';
 import authenticateToken from '../middleware/authenticateToken.js';
+import flexibleAuth from '../middleware/flexibleAuth.js';
 import SystemHealthMonitor from '../services/SystemHealthMonitor.js';
+import db from '../db.js';
 
 const router = express.Router();
 
@@ -314,5 +316,248 @@ router.get('/endpoints', authenticateToken, async (req, res) => {
     });
   }
 });
+
+// Enhanced metrics endpoints for dashboard visualizations
+router.get('/metrics/security', flexibleAuth, async (req, res) => {
+  try {
+    // Get security metrics from security_events table
+    const securityMetrics = await db.query(`
+      SELECT 
+        event_type,
+        COUNT(*) as count,
+        DATE_TRUNC('hour', created_at) as hour
+      FROM security_events 
+      WHERE created_at >= NOW() - INTERVAL '24 hours'
+      GROUP BY event_type, DATE_TRUNC('hour', created_at)
+      ORDER BY hour DESC
+    `);
+
+    // Get reveal token usage stats
+    const revealStats = await db.query(`
+      SELECT 
+        COUNT(*) as total_tokens_created,
+        COUNT(*) FILTER (WHERE used_at IS NOT NULL) as tokens_used,
+        COUNT(*) FILTER (WHERE expires_at < NOW() AND used_at IS NULL) as tokens_expired,
+        AVG(EXTRACT(EPOCH FROM (used_at - created_at))) as avg_usage_time_seconds
+      FROM reveal_tokens 
+      WHERE created_at >= NOW() - INTERVAL '24 hours'
+    `);
+
+    // Get user preference distribution
+    const preferenceStats = await db.query(`
+      SELECT 
+        default_visibility,
+        COUNT(*) as user_count,
+        AVG(reveal_timeout) as avg_timeout
+      FROM security_preferences 
+      GROUP BY default_visibility
+    `);
+
+    res.json({
+      success: true,
+      data: {
+        timestamp: new Date().toISOString(),
+        security_events: securityMetrics.rows,
+        reveal_token_stats: revealStats.rows[0] || {},
+        user_preferences: preferenceStats.rows,
+        total_users_with_preferences: preferenceStats.rows.reduce((sum, row) => sum + parseInt(row.user_count), 0)
+      }
+    });
+  } catch (error) {
+    console.error('[Health] Security metrics failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// API Key rotation and management metrics
+router.get('/metrics/api-keys', flexibleAuth, async (req, res) => {
+  try {
+    // Get API key stats
+    const apiKeyStats = await db.query(`
+      SELECT 
+        COUNT(*) as total_keys,
+        COUNT(*) FILTER (WHERE is_active = true) as active_keys,
+        COUNT(*) FILTER (WHERE last_used_at >= NOW() - INTERVAL '7 days') as recently_used,
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days') as created_last_30_days
+      FROM user_api_keys_permanent
+    `);
+
+    // Get rotation policy stats if table exists
+    let rotationStats = { rows: [] };
+    try {
+      rotationStats = await db.query(`
+        SELECT 
+          COUNT(*) as total_policies,
+          COUNT(*) FILTER (WHERE is_active = true) as active_policies,
+          AVG(rotation_interval_days) as avg_interval_days
+        FROM rotation_policies
+      `);
+    } catch (e) {
+      // Table might not exist yet
+    }
+
+    // Get usage patterns by hour
+    const usagePatterns = await db.query(`
+      SELECT 
+        EXTRACT(HOUR FROM last_used_at) as hour,
+        COUNT(*) as usage_count
+      FROM user_api_keys_permanent 
+      WHERE last_used_at >= NOW() - INTERVAL '24 hours'
+      GROUP BY EXTRACT(HOUR FROM last_used_at)
+      ORDER BY hour
+    `);
+
+    res.json({
+      success: true,
+      data: {
+        timestamp: new Date().toISOString(),
+        api_key_stats: apiKeyStats.rows[0] || {},
+        rotation_policy_stats: rotationStats.rows[0] || {},
+        usage_patterns: usagePatterns.rows
+      }
+    });
+  } catch (error) {
+    console.error('[Health] API key metrics failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// Performance and system metrics
+router.get('/metrics/performance', flexibleAuth, async (req, res) => {
+  try {
+    // Get database performance metrics
+    const dbStats = await db.query(`
+      SELECT 
+        pg_database_size(current_database()) as database_size,
+        (SELECT count(*) FROM pg_stat_activity) as active_connections,
+        (SELECT count(*) FROM pg_stat_activity WHERE state = 'active') as active_queries
+    `);
+
+    // Get table row counts for major tables
+    const tableSizes = await db.query(`
+      SELECT 
+        schemaname,
+        relname as tablename,
+        n_tup_ins as inserts,
+        n_tup_upd as updates,
+        n_tup_del as deletes,
+        n_live_tup as live_rows
+      FROM pg_stat_user_tables 
+      WHERE relname IN ('users', 'security_events', 'user_api_keys_permanent', 'reveal_tokens')
+      ORDER BY live_rows DESC
+    `);
+
+    // System resource metrics
+    const systemInfo = {
+      node_version: process.version,
+      platform: process.platform,
+      architecture: process.arch,
+      uptime_seconds: process.uptime(),
+      memory_usage: process.memoryUsage(),
+      cpu_usage: process.cpuUsage()
+    };
+
+    res.json({
+      success: true,
+      data: {
+        timestamp: new Date().toISOString(),
+        database_stats: dbStats.rows[0] || {},
+        table_stats: tableSizes.rows,
+        system_info: systemInfo,
+        health_score: calculateHealthScore(dbStats.rows[0], systemInfo)
+      }
+    });
+  } catch (error) {
+    console.error('[Health] Performance metrics failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// Real-time activity feed
+router.get('/metrics/activity', flexibleAuth, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+
+    // Get recent security events
+    const recentEvents = await db.query(`
+      SELECT 
+        'security' as type,
+        event_type as action,
+        metadata,
+        created_at,
+        user_id
+      FROM security_events 
+      WHERE created_at >= NOW() - INTERVAL '1 hour'
+      ORDER BY created_at DESC 
+      LIMIT $1
+    `, [Math.floor(limit / 2)]);
+
+    // Get recent API key usage
+    const recentApiUsage = await db.query(`
+      SELECT 
+        'api_usage' as type,
+        'key_used' as action,
+        jsonb_build_object('key_name', name) as metadata,
+        last_used_at as created_at,
+        user_id
+      FROM user_api_keys_permanent 
+      WHERE last_used_at >= NOW() - INTERVAL '1 hour'
+      ORDER BY last_used_at DESC 
+      LIMIT $1
+    `, [Math.floor(limit / 2)]);
+
+    // Combine and sort all activities
+    const allActivities = [...recentEvents.rows, ...recentApiUsage.rows]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .slice(0, limit);
+
+    res.json({
+      success: true,
+      data: {
+        timestamp: new Date().toISOString(),
+        activities: allActivities,
+        total_count: allActivities.length
+      }
+    });
+  } catch (error) {
+    console.error('[Health] Activity metrics failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// Helper function to calculate overall health score
+function calculateHealthScore(dbStats, systemInfo) {
+  let score = 100;
+  
+  // Reduce score based on system load
+  const memoryUsage = systemInfo.memory_usage;
+  const memoryPercent = (memoryUsage.used / memoryUsage.total) * 100;
+  if (memoryPercent > 90) score -= 20;
+  else if (memoryPercent > 70) score -= 10;
+  
+  // Reduce score based on database connections
+  const connections = dbStats.active_connections || 0;
+  if (connections > 50) score -= 15;
+  else if (connections > 25) score -= 5;
+  
+  // Ensure score doesn't go below 0
+  return Math.max(0, Math.min(100, score));
+}
 
 export default router;

@@ -243,8 +243,8 @@ body {
 /* Glass morphism effects */
 .cartrita-glass {
   background: var(--theme-surface-color);
-  backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
   border: 1px solid var(--glow-color) 20;
   box-shadow: 0 8px 32px var(--shadow-color);
   border-radius: var(--theme-border-radius);
@@ -253,8 +253,8 @@ body {
 
 .glass-card {
   background: var(--theme-surface-color);
-  backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   border: 1px solid var(--glow-color) 30;
   box-shadow: 0 4px 16px var(--shadow-color);
   border-radius: var(--theme-border-radius);
@@ -291,8 +291,8 @@ body {
 }
 
 .theme-minimal .glass-card {
-  backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   border: 1px solid var(--theme-accent-color) 20;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -300,11 +300,11 @@ body {
 /* Input field enhancements */
 .input-enhanced {
   @apply transition-all duration-300;
-  @apply bg-gray-900 text-white;
-  @apply border border-gray-700;
+  @apply bg-slate-900 text-white;
+  @apply border border-slate-700;
   @apply focus:outline-none focus:ring-2 focus:ring-cyan-500;
   @apply focus:border-transparent;
-  background: linear-gradient(145deg, #111827, #1f2937);
+  background: linear-gradient(145deg, #0f172a, #1e293b);
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
@@ -438,8 +438,8 @@ body {
 /* Mobile responsiveness enhancements */
 @media (max-width: 768px) {
   .glass-card {
-    backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
   }
 
   .btn-skittles {

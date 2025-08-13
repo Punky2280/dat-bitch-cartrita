@@ -1,910 +1,574 @@
-import React, { useState, useEffect, useRef } from "react";
-import ForceGraph3D from "react-force-graph-3d";
-import * as THREE from "three";
-import { useNotify } from "../components/ui/NotificationProvider";
-import { colors, semantic } from "@/theme/tokens";
-
-interface KnowledgeHubPageProps {
-  token: string;
-  onBack: () => void;
-}
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  CubeIcon,
+  PlusIcon,
+  ChartBarIcon
+} from '@heroicons/react/24/outline';
+import {
+  MagnifyingGlassIcon,
+  ArrowPathIcon,
+  Squares2X2Icon,
+  RectangleStackIcon
+} from '@heroicons/react/24/outline';
+import KnowledgeGraph3D from '../components/knowledge/KnowledgeGraph3D';
+import KnowledgeSearchPanel from '../components/knowledge/KnowledgeSearchPanel';
 
 interface KnowledgeEntry {
-  id: number;
+  id: string;
   title: string;
   content: string;
-  content_type: string;
   category: string;
+  subcategory?: string;
   tags: string[];
   importance_score: number;
-  access_count: number;
   created_at: string;
-  cluster_names?: string[];
+  updated_at: string;
+  has_embedding: boolean;
 }
 
-interface KnowledgeCluster {
-  id: number;
-  name: string;
-  description: string;
-  color: string;
-  entry_count: number;
-  entries?: any[];
-  size: number;
-}
-
-interface GraphNode {
-  id: string;
-  name: string;
-  val: number;
-  color: string;
-  group: string;
-  type: "entry" | "cluster";
-}
-
-interface GraphLink {
-  source: string;
-  target: string;
-  value: number;
+interface GraphData {
+  nodes: Array<{
+    id: string;
+    label: string;
+    category: string;
+    tags: string[];
+    importance: number;
+    size: number;
+    degree: number;
+  }>;
+  edges: Array<{
+    id: string;
+    source: string;
+    target: string;
+    type: string;
+    weight: number;
+    opacity: number;
+  }>;
+  clusters: Array<{
+    id: string;
+    name: string;
+    color: string;
+    entry_count: number;
+  }>;
+  meta: {
+    node_count: number;
+    edge_count: number;
+    cluster_count: number;
+  };
 }
 
 interface SearchResult {
-  id: number;
+  id: string;
   title: string;
   content: string;
-  similarity: number;
-  cluster_names: string[];
+  category: string;
+  tags: string[];
+  importance_score: number;
+  similarity_score?: number;
+  search_type: 'semantic' | 'fulltext' | 'hybrid';
+  snippet: string;
+  created_at: string;
+  updated_at: string;
 }
 
-export const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = ({
-  token,
-  onBack,
-}) => {
-  const notify = useNotify();
-  const [activeView, setActiveView] = useState<
-    "overview" | "graph" | "search" | "entries" | "create" | "categories"
-  >("overview");
+interface KnowledgeHubPageProps {
+  token?: string;
+  onBack?: () => void;
+}
+
+const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = () => {
+  const [activeTab, setActiveTab] = useState<'search' | 'graph' | 'entries' | 'analytics'>('search');
   const [entries, setEntries] = useState<KnowledgeEntry[]>([]);
-  const [clusters, setClusters] = useState<KnowledgeCluster[]>([]);
-  const [graphData, setGraphData] = useState<{
-    nodes: GraphNode[];
-    links: GraphLink[];
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [graphData, setGraphData] = useState<GraphData | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<KnowledgeEntry | null>(null);
+  // const [showCreateModal, setShowCreateModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Search state
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  // Graph display options
+  const [showSemanticEdges, setShowSemanticEdges] = useState(true);
+  const [minEdgeStrength, setMinEdgeStrength] = useState(0.5);
 
-  // Create entry state
-  const [newEntry, setNewEntry] = useState({
-    title: "",
-    content: "",
-    content_type: "text",
-    category: "general",
-    tags: [] as string[],
-    importance_score: 0.5,
-  });
+  // Load knowledge entries
+  const loadEntries = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch('/api/knowledge/entries', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
-  // Filters
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [contentTypeFilter, setContentTypeFilter] = useState("all");
+      if (!response.ok) {
+        throw new Error('Failed to load entries');
+      }
 
-  const fgRef = useRef<any>();
+      const data = await response.json();
+      setEntries(data.entries || []);
+    } catch (error) {
+      console.error('Error loading entries:', error);
+      setError('Failed to load knowledge entries');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
+  // Load graph data
+  const loadGraphData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('token');
+      
+      const params = new URLSearchParams({
+        include_relationships: 'true',
+        include_clusters: 'true',
+        min_strength: minEdgeStrength.toString()
+      });
+
+      const response = await fetch(`/api/knowledge/graph?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load graph data');
+      }
+
+      const data = await response.json();
+      setGraphData(data);
+    } catch (error) {
+      console.error('Error loading graph data:', error);
+      setError('Failed to load knowledge graph');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [minEdgeStrength]);
+
+  // Load data on component mount
   useEffect(() => {
-    loadData();
-  }, [token]);
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const [entriesRes, clustersRes, graphRes] = await Promise.all([
-        fetch("/api/knowledge/entries", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch("/api/knowledge/clusters", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch("/api/knowledge/graph", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
-
-      const [entriesData, clustersData, graphData] = await Promise.all([
-        entriesRes.json(),
-        clustersRes.json(),
-        graphRes.json(),
-      ]);
-
-      if (entriesData.success) setEntries(entriesData.entries);
-      if (clustersData.success) setClusters(clustersData.clusters);
-      if (graphData.success) setGraphData(transformGraphData(graphData.graph));
-    } catch (error) {
-      console.error("Error loading knowledge data:", error);
-      notify.error("Failed to load knowledge data", "Please check your connection and try again");
-    } finally {
-      setLoading(false);
+    loadEntries();
+    if (activeTab === 'graph') {
+      loadGraphData();
     }
-  };
+  }, [activeTab, loadEntries, loadGraphData]);
 
-  const transformGraphData = (data: any) => {
-    const nodes: GraphNode[] = [];
-    const links: GraphLink[] = [];
-
-    // Add entry nodes
-    data.nodes.forEach((entry: any) => {
-      nodes.push({
-        id: `entry_${entry.id}`,
-        name: entry.title,
-        val: entry.importance_score * 10 + 5,
-        color: getContentTypeColor(entry.content_type),
-        group: entry.category,
-        type: "entry",
-      });
-    });
-
-    // Add cluster nodes
-    clusters.forEach((cluster) => {
-      nodes.push({
-        id: `cluster_${cluster.id}`,
-        name: cluster.name,
-        val: cluster.size * 2 + 10,
-        color: cluster.color,
-        group: "cluster",
-        type: "cluster",
-      });
-    });
-
-    // Add relationship links
-    data.edges.forEach((edge: any) => {
-      links.push({
-        source: `entry_${edge.source_entry_id}`,
-        target: `entry_${edge.target_entry_id}`,
-        value: edge.strength * 5,
-      });
-    });
-
-    return { nodes, links };
-  };
-
-  const getContentTypeColor = (contentType: string): string => {
-    const map: { [key: string]: string } = {
-      text: colors.accentBlue,
-      code: colors.success,
-      image: colors.warning,
-      document: colors.accentPurple,
-      link: colors.danger,
-    };
-    return map[contentType] || colors.gray400;
-  };
-
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-
-    setIsSearching(true);
-    try {
-      const response = await fetch("/api/knowledge/search", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: searchQuery,
-          limit: 20,
-          threshold: 0.6,
-        }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setSearchResults(data.results);
-        notify.success(`Found ${data.results.length} results`, `Search completed for "${searchQuery}"`);
-      } else {
-        notify.error("Search failed", data.error || "Unable to complete search");
-      }
-    } catch (error) {
-      console.error("Error searching knowledge:", error);
-      notify.error("Search error", "Please check your connection and try again");
-    } finally {
-      setIsSearching(false);
+  // Handle node click in graph
+  const handleNodeClick = useCallback((node: any) => {
+    const entry = entries.find(e => e.id === node.id);
+    if (entry) {
+      setSelectedEntry(entry);
     }
-  };
+  }, [entries]);
 
-  const handleCreateEntry = async () => {
-    try {
-      const response = await fetch("/api/knowledge/entries", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newEntry),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setNewEntry({
-          title: "",
-          content: "",
-          content_type: "text",
-          category: "general",
-          tags: [],
-          importance_score: 0.5,
-        });
-        setActiveView("entries");
-        loadData();
-        notify.success("Knowledge entry created", `Successfully added "${newEntry.title}"`);
-      } else {
-        notify.error("Failed to create entry", data.error || "Unable to save knowledge entry");
-      }
-    } catch (error) {
-      console.error("Error creating knowledge entry:", error);
-      notify.error("Creation failed", "Please check your connection and try again");
+  // Handle search result click
+  const handleSearchResultClick = useCallback((result: SearchResult) => {
+    const entry = entries.find(e => e.id === result.id);
+    if (entry) {
+      setSelectedEntry(entry);
     }
-  };
+  }, [entries]);
 
-  const filteredEntries = entries.filter((entry) => {
-    const categoryMatch =
-      categoryFilter === "all" || entry.category === categoryFilter;
-    const typeMatch =
-      contentTypeFilter === "all" || entry.content_type === contentTypeFilter;
-    return categoryMatch && typeMatch;
-  });
+  // Refresh data
+  const handleRefresh = useCallback(() => {
+    loadEntries();
+    if (activeTab === 'graph') {
+      loadGraphData();
+    }
+  }, [activeTab, loadEntries, loadGraphData]);
 
-  const categories = [...new Set(entries.map((e) => e.category))];
-  const contentTypes = [...new Set(entries.map((e) => e.content_type))];
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="text-white text-xl mt-4">Loading Knowledge Hub...</p>
-        </div>
-      </div>
-    );
-  }
+  // Filter entries by category
+  const filteredEntries = selectedCategories.length > 0 
+    ? entries.filter(entry => selectedCategories.includes(entry.category))
+    : entries;
 
   return (
-    <div className="min-h-screen bg-animated text-white">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       {/* Header */}
-      <header className="glass-card border-b border-gray-600/50 p-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={onBack}
-              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50"
-            >
-              ← Back
-            </button>
-            <div>
-              <h1 className="text-3xl font-bold text-gradient">
-                🧠 AI Knowledge Hub
-              </h1>
-              <p className="text-gray-400 mt-1">
-                Your personal Memory Palace - Discover, connect, and explore
-                knowledge
-              </p>
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              <CubeIcon className="h-8 w-8 text-blue-600" />
+              <div>
+                <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                  Knowledge Hub
+                </h1>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Semantic search & 3D visualization
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleRefresh}
+                disabled={isLoading}
+                className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <ArrowPathIcon className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
+              </button>
+              
+              <button
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <PlusIcon className="h-4 w-4" />
+                Add Entry
+              </button>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => setActiveView("create")}
-              className="px-4 py-2 bg-gradient-purple rounded-lg font-semibold transition-all duration-300 hover:scale-105 flex items-center space-x-2"
-            >
-              <span>➕</span>
-              <span>Add Knowledge</span>
-            </button>
-          </div>
-        </div>
-      </header>
 
-      {/* Navigation Tabs */}
-      <div className="bg-gray-800 border-b border-gray-700">
-        <div className="max-w-7xl mx-auto px-6">
-          <nav className="flex space-x-8">
+          {/* Tab Navigation */}
+          <div className="flex space-x-1 border-b border-slate-200 dark:border-slate-700">
             {[
-              { id: "overview", name: "Overview", icon: "📊" },
-              { id: "graph", name: "3D Knowledge Graph", icon: "🕸️" },
-              { id: "search", name: "Semantic Search", icon: "🔍" },
-              { id: "entries", name: "All Entries", icon: "📚" },
-              { id: "create", name: "Create Entry", icon: "✏️" },
-              { id: "categories", name: "Categories", icon: "🏷️" },
+              { id: 'search', label: 'Search', icon: MagnifyingGlassIcon },
+              { id: 'graph', label: '3D Graph', icon: CubeIcon },
+              { id: 'entries', label: 'All Entries', icon: RectangleStackIcon },
+              { id: 'analytics', label: 'Analytics', icon: ChartBarIcon }
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveView(tab.id as any)}
-                className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
-                  activeView === tab.id
-                    ? "border-purple-500 text-purple-400"
-                    : "border-transparent text-gray-400 hover:text-white hover:border-gray-300"
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                 }`}
               >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.name}
+                <tab.icon className="h-4 w-4" />
+                {tab.label}
               </button>
             ))}
-          </nav>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-6">
-        {activeView === "overview" && (
-          <div className="space-y-8">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-blue-100">Total Entries</p>
-                    <p className="text-2xl font-bold">{entries.length}</p>
-                  </div>
-                  <div className="text-3xl">📚</div>
-                </div>
-              </div>
-              <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-xl p-6 text-white">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-purple-100">Knowledge Clusters</p>
-                    <p className="text-2xl font-bold">{clusters.length}</p>
-                  </div>
-                  <div className="text-3xl">🧩</div>
-                </div>
-              </div>
-              <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-xl p-6 text-white">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-green-100">Categories</p>
-                    <p className="text-2xl font-bold">{categories.length}</p>
-                  </div>
-                  <div className="text-3xl">🏷️</div>
-                </div>
-              </div>
-              <div className="bg-gradient-to-r from-orange-600 to-orange-700 rounded-xl p-6 text-white">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-orange-100">Avg. Importance</p>
-                    <p className="text-2xl font-bold">
-                      {entries.length > 0
-                        ? (
-                            (entries.reduce(
-                              (sum, e) => sum + e.importance_score,
-                              0,
-                            ) /
-                              entries.length) *
-                            100
-                          ).toFixed(0)
-                        : 0}
-                      %
-                    </p>
-                  </div>
-                  <div className="text-3xl">⭐</div>
-                </div>
-              </div>
-            </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <div className="text-red-800 dark:text-red-200 text-sm">{error}</div>
+          </div>
+        )}
 
-            {/* Recent Entries & Clusters */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Recent Entries */}
-              <div className="bg-gray-800 rounded-xl p-6">
-                <h2 className="text-xl font-bold mb-4 flex items-center space-x-2">
-                  <span>🕒</span>
-                  <span>Recent Entries</span>
-                </h2>
-                <div className="space-y-4">
-                  {entries.slice(0, 5).map((entry) => (
-                    <div
-                      key={entry.id}
-                      className="border border-gray-700 rounded-lg p-4 hover:border-purple-500 transition-colors"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-white">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content Area */}
+          <div className="lg:col-span-2">
+            {activeTab === 'search' && (
+              <div className="space-y-6">
+                <KnowledgeSearchPanel
+                  selectedCategories={selectedCategories}
+                  onCategoryChange={setSelectedCategories}
+                  onResultClick={handleSearchResultClick}
+                  className="h-[600px]"
+                />
+              </div>
+            )}
+
+            {activeTab === 'graph' && (
+              <div className="space-y-6">
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      3D Knowledge Graph
+                    </h2>
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={showSemanticEdges}
+                          onChange={(e) => setShowSemanticEdges(e.target.checked)}
+                          className="rounded border-slate-300"
+                        />
+                        <span className="text-slate-600 dark:text-slate-300">Semantic edges</span>
+                      </label>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-slate-600 dark:text-slate-300">Min strength:</span>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.1"
+                          value={minEdgeStrength}
+                          onChange={(e) => setMinEdgeStrength(parseFloat(e.target.value))}
+                          className="w-20"
+                        />
+                        <span className="text-slate-600 dark:text-slate-300 w-8">
+                          {(minEdgeStrength * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <KnowledgeGraph3D
+                    graphData={graphData}
+                    onNodeClick={handleNodeClick}
+                    selectedCategories={selectedCategories}
+                    showSemanticEdges={showSemanticEdges}
+                    minEdgeStrength={minEdgeStrength}
+                    width={800}
+                    height={600}
+                  />
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'entries' && (
+              <div className="space-y-6">
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg">
+                  <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+                    <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      All Knowledge Entries ({filteredEntries.length})
+                    </h2>
+                  </div>
+                  
+                  <div className="divide-y divide-slate-200 dark:divide-slate-700 max-h-[600px] overflow-y-auto">
+                    {filteredEntries.map((entry) => (
+                      <div
+                        key={entry.id}
+                        onClick={() => setSelectedEntry(entry)}
+                        className="p-4 hover:bg-slate-50 dark:hover:bg-slate-750 cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100">
                             {entry.title}
                           </h3>
-                          <p className="text-gray-400 text-sm mt-1 line-clamp-2">
-                            {entry.content}
-                          </p>
-                          <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-                            <span>{entry.content_type}</span>
-                            <span>{entry.category}</span>
-                            <span>
-                              {new Date(entry.created_at).toLocaleDateString()}
+                          <div className="flex items-center gap-2">
+                            {!entry.has_embedding && (
+                              <span className="text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-2 py-1 rounded">
+                                Indexing...
+                              </span>
+                            )}
+                            <span className={`text-xs px-2 py-1 rounded-full
+                              ${entry.category === 'ai' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                                entry.category === 'database' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                                entry.category === 'frontend' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200'
+                              }`}
+                            >
+                              {entry.category}
                             </span>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-12 h-2 bg-gray-700 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-purple-500"
-                              style={{
-                                width: `${entry.importance_score * 100}%`,
-                              }}
-                            />
+                        
+                        <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mb-2">
+                          {entry.content.substring(0, 200)}...
+                        </p>
+                        
+                        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                          <div className="flex items-center gap-2">
+                            {entry.tags.length > 0 && (
+                              <span>{entry.tags.slice(0, 3).join(', ')}</span>
+                            )}
                           </div>
+                          <span>
+                            {new Date(entry.updated_at).toLocaleDateString()}
+                          </span>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
+            )}
 
-              {/* Knowledge Clusters */}
-              <div className="bg-gray-800 rounded-xl p-6">
-                <h2 className="text-xl font-bold mb-4 flex items-center space-x-2">
-                  <span>🎯</span>
-                  <span>Knowledge Clusters</span>
-                </h2>
-                <div className="space-y-4">
-                  {clusters.slice(0, 5).map((cluster) => (
-                    <div
-                      key={cluster.id}
-                      className="border border-gray-700 rounded-lg p-4 hover:border-purple-500 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div
-                            className="w-4 h-4 rounded-full"
-                            style={{ backgroundColor: cluster.color }}
-                          />
-                          <div>
-                            <h3 className="font-semibold text-white">
-                              {cluster.name}
-                            </h3>
-                            <p className="text-gray-400 text-sm">
-                              {cluster.description}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-purple-400">
-                            {cluster.entry_count || 0}
-                          </div>
-                          <div className="text-xs text-gray-500">entries</div>
-                        </div>
+            {activeTab === 'analytics' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                          Total Entries
+                        </p>
+                        <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">
+                          {entries.length}
+                        </p>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeView === "graph" && (
-          <div className="h-screen bg-gray-800 rounded-xl overflow-hidden">
-            <div className="p-4 border-b border-gray-700">
-              <h2 className="text-xl font-bold">3D Knowledge Graph</h2>
-              <p className="text-gray-400 text-sm">
-                Interactive visualization of your knowledge network
-              </p>
-            </div>
-            <div className="h-full">
-              {graphData && (
-                <ForceGraph3D
-                  ref={fgRef}
-                  graphData={graphData}
-                  nodeLabel="name"
-                  nodeColor="color"
-                  nodeVal="val"
-                  linkWidth="value"
-                  backgroundColor={semantic.bgAlt}
-                  showNavInfo={false}
-                  controlType="orbit"
-                  onNodeClick={(node: any) => {
-                    console.log("Node clicked:", node);
-                  }}
-                  nodeThreeObject={(node: any) => {
-                    try {
-                      const canvas = document.createElement("canvas");
-                      const context = canvas.getContext("2d");
-                      if (!context) return new THREE.Mesh();
-
-                      canvas.width = 256;
-                      canvas.height = 256;
-
-                      context.fillStyle = node.color || colors.accentBlue;
-                      context.beginPath();
-                      context.arc(128, 128, 100, 0, 2 * Math.PI);
-                      context.fill();
-
-                      context.fillStyle = "white";
-                      context.font = "32px Arial";
-                      context.textAlign = "center";
-                      context.fillText(
-                        node.type === "cluster" ? "🧩" : "📄",
-                        128,
-                        140,
-                      );
-
-                      const texture = new THREE.CanvasTexture(canvas);
-                      const material = new THREE.SpriteMaterial({
-                        map: texture,
-                      });
-                      const sprite = new THREE.Sprite(material);
-                      sprite.scale.set(node.val || 1, node.val || 1, 1);
-                      return sprite;
-                    } catch (error) {
-                      console.error("Error creating node sprite:", error);
-                      // Fallback to simple geometry
-                      const geometry = new THREE.SphereGeometry(node.val || 1);
-                      const material = new THREE.MeshBasicMaterial({
-                        color: node.color || colors.accentBlue,
-                      });
-                      return new THREE.Mesh(geometry, material);
-                    }
-                  }}
-                />
-              )}
-            </div>
-          </div>
-        )}
-
-        {activeView === "search" && (
-          <div className="space-y-6">
-            <div className="bg-gray-800 rounded-xl p-6">
-              <h2 className="text-xl font-bold mb-4">Semantic Search</h2>
-              <div className="flex space-x-4">
-                <input
-                  type="text"
-                  placeholder="Search your knowledge base..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                  className="flex-1 px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
-                />
-                <button
-                  onClick={handleSearch}
-                  disabled={isSearching}
-                  className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 rounded-lg font-semibold transition-colors"
-                >
-                  {isSearching ? "🔍 Searching..." : "🔍 Search"}
-                </button>
-              </div>
-            </div>
-
-            {searchResults.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">
-                  Search Results ({searchResults.length})
-                </h3>
-                {searchResults.map((result) => (
-                  <div
-                    key={result.id}
-                    className="bg-gray-800 border border-gray-700 rounded-lg p-6 hover:border-purple-500 transition-colors"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-lg font-semibold text-white">
-                        {result.title}
-                      </h3>
-                      <div className="flex items-center space-x-2">
-                        <div className="px-2 py-1 bg-purple-600 text-white rounded text-xs">
-                          {(result.similarity * 100).toFixed(0)}% match
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-gray-300 mb-3 line-clamp-3">
-                      {result.content}
-                    </p>
-                    <div className="flex items-center space-x-2">
-                      {result.cluster_names.map((cluster, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs"
-                        >
-                          {cluster}
-                        </span>
-                      ))}
+                      <RectangleStackIcon className="h-8 w-8 text-blue-500" />
                     </div>
                   </div>
-                ))}
+                  
+                  <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                          With Embeddings
+                        </p>
+                        <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">
+                          {entries.filter(e => e.has_embedding).length}
+                        </p>
+                      </div>
+                      <CubeIcon className="h-8 w-8 text-green-500" />
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                          Categories
+                        </p>
+                        <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">
+                          {new Set(entries.map(e => e.category)).size}
+                        </p>
+                      </div>
+                      <Squares2X2Icon className="h-8 w-8 text-purple-500" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Category breakdown */}
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
+                    Category Breakdown
+                  </h3>
+                  <div className="space-y-3">
+                    {Object.entries(
+                      entries.reduce((acc, entry) => {
+                        acc[entry.category] = (acc[entry.category] || 0) + 1;
+                        return acc;
+                      }, {} as Record<string, number>)
+                    ).map(([category, count]) => (
+                      <div key={category} className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600 dark:text-slate-300 capitalize">
+                          {category}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-24 bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                            <div
+                              className="bg-blue-500 h-2 rounded-full"
+                              style={{ width: `${(count / entries.length) * 100}%` }}
+                            />
+                          </div>
+                          <span className="text-sm font-medium text-slate-900 dark:text-slate-100 w-8">
+                            {count}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </div>
-        )}
 
-        {activeView === "entries" && (
+          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Filters */}
-            <div className="bg-gray-800 rounded-xl p-6">
-              <h2 className="text-xl font-bold mb-4">All Knowledge Entries</h2>
-              <div className="flex space-x-4">
-                <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-purple-500"
-                >
-                  <option value="all">All Categories</option>
-                  {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={contentTypeFilter}
-                  onChange={(e) => setContentTypeFilter(e.target.value)}
-                  className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-purple-500"
-                >
-                  <option value="all">All Types</option>
-                  {contentTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
+            {/* Category Filter */}
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-4">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">
+                Filter by Category
+              </h3>
+              <div className="space-y-2">
+                {['ai', 'database', 'frontend', 'backend', 'security', 'ml', 'devops', 'general'].map((category) => {
+                  const count = entries.filter(e => e.category === category).length;
+                  return (
+                    <label key={category} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={selectedCategories.includes(category)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedCategories([...selectedCategories, category]);
+                          } else {
+                            setSelectedCategories(selectedCategories.filter(c => c !== category));
+                          }
+                        }}
+                        className="rounded border-slate-300"
+                      />
+                      <span className="text-slate-600 dark:text-slate-300 capitalize">
+                        {category} ({count})
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
+              
+              {selectedCategories.length > 0 && (
+                <button
+                  onClick={() => setSelectedCategories([])}
+                  className="mt-3 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                >
+                  Clear filters
+                </button>
+              )}
             </div>
 
-            {/* Entries Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredEntries.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-purple-500 transition-colors"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <h3 className="font-semibold text-white text-lg">
-                      {entry.title}
-                    </h3>
-                    <div className="flex items-center space-x-1">
-                      <span className="text-yellow-400">⭐</span>
-                      <span className="text-sm text-gray-400">
-                        {(entry.importance_score * 100).toFixed(0)}%
+            {/* Selected Entry Details */}
+            {selectedEntry && (
+              <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    Entry Details
+                  </h3>
+                  <button
+                    onClick={() => setSelectedEntry(null)}
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  >
+                    ×
+                  </button>
+                </div>
+                
+                <div className="space-y-3">
+                  <div>
+                    <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-1">
+                      {selectedEntry.title}
+                    </h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-4">
+                      {selectedEntry.content}
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500 dark:text-slate-400">Category:</span>
+                      <span className="text-slate-900 dark:text-slate-100">{selectedEntry.category}</span>
+                    </div>
+                    
+                    {selectedEntry.tags.length > 0 && (
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400">Tags:</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {selectedEntry.tags.map((tag, index) => (
+                            <span
+                              key={index}
+                              className="px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded text-xs"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500 dark:text-slate-400">Importance:</span>
+                      <span className="text-slate-900 dark:text-slate-100">
+                        {(selectedEntry.importance_score * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500 dark:text-slate-400">Updated:</span>
+                      <span className="text-slate-900 dark:text-slate-100">
+                        {new Date(selectedEntry.updated_at).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
-
-                  <p className="text-gray-300 text-sm mb-4 line-clamp-3">
-                    {entry.content}
-                  </p>
-
-                  <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                    <span className="px-2 py-1 bg-gray-700 rounded">
-                      {entry.content_type}
-                    </span>
-                    <span className="px-2 py-1 bg-gray-700 rounded">
-                      {entry.category}
-                    </span>
-                    <span>{entry.access_count} views</span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {entry.tags.map((tag, idx) => (
-                      <span
-                        key={idx}
-                        className="px-2 py-1 bg-purple-600 text-purple-100 rounded text-xs"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="text-xs text-gray-500">
-                    Created {new Date(entry.created_at).toLocaleDateString()}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeView === "create" && (
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-gray-800 rounded-xl p-6">
-              <h2 className="text-xl font-bold mb-6">
-                Create New Knowledge Entry
-              </h2>
-
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Title
-                  </label>
-                  <input
-                    type="text"
-                    value={newEntry.title}
-                    onChange={(e) =>
-                      setNewEntry({ ...newEntry, title: e.target.value })
-                    }
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
-                    placeholder="Enter knowledge title..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Content
-                  </label>
-                  <textarea
-                    value={newEntry.content}
-                    onChange={(e) =>
-                      setNewEntry({ ...newEntry, content: e.target.value })
-                    }
-                    rows={8}
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
-                    placeholder="Enter your knowledge content..."
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Content Type
-                    </label>
-                    <select
-                      value={newEntry.content_type}
-                      onChange={(e) =>
-                        setNewEntry({
-                          ...newEntry,
-                          content_type: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-purple-500"
-                    >
-                      <option value="text">Text</option>
-                      <option value="code">Code</option>
-                      <option value="image">Image</option>
-                      <option value="document">Document</option>
-                      <option value="link">Link</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Category
-                    </label>
-                    <select
-                      value={newEntry.category}
-                      onChange={(e) =>
-                        setNewEntry({ ...newEntry, category: e.target.value })
-                      }
-                      className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-purple-500"
-                    >
-                      <option value="general">General</option>
-                      <option value="programming">Programming</option>
-                      <option value="ai">AI & ML</option>
-                      <option value="business">Business</option>
-                      <option value="personal">Personal</option>
-                      <option value="research">Research</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Importance Score:{" "}
-                    {(newEntry.importance_score * 100).toFixed(0)}%
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.1"
-                    value={newEntry.importance_score}
-                    onChange={(e) =>
-                      setNewEntry({
-                        ...newEntry,
-                        importance_score: parseFloat(e.target.value),
-                      })
-                    }
-                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Tags (comma-separated)
-                  </label>
-                  <input
-                    type="text"
-                    onChange={(e) =>
-                      setNewEntry({
-                        ...newEntry,
-                        tags: e.target.value
-                          .split(",")
-                          .map((t) => t.trim())
-                          .filter((t) => t),
-                      })
-                    }
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
-                    placeholder="ai, machine learning, neural networks..."
-                  />
-                </div>
-
-                <div className="flex space-x-4">
-                  <button
-                    onClick={handleCreateEntry}
-                    className="flex-1 px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold transition-colors"
-                  >
-                    Create Knowledge Entry
-                  </button>
-                  <button
-                    onClick={() => setActiveView("entries")}
-                    className="px-6 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg font-semibold transition-colors"
-                  >
-                    Cancel
-                  </button>
                 </div>
               </div>
-            </div>
+            )}
           </div>
-        )}
-
-        {activeView === "categories" && (
-          <div className="space-y-6">
-            <div className="bg-gray-800 rounded-xl p-6">
-              <h2 className="text-xl font-bold mb-4 flex items-center space-x-2">
-                <span>🏷️</span>
-                <span>Category Management (Preview)</span>
-              </h2>
-              <p className="text-sm text-gray-400 mb-6">Organize knowledge entries into hierarchical categories. Drag & drop reordering and bulk assignment will be added in a later iteration.</p>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-gray-200">Existing Categories</h3>
-                    <button className="text-xs px-2 py-1 bg-purple-600/60 hover:bg-purple-600 rounded transition-colors">Refresh</button>
-                  </div>
-                  <ul className="divide-y divide-gray-700 border border-gray-700 rounded-lg overflow-hidden">
-                    {categories.map(cat => (
-                      <li key={cat} className="flex items-center justify-between px-4 py-2 hover:bg-gray-700/40 text-sm">
-                        <div className="flex items-center space-x-2">
-                          <span className="cursor-grab text-gray-500">⋮⋮</span>
-                          <span className="text-gray-200">{cat}</span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-400">{entries.filter(e=>e.category===cat).length}</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <button className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded">Rename</button>
-                          <button className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded">Merge</button>
-                          <button className="text-xs px-2 py-1 bg-red-600/70 hover:bg-red-600 rounded">Delete</button>
-                        </div>
-                      </li>
-                    ))}
-                    {categories.length === 0 && (
-                      <li className="px-4 py-4 text-center text-xs text-gray-500">No categories yet.</li>
-                    )}
-                  </ul>
-                </div>
-                <div className="space-y-6">
-                  <div className="bg-gray-700/40 p-4 rounded-lg">
-                    <h4 className="font-semibold mb-3 text-sm text-gray-200">Create Category</h4>
-                    <input type="text" placeholder="e.g. research/ai" className="w-full mb-3 px-3 py-2 bg-gray-800 border border-gray-600 rounded text-sm focus:outline-none focus:border-purple-500" />
-                    <button className="w-full py-2 bg-purple-600 hover:bg-purple-700 rounded text-sm font-semibold">Add</button>
-                  </div>
-                  <div className="bg-gray-700/40 p-4 rounded-lg">
-                    <h4 className="font-semibold mb-3 text-sm text-gray-200">Bulk Assign (Coming Soon)</h4>
-                    <p className="text-xs text-gray-400 mb-3">Select entries and assign them to categories in bulk.</p>
-                    <button className="w-full py-2 bg-gray-600 cursor-not-allowed rounded text-sm opacity-60">Bulk Assign Disabled</button>
-                  </div>
-                  <div className="bg-gray-700/40 p-4 rounded-lg">
-                    <h4 className="font-semibold mb-3 text-sm text-gray-200">Hierarchy (Planned)</h4>
-                    <ul className="text-xs text-gray-400 space-y-1 list-disc list-inside">
-                      <li>Parent / child nesting</li>
-                      <li>Automatic inheritance</li>
-                      <li>Aggregation analytics</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="glass-card p-6 rounded-xl">
-              <h3 className="text-lg font-semibold mb-2 flex items-center space-x-2"><span>🛠️</span><span>Upcoming Category Features</span></h3>
-              <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
-                <li>Drag-and-drop reorder & nested hierarchy editing</li>
-                <li>Color labels and icons per category</li>
-                <li>Semantic auto-suggested categories for new entries</li>
-                <li>Merge & split operations with preview impact</li>
-                <li>Category-level access control & sharing</li>
-                <li>Analytics: usage frequency, recency heat map</li>
-              </ul>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
 };
+
+export default KnowledgeHubPage;

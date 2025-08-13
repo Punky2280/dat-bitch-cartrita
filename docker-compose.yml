@@ -73,6 +73,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=8001
+      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
       - POSTGRES_USER=robert
       - POSTGRES_PASSWORD=punky1
       - POSTGRES_DB=dat-bitch-cartrita

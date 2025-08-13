@@ -28,17 +28,67 @@ function redact(value) {
 }
 
 export function redactSecrets(req, res, next) {
-  const originalJson = res.json.bind(res);
-  res.json = (body) => originalJson(redact(body));
-  const originalSend = res.send.bind(res);
-  res.send = (body) => {
-    if (typeof body === 'string') {
-      let b = body;
-      for (const p of SECRET_PATTERNS) b = b.replace(p, (m) => m.slice(0,4) + '***REDACTED***');
-      return originalSend(b);
-    }
-    return originalSend(body);
-  };
+  // Skip redaction for authentication endpoints to allow JWT tokens
+  const isAuthEndpoint = req.path.includes('/auth/') || req.path.includes('/login') || req.path.includes('/register');
+  
+  if (isAuthEndpoint) {
+    // Don't redact JWT tokens in auth responses, but still redact other secrets
+    const authSafeRedact = (value) => {
+      if (typeof value === 'string') {
+        let v = value;
+        // Apply all patterns except JWT-like pattern
+        for (let i = 0; i < SECRET_PATTERNS.length - 1; i++) {
+          const p = SECRET_PATTERNS[i];
+          v = v.replace(p, (m) => m.slice(0,4) + '***REDACTED***');
+        }
+        return v;
+      } else if (Array.isArray(value)) {
+        return value.map(authSafeRedact);
+      } else if (value && typeof value === 'object') {
+        const out = {};
+        for (const k of Object.keys(value)) {
+          // Don't redact the 'token' field in auth responses
+          if (k === 'token') {
+            out[k] = value[k];
+          } else {
+            out[k] = authSafeRedact(value[k]);
+          }
+        }
+        return out;
+      }
+      return value;
+    };
+
+    const originalJson = res.json.bind(res);
+    res.json = (body) => originalJson(authSafeRedact(body));
+    const originalSend = res.send.bind(res);
+    res.send = (body) => {
+      if (typeof body === 'string') {
+        let b = body;
+        // Apply non-JWT patterns only
+        for (let i = 0; i < SECRET_PATTERNS.length - 1; i++) {
+          const p = SECRET_PATTERNS[i];
+          b = b.replace(p, (m) => m.slice(0,4) + '***REDACTED***');
+        }
+        return originalSend(b);
+      }
+      return originalSend(body);
+    };
+  } else {
+    // Apply full redaction for non-auth endpoints
+    const originalJson = res.json.bind(res);
+    res.json = (body) => originalJson(redact(body));
+    const originalSend = res.send.bind(res);
+    res.send = (body) => {
+      if (typeof body === 'string') {
+        let b = body;
+        for (const p of SECRET_PATTERNS) b = b.replace(p, (m) => m.slice(0,4) + '***REDACTED***');
+        return originalSend(b);
+      }
+      return originalSend(body);
+    };
+  }
+  
   next();
 }
 

@@ -15,6 +15,7 @@ import {
   FrameCaptureResult,
   isCameraSupported,
 } from "@/utils/cameraUtils";
+import FloatingMediaOverlay from "./ui/FloatingMediaOverlay";
 
 interface VisualAnalysisPanelProps {
   token: string;
@@ -65,6 +66,7 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const [showOverlay, setShowOverlay] = useState(false);
   const captureManagerRef = useRef<FrameCaptureManager | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -103,6 +105,7 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
       if (videoRef.current && permissionResult.stream) {
         videoRef.current.srcObject = permissionResult.stream;
         streamRef.current = permissionResult.stream;
+  setShowOverlay(true);
 
         // Wait for video to be ready
         videoRef.current.onloadedmetadata = () => {
@@ -124,6 +127,7 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
         error: errorMessage,
         hasPermission: false,
       }));
+  setShowOverlay(false);
 
       onError?.(errorMessage);
     }
@@ -352,6 +356,12 @@ export const VisualAnalysisPanel: React.FC<VisualAnalysisPanelProps> = ({
 
         {/* Video Preview with Overlay */}
         <div className="relative">
+          <FloatingMediaOverlay
+            stream={streamRef.current}
+            visible={showOverlay}
+            position="center"
+            onClose={() => setShowOverlay(false)}
+          />
           <video
             ref={videoRef}
             autoPlay

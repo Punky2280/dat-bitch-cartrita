@@ -106,6 +106,11 @@ import hfBinaryRoutes from './src/routes/hf.js';
 import audioRoutes from './src/routes/audio.js';
 import modelRoutingRoutes from './src/routes/modelRouting.js';
 import personalLifeOSRoutes from './src/routes/personalLifeOS.js';
+import rotationSchedulingRoutes from './src/routes/rotationScheduling.js';
+import securityMaskingRoutes from './src/routes/securityMasking.js';
+import apiKeyManagementRoutes from './src/routes/apiKeyManagement.js';
+// Unified AI Inference (multi-provider via HF token)
+import { createUnifiedInferenceService } from './src/services/unifiedInference.js';
 
 // --- CONFIGURATION ---
 const PORT = process.env.PORT || 8001;
@@ -208,6 +213,8 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Redact secrets from all outgoing responses
 app.use(redactSecrets);
+// Initialize unified inference service (server-side HF token)
+const unifiedAI = createUnifiedInferenceService();
 
 // Early key configuration validation (non-fatal): logs if overlay missing required mappings
 try {
@@ -377,9 +384,202 @@ app.use('/api/hf', hfBinaryRoutes);
 app.use('/api/audio', audioRoutes);
 app.use('/api/models', modelRoutingRoutes);
 app.use('/api/personal-life-os', personalLifeOSRoutes);
+app.use('/api/rotation-scheduling', rotationSchedulingRoutes);
+app.use('/api/api-keys', apiKeyManagementRoutes);
+app.use('/api/security-masking', securityMaskingRoutes);
 // New secure key vault unified endpoints (refactored service)
 import keyVaultRoutes from './src/routes/keyVault.js';
 app.use('/api/key-vault', keyVaultRoutes);
+
+// --- Unified Multi-Provider AI Inference Endpoints (public; rely on server-side HF token) ---
+app.get('/api/unified/health', (req, res) => {
+  try {
+    const health = unifiedAI.getHealthStatus();
+    res.json({ success: true, ...health });
+  } catch (error) {
+    console.error('[API] Unified AI health check failed:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/unified/metrics', (req, res) => {
+  try {
+    const metrics = unifiedAI.getMetrics();
+    res.json({ success: true, metrics });
+  } catch (error) {
+    console.error('[API] Unified AI metrics failed:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/unified/inference', async (req, res) => {
+  try {
+    const { task, inputs, options } = req.body || {};
+    if (!task || !inputs) {
+      return res.status(400).json({
+        success: false,
+        error:
+          'task and inputs are required. Available tasks: chat, multimodal_chat, asr, embeddings, image_generation, image_edit, video_generation, nlp_classic, vision_analysis',
+      });
+    }
+    const result = await unifiedAI.inference({ task, inputs, options });
+    res.json(result);
+  } catch (error) {
+    console.error('[API] Unified inference failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      metadata: {
+        model_used: 'none',
+        provider: 'none',
+        latency_ms: 0,
+        request_id: `error_${Date.now()}`,
+        cached: false,
+        attempt_count: 0,
+      },
+    });
+  }
+});
+
+app.post('/api/unified/chat', async (req, res) => {
+  try {
+    const { messages, options } = req.body || {};
+    const result = await unifiedAI.chat(messages, options);
+    res.json(result);
+  } catch (error) {
+    console.error('[API] Unified chat failed:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/unified/speech-to-text', async (req, res) => {
+  try {
+    const { audio, options } = req.body || {};
+    const result = await unifiedAI.speechToText(audio, options);
+    res.json(result);
+  } catch (error) {
+    console.error('[API] Unified STT failed:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/unified/embeddings', async (req, res) => {
+  try {
+    const { text, options } = req.body || {};
+    const result = await unifiedAI.embed(text, options);
+    res.json(result);
+  } catch (error) {
+    console.error('[API] Unified embeddings failed:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/unified/generate-image', async (req, res) => {
+  try {
+    const { prompt, options } = req.body || {};
+    const result = await unifiedAI.generateImage(prompt, options);
+    res.json(result);
+  } catch (error) {
+    console.error('[API] Unified image generation failed:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/unified/classify-image', async (req, res) => {
+  try {
+    const { image, options } = req.body || {};
+    const result = await unifiedAI.classifyImage(image, options);
+    res.json(result);
+  } catch (error) {
+    console.error('[API] Unified image classification failed:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/unified/summarize', async (req, res) => {
+  try {
+    const { text, options } = req.body || {};
+    const result = await unifiedAI.summarize(text, options);
+    res.json(result);
+  } catch (error) {
+    console.error('[API] Unified summarization failed:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/unified/classify', async (req, res) => {
+  try {
+    const { text, candidateLabels, options } = req.body || {};
+    const result = await unifiedAI.classify(text, candidateLabels, options);
+    res.json(result);
+  } catch (error) {
+    console.error('[API] Unified classification failed:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// --- Compatibility aliases for legacy Multi-Provider AI routes used by frontend ---
+app.get('/api/ai/health', (req, res) => {
+  try {
+    const health = unifiedAI.getHealthStatus();
+    // Map to legacy shape minimally
+    res.json({
+      success: true,
+      status: health.status === 'healthy' ? 'operational' : 'degraded',
+      service: 'multi-provider-ai',
+      metrics: health.metrics,
+      providers: health.availableModels || [],
+      version: 'unified-bridge',
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/ai/providers', (req, res) => {
+  try {
+    const health = unifiedAI.getHealthStatus();
+    const providers = (health.availableModels || []).map((m) => ({
+      key: m,
+      name: m,
+      hasApiKey: true,
+      tasks: ['chat','embeddings','asr','image','classify','summarize'],
+      models: [m],
+    }));
+    res.json({ success: true, providers, total_providers: providers.length, service_version: 'unified-bridge' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/ai/inference', async (req, res) => {
+  try {
+    const { task, input, params, preferredModels } = req.body || {};
+    if (!task || typeof input === 'undefined') {
+      return res.status(400).json({ success: false, error: 'task and input are required' });
+    }
+    // Translate legacy to unified
+    const mapping = {
+      'text-classification': 'classify',
+      'zero-shot': 'classify',
+      'ner': 'nlp_classic',
+      'qa': 'nlp_classic',
+      'generation': 'chat',
+      'asr': 'asr',
+    };
+    let unifiedTask = mapping[task] || task;
+    let inputs;
+    if (unifiedTask === 'chat' && input?.messages) {
+      inputs = { messages: input.messages };
+    } else {
+      inputs = input;
+    }
+    const result = await unifiedAI.inference({ task: unifiedTask, inputs, options: { ...params, preferredModels } });
+    res.json({ success: true, ...result });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 // Internal sanitized key permission/status route (no raw secrets)
 app.get('/api/internal/keys/status', (req, res) => {
   try {

@@ -59,13 +59,13 @@ export const RegisterPage = ({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 p-4">
-      <div className="w-full max-w-md p-8 space-y-6 bg-gray-800 bg-opacity-80 border-2 border-cyan-500 rounded-2xl shadow-lg shadow-cyan-500/20">
+    <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4">
+      <div className="w-full max-w-md p-8 space-y-6 bg-slate-800 bg-opacity-80 border-2 border-cyan-500 rounded-2xl shadow-lg shadow-cyan-500/20">
         <div className="text-center">
           <h2 className="text-4xl font-extrabold text-white">
             Join the Resistance
           </h2>
-          <p className="mt-2 text-gray-400">
+          <p className="mt-2 text-slate-400">
             Create your account to get started
           </p>
         </div>
@@ -78,7 +78,7 @@ export const RegisterPage = ({
             placeholder="Full Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full bg-gray-900 text-white p-3 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
+            className="w-full bg-slate-900 text-white p-3 rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
             autoComplete="name"
             required
           />
@@ -90,7 +90,7 @@ export const RegisterPage = ({
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full bg-gray-900 text-white p-3 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
+            className="w-full bg-slate-900 text-white p-3 rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
             autoComplete="email"
             required
           />
@@ -102,7 +102,7 @@ export const RegisterPage = ({
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full bg-gray-900 text-white p-3 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
+            className="w-full bg-slate-900 text-white p-3 rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
             autoComplete="new-password"
             required
             minLength={8}
@@ -115,7 +115,7 @@ export const RegisterPage = ({
             placeholder="Confirm Password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full bg-gray-900 text-white p-3 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
+            className="w-full bg-slate-900 text-white p-3 rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
             autoComplete="new-password"
             required
             minLength={8}
@@ -134,7 +134,7 @@ export const RegisterPage = ({
           </button>
         </form>
 
-        <p className="text-center text-gray-400">
+  <p className="text-center text-slate-400">
           Already have an account?{" "}
           <button
             onClick={onSwitchToLogin}

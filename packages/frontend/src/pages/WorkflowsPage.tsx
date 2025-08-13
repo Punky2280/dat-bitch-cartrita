@@ -281,19 +281,19 @@ const WorkflowBuilder: React.FC<{
 
   if(isNarrow){
     return (
-      <div className="min-h-screen bg-gray-900 text-white flex flex-col">
-        <div className="p-4 flex items-center justify-between border-b border-gray-700">
-          <button onClick={()=> window.history.back()} className="text-gray-400 hover:text-white">← Back</button>
-          <span className="text-sm text-gray-500">Mobile View</span>
+      <div className="min-h-screen bg-slate-900 text-white flex flex-col">
+        <div className="p-4 flex items-center justify-between border-b border-slate-700">
+          <button onClick={()=> window.history.back()} className="text-slate-400 hover:text-white">← Back</button>
+          <span className="text-sm text-slate-500">Mobile View</span>
         </div>
         <div className="p-6 space-y-4">
           <h2 className="text-xl font-semibold">Workflow Builder Unavailable on Small Screens</h2>
-          <p className="text-sm text-gray-400 leading-relaxed">Editing complex graphs is disabled below the small (640px) breakpoint for usability. View execution history & metadata from the Workflows list instead. Rotate your device or use a larger screen to edit.</p>
-          <button onClick={()=> setShowLogs(!showLogs)} className="px-4 py-2 bg-gray-700 rounded-lg text-sm">{showLogs? 'Hide Logs':'Show Logs'}</button>
+          <p className="text-sm text-slate-400 leading-relaxed">Editing complex graphs is disabled below the small (640px) breakpoint for usability. View execution history & metadata from the Workflows list instead. Rotate your device or use a larger screen to edit.</p>
+          <button onClick={()=> setShowLogs(!showLogs)} className="px-4 py-2 bg-slate-700 rounded-lg text-sm">{showLogs? 'Hide Logs':'Show Logs'}</button>
           {showLogs && (
-            <div className="border border-gray-700 rounded-lg p-4 max-h-64 overflow-y-auto text-xs space-y-2">
-              {executionLogs.length===0 && <div className="text-gray-500">No logs yet.</div>}
-              {executionLogs.map((l,i)=> <div key={i} className="bg-gray-800/60 px-2 py-1 rounded">{l.timestamp} – {l.message}</div>)}
+            <div className="border border-slate-700 rounded-lg p-4 max-h-64 overflow-y-auto text-xs space-y-2">
+              {executionLogs.length===0 && <div className="text-slate-500">No logs yet.</div>}
+              {executionLogs.map((l,i)=> <div key={i} className="bg-slate-800/60 px-2 py-1 rounded">{l.timestamp} – {l.message}</div>)}
             </div>
           )}
         </div>
@@ -302,10 +302,10 @@ const WorkflowBuilder: React.FC<{
   }
 
   return (
-    <div className="h-screen bg-gray-900 flex">
+    <div className="h-screen bg-slate-900 flex">
       {/* Node Palette */}
       <div
-        className={`bg-gray-800 border-r border-gray-700 transition-all duration-300 ${
+  className={`bg-slate-800 border-r border-slate-700 transition-all duration-300 ${
           showNodePalette ? "w-80" : "w-16"
         }`}
       >
@@ -325,7 +325,7 @@ const WorkflowBuilder: React.FC<{
           <div className="px-4 pb-4 overflow-y-auto h-full">
             {Object.entries(nodeTypes).map(([category, types]) => (
               <div key={category} className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-3">
+                <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">
                   {category}
                 </h3>
                 <div className="space-y-2">
@@ -340,7 +340,7 @@ const WorkflowBuilder: React.FC<{
                         );
                         event.dataTransfer.effectAllowed = "move";
                       }}
-                      className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg cursor-grab active:cursor-grabbing transition-colors border border-gray-600 hover:border-blue-400"
+                      className="p-3 bg-slate-700 hover:bg-slate-600 rounded-lg cursor-grab active:cursor-grabbing transition-colors border border-slate-600 hover:border-blue-400"
                     >
                       <div className="flex items-center space-x-3">
                         <span className="text-lg">{nodeType.icon}</span>
@@ -348,7 +348,7 @@ const WorkflowBuilder: React.FC<{
                           <p className="text-sm font-medium text-white truncate">
                             {nodeType.name}
                           </p>
-                          <p className="text-xs text-gray-400 truncate">
+                          <p className="text-xs text-slate-400 truncate">
                             {nodeType.description}
                           </p>
                         </div>
@@ -405,7 +405,7 @@ const WorkflowBuilder: React.FC<{
               <button
                 onClick={handleExecute}
                 disabled={isExecuting || !workflow?.id}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
               >
                 <span>{isExecuting ? "⏳" : "▶️"}</span>
                 <span>{isExecuting ? "Executing..." : "Execute"}</span>
@@ -424,14 +424,14 @@ const WorkflowBuilder: React.FC<{
 
         {/* Execution Logs Panel */}
         {showLogs && (
-          <div className="absolute bottom-0 left-0 right-0 h-64 bg-gray-800 border-t border-gray-700 p-4">
+      <div className="absolute bottom-0 left-0 right-0 h-64 bg-slate-800 border-t border-slate-700 p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white">
                 Execution Logs
               </h3>
               <button
                 onClick={() => setShowLogs(false)}
-                className="text-gray-400 hover:text-white"
+        className="text-slate-400 hover:text-white"
               >
                 ✕
               </button>
@@ -445,20 +445,20 @@ const WorkflowBuilder: React.FC<{
                       ? "bg-red-900/50 text-red-200"
                       : log.level === "success"
                         ? "bg-green-900/50 text-green-200"
-                        : "bg-gray-700 text-gray-200"
+        : "bg-slate-700 text-slate-200"
                   }`}
                 >
-                  <span className="text-gray-400 text-xs">{log.timestamp}</span>
+      <span className="text-slate-400 text-xs">{log.timestamp}</span>
                   <span className="ml-2 font-medium">{log.message}</span>
                   {log.nodeId && (
-                    <span className="ml-2 text-xs text-gray-400">
+        <span className="ml-2 text-xs text-slate-400">
                       ({log.nodeId})
                     </span>
                   )}
                 </div>
               ))}
-              {executionLogs.length === 0 && (
-                <div className="text-gray-400 text-center py-8">
+      {executionLogs.length === 0 && (
+        <div className="text-slate-400 text-center py-8">
                   No execution logs yet. Run a workflow to see logs here.
                 </div>
               )}
@@ -628,14 +628,14 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
   }, [showHistoryFor, token]);
 
   const statusPill = (status:string)=>{
-    const map: Record<string,string> = { pending: 'bg-gray-700 text-gray-200', running:'bg-blue-600 text-white', completed:'bg-green-600 text-white', failed:'bg-red-600 text-white', canceled:'bg-yellow-600 text-white' };
-    const cls = map[status] || 'bg-gray-600 text-gray-200';
+    const map: Record<string,string> = { pending: 'bg-slate-700 text-slate-200', running:'bg-blue-600 text-white', completed:'bg-green-600 text-white', failed:'bg-red-600 text-white', canceled:'bg-yellow-600 text-white' };
+    const cls = map[status] || 'bg-slate-600 text-slate-200';
     return <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${cls}`}>{status}</span>;
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
           <p className="text-white text-xl mt-4">Loading Workflow System...</p>
@@ -658,14 +658,14 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-slate-900 text-white">
       {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-700 p-6">
+      <header className="bg-slate-800 border-b border-slate-700 p-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
               onClick={onBack}
-              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-700"
+              className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-700"
             >
               ← Back
             </button>
@@ -673,7 +673,7 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
                 🚀 Workflow Automation
               </h1>
-              <p className="text-gray-400 mt-1">
+              <p className="text-slate-400 mt-1">
                 Build powerful AI workflows, RAG pipelines, and multi-agent
                 automations
               </p>
@@ -698,13 +698,13 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
               placeholder="Search workflows..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
             />
           </div>
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+            className="px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
           >
             <option value="all">All Categories</option>
             {categories
@@ -728,14 +728,14 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
               {templates.map((template) => (
                 <div
                   key={template.id}
-                  className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-blue-500 transition-colors"
+                  className="bg-slate-800 border border-slate-700 rounded-xl p-6 hover:border-blue-500 transition-colors"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <h3 className="text-lg font-semibold text-white mb-2">
                         {template.name}
                       </h3>
-                      <p className="text-gray-400 text-sm">
+                      <p className="text-slate-400 text-sm">
                         {template.description}
                       </p>
                     </div>
@@ -748,7 +748,7 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
                     {template.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs"
+                        className="px-2 py-1 bg-slate-700 text-slate-300 rounded text-xs"
                       >
                         {tag}
                       </span>
@@ -772,14 +772,14 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
           <h2 className="text-2xl font-bold mb-6 flex items-center space-x-2">
             <span>⚙️</span>
             <span>Your Workflows</span>
-            <span className="text-sm font-normal text-gray-400">
+            <span className="text-sm font-normal text-slate-400">
               ({filteredWorkflows.length})
             </span>
           </h2>
 
           {filteredWorkflows.length === 0 ? (
             <div className="text-center py-12">
-              <div className="text-gray-400 text-lg mb-4">
+              <div className="text-slate-400 text-lg mb-4">
                 {searchTerm || selectedCategory !== "all"
                   ? "No workflows match your filters"
                   : "No workflows yet"}
@@ -796,14 +796,14 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
               {filteredWorkflows.map((workflow) => (
                 <div
                   key={workflow.id}
-                  className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-blue-500 transition-colors"
+                  className="bg-slate-800 border border-slate-700 rounded-xl p-6 hover:border-blue-500 transition-colors"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-white mb-2">
                         {workflow.name}
                       </h3>
-                      <p className="text-gray-400 text-sm">
+                      <p className="text-slate-400 text-sm">
                         {workflow.description}
                       </p>
                     </div>
@@ -823,14 +823,14 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
                     {workflow.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs"
+                        className="px-2 py-1 bg-slate-700 text-slate-300 rounded text-xs"
                       >
                         {tag}
                       </span>
                     ))}
                   </div>
 
-                  <div className="text-xs text-gray-500 mb-4">
+                  <div className="text-xs text-slate-500 mb-4">
                     <div>
                       Nodes: {workflow.workflow_data.nodes?.length || 0}
                     </div>
@@ -858,22 +858,22 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
                     </button>
                     <button
                       onClick={()=> setShowHistoryFor(showHistoryFor===workflow.id.toString()? null : workflow.id.toString())}
-                      className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition-colors"
+                      className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-semibold transition-colors"
                     >
                       {showHistoryFor===workflow.id.toString()? 'Hide' : 'History'}
                     </button>
                   </div>
 
                   {showHistoryFor===workflow.id.toString() && (
-                    <div className="mt-6 border-t border-gray-700 pt-4">
+                    <div className="mt-6 border-t border-slate-700 pt-4">
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-sm font-semibold text-gray-300 flex items-center space-x-2"><span>📜</span><span>Recent Executions</span></h4>
-                        {loadingExecutions && <span className="text-xs text-gray-500 animate-pulse">Refreshing...</span>}
+                        <h4 className="text-sm font-semibold text-slate-300 flex items-center space-x-2"><span>📜</span><span>Recent Executions</span></h4>
+                        {loadingExecutions && <span className="text-xs text-slate-500 animate-pulse">Refreshing...</span>}
                       </div>
                       {/* Desktop Table */}
                       <div className="overflow-x-auto hidden md:block">
                         <table className="min-w-full text-xs">
-                          <thead className="bg-gray-700/60 text-gray-300">
+                          <thead className="bg-slate-700/60 text-slate-300">
                             <tr>
                               <th className="text-left px-3 py-2">ID</th>
                               <th className="text-left px-3 py-2">Status</th>
@@ -883,19 +883,19 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
                               <th className="text-left px-3 py-2">Error</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-gray-700/70">
+                          <tbody className="divide-y divide-slate-700/70">
                             {executions.length===0 && !loadingExecutions && (
-                              <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-500">No executions yet.</td></tr>
+                              <tr><td colSpan={6} className="px-4 py-6 text-center text-slate-500">No executions yet.</td></tr>
                             )}
                             {executions.map(ex=>{
                               const dur = (ex.started_at && ex.completed_at) ? ( (new Date(ex.completed_at).getTime() - new Date(ex.started_at).getTime())/1000).toFixed(2)+'s' : '—';
                               return (
-                                <tr key={ex.id} className="hover:bg-gray-700/40">
+                                <tr key={ex.id} className="hover:bg-slate-700/40">
                                   <td className="px-3 py-2 font-mono text-[10px]">{ex.id.slice(0,8)}</td>
                                   <td className="px-3 py-2">{statusPill(ex.status)}</td>
-                                  <td className="px-3 py-2 text-gray-400">{ex.started_at? new Date(ex.started_at).toLocaleTimeString(): '—'}</td>
-                                  <td className="px-3 py-2 text-gray-400">{ex.completed_at? new Date(ex.completed_at).toLocaleTimeString(): '—'}</td>
-                                  <td className="px-3 py-2 text-gray-300">{dur}</td>
+                                  <td className="px-3 py-2 text-slate-400">{ex.started_at? new Date(ex.started_at).toLocaleTimeString(): '—'}</td>
+                                  <td className="px-3 py-2 text-slate-400">{ex.completed_at? new Date(ex.completed_at).toLocaleTimeString(): '—'}</td>
+                                  <td className="px-3 py-2 text-slate-300">{dur}</td>
                                   <td className="px-3 py-2 text-red-400 truncate max-w-[160px]" title={ex.error||''}>{ex.error? ex.error.slice(0,40): ''}</td>
                                 </tr>
                               );
@@ -905,16 +905,16 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
                       </div>
                       {/* Mobile Cards */}
                       <div className="md:hidden space-y-3">
-                        {executions.length===0 && !loadingExecutions && <div className="text-gray-500 text-xs">No executions yet.</div>}
+                        {executions.length===0 && !loadingExecutions && <div className="text-slate-500 text-xs">No executions yet.</div>}
                         {executions.map(ex=>{
                           const dur = (ex.started_at && ex.completed_at) ? ( (new Date(ex.completed_at).getTime() - new Date(ex.started_at).getTime())/1000).toFixed(2)+'s' : '—';
                           return (
-                            <div key={ex.id} className="border border-gray-700 rounded-lg p-3 bg-gray-800/50 text-[11px]">
+                            <div key={ex.id} className="border border-slate-700 rounded-lg p-3 bg-slate-800/50 text-[11px]">
                               <div className="flex items-center justify-between mb-1">
                                 <span className="font-mono">{ex.id.slice(0,8)}</span>
                                 {statusPill(ex.status)}
                               </div>
-                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-gray-400">
+                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-slate-400">
                                 <span>Start: {ex.started_at? new Date(ex.started_at).toLocaleTimeString(): '—'}</span>
                                 <span>End: {ex.completed_at? new Date(ex.completed_at).toLocaleTimeString(): '—'}</span>
                                 <span>Dur: {dur}</span>
@@ -924,10 +924,10 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
                           );
                         })}
                       </div>
-                      <div className="mt-3 text-[10px] text-gray-500">Auto-refresh every 10s (MVP polling)</div>
-                      <div className="mt-4 bg-gray-800/60 border border-gray-700 rounded p-3">
-                        <div className="text-[11px] text-gray-400">Upcoming Monitoring Enhancements:</div>
-                        <ul className="mt-2 text-[11px] text-gray-300 space-y-1 list-disc list-inside">
+                      <div className="mt-3 text-[10px] text-slate-500">Auto-refresh every 10s (MVP polling)</div>
+                      <div className="mt-4 bg-slate-800/60 border border-slate-700 rounded p-3">
+                        <div className="text-[11px] text-slate-400">Upcoming Monitoring Enhancements:</div>
+                        <ul className="mt-2 text-[11px] text-slate-300 space-y-1 list-disc list-inside">
                           <li>Real-time streaming via SSE/WebSocket</li>
                           <li>Node-level progress & timeline visualization</li>
                           <li>Log streaming with auto-scroll & filters</li>

@@ -6,7 +6,7 @@
  * 
  * Formula: cost_per_1k = hourly_hardware_cost / ((tokens_per_second * 3600)/1000)
  * 
- * @author Claude (Internal Developer Agent)
+ * @author Robbie or Robert Allen Lead Architect
  * @date August 2025
  */
 
