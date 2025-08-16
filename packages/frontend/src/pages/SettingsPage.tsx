@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNotify } from "../components/ui/NotificationProvider";
+import { useTheme } from "@/theme/ThemeProvider";
 
 interface SettingsPageProps {
   token: string;
@@ -66,6 +67,7 @@ const defaultAudio: AudioFormData = {
 
 export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
   const notify = useNotify();
+  const { setMode, resetOverrides, theme } = useTheme();
 
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
@@ -93,16 +95,58 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
   const [personalityLoading, setPersonalityLoading] = useState(false);
   const [audioLoading, setAudioLoading] = useState(false);
 
+  const fetchWithTimeout = useMemo(() => {
+    return async (url: string, options: RequestInit = {}, timeoutMs = 10000): Promise<Response> => {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(url, { ...options, signal: controller.signal });
+        return res;
+      } finally {
+        clearTimeout(id);
+      }
+    };
+  }, []);
+
+  // Resolve system color-scheme when user selects "auto"
+  const getSystemMode = () =>
+    window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+
+  // When preferences load, sync ThemeProvider mode for live preview
+  useEffect(() => {
+    if (!loading) {
+      const pref = personalityForm.theme;
+      if (pref === "auto") {
+        setMode(getSystemMode());
+      } else if (pref === "dark" || pref === "light") {
+        setMode(pref);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
+
+  // If user set "auto", update on system changes (best-effort)
+  useEffect(() => {
+    if (personalityForm.theme !== "auto") return;
+    const mql = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+    const handler = () => setMode(getSystemMode());
+    mql?.addEventListener?.("change", handler);
+    return () => {
+      mql?.removeEventListener?.("change", handler);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [personalityForm.theme]);
+
   useEffect(() => {
     let cancelled = false;
     const fetchData = async () => {
       setLoading(true);
       try {
         const [meRes, prefsRes] = await Promise.all([
-          fetch("/api/user/me", {
+          fetchWithTimeout("/api/user/me", {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch("/api/user/preferences", {
+          fetchWithTimeout("/api/user/preferences", {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -180,14 +224,14 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     setMessage("");
     setError("");
     try {
-      const res = await fetch("/api/user/me", {
+  const res = await fetchWithTimeout("/api/user/me", {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(profileForm),
-      });
+  });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || "Failed to update profile");
       setUser((u) => (u ? { ...u, ...profileForm } : u));
@@ -221,7 +265,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
       return;
     }
     try {
-      const res = await fetch("/api/user/me/password", {
+  const res = await fetchWithTimeout("/api/user/me/password", {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -231,7 +275,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
           currentPassword: passwordForm.currentPassword,
           newPassword: passwordForm.newPassword,
         }),
-      });
+  });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || "Failed to update password");
       notify.success("Password updated", "Your password has been changed");
@@ -249,20 +293,31 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     field: keyof PersonalityFormData,
     value: string | number,
   ) => setPersonalityForm((p) => ({ ...p, [field]: value as any }));
+
+  // Theme selection helpers
+  // Wire theme selection to ThemeProvider for live preview
+  const handleThemeSelect = (value: "dark" | "light" | "auto") => {
+    handlePersonalityChange("theme", value);
+    if (value === "auto") {
+      setMode(getSystemMode());
+    } else {
+      setMode(value);
+    }
+  };
   const handlePersonalitySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPersonalityLoading(true);
     setMessage("");
     setError("");
     try {
-      const res = await fetch("/api/user/preferences", {
+  const res = await fetchWithTimeout("/api/user/preferences", {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(personalityForm),
-      });
+  });
       const data = await res.json().catch(() => ({}));
       if (!res.ok)
         throw new Error(data.message || "Failed to update personality settings");
@@ -284,14 +339,14 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     setMessage("");
     setError("");
     try {
-      const res = await fetch("/api/user/preferences", {
+  const res = await fetchWithTimeout("/api/user/preferences", {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(audioForm),
-      });
+  });
       const data = await res.json().catch(() => ({}));
       if (!res.ok)
         throw new Error(data.message || "Failed to update audio settings");
@@ -308,10 +363,10 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
   const handleClearChatHistory = async () => {
     if (!confirm("Clear all chat history? This cannot be undone.")) return;
     try {
-      const res = await fetch("/api/settings/clear-chat-history", {
+  const res = await fetchWithTimeout("/api/settings/clear-chat-history", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
-      });
+  });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to clear chat history");
       notify.success("Chat history cleared", `${data.deletedCount} messages deleted`);
@@ -321,9 +376,9 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
   };
   const handleExportData = async () => {
     try {
-      const res = await fetch("/api/settings/export-data", {
+  const res = await fetchWithTimeout("/api/settings/export-data", {
         headers: { Authorization: `Bearer ${token}` },
-      });
+  });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || "Failed to export data");
@@ -347,14 +402,14 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     if (!password) return;
     if (!confirm("This will permanently delete all your data. Continue?")) return;
     try {
-      const res = await fetch("/api/settings/delete-account", {
+  const res = await fetchWithTimeout("/api/settings/delete-account", {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ confirmPassword: password }),
-      });
+  });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to delete account");
       alert("Account deleted. Redirecting to home page.");
@@ -708,7 +763,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                         <input
                           type="checkbox"
                           checked={personalityForm.theme === "dark"}
-                          onChange={(e) => handlePersonalityChange("theme", e.target.checked ? "dark" : "light")}
+                          onChange={(e) => handleThemeSelect(e.target.checked ? "dark" : "light")}
                           className="toggle"
                         />
                       </label>
@@ -754,7 +809,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                             name="theme"
                             value="dark"
                             checked={personalityForm.theme === "dark"}
-                            onChange={() => handlePersonalityChange("theme", "dark")}
+                            onChange={() => handleThemeSelect("dark")}
                             className="text-blue-600"
                           />
                           <span>Dark Mode</span>
@@ -765,7 +820,7 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                             name="theme"
                             value="light"
                             checked={personalityForm.theme === "light"}
-                            onChange={() => handlePersonalityChange("theme", "light")}
+                            onChange={() => handleThemeSelect("light")}
                             className="text-blue-600"
                           />
                           <span>Light Mode</span>
@@ -776,11 +831,24 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
                             name="theme"
                             value="auto"
                             checked={personalityForm.theme === "auto"}
-                            onChange={() => handlePersonalityChange("theme", "auto")}
+                            onChange={() => handleThemeSelect("auto")}
                             className="text-blue-600"
                           />
                           <span>Auto (System)</span>
                         </label>
+                        <div className="pt-2 flex items-center justify-between">
+                          <ThemeContrastBadge hexBg={theme.colors.bg} hexText={theme.colors.textPrimary} />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              resetOverrides();
+                              notify.success("Theme reset", "Custom theme overrides cleared");
+                            }}
+                            className="text-xs px-2 py-1 rounded bg-slate-700 hover:bg-slate-600"
+                          >
+                            Reset Theme Overrides
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -926,3 +994,46 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
     </div>
   );
 };
+
+// Small helper to compute contrast ratio and display status
+function ThemeContrastBadge({ hexBg, hexText }: { hexBg: string; hexText: string }) {
+  const contrast = getContrastRatio(hexBg, hexText);
+  const okAA = contrast >= 4.5; // AA for normal text
+  return (
+    <div className="flex items-center space-x-2">
+      <span className="text-xs text-slate-400">Contrast</span>
+      <span className={`text-xs px-2 py-0.5 rounded ${okAA ? 'bg-green-600/40 text-green-200' : 'bg-amber-600/40 text-amber-100'}`}>
+        {contrast.toFixed(2)}:1 {okAA ? 'AA ✓' : 'AA ✗'}
+      </span>
+      <span className="inline-flex border border-slate-600 rounded overflow-hidden">
+        <span style={{ background: hexBg, color: hexText }} className="text-xs px-2 py-0.5">Aa</span>
+      </span>
+    </div>
+  );
+}
+
+function getLuminance(hex: string) {
+  const [r, g, b] = hexToRgb(hex);
+  const a = [r, g, b].map((v) => {
+    v /= 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2];
+}
+
+function getContrastRatio(hex1: string, hex2: string) {
+  const L1 = getLuminance(hex1);
+  const L2 = getLuminance(hex2);
+  const lighter = Math.max(L1, L2);
+  const darker = Math.min(L1, L2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function hexToRgb(hex: string): [number, number, number] {
+  const clean = hex.replace('#', '');
+  const bigint = parseInt(clean.length === 3 ? clean.split('').map((c) => c + c).join('') : clean, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return [r, g, b];
+}

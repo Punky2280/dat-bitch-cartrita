@@ -31,13 +31,16 @@ interface KnowledgeSearchPanelProps {
   selectedCategories?: string[];
   onCategoryChange?: (categories: string[]) => void;
   className?: string;
+  // Optional: constrain search to specific document IDs when using router
+  documentIds?: number[];
 }
 
 const KnowledgeSearchPanel: React.FC<KnowledgeSearchPanelProps> = ({
   onResultClick,
   selectedCategories = [],
   onCategoryChange,
-  className = ''
+  className = '',
+  documentIds
 }) => {
   const [query, setQuery] = useState('');
   const [searchType, setSearchType] = useState<'semantic' | 'fulltext' | 'hybrid'>('semantic');
@@ -46,6 +49,8 @@ const KnowledgeSearchPanel: React.FC<KnowledgeSearchPanelProps> = ({
   const [showFilters, setShowFilters] = useState(false);
   const [searchMeta, setSearchMeta] = useState<SearchResponse['meta'] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [threshold, setThreshold] = useState<number>(0.6);
+  const useRouterForKH = String(import.meta.env.VITE_USE_ROUTER_FOR_KH || 'false') === 'true';
 
   // Available categories
   const availableCategories = useMemo(() => [
@@ -54,7 +59,7 @@ const KnowledgeSearchPanel: React.FC<KnowledgeSearchPanelProps> = ({
 
   // Debounced search function
   const debouncedSearch = useCallback(
-    debounce(async (searchQuery: string, type: string, categories: string[]) => {
+    debounce(async (searchQuery: string, type: string, categories: string[], thr: number) => {
       if (!searchQuery.trim()) {
         setResults([]);
         setSearchMeta(null);
@@ -66,31 +71,78 @@ const KnowledgeSearchPanel: React.FC<KnowledgeSearchPanelProps> = ({
 
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('/api/knowledge/search', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            'x-session-id': `search-${Date.now()}`
-          },
-          body: JSON.stringify({
+        if (useRouterForKH) {
+          const response = await fetch('/api/router', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'x-session-id': `search-${Date.now()}`
+            },
+            body: JSON.stringify({
+              task: 'search',
+              query: searchQuery,
+              options: {
+                limit: 20,
+                threshold: thr,
+                documentIds: documentIds && documentIds.length ? documentIds : undefined,
+              }
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error(`Router search failed: ${response.statusText}`);
+          }
+          const payload = await response.json();
+          const result = payload?.result;
+          const mapped: SearchResult[] = Array.isArray(result?.results)
+            ? result.results.map((r: any) => ({
+                id: `${r.document_id}:${r.chunk_id}`,
+                title: r.document_title || 'Document',
+                content: r.chunk_text || '',
+                category: (r.document_metadata?.category) || 'general',
+                tags: r.document_metadata?.tags || [],
+                importance_score: r.similarity || 0,
+                similarity_score: r.similarity,
+                search_type: 'semantic',
+                snippet: (r.chunk_text || '').slice(0, 240),
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              }))
+            : [];
+          setResults(mapped);
+          setSearchMeta({
             query: searchQuery,
-            search_type: type,
-            limit: 20,
-            threshold: 0.6,
-            category: categories.length === 1 ? categories[0] : undefined,
-            tags: categories.length > 1 ? categories : undefined
-          })
-        });
+            search_type: 'semantic',
+            total_results: mapped.length,
+            duration_ms: payload?.timing_ms ?? 0,
+          });
+        } else {
+          const response = await fetch('/api/knowledge/search', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'x-session-id': `search-${Date.now()}`
+            },
+            body: JSON.stringify({
+              query: searchQuery,
+              search_type: type,
+              limit: 20,
+              threshold: thr,
+              category: categories.length === 1 ? categories[0] : undefined,
+              tags: categories.length > 1 ? categories : undefined
+            })
+          });
 
-        if (!response.ok) {
-          throw new Error(`Search failed: ${response.statusText}`);
+          if (!response.ok) {
+            throw new Error(`Search failed: ${response.statusText}`);
+          }
+
+          const data: SearchResponse = await response.json();
+          setResults(data.results || []);
+          setSearchMeta(data.meta);
         }
-
-        const data: SearchResponse = await response.json();
-        setResults(data.results || []);
-        setSearchMeta(data.meta);
-
       } catch (error) {
         console.error('Search error:', error);
         setError(error instanceof Error ? error.message : 'Search failed');
@@ -100,13 +152,13 @@ const KnowledgeSearchPanel: React.FC<KnowledgeSearchPanelProps> = ({
         setIsLoading(false);
       }
     }, 300),
-    []
+    [useRouterForKH, documentIds]
   );
 
   // Trigger search when query or filters change
   useEffect(() => {
-    debouncedSearch(query, searchType, selectedCategories);
-  }, [query, searchType, selectedCategories, debouncedSearch]);
+    debouncedSearch(query, searchType, selectedCategories, threshold);
+  }, [query, searchType, selectedCategories, threshold, debouncedSearch]);
 
   const handleCategoryToggle = (category: string) => {
     const newCategories = selectedCategories.includes(category)
@@ -165,8 +217,8 @@ const KnowledgeSearchPanel: React.FC<KnowledgeSearchPanelProps> = ({
           </button>
         </div>
 
-        {/* Search Type Selector */}
-        <div className="flex gap-2">
+        {/* Search Type + Threshold */}
+        <div className="flex items-center gap-4 flex-wrap">
           {(['semantic', 'fulltext', 'hybrid'] as const).map((type) => (
             <button
               key={type}
@@ -180,6 +232,20 @@ const KnowledgeSearchPanel: React.FC<KnowledgeSearchPanelProps> = ({
               {type.charAt(0).toUpperCase() + type.slice(1)}
             </button>
           ))}
+
+          <div className="flex items-center gap-2 ml-auto">
+            <span className="text-xs text-slate-600 dark:text-slate-300">Threshold</span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={threshold}
+              onChange={(e) => setThreshold(parseFloat(e.target.value))}
+              className="w-32"
+            />
+            <span className="text-xs text-slate-600 dark:text-slate-300 w-10 text-right">{(threshold*100).toFixed(0)}%</span>
+          </div>
         </div>
       </div>
 

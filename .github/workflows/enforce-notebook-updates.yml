@@ -1,0 +1,40 @@
+name: Enforce Notebook Updates
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  check-notebook-updated:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changes in code vs notebook
+        id: diff
+        run: |
+          set -e
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          echo "Base: $BASE_SHA"; echo "Head: $HEAD_SHA"
+          # Files considered "code" (excluding docs & config)
+          CODE_CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- \
+            ':!docs/**' ':!.github/**' ':!README.md' ':!LICENSE' ':!**/*.md' || true)
+          NOTEBOOK_CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- docs/PROJECT_NOTEBOOK.md || true)
+          echo "codeChanged<<EOF" >> $GITHUB_OUTPUT
+          echo "$CODE_CHANGED" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "notebookChanged<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTEBOOK_CHANGED" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Fail if code changed without notebook update
+        if: steps.diff.outputs.codeChanged != '' && steps.diff.outputs.notebookChanged == ''
+        run: |
+          echo "Code files changed but docs/PROJECT_NOTEBOOK.md not updated. Please add a Dev Log entry." >&2
+          echo "Changed code files:" >&2
+          echo "${{ steps.diff.outputs.codeChanged }}" >&2
+          exit 1

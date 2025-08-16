@@ -285,6 +285,15 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
         isSpeaking: false,
         currentTranscript: "",
         wakeWordDetected: false,
+        contextAwareness: {
+          backgroundAnalysis: false,
+          visualContext: false,
+          emotionalContext: false,
+        },
+        adaptiveResponse: {
+          responseStyle: 'casual',
+          responseLength: 'moderate',
+        },
       });
   setShowOverlay(false);
 

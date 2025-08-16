@@ -3,6 +3,7 @@ import authenticateToken from '../middleware/authenticateToken.js';
 import OpenTelemetryTracing from '../system/OpenTelemetryTracing.js';
 import fs from 'fs';
 import path from 'path';
+import { pathToFileURL } from 'url';
 
 // Dynamic load of compiled router; if missing, attempt on-demand build then fallback to TS source (dev only)
 let routerService; // will hold instance or module default
@@ -47,6 +48,46 @@ async function ensureRouterLoaded() {
 }
 
 const router = express.Router();
+
+/**
+ * GET /api/models/status
+ * Get model routing system status
+ */
+router.get('/status', authenticateToken, async (req, res) => {
+  try {
+    const routerService = await ensureRouterLoaded();
+    
+    const status = {
+      service: 'model-routing',
+      status: routerService ? 'operational' : 'degraded',
+      router_loaded: !!routerService,
+      router_error: routerInitError?.message,
+      features: {
+        huggingface_routing: 'enabled',
+        multi_provider: 'enabled',
+        load_balancing: 'enabled',
+        fallback_handling: 'enabled',
+      },
+      providers: {
+        huggingface: 'available',
+        openai: process.env.OPENAI_API_KEY ? 'available' : 'no_key',
+        anthropic: process.env.ANTHROPIC_API_KEY ? 'available' : 'no_key',
+      },
+      timestamp: new Date().toISOString(),
+    };
+
+    res.json({
+      success: true,
+      ...status,
+    });
+  } catch (error) {
+    console.error('[ModelRouting] Status error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get model routing status',
+    });
+  }
+});
 
 router.get('/catalog', authenticateToken, async (req, res) => {
   const svc = await ensureRouterLoaded();

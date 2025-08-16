@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNotify } from '../components/ui/NotificationProvider';
 
 interface AIProvider {
@@ -78,19 +78,61 @@ export const AIProvidersPage: React.FC<{ token: string; onBack: () => void }> = 
     }
   ];
 
+  const fetchWithTimeout = useMemo(() => {
+    return async (url: string, options: RequestInit = {}, timeoutMs = 10000): Promise<Response> => {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(url, { ...options, signal: controller.signal });
+        return res;
+      } finally {
+        clearTimeout(id);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
-        const [providersRes, healthRes] = await Promise.all([
-          fetch('/api/ai/providers'),
-          fetch('/api/ai/health')
-        ]);
-
-        const [providersData, healthData] = await Promise.all([
-          providersRes.json(),
-          healthRes.json()
-        ]);
+        // Try legacy endpoints first
+        let providersData: any = null;
+        let healthData: any = null;
+        try {
+          const [providersRes, healthRes] = await Promise.all([
+            fetchWithTimeout('/api/ai/providers'),
+            fetchWithTimeout('/api/ai/health')
+          ]);
+          if (providersRes.ok) providersData = await providersRes.json();
+          if (healthRes.ok) healthData = await healthRes.json();
+        } catch (_) {
+          // ignore; will fallback
+        }
+        // Fallback to unified endpoints
+        if (!providersData) {
+          try {
+            const uniHealth = await fetchWithTimeout('/api/unified/health');
+            if (uniHealth.ok) {
+              const uh = await uniHealth.json();
+              providersData = {
+                success: true,
+                providers: (uh.availableModels || []).map((m: string) => ({
+                  key: m,
+                  name: m,
+                  hasApiKey: true,
+                  tasks: ['chat','embeddings','asr','image','classify','summarize'],
+                  models: [m]
+                }))
+              };
+              healthData = {
+                success: true,
+                status: uh.status === 'healthy' ? 'operational' : 'degraded',
+                metrics: uh.metrics,
+                version: 'unified-bridge'
+              };
+            }
+          } catch (_) {}
+        }
 
         if (providersData?.success) setProviders(providersData.providers || []);
         if (healthData?.success || healthData?.status) setServiceHealth(healthData);
@@ -118,14 +160,36 @@ export const AIProvidersPage: React.FC<{ token: string; onBack: () => void }> = 
         params: testParams ? JSON.parse(testParams) : {},
         preferredModels: preferredProvider !== 'auto' ? [preferredProvider] : []
       };
-
-      const response = await fetch('/api/ai/inference', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const result = await response.json();
+      // Try legacy inference, then fallback to unified
+      let result: any = null;
+      try {
+        const response = await fetchWithTimeout('/api/ai/inference', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (response.ok) result = await response.json();
+      } catch (_) {}
+      if (!result) {
+        // Translate to unified shape
+        const mapping: Record<string,string> = {
+          'text-classification':'classify',
+          'zero-shot':'classify',
+          'ner':'nlp_classic',
+          'qa':'nlp_classic',
+          'generation':'chat'
+        };
+        const unifiedTask = mapping[(payload as any).task] || (payload as any).task;
+        const unifiedInputs = unifiedTask === 'chat' && (payload as any).input?.messages
+          ? { messages: (payload as any).input.messages }
+          : (payload as any).input;
+        const resp = await fetchWithTimeout('/api/unified/inference', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task: unifiedTask, inputs: unifiedInputs, options: (payload as any).params })
+        });
+        result = await resp.json();
+      }
       if (result?.success) {
         const normalized: InferenceResult = {
           id: result.id || Math.random().toString(36).slice(2),

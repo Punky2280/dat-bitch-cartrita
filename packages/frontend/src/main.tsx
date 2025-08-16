@@ -7,14 +7,17 @@ import "./index.css";
 import "./i18n";
 import { AmbientProvider } from "@/context/AmbientContext";
 import "./setup/apiBaseFetchShim";
+import { ThemeProvider } from "@/theme/ThemeProvider";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
       <AmbientProvider>
-        <NotificationProvider>
-          <App />
-        </NotificationProvider>
+        <ThemeProvider>
+          <NotificationProvider>
+            <App />
+          </NotificationProvider>
+        </ThemeProvider>
       </AmbientProvider>
     </BrowserRouter>
   </React.StrictMode>,

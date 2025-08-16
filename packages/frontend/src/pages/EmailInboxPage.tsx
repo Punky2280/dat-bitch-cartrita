@@ -113,17 +113,17 @@ export const EmailInboxPage = ({ token, onBack }: EmailInboxPageProps) => {
 
   return (
     <div className="min-h-screen bg-animated text-white">
-      <header className="glass-card border-b border-gray-600/50 p-4">
+  <header className="glass-card border-b border-slate-600/50 p-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-4">
-            <button onClick={onBack} className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50">← Back</button>
+            <button onClick={onBack} className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50">← Back</button>
             <div>
               <h1 className="text-3xl font-bold text-gradient">AI Email Inbox</h1>
-              <p className="text-gray-400 mt-1">Triage and prioritize with AI-assisted categorization (preview)</p>
+              <p className="text-slate-400 mt-1">Triage and prioritize with AI-assisted categorization (preview)</p>
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            <label className="flex items-center space-x-2 text-sm text-gray-300">
+            <label className="flex items-center space-x-2 text-sm text-slate-300">
               <input type="checkbox" checked={unreadOnly} onChange={e=>setUnreadOnly(e.target.checked)} className="rounded" />
               <span>Unread Only</span>
             </label>
@@ -148,9 +148,9 @@ export const EmailInboxPage = ({ token, onBack }: EmailInboxPageProps) => {
 
       <main className="max-w-7xl mx-auto p-6 space-y-8">
         {isNarrow && (
-          <div className="lg:hidden mb-4 flex items-center justify-between gap-2">
+      <div className="lg:hidden mb-4 flex items-center justify-between gap-2">
             {CATEGORY_BUCKETS.map(b=> (
-              <button key={b.id} onClick={()=>setActiveMobileBucket(b.id)} className={`flex-1 px-3 py-2 text-xs rounded-lg border transition-colors ${activeMobileBucket===b.id ? 'bg-blue-600 border-blue-500 text-white' : 'bg-gray-800/60 border-gray-700 text-gray-300'}`}>{b.icon} {b.name.split(' ')[0]}</button>
+        <button key={b.id} onClick={()=>setActiveMobileBucket(b.id)} className={`flex-1 px-3 py-2 text-xs rounded-lg border transition-colors ${activeMobileBucket===b.id ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-800/60 border-slate-700 text-slate-300'}`}>{b.icon} {b.name.split(' ')[0]}</button>
             ))}
           </div>
         )}
@@ -161,27 +161,27 @@ export const EmailInboxPage = ({ token, onBack }: EmailInboxPageProps) => {
             <div key={bucket.id} className="glass-card p-4 rounded-xl flex flex-col min-h-[560px]">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-lg font-semibold flex items-center space-x-2"><span>{bucket.icon}</span><span>{bucket.name}</span></h2>
-                <span className="text-xs text-gray-400">{items.length}</span>
+                <span className="text-xs text-slate-400">{items.length}</span>
               </div>
               <div className="flex-1 space-y-3 overflow-y-auto pr-1">
                 {items.map(m => {
                   const isSelected = selected.has(m.id);
                   return (
-                    <div key={m.id} className={`border border-gray-700 rounded-lg p-3 group hover:border-purple-500 transition-colors relative ${!m.read ? 'bg-gray-800/70' : 'bg-gray-800/40'}`}>
+                    <div key={m.id} className={`border border-slate-700 rounded-lg p-3 group hover:border-purple-500 transition-colors relative ${!m.read ? 'bg-slate-800/70' : 'bg-slate-800/40'}`}>
                       <div className="flex items-start justify-between">
                         <div className="flex-1 cursor-pointer" onClick={()=> setExpandedId(expandedId===m.id? null : m.id)}>
                           <div className="flex items-center space-x-2">
-                            <span className={`w-2 h-2 rounded-full ${m.read? 'bg-gray-600':'bg-blue-400 animate-pulse'}`}></span>
+                            <span className={`w-2 h-2 rounded-full ${m.read? 'bg-slate-600':'bg-blue-400 animate-pulse'}`}></span>
                             <span className="text-sm font-semibold truncate max-w-[140px]">{m.from}</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-300">{(m.confidence||0).toFixed(2)}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">{(m.confidence||0).toFixed(2)}</span>
                             {m.priority==='high' && <span className="text-[10px] px-1 py-0.5 bg-red-600/70 rounded">HIGH</span>}
                           </div>
-                          <div className="mt-1 text-sm text-gray-200 line-clamp-1">{m.subject}</div>
-                          <div className="text-xs text-gray-500 line-clamp-1">{m.preview}</div>
+                          <div className="mt-1 text-sm text-slate-200 line-clamp-1">{m.subject}</div>
+                          <div className="text-xs text-slate-500 line-clamp-1">{m.preview}</div>
                         </div>
                         <div className="flex flex-col items-end space-y-2 ml-2">
                           <input type="checkbox" checked={isSelected} onChange={()=>toggleSelect(m.id)} />
-                          <select value={m.category} onChange={e=>reclassifyLocal(m.id, e.target.value)} className="bg-gray-700 text-gray-300 text-[10px] rounded px-1 py-0.5 focus:outline-none">
+                          <select value={m.category} onChange={e=>reclassifyLocal(m.id, e.target.value)} className="bg-slate-700 text-slate-300 text-[10px] rounded px-1 py-0.5 focus:outline-none">
                             <option value="welcome">welcome</option>
                             <option value="notifications">notifications</option>
                             <option value="updates">updates</option>
@@ -194,10 +194,10 @@ export const EmailInboxPage = ({ token, onBack }: EmailInboxPageProps) => {
                         </div>
                       </div>
                       {expandedId === m.id && (
-                        <div className="mt-3 border-t border-gray-700 pt-3 text-xs space-y-2">
-                          <div className="text-gray-400">AI Summary:</div>
-                          <div className="text-gray-300 leading-relaxed">{m.ai_summary || 'No summary available (mock).'}</div>
-                          <div className="flex items-center space-x-2 text-gray-500">
+                        <div className="mt-3 border-t border-slate-700 pt-3 text-xs space-y-2">
+                          <div className="text-slate-400">AI Summary:</div>
+                          <div className="text-slate-300 leading-relaxed">{m.ai_summary || 'No summary available (mock).'}</div>
+                          <div className="flex items-center space-x-2 text-slate-500">
                             <span>{new Date(m.timestamp).toLocaleString()}</span>
                             <span>•</span>
                             <button className="text-purple-400 hover:text-purple-300">Suggest Actions</button>
@@ -209,7 +209,7 @@ export const EmailInboxPage = ({ token, onBack }: EmailInboxPageProps) => {
                     </div>
                   );
                 })}
-                {items.length === 0 && <div className="text-xs text-gray-600 text-center py-8">No messages in this bucket.</div>}
+                {items.length === 0 && <div className="text-xs text-slate-600 text-center py-8">No messages in this bucket.</div>}
               </div>
             </div>
           ))}
@@ -217,7 +217,7 @@ export const EmailInboxPage = ({ token, onBack }: EmailInboxPageProps) => {
 
         <div className="glass-card p-6 rounded-xl">
           <h3 className="text-lg font-semibold mb-2 flex items-center space-x-2"><span>🛠️</span><span>Upcoming Inbox Features</span></h3>
-          <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
+          <ul className="list-disc list-inside text-sm text-slate-300 space-y-1">
             <li>Backend reclassify & bulk endpoints</li>
             <li>Adaptive model retraining stats & drift alerts</li>
             <li>Action suggestion model integration</li>

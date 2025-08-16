@@ -29,6 +29,70 @@ router.get('/test', (req, res) => {
   });
 });
 
+// Get current user profile (alias: /profile)
+router.get('/profile', authenticateToken, async (req, res) => {
+  try {
+    console.log('[UserRoute] 🚀 GET /profile endpoint hit (alias for /me)');
+    
+    if (!req.user || !req.user.id) {
+      console.log('[UserRoute] ❌ No user object or user ID in request');
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const userId = req.user.id;
+    console.log('[UserRoute] 🔍 Looking up user profile with ID:', userId);
+
+    const result = await db.query(
+      'SELECT id, name, email, created_at, updated_at FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      console.log('[UserRoute] ❌ No user found with ID:', userId);
+      return res.status(404).json({
+        message: 'User not found',
+        user_id: userId,
+      });
+    }
+
+    const user = result.rows[0];
+    console.log('[UserRoute] ✅ User profile found:', user.name);
+
+    // Get user preferences
+    const settingsResult = await db.query(
+      'SELECT * FROM user_preferences WHERE user_id = $1',
+      [userId]
+    );
+
+    const settings = settingsResult.rows[0] || {
+      sarcasm_level: 5,
+      verbosity: 'normal', 
+      humor_style: 'playful',
+      language_preference: 'en',
+      theme: 'dark',
+    };
+
+    res.json({
+      success: true,
+      profile: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+        preferences: settings,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('[UserRoute] ❌ Error in GET /profile:', error);
+    res.status(500).json({
+      message: 'Failed to fetch user profile',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+});
+
 // Get current user profile
 router.get('/me', authenticateToken, async (req, res) => {
   try {

@@ -298,6 +298,7 @@ scan_file() {
 # Use find with null separator to be safe with spaces
 while IFS= read -r -d '' candidate; do
   scan_file "$candidate"
+
 done < <(find . -type f \( -name '*.js' -o -name '*.jsx' -o -name '*.ts' -o -name '*.tsx' -o -name '*.mjs' -o -name '*.cjs' \) -print0)
 
 ########################################

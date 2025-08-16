@@ -164,22 +164,22 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   }, [onVoiceTranscript]);
 
   return (
-    <div className="p-4 border-t border-gray-600/50 bg-gray-800/30">
+  <div className="p-4 border-t border-slate-600/50 bg-slate-800/30">
       {/* Attached Files Preview */}
       {attachedFiles.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-2">
           {attachedFiles.map((file, index) => (
-            <div key={index} className="relative bg-gray-700/60 rounded-lg p-2 flex items-center space-x-2 max-w-xs">
+            <div key={index} className="relative bg-slate-700/60 rounded-lg p-2 flex items-center space-x-2 max-w-xs">
               {file.type === 'image' && file.preview && (
                 <img src={file.preview} alt="Preview" className="w-8 h-8 object-cover rounded" />
               )}
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-medium text-white truncate">{file.file.name}</div>
-                <div className="text-xs text-gray-400">{(file.file.size / 1024).toFixed(1)}KB</div>
+                <div className="text-xs text-slate-400">{(file.file.size / 1024).toFixed(1)}KB</div>
               </div>
               <button
                 onClick={() => removeFile(index)}
-                className="text-gray-400 hover:text-red-400 text-xs"
+                className="text-slate-400 hover:text-red-400 text-xs"
               >
                 ×
               </button>
@@ -229,7 +229,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={!isConnected || isLoading}
-              className="p-1.5 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+              className="p-1.5 text-slate-400 hover:text-white transition-colors disabled:opacity-50"
               title="Attach file"
             >
               📎
@@ -237,7 +237,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             <button
               onClick={() => setShowQuickActions(!showQuickActions)}
               disabled={!isConnected || isLoading}
-              className="p-1.5 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+              className="p-1.5 text-slate-400 hover:text-white transition-colors disabled:opacity-50"
               title="Quick actions"
             >
               ⚡
@@ -264,7 +264,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           </div>
 
           {inputText.length > 0 && (
-            <div className="absolute bottom-1 right-16 text-xs text-gray-500">
+            <div className="absolute bottom-1 right-16 text-xs text-slate-500">
               {inputText.length}/2000
             </div>
           )}
@@ -311,7 +311,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       />
 
       {messageHistoryCount > 0 && (
-        <div className="mt-2 text-xs text-gray-500 text-center">
+  <div className="mt-2 text-xs text-slate-500 text-center">
           Use Ctrl+↑/↓ to navigate message history ({messageHistoryCount} saved) • 📎 Attach files • ⚡ Quick actions • ▶️ Execute code
         </div>
       )}

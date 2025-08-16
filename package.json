@@ -44,6 +44,8 @@
   ,"keys:rotate": "node scripts/security/rotate-keys.mjs"
   ,"secrets:precommit": "node scripts/security/precommit-secret-check.mjs"
   ,"keys:status": "curl -s localhost:${PORT:-8001}/api/internal/keys/status || true"
+  ,"theme:scan": "node scripts/verify-theme-consistency.js"
+  ,"smoke:run": "bash scripts/smoke/run_all.sh"
   },
   "devDependencies": {
     "@babel/core": "^7.28.0",

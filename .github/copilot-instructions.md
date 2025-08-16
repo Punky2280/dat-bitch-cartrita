@@ -10,6 +10,10 @@ When a new iteration (e.g. "iteration 22") begins:
 4. Cross-check any DB column before use: search codebase and migrations; if absent create a new migration instead of editing old files.
 5. Never fabricate API responses; if unsure, implement thin pass-through + TODO referencing spec filename.
 
+Notebook discipline (required):
+- Re-read `docs/PROJECT_NOTEBOOK.md` at task start and after each batch of 3–5 edits/tool calls.
+- After meaningful changes (feature fixes/additions, migrations, CI/QoL scripts), append a concise Dev Log entry in `docs/PROJECT_NOTEBOOK.md` with date, scope, and verification notes (Build/Lint/Tests status).
+
 Guardrails to reduce hallucination / drift:
 - Always prefer reading existing files (routes/service/migration) before adding new ones for a feature.
 - Keep changes minimal & scoped; describe rationale succinctly in PR.
@@ -51,6 +55,7 @@ Guardrails to reduce hallucination / drift:
 - Extend Workflow Tool Schema: Create new migration file (increment number), update field lists in `WorkflowToolsService`, adjust serialization & tests.
 - List / Revoke HF Binaries: `/api/hf/list` (pagination, mime, expired modes) & `/api/hf/revoke/:id`—reuse patterns when adding filters.
 - Retrieve Structured Outputs: `/api/chat/structured?task=...&status=...&limit=...&offset=...`.
+- Update Dev Log: Add a short entry to `docs/PROJECT_NOTEBOOK.md` summarizing what was changed and how it was verified; keep it terse.
 
 ## 4. Anti-Patterns (Avoid)
 - DO NOT import sub-agents statically inside the supervisor (kept dynamic to avoid circular deps). Follow dynamic `await import()` pattern.

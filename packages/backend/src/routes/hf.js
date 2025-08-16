@@ -36,6 +36,73 @@ const upload = multer({
 const router = express.Router();
 
 /**
+ * GET /api/huggingface/status
+ * Get HuggingFace integration status
+ */
+router.get('/status', authenticateToken, async (req, res) => {
+  try {
+    const status = {
+      service: 'huggingface-integration',
+      status: 'operational',
+      features: {
+        binary_upload: 'enabled',
+        model_routing: 'enabled',
+        agent_orchestration: 'enabled',
+        unified_inference: 'enabled',
+      },
+      agents: ['VisionMaster', 'AudioWizard', 'LanguageMaestro', 'MultiModalOracle', 'DataSage'],
+      performance: {
+        in_memory_items: global.hfBinaryStore?.size || 0,
+        memory_usage: `${Math.round(currentMemoryUsageBytes() / 1024 / 1024)}MB`,
+        max_memory: `${MAX_TOTAL_MEMORY_BYTES / 1024 / 1024}MB`,
+      },
+      timestamp: new Date().toISOString(),
+    };
+
+    res.json({
+      success: true,
+      ...status,
+    });
+  } catch (error) {
+    console.error('[HF] Status error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get HuggingFace status',
+    });
+  }
+});
+
+/**
+ * GET /api/huggingface/models
+ * Get available HuggingFace models
+ */
+router.get('/models', authenticateToken, async (req, res) => {
+  try {
+    const models = {
+      vision: ['microsoft/DiT-XL-2-256', 'stabilityai/stable-diffusion-xl-base-1.0'],
+      audio: ['openai/whisper-large-v2', 'facebook/wav2vec2-large-960h'],
+      language: ['microsoft/DialoGPT-large', 'google/flan-t5-large'],
+      multimodal: ['salesforce/blip-image-captioning-large', 'microsoft/git-base-coco'],
+      data: ['sentence-transformers/all-MiniLM-L6-v2', 'huggingface/CodeBERTa-small-v1'],
+    };
+
+    res.json({
+      success: true,
+      models: models,
+      total_models: Object.values(models).flat().length,
+      categories: Object.keys(models),
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('[HF] Models error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get HuggingFace models',
+    });
+  }
+});
+
+/**
  * POST /api/hf/upload
  * Auth required. Accepts one file as 'file'. Returns token hfbin:<uuid>
  * Response: { success, token, expires_at, size, mime_type, filename }

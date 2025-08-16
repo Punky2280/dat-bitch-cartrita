@@ -107,7 +107,7 @@ const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({
       case "checking":
         return <Clock className="w-4 h-4 text-blue-500 animate-spin" />;
       default:
-        return <AlertCircle className="w-4 h-4 text-gray-400" />;
+  return <AlertCircle className="w-4 h-4 text-slate-400" />;
     }
   };
 
@@ -122,7 +122,7 @@ const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({
       case "checking":
         return "bg-blue-100 text-blue-800 border-blue-200";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+  return "bg-slate-100 text-slate-800 border-slate-200";
     }
   };
 
@@ -189,7 +189,7 @@ const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({
       {/* Header with overall status */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h3 className="text-lg font-semibold text-slate-900">
             System Health Status
           </h3>
           {healthReport && (
@@ -207,12 +207,12 @@ const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 text-sm text-gray-600">
+          <label className="flex items-center gap-2 text-sm text-slate-600">
             <input
               type="checkbox"
               checked={autoRefresh}
               onChange={(e) => setAutoRefresh(e.target.checked)}
-              className="rounded border-gray-300"
+              className="rounded border-slate-300"
             />
             Auto-refresh
           </label>
@@ -229,7 +229,7 @@ const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({
 
       {/* Last update info */}
       {lastUpdate && (
-        <p className="text-sm text-gray-500">
+  <p className="text-sm text-slate-500">
           Last updated: {lastUpdate.toLocaleTimeString()}
         </p>
       )}
@@ -282,32 +282,32 @@ const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({
 
       {/* Summary statistics */}
       {healthReport && (
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h4 className="font-medium text-gray-900 mb-2">Health Summary</h4>
+        <div className="bg-slate-50 rounded-lg p-4">
+          <h4 className="font-medium text-slate-900 mb-2">Health Summary</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div className="text-center">
               <div className="text-lg font-bold text-green-600">
                 {healthReport.summary.healthy}
               </div>
-              <div className="text-gray-600">Healthy</div>
+              <div className="text-slate-600">Healthy</div>
             </div>
             <div className="text-center">
               <div className="text-lg font-bold text-red-600">
                 {healthReport.summary.unhealthy}
               </div>
-              <div className="text-gray-600">Unhealthy</div>
+              <div className="text-slate-600">Unhealthy</div>
             </div>
             <div className="text-center">
               <div className="text-lg font-bold text-blue-600">
                 {healthReport.summary.checking}
               </div>
-              <div className="text-gray-600">Checking</div>
+              <div className="text-slate-600">Checking</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-gray-600">
+              <div className="text-lg font-bold text-slate-600">
                 {healthReport.summary.total}
               </div>
-              <div className="text-gray-600">Total</div>
+              <div className="text-slate-600">Total</div>
             </div>
           </div>
         </div>
@@ -315,8 +315,8 @@ const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({
 
       {/* Loading state */}
       {isLoading && !healthReport && (
-        <div className="flex items-center justify-center py-8">
-          <div className="flex items-center gap-3 text-gray-600">
+          <div className="flex items-center justify-center py-8">
+          <div className="flex items-center gap-3 text-slate-600">
             <Clock className="w-5 h-5 animate-spin" />
             <span>Running comprehensive health check...</span>
           </div>

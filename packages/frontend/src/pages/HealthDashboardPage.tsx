@@ -107,18 +107,18 @@ const Gauge = ({ value, max = 100, label }: { value: number; max?: number; label
             />
           </g>
         </svg>
-        <div className="absolute inset-0 flex items-end justify-center pb-1 text-xs text-gray-300">
+  <div className="absolute inset-0 flex items-end justify-center pb-1 text-xs text-slate-300">
           {Math.round(pct * 100)}%
         </div>
       </div>
-      <div className="text-xs text-gray-400 mt-1">{label}</div>
+  <div className="text-xs text-slate-400 mt-1">{label}</div>
     </div>
   );
 };
 
 const DonutChart = ({ data, label }: { data: any[], label: string }) => {
   const total = data.reduce((sum, item) => sum + parseInt(item.count || item.user_count || 0), 0);
-  if (total === 0) return <div className="text-gray-500 text-xs">No data</div>;
+  if (total === 0) return <div className="text-slate-500 text-xs">No data</div>;
 
   let cumulativePercentage = 0;
   const colors = ['#60a5fa', '#34d399', '#fbbf24', '#f87171', '#a855f7'];
@@ -127,7 +127,7 @@ const DonutChart = ({ data, label }: { data: any[], label: string }) => {
     <div className="flex flex-col items-center">
       <div className="relative w-32 h-32">
         <svg viewBox="0 0 42 42" className="w-full h-full">
-          <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#374151" strokeWidth="3"/>
+          <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#334155" strokeWidth="3"/>
           {data.map((item, index) => {
             const percentage = (parseInt(item.count || item.user_count || 0) / total) * 100;
             const strokeDasharray = `${percentage} ${100 - percentage}`;
@@ -153,7 +153,7 @@ const DonutChart = ({ data, label }: { data: any[], label: string }) => {
           {total}
         </div>
       </div>
-      <div className="text-xs text-gray-400 mt-1">{label}</div>
+      <div className="text-xs text-slate-400 mt-1">{label}</div>
     </div>
   );
 };
@@ -182,21 +182,21 @@ const ActivityFeed = ({ activities }: { activities: any[] }) => {
   };
 
   return (
-    <div className="space-y-2 max-h-80 overflow-y-auto">
+  <div className="space-y-2 max-h-80 overflow-y-auto">
       {activities.length === 0 ? (
-        <div className="text-gray-500 text-xs text-center py-4">No recent activity</div>
+    <div className="text-slate-500 text-xs text-center py-4">No recent activity</div>
       ) : (
         activities.map((activity, index) => (
-          <div key={index} className="flex items-start space-x-3 p-2 hover:bg-gray-800/50 rounded">
+      <div key={index} className="flex items-start space-x-3 p-2 hover:bg-slate-800/50 rounded">
             <span className="text-lg">{getActivityIcon(activity.type, activity.action)}</span>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-gray-300 truncate">
+        <p className="text-xs text-slate-300 truncate">
                 {activity.action.replace(/_/g, ' ')}
                 {activity.user_id && (
-                  <span className="text-gray-500"> • User {activity.user_id}</span>
+          <span className="text-slate-500"> • User {activity.user_id}</span>
                 )}
               </p>
-              <p className="text-xs text-gray-400">
+        <p className="text-xs text-slate-400">
                 {formatTimeAgo(activity.created_at)}
               </p>
             </div>
@@ -208,7 +208,7 @@ const ActivityFeed = ({ activities }: { activities: any[] }) => {
 };
 
 const SystemMetrics = ({ metrics }: { metrics: any }) => {
-  if (!metrics.system_info) return <div className="text-gray-500 text-xs">Loading...</div>;
+  if (!metrics.system_info) return <div className="text-slate-500 text-xs">Loading...</div>;
   const { memory_usage } = metrics.system_info;
   const memoryPercent = memory_usage ? (memory_usage.used / memory_usage.total * 100) : 0;
   const dbSize = metrics.database_stats?.database_size ? 
@@ -217,23 +217,23 @@ const SystemMetrics = ({ metrics }: { metrics: any }) => {
     <div className="grid grid-cols-2 gap-4">
       <div className="text-center">
         <div className="text-2xl font-bold text-blue-400">{memoryPercent.toFixed(1)}%</div>
-        <div className="text-xs text-gray-400">Memory Usage</div>
+  <div className="text-xs text-slate-400">Memory Usage</div>
       </div>
       <div className="text-center">
         <div className="text-2xl font-bold text-green-400">{dbSize}GB</div>
-        <div className="text-xs text-gray-400">DB Size</div>
+  <div className="text-xs text-slate-400">DB Size</div>
       </div>
       <div className="text-center">
         <div className="text-2xl font-bold text-purple-400">
           {metrics.database_stats?.active_connections || 0}
         </div>
-        <div className="text-xs text-gray-400">DB Connections</div>
+  <div className="text-xs text-slate-400">DB Connections</div>
       </div>
       <div className="text-center">
         <div className="text-2xl font-bold text-yellow-400">
           {Math.floor(metrics.system_info?.uptime_seconds / 3600) || 0}h
         </div>
-        <div className="text-xs text-gray-400">Uptime</div>
+  <div className="text-xs text-slate-400">Uptime</div>
       </div>
     </div>
   );
@@ -317,11 +317,11 @@ export const HealthDashboardPage = ({ token, onBack }: HealthDashboardPageProps)
 
   return (
     <div className="min-h-screen bg-animated text-white">
-      <header className="glass-card border-b border-gray-600/50 p-4">
+  <header className="glass-card border-b border-slate-600/50 p-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gradient">System Health</h1>
-            <p className="text-gray-400 mt-1">Operational metrics & service status (preview)</p>
+            <p className="text-slate-400 mt-1">Operational metrics & service status (preview)</p>
           </div>
           <div className="flex items-center space-x-3">
             <button onClick={onBack} className="bg-purple-600/80 hover:bg-purple-600 px-4 py-2 rounded-lg transition-colors flex items-center space-x-2">
@@ -335,16 +335,16 @@ export const HealthDashboardPage = ({ token, onBack }: HealthDashboardPageProps)
       <main className="max-w-7xl mx-auto p-6 space-y-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="glass-card p-5 rounded-xl">
-            <div className="text-xs uppercase tracking-wide text-gray-400 mb-1">Overall</div>
+            <div className="text-xs uppercase tracking-wide text-slate-400 mb-1">Overall</div>
             <div className={`text-lg font-semibold ${overallColor}`}>{healthSummary.overall || '—'}</div>
-            <div className="text-[10px] text-gray-500 mt-2">Updated {healthSummary.timestamp ? new Date(healthSummary.timestamp).toLocaleTimeString() : '—'}</div>
+            <div className="text-[10px] text-slate-500 mt-2">Updated {healthSummary.timestamp ? new Date(healthSummary.timestamp).toLocaleTimeString() : '—'}</div>
           </div>
           <div className="glass-card p-5 rounded-xl">
-            <div className="text-xs uppercase tracking-wide text-gray-400 mb-1">Uptime (min)</div>
+            <div className="text-xs uppercase tracking-wide text-slate-400 mb-1">Uptime (min)</div>
             <Sparkline data={uptimeData} />
           </div>
           <div className="glass-card p-5 rounded-xl">
-            <div className="text-xs uppercase tracking-wide text-gray-400 mb-1">Error Rate (sim)</div>
+            <div className="text-xs uppercase tracking-wide text-slate-400 mb-1">Error Rate (sim)</div>
             <Sparkline data={errorRateData} stroke="#f87171" />
           </div>
           <div className="glass-card p-5 rounded-xl flex items-center justify-center">
@@ -374,25 +374,25 @@ export const HealthDashboardPage = ({ token, onBack }: HealthDashboardPageProps)
                 <div className="text-2xl font-bold text-blue-400">
                   {apiKeyMetrics.api_key_stats?.active_keys || 0}
                 </div>
-                <div className="text-xs text-gray-400">Active Keys</div>
+                <div className="text-xs text-slate-400">Active Keys</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-green-400">
                   {apiKeyMetrics.api_key_stats?.recently_used || 0}
                 </div>
-                <div className="text-xs text-gray-400">Recently Used</div>
+                <div className="text-xs text-slate-400">Recently Used</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-yellow-400">
                   {securityMetrics.reveal_token_stats?.total_tokens_created || 0}
                 </div>
-                <div className="text-xs text-gray-400">Reveal Tokens</div>
+                <div className="text-xs text-slate-400">Reveal Tokens</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-purple-400">
                   {securityMetrics.total_users_with_preferences || 0}
                 </div>
-                <div className="text-xs text-gray-400">Configured Users</div>
+                <div className="text-xs text-slate-400">Configured Users</div>
               </div>
             </div>
           </div>
@@ -433,7 +433,7 @@ export const HealthDashboardPage = ({ token, onBack }: HealthDashboardPageProps)
               <span>Request Latency Histogram (simulated)</span>
             </h2>
             <MiniBars data={latencyBuckets} />
-            <div className="grid grid-cols-7 text-[10px] text-gray-400 mt-2">
+            <div className="grid grid-cols-7 text-[10px] text-slate-400 mt-2">
               {latencyBuckets.map((_, i) => (
                 <div key={i} className="text-center">B{i+1}</div>
               ))}
@@ -449,14 +449,14 @@ export const HealthDashboardPage = ({ token, onBack }: HealthDashboardPageProps)
                 const color = v.status === 'healthy' ? 'text-green-400' : 'text-red-400';
                 return (
                   <div key={k} className="flex justify-between items-center">
-                    <span className="text-gray-400 truncate mr-2">{k}</span>
+                    <span className="text-slate-400 truncate mr-2">{k}</span>
                     <span className={`flex items-center space-x-1 ${color}`}>
                       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: v.status === 'healthy' ? '#22c55e' : '#ef4444' }} />
                       <span>{v.status}</span>
                     </span>
                   </div>
                 );
-              }) : <div className="text-gray-500 text-xs">No service data yet.</div>}
+              }) : <div className="text-slate-500 text-xs">No service data yet.</div>}
             </div>
           </div>
         </div>
@@ -469,7 +469,7 @@ export const HealthDashboardPage = ({ token, onBack }: HealthDashboardPageProps)
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <h3 className="text-sm font-semibold text-green-400 mb-1">✅ Recently Added</h3>
-              <ul className="list-disc list-inside text-xs text-gray-300 space-y-1">
+              <ul className="list-disc list-inside text-xs text-slate-300 space-y-1">
                 <li>Security masking controls & metrics</li>
                 <li>API key rotation scheduling</li>
                 <li>Real-time activity monitoring</li>
@@ -479,7 +479,7 @@ export const HealthDashboardPage = ({ token, onBack }: HealthDashboardPageProps)
             </div>
             <div>
               <h3 className="text-sm font-semibold text-blue-400 mb-1">🚀 Coming Soon</h3>
-              <ul className="list-disc list-inside text-xs text-gray-300 space-y-1">
+              <ul className="list-disc list-inside text-xs text-slate-300 space-y-1">
                 <li>Real-time WebSocket metrics stream</li>
                 <li>Historical data retention & time ranges</li>
                 <li>Service dependency graph visualization</li>

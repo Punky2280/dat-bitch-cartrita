@@ -33,14 +33,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   onClearError,
 }) => {
   return (
-    <div className="p-4 border-b border-gray-600/50 bg-gradient-to-r from-gray-800/80 to-gray-700/80">
+  <div className="p-4 border-b border-slate-600/50 bg-gradient-to-r from-slate-800/80 to-slate-700/80">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-xl font-bold text-gradient">
             Chat with Cartrita
           </h2>
           <div className="flex items-center space-x-4 mt-1">
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-slate-400">
               {chatStats.totalMessages > 0
                 ? `${chatStats.totalMessages} messages`
                 : "Start a new conversation"}
@@ -68,11 +68,11 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               }`}
             />
             <div className="text-right">
-              <span className="text-sm text-gray-300 block">
+              <span className="text-sm text-slate-300 block">
                 {isConnected ? "Connected" : "Disconnected"}
               </span>
               {connectionStats.latency > 0 && (
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-slate-500">
                   {connectionStats.latency}ms
                 </span>
               )}
@@ -81,7 +81,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 
           <button
             onClick={onToggleMetrics}
-            className={`text-gray-400 hover:text-blue-400 transition-colors p-1 rounded ${
+            className={`text-slate-400 hover:text-blue-400 transition-colors p-1 rounded ${
               showMetrics ? "text-blue-400" : ""
             }`}
             title="Toggle metrics"
@@ -91,7 +91,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 
           <button
             onClick={onClearChat}
-            className="text-gray-400 hover:text-red-400 transition-colors p-1 rounded"
+            className="text-slate-400 hover:text-red-400 transition-colors p-1 rounded"
             title="Clear chat history"
           >
             🗑️

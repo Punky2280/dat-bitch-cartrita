@@ -69,6 +69,64 @@ router.get('/status', authenticateToken, emailLimiter, async (req, res) => {
   }
 });
 
+// GET /api/email/inbox - Get inbox messages (alias for messages)
+router.get('/inbox', authenticateToken, emailLimiter, async (req, res) => {
+  try {
+    const { limit = 20, unread_only = false } = req.query;
+
+    // Mock inbox messages for demonstration
+    const mockMessages = [
+      {
+        id: 'msg_001',
+        from: 'team@cartrita.ai',
+        subject: '🎉 Welcome to Cartrita!',
+        preview: 'Thanks for joining the Cartrita family...',
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        read: false,
+        category: 'welcome',
+        ai_summary: 'Welcome email from Cartrita team with setup instructions',
+      },
+      {
+        id: 'msg_002', 
+        from: 'notifications@github.com',
+        subject: 'Repository activity',
+        preview: 'New activity in your repositories...',
+        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        read: true,
+        category: 'notifications',
+        ai_summary: 'GitHub activity notifications for your repositories',
+      },
+      {
+        id: 'msg_003',
+        from: 'alerts@system.com',
+        subject: 'System Health Report',
+        preview: 'Your system is running smoothly...',
+        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+        read: false,
+        category: 'system',
+        ai_summary: 'Automated system health monitoring report',
+      },
+    ];
+
+    const filteredMessages = unread_only === 'true' ? mockMessages.filter(msg => !msg.read) : mockMessages;
+
+    res.json({
+      success: true,
+      messages: filteredMessages.slice(0, parseInt(limit)),
+      total_count: filteredMessages.length,
+      unread_count: mockMessages.filter(msg => !msg.read).length,
+      folder: 'inbox',
+      message: `📬 Found ${filteredMessages.length} messages in inbox`,
+    });
+  } catch (error) {
+    console.error('[Email Routes] Inbox error:', error);
+    res.status(500).json({
+      error: '📧 Failed to retrieve inbox messages',
+      details: 'Cartrita could not access your inbox right now',
+    });
+  }
+});
+
 // GET /api/email/messages - Get email messages
 router.get('/messages', authenticateToken, emailLimiter, async (req, res) => {
   try {

@@ -1,2 +1,12 @@
-\n# Local environment variables\n.env
-\n# Local environment variables\n.env
+# Local environment variables
+.env
+
+# Jest artifacts
+coverage/
+jest*.json
+
+# Logs and temp outputs
+*.log
+logs/
+uploads/
+tmp*

@@ -77,7 +77,7 @@ const SmartNotificationSystem: React.FC<SmartNotificationSystemProps> = ({
   className = ''
 }) => {
   const [notifications, setNotifications] = useState<SmartNotification[]>([]);
-  const [userPreferences, setUserPreferences] = useState({
+  const [userPreferences] = useState({
     soundEnabled: enableSound,
     vibrationEnabled: enableVibration,
     adaptiveEnabled: adaptiveBehavior,

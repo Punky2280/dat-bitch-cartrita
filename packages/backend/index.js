@@ -109,6 +109,7 @@ import personalLifeOSRoutes from './src/routes/personalLifeOS.js';
 import rotationSchedulingRoutes from './src/routes/rotationScheduling.js';
 import securityMaskingRoutes from './src/routes/securityMasking.js';
 import apiKeyManagementRoutes from './src/routes/apiKeyManagement.js';
+import cartritaRouterRoutes from './src/routes/router.js';
 // Unified AI Inference (multi-provider via HF token)
 import { createUnifiedInferenceService } from './src/services/unifiedInference.js';
 
@@ -387,6 +388,7 @@ app.use('/api/personal-life-os', personalLifeOSRoutes);
 app.use('/api/rotation-scheduling', rotationSchedulingRoutes);
 app.use('/api/api-keys', apiKeyManagementRoutes);
 app.use('/api/security-masking', securityMaskingRoutes);
+app.use('/api/router', cartritaRouterRoutes);
 // New secure key vault unified endpoints (refactored service)
 import keyVaultRoutes from './src/routes/keyVault.js';
 app.use('/api/key-vault', keyVaultRoutes);

@@ -294,6 +294,61 @@ router.post(
 
 /**
  * @swagger
+ * /api/knowledge/categories:
+ *   get:
+ *     summary: Get knowledge categories (alias for collections)
+ *     tags: [Knowledge]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of categories with document counts
+ *       500:
+ *         description: Server error
+ */
+router.get('/categories', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    console.log(`[Knowledge] 📚 Fetching categories for user ${userId}`);
+
+    const query = `
+      SELECT 
+        category,
+        COUNT(*) as document_count,
+        MIN(created_at) as first_created,
+        MAX(updated_at) as last_updated
+      FROM knowledge_entries 
+      WHERE user_id = $1 
+      GROUP BY category
+      ORDER BY document_count DESC, category ASC
+    `;
+
+    const result = await db.query(query, [userId]);
+
+    console.log(`[Knowledge] ✅ Found ${result.rows.length} categories`);
+
+    res.json({
+      success: true,
+      categories: result.rows.map(row => ({
+        name: row.category,
+        document_count: parseInt(row.document_count),
+        first_created: row.first_created,
+        last_updated: row.last_updated,
+      })),
+      total: result.rows.length,
+    });
+  } catch (error) {
+    console.error('[Knowledge] ❌ Categories error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch knowledge categories',
+    });
+  }
+});
+
+/**
+ * @swagger
  * /api/knowledge/collections:
  *   get:
  *     summary: List knowledge collections (categories)
