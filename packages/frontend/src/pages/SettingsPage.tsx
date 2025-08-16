@@ -139,8 +139,24 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
 
   useEffect(() => {
     let cancelled = false;
+    let timeoutId: NodeJS.Timeout;
+    
     const fetchData = async () => {
       setLoading(true);
+      
+      // Set a maximum loading timeout
+      timeoutId = setTimeout(() => {
+        if (!cancelled) {
+          setLoading(false);
+          notify.warning(
+            "Settings load timeout",
+            "Failed to load settings within reasonable time. Using defaults."
+          );
+          setPersonalityForm(defaultPersonality);
+          setAudioForm(defaultAudio);
+        }
+      }, 15000); // 15 second timeout
+      
       try {
         const [meRes, prefsRes] = await Promise.all([
           fetchWithTimeout("/api/user/me", {
@@ -206,12 +222,25 @@ export const SettingsPage = ({ token, onBack }: SettingsPageProps) => {
           );
         }
       } finally {
+        if (timeoutId) clearTimeout(timeoutId);
         if (!cancelled) setLoading(false);
       }
     };
-    if (token) fetchData();
+    if (token) {
+      fetchData();
+    } else {
+      // No token available, use defaults
+      setLoading(false);
+      setPersonalityForm(defaultPersonality);
+      setAudioForm(defaultAudio);
+      notify.warning(
+        "No authentication",
+        "No authentication token available. Using default settings."
+      );
+    }
     return () => {
       cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, [token, notify]);
 

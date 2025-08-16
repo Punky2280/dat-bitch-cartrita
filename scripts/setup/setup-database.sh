@@ -5,7 +5,7 @@ echo "🚀 Setting up Cartrita database schema..."
 
 # Database connection details
 DB_HOST="localhost"
-DB_PORT="5435"
+DB_PORT="5432"
 DB_NAME="dat-bitch-cartrita"
 DB_USER="robert"
 DB_PASSWORD="punky1"

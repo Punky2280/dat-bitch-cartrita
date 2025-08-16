@@ -1,0 +1,823 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for backend/src/services/security/keyVaultService.js</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../../../prettify.css" />
+    <link rel="stylesheet" href="../../../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../../../index.html">All files</a> / <a href="index.html">backend/src/services/security</a> keyVaultService.js</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>0/173</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>0/99</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>0/21</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>0/144</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line low'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a>
+<a name='L149'></a><a href='#L149'>149</a>
+<a name='L150'></a><a href='#L150'>150</a>
+<a name='L151'></a><a href='#L151'>151</a>
+<a name='L152'></a><a href='#L152'>152</a>
+<a name='L153'></a><a href='#L153'>153</a>
+<a name='L154'></a><a href='#L154'>154</a>
+<a name='L155'></a><a href='#L155'>155</a>
+<a name='L156'></a><a href='#L156'>156</a>
+<a name='L157'></a><a href='#L157'>157</a>
+<a name='L158'></a><a href='#L158'>158</a>
+<a name='L159'></a><a href='#L159'>159</a>
+<a name='L160'></a><a href='#L160'>160</a>
+<a name='L161'></a><a href='#L161'>161</a>
+<a name='L162'></a><a href='#L162'>162</a>
+<a name='L163'></a><a href='#L163'>163</a>
+<a name='L164'></a><a href='#L164'>164</a>
+<a name='L165'></a><a href='#L165'>165</a>
+<a name='L166'></a><a href='#L166'>166</a>
+<a name='L167'></a><a href='#L167'>167</a>
+<a name='L168'></a><a href='#L168'>168</a>
+<a name='L169'></a><a href='#L169'>169</a>
+<a name='L170'></a><a href='#L170'>170</a>
+<a name='L171'></a><a href='#L171'>171</a>
+<a name='L172'></a><a href='#L172'>172</a>
+<a name='L173'></a><a href='#L173'>173</a>
+<a name='L174'></a><a href='#L174'>174</a>
+<a name='L175'></a><a href='#L175'>175</a>
+<a name='L176'></a><a href='#L176'>176</a>
+<a name='L177'></a><a href='#L177'>177</a>
+<a name='L178'></a><a href='#L178'>178</a>
+<a name='L179'></a><a href='#L179'>179</a>
+<a name='L180'></a><a href='#L180'>180</a>
+<a name='L181'></a><a href='#L181'>181</a>
+<a name='L182'></a><a href='#L182'>182</a>
+<a name='L183'></a><a href='#L183'>183</a>
+<a name='L184'></a><a href='#L184'>184</a>
+<a name='L185'></a><a href='#L185'>185</a>
+<a name='L186'></a><a href='#L186'>186</a>
+<a name='L187'></a><a href='#L187'>187</a>
+<a name='L188'></a><a href='#L188'>188</a>
+<a name='L189'></a><a href='#L189'>189</a>
+<a name='L190'></a><a href='#L190'>190</a>
+<a name='L191'></a><a href='#L191'>191</a>
+<a name='L192'></a><a href='#L192'>192</a>
+<a name='L193'></a><a href='#L193'>193</a>
+<a name='L194'></a><a href='#L194'>194</a>
+<a name='L195'></a><a href='#L195'>195</a>
+<a name='L196'></a><a href='#L196'>196</a>
+<a name='L197'></a><a href='#L197'>197</a>
+<a name='L198'></a><a href='#L198'>198</a>
+<a name='L199'></a><a href='#L199'>199</a>
+<a name='L200'></a><a href='#L200'>200</a>
+<a name='L201'></a><a href='#L201'>201</a>
+<a name='L202'></a><a href='#L202'>202</a>
+<a name='L203'></a><a href='#L203'>203</a>
+<a name='L204'></a><a href='#L204'>204</a>
+<a name='L205'></a><a href='#L205'>205</a>
+<a name='L206'></a><a href='#L206'>206</a>
+<a name='L207'></a><a href='#L207'>207</a>
+<a name='L208'></a><a href='#L208'>208</a>
+<a name='L209'></a><a href='#L209'>209</a>
+<a name='L210'></a><a href='#L210'>210</a>
+<a name='L211'></a><a href='#L211'>211</a>
+<a name='L212'></a><a href='#L212'>212</a>
+<a name='L213'></a><a href='#L213'>213</a>
+<a name='L214'></a><a href='#L214'>214</a>
+<a name='L215'></a><a href='#L215'>215</a>
+<a name='L216'></a><a href='#L216'>216</a>
+<a name='L217'></a><a href='#L217'>217</a>
+<a name='L218'></a><a href='#L218'>218</a>
+<a name='L219'></a><a href='#L219'>219</a>
+<a name='L220'></a><a href='#L220'>220</a>
+<a name='L221'></a><a href='#L221'>221</a>
+<a name='L222'></a><a href='#L222'>222</a>
+<a name='L223'></a><a href='#L223'>223</a>
+<a name='L224'></a><a href='#L224'>224</a>
+<a name='L225'></a><a href='#L225'>225</a>
+<a name='L226'></a><a href='#L226'>226</a>
+<a name='L227'></a><a href='#L227'>227</a>
+<a name='L228'></a><a href='#L228'>228</a>
+<a name='L229'></a><a href='#L229'>229</a>
+<a name='L230'></a><a href='#L230'>230</a>
+<a name='L231'></a><a href='#L231'>231</a>
+<a name='L232'></a><a href='#L232'>232</a>
+<a name='L233'></a><a href='#L233'>233</a>
+<a name='L234'></a><a href='#L234'>234</a>
+<a name='L235'></a><a href='#L235'>235</a>
+<a name='L236'></a><a href='#L236'>236</a>
+<a name='L237'></a><a href='#L237'>237</a>
+<a name='L238'></a><a href='#L238'>238</a>
+<a name='L239'></a><a href='#L239'>239</a>
+<a name='L240'></a><a href='#L240'>240</a>
+<a name='L241'></a><a href='#L241'>241</a>
+<a name='L242'></a><a href='#L242'>242</a>
+<a name='L243'></a><a href='#L243'>243</a>
+<a name='L244'></a><a href='#L244'>244</a>
+<a name='L245'></a><a href='#L245'>245</a>
+<a name='L246'></a><a href='#L246'>246</a>
+<a name='L247'></a><a href='#L247'>247</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import crypto from 'crypto';
+import db from '../../db.js';
+&nbsp;
+// Lightweight in-memory fallback for test mode
+const MEMORY_MODE = <span class="cstat-no" title="statement not covered" >process.env.LIGHTWEIGHT_TEST === '1';</span>
+const mem = <span class="cstat-no" title="statement not covered" >MEMORY_MODE ? {</span>
+  providers: new Map(), // name -&gt; {id,name}
+  keys: new Map(),      // composite userId|providerId -&gt; record
+  versions: new Map(),  // keyId -&gt; [versions]
+  seq: 1,
+  providerSeq: 1
+} : null;
+&nbsp;
+const ALGO = <span class="cstat-no" title="statement not covered" >'aes-256-gcm';</span>
+const MASTER_KEY = <span class="cstat-no" title="statement not covered" >process.env.MASTER_KEY;</span>
+<span class="cstat-no" title="statement not covered" >if (!MASTER_KEY || MASTER_KEY.length &lt; 32) {</span>
+<span class="cstat-no" title="statement not covered" >  console.warn('[KeyVault] MASTER_KEY missing or too short; encryption weakened for dev.');</span>
+}
+&nbsp;
+function <span class="fstat-no" title="function not covered" >deriveKey(</span>) {
+<span class="cstat-no" title="statement not covered" >  return crypto.createHash('sha256').update(MASTER_KEY || 'DEV_MASTER_KEY').digest();</span>
+}
+&nbsp;
+function <span class="fstat-no" title="function not covered" >encrypt(</span>raw) {
+  const iv = <span class="cstat-no" title="statement not covered" >crypto.randomBytes(12);</span>
+  const key = <span class="cstat-no" title="statement not covered" >deriveKey();</span>
+  const cipher = <span class="cstat-no" title="statement not covered" >crypto.createCipheriv(ALGO, key, iv);</span>
+  const enc = <span class="cstat-no" title="statement not covered" >Buffer.concat([cipher.update(raw, 'utf8'), cipher.final()]);</span>
+  const tag = <span class="cstat-no" title="statement not covered" >cipher.getAuthTag();</span>
+<span class="cstat-no" title="statement not covered" >  return { ciphertext: enc.toString('base64'), iv: iv.toString('base64'), tag: tag.toString('base64') };</span>
+}
+&nbsp;
+function <span class="fstat-no" title="function not covered" >decrypt(</span>ciphertext, ivB64, tagB64) {
+  const key = <span class="cstat-no" title="statement not covered" >deriveKey();</span>
+  const iv = <span class="cstat-no" title="statement not covered" >Buffer.from(ivB64, 'base64');</span>
+  const tag = <span class="cstat-no" title="statement not covered" >Buffer.from(tagB64, 'base64');</span>
+  const decipher = <span class="cstat-no" title="statement not covered" >crypto.createDecipheriv(ALGO, key, iv);</span>
+<span class="cstat-no" title="statement not covered" >  decipher.setAuthTag(tag);</span>
+  const dec = <span class="cstat-no" title="statement not covered" >Buffer.concat([decipher.update(Buffer.from(ciphertext, 'base64')), decipher.final()]);</span>
+<span class="cstat-no" title="statement not covered" >  return dec.toString('utf8');</span>
+}
+&nbsp;
+async function <span class="fstat-no" title="function not covered" >logEvent(</span>event_type, actor_user_id, metadata) {
+<span class="cstat-no" title="statement not covered" >  if (MEMORY_MODE) <span class="cstat-no" title="statement not covered" >return; </span></span>// keep silent in memory mode to reduce noise
+<span class="cstat-no" title="statement not covered" >  try {</span>
+<span class="cstat-no" title="statement not covered" >    await db.query('INSERT INTO event_log (event_type, actor_user_id, metadata) VALUES ($1,$2,$3)', [event_type, actor_user_id || null, metadata ? JSON.stringify(metadata) : null]);</span>
+  } catch (e) {
+<span class="cstat-no" title="statement not covered" >    console.error('[KeyVault] Failed to log event', e.message);</span>
+  }
+}
+&nbsp;
+function <span class="fstat-no" title="function not covered" >hashKey(</span>rawKey) {
+<span class="cstat-no" title="statement not covered" >  return crypto.createHash('sha256').update(rawKey).digest('hex');</span>
+}
+&nbsp;
+class KeyVaultService {
+  // Create or upsert key
+<span class="fstat-no" title="function not covered" >  as</span>ync add({ userId, serviceName, rawKey, scopes = <span class="branch-0 cbranch-no" title="branch not covered" >[],</span> purposeTags = <span class="branch-0 cbranch-no" title="branch not covered" >[],</span> description = <span class="branch-0 cbranch-no" title="branch not covered" >null,</span> expiresAt = <span class="branch-0 cbranch-no" title="branch not covered" >null </span>}) {
+<span class="cstat-no" title="statement not covered" >    if (!rawKey) <span class="cstat-no" title="statement not covered" >throw new Error('rawKey required');</span></span>
+    const provider = <span class="cstat-no" title="statement not covered" >await this._ensureProvider(serviceName);</span>
+    const { ciphertext, iv, tag } = <span class="cstat-no" title="statement not covered" >encrypt(rawKey);</span>
+    const keyHash = <span class="cstat-no" title="statement not covered" >hashKey(rawKey);</span>
+    const checksum = <span class="cstat-no" title="statement not covered" >keyHash.substring(0, 32);</span>
+<span class="cstat-no" title="statement not covered" >    if (MEMORY_MODE) {</span>
+      const composite = <span class="cstat-no" title="statement not covered" >`${userId}|${provider.id}`;</span>
+      const existing = <span class="cstat-no" title="statement not covered" >mem.keys.get(composite);</span>
+      const id = <span class="cstat-no" title="statement not covered" >existing?.id || mem.seq++;</span>
+      const now = <span class="cstat-no" title="statement not covered" >new Date();</span>
+      const rec = <span class="cstat-no" title="statement not covered" >{</span>
+        id, user_id: userId, provider_id: provider.id, encrypted_key: JSON.stringify({ c: ciphertext, t: tag }), iv,
+        key_hash: keyHash, checksum, usage_count: existing ? existing.usage_count : 0, scopes, purpose_tags: purposeTags,
+        is_active: true, created_at: existing?.created_at || now, updated_at: now, last_accessed_at: null,
+        description, expires_at: expiresAt, soft_deleted_at: null
+      };
+<span class="cstat-no" title="statement not covered" >      mem.keys.set(composite, rec);</span>
+<span class="cstat-no" title="statement not covered" >      return { id, serviceName, scopes, purposeTags };</span>
+    }
+    const result = <span class="cstat-no" title="statement not covered" >await db.query(</span>
+      `INSERT INTO user_api_keys (user_id, provider_id, encrypted_key, iv, key_hash, usage_count, scopes, purpose_tags, checksum, updated_at, description, expires_at)
+       VALUES ($1,$2,$3,$4,$5,0,$6,$7,$8,NOW(),$9,$10)
+       ON CONFLICT (user_id, provider_id) DO UPDATE SET encrypted_key=EXCLUDED.encrypted_key, iv=EXCLUDED.iv, key_hash=EXCLUDED.key_hash, scopes=EXCLUDED.scopes, purpose_tags=EXCLUDED.purpose_tags, checksum=EXCLUDED.checksum, description=EXCLUDED.description, expires_at=EXCLUDED.expires_at, updated_at=NOW()
+       RETURNING id`,
+      [userId, provider.id, JSON.stringify({ c: ciphertext, t: tag }), iv, keyHash, scopes, purposeTags, checksum, description, expiresAt]
+    );
+<span class="cstat-no" title="statement not covered" >    await logEvent('key.added', userId, { serviceName, keyId: result.rows[0].id });</span>
+<span class="cstat-no" title="statement not covered" >    return { id: result.rows[0].id, serviceName, scopes, purposeTags };</span>
+  }
+&nbsp;
+  // Retrieve decrypted key (increments usage)
+<span class="fstat-no" title="function not covered" >  as</span>ync get(serviceName, userId) {
+    const provider = <span class="cstat-no" title="statement not covered" >await this._getProvider(serviceName);</span>
+<span class="cstat-no" title="statement not covered" >    if (!provider) <span class="cstat-no" title="statement not covered" >return null;</span></span>
+<span class="cstat-no" title="statement not covered" >    if (MEMORY_MODE) {</span>
+      const rec = <span class="cstat-no" title="statement not covered" >mem.keys.get(`${userId}|${provider.id}`);</span>
+<span class="cstat-no" title="statement not covered" >      if (!rec || !rec.is_active || rec.soft_deleted_at) <span class="cstat-no" title="statement not covered" >return null;</span></span>
+<span class="cstat-no" title="statement not covered" >      rec.usage_count += 1; <span class="cstat-no" title="statement not covered" ></span>rec.last_accessed_at = new Date();</span>
+      const payload = <span class="cstat-no" title="statement not covered" >JSON.parse(rec.encrypted_key);</span>
+<span class="cstat-no" title="statement not covered" >      return decrypt(payload.c, rec.iv, payload.t);</span>
+    }
+    const { rows } = <span class="cstat-no" title="statement not covered" >await db.query('SELECT id, encrypted_key, iv FROM user_api_keys WHERE user_id=$1 AND provider_id=$2 AND is_active IS NOT FALSE AND soft_deleted_at IS NULL LIMIT 1', [userId, provider.id]);</span>
+<span class="cstat-no" title="statement not covered" >    if (!rows.length) <span class="cstat-no" title="statement not covered" >return null;</span></span>
+    const rec = <span class="cstat-no" title="statement not covered" >rows[0];</span>
+    const payload = <span class="cstat-no" title="statement not covered" >JSON.parse(rec.encrypted_key);</span>
+    const raw = <span class="cstat-no" title="statement not covered" >decrypt(payload.c, rec.iv, payload.t);</span>
+<span class="cstat-no" title="statement not covered" >    await db.query('UPDATE user_api_keys SET usage_count=usage_count+1, last_accessed_at=NOW() WHERE id=$1', [rec.id]);</span>
+<span class="cstat-no" title="statement not covered" >    return raw;</span>
+  }
+&nbsp;
+  // Metadata only (no raw key, no usage increment)
+<span class="fstat-no" title="function not covered" >  as</span>ync getMetadata(serviceName, userId) {
+    const provider = <span class="cstat-no" title="statement not covered" >await this._getProvider(serviceName);</span>
+<span class="cstat-no" title="statement not covered" >    if (!provider) <span class="cstat-no" title="statement not covered" >return null;</span></span>
+<span class="cstat-no" title="statement not covered" >    if (MEMORY_MODE) {</span>
+      const rec = <span class="cstat-no" title="statement not covered" >mem.keys.get(`${userId}|${provider.id}`);</span>
+<span class="cstat-no" title="statement not covered" >      if (!rec) <span class="cstat-no" title="statement not covered" >return null;</span></span>
+      const { encrypted_key, iv, key_hash, ...meta } = <span class="cstat-no" title="statement not covered" >rec;</span> // omit sensitive parts
+<span class="cstat-no" title="statement not covered" >      return meta;</span>
+    }
+    const { rows } = <span class="cstat-no" title="statement not covered" >await db.query('SELECT id, usage_count, last_accessed_at, scopes, purpose_tags, is_active, created_at, updated_at, description, expires_at, soft_deleted_at FROM user_api_keys WHERE user_id=$1 AND provider_id=$2 LIMIT 1', [userId, provider.id]);</span>
+<span class="cstat-no" title="statement not covered" >    return rows[0] || null;</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync list(userId) {
+<span class="cstat-no" title="statement not covered" >    if (MEMORY_MODE) {</span>
+      const out = <span class="cstat-no" title="statement not covered" >[];</span>
+<span class="cstat-no" title="statement not covered" >      for (const rec of mem.keys.values()) {</span>
+<span class="cstat-no" title="statement not covered" >        if (rec.user_id === userId) <span class="cstat-no" title="statement not covered" >out.push({ id: rec.id, service: [...mem.providers.values()].find(<span class="fstat-no" title="function not covered" >p=</span>&gt;<span class="cstat-no" title="statement not covered" >p.id===rec.provider_id)</span>?.name, usage_count: rec.usage_count, last_accessed_at: rec.last_accessed_at, scopes: rec.scopes, purpose_tags: rec.purpose_tags, is_active: rec.is_active, created_at: rec.created_at, updated_at: rec.updated_at, masked: true });</span></span>
+      }
+<span class="cstat-no" title="statement not covered" >      return out;</span>
+    }
+    const { rows } = <span class="cstat-no" title="statement not covered" >await db.query(`SELECT k.id, p.name as service, k.usage_count, k.last_accessed_at, k.scopes, k.purpose_tags, k.is_active, k.created_at, k.updated_at</span>
+                                     FROM user_api_keys k JOIN api_providers p ON k.provider_id=p.id WHERE k.user_id=$1`, [userId]);
+<span class="cstat-no" title="statement not covered" >    return rows.map(<span class="fstat-no" title="function not covered" >r </span>=&gt; (<span class="cstat-no" title="statement not covered" >{ ...r, masked: true })</span>);</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync rotate({ userId, serviceName, newRawKey, reason = <span class="branch-0 cbranch-no" title="branch not covered" >null,</span> preserve_old = <span class="branch-0 cbranch-no" title="branch not covered" >true </span>}) {
+    const provider = <span class="cstat-no" title="statement not covered" >await this._ensureProvider(serviceName);</span>
+    const { ciphertext, iv, tag } = <span class="cstat-no" title="statement not covered" >encrypt(newRawKey);</span>
+    const keyHash = <span class="cstat-no" title="statement not covered" >hashKey(newRawKey);</span>
+    const checksum = <span class="cstat-no" title="statement not covered" >keyHash.substring(0, 32);</span>
+<span class="cstat-no" title="statement not covered" >    if (MEMORY_MODE) {</span>
+      const composite = <span class="cstat-no" title="statement not covered" >`${userId}|${provider.id}`;</span>
+      const existing = <span class="cstat-no" title="statement not covered" >mem.keys.get(composite);</span>
+<span class="cstat-no" title="statement not covered" >      if (!existing) <span class="cstat-no" title="statement not covered" >throw new Error('Key not found');</span></span>
+<span class="cstat-no" title="statement not covered" >      if (preserve_old) {</span>
+        const arr = <span class="cstat-no" title="statement not covered" >mem.versions.get(existing.id) || [];</span>
+<span class="cstat-no" title="statement not covered" >        arr.push({ version: arr.length + 1, encrypted_key: existing.encrypted_key, iv: existing.iv, key_hash: existing.key_hash, checksum: existing.checksum, created_at: new Date() });</span>
+<span class="cstat-no" title="statement not covered" >        mem.versions.set(existing.id, arr);</span>
+      }
+<span class="cstat-no" title="statement not covered" >      existing.encrypted_key = JSON.stringify({ c: ciphertext, t: tag });</span>
+<span class="cstat-no" title="statement not covered" >      existing.iv = iv;</span>
+<span class="cstat-no" title="statement not covered" >      existing.key_hash = keyHash;</span>
+<span class="cstat-no" title="statement not covered" >      existing.checksum = checksum;</span>
+<span class="cstat-no" title="statement not covered" >      existing.usage_count = 0;</span>
+<span class="cstat-no" title="statement not covered" >      existing.updated_at = new Date();</span>
+<span class="cstat-no" title="statement not covered" >      existing.last_accessed_at = null;</span>
+<span class="cstat-no" title="statement not covered" >      return { rotated: true };</span>
+    }
+    // Archive old version
+<span class="cstat-no" title="statement not covered" >    if (preserve_old) {</span>
+<span class="cstat-no" title="statement not covered" >      await db.query(`INSERT INTO user_api_key_versions (user_api_key_id, version_number, encrypted_key, iv, key_hash, checksum, created_at)</span>
+                      SELECT id, (SELECT COALESCE(MAX(version_number),0)+1 FROM user_api_key_versions v WHERE v.user_api_key_id = k.id), encrypted_key, iv, key_hash, checksum, NOW()
+                      FROM user_api_keys k WHERE user_id=$1 AND provider_id=$2`, [userId, provider.id]);
+    }
+    const { rows } = <span class="cstat-no" title="statement not covered" >await db.query('UPDATE user_api_keys SET encrypted_key=$1, iv=$2, key_hash=$3, checksum=$4, usage_count=0, updated_at=NOW(), last_accessed_at=NULL WHERE user_id=$5 AND provider_id=$6 RETURNING id', [JSON.stringify({ c: ciphertext, t: tag }), iv, keyHash, checksum, userId, provider.id]);</span>
+<span class="cstat-no" title="statement not covered" >    await logEvent('key.rotated', userId, { serviceName, keyId: rows[0]?.id, reason });</span>
+<span class="cstat-no" title="statement not covered" >    return { rotated: !!rows.length };</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync listVersions(serviceName, userId) {
+    const provider = <span class="cstat-no" title="statement not covered" >await this._getProvider(serviceName);</span>
+<span class="cstat-no" title="statement not covered" >    if (!provider) <span class="cstat-no" title="statement not covered" >return [];</span></span>
+<span class="cstat-no" title="statement not covered" >    if (MEMORY_MODE) {</span>
+      const rec = <span class="cstat-no" title="statement not covered" >mem.keys.get(`${userId}|${provider.id}`);</span>
+<span class="cstat-no" title="statement not covered" >      if (!rec) <span class="cstat-no" title="statement not covered" >return [];</span></span>
+<span class="cstat-no" title="statement not covered" >      return (mem.versions.get(rec.id) || []).map(<span class="fstat-no" title="function not covered" >v </span>=&gt; (<span class="cstat-no" title="statement not covered" >{ version: v.version, created_at: v.created_at })</span>);</span>
+    }
+    const { rows } = <span class="cstat-no" title="statement not covered" >await db.query(`SELECT version_number as version, created_at FROM user_api_key_versions v JOIN user_api_keys k ON v.user_api_key_id=k.id WHERE k.user_id=$1 AND k.provider_id=$2 ORDER BY version_number DESC LIMIT 20`, [userId, provider.id]);</span>
+<span class="cstat-no" title="statement not covered" >    return rows;</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync remove({ userId, serviceName }) { // soft delete
+    const provider = <span class="cstat-no" title="statement not covered" >await this._getProvider(serviceName);</span>
+<span class="cstat-no" title="statement not covered" >    if (!provider) <span class="cstat-no" title="statement not covered" >return { removed: false };</span></span>
+<span class="cstat-no" title="statement not covered" >    if (MEMORY_MODE) {</span>
+      const rec = <span class="cstat-no" title="statement not covered" >mem.keys.get(`${userId}|${provider.id}`);</span>
+<span class="cstat-no" title="statement not covered" >      if (!rec) <span class="cstat-no" title="statement not covered" >return { removed: false };</span></span>
+<span class="cstat-no" title="statement not covered" >      rec.soft_deleted_at = new Date(); <span class="cstat-no" title="statement not covered" ></span>rec.is_active = false; <span class="cstat-no" title="statement not covered" ></span>return { removed: true };</span>
+    }
+    const { rows } = <span class="cstat-no" title="statement not covered" >await db.query('UPDATE user_api_keys SET is_active=FALSE, soft_deleted_at=NOW() WHERE user_id=$1 AND provider_id=$2 AND soft_deleted_at IS NULL RETURNING id', [userId, provider.id]);</span>
+<span class="cstat-no" title="statement not covered" >    if (rows.length) <span class="cstat-no" title="statement not covered" >await logEvent('key.deleted', userId, { serviceName, keyId: rows[0].id });</span></span>
+<span class="cstat-no" title="statement not covered" >    return { removed: !!rows.length };</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync restore({ userId, serviceName }) {
+    const provider = <span class="cstat-no" title="statement not covered" >await this._getProvider(serviceName);</span>
+<span class="cstat-no" title="statement not covered" >    if (!provider) <span class="cstat-no" title="statement not covered" >return { restored: false };</span></span>
+<span class="cstat-no" title="statement not covered" >    if (MEMORY_MODE) {</span>
+      const rec = <span class="cstat-no" title="statement not covered" >mem.keys.get(`${userId}|${provider.id}`);</span>
+<span class="cstat-no" title="statement not covered" >      if (!rec || !rec.soft_deleted_at) <span class="cstat-no" title="statement not covered" >return { restored: false };</span></span>
+<span class="cstat-no" title="statement not covered" >      rec.soft_deleted_at = null; <span class="cstat-no" title="statement not covered" ></span>rec.is_active = true; <span class="cstat-no" title="statement not covered" ></span>return { restored: true };</span>
+    }
+    const { rows } = <span class="cstat-no" title="statement not covered" >await db.query('UPDATE user_api_keys SET is_active=TRUE, soft_deleted_at=NULL WHERE user_id=$1 AND provider_id=$2 AND soft_deleted_at IS NOT NULL RETURNING id', [userId, provider.id]);</span>
+<span class="cstat-no" title="statement not covered" >    return { restored: !!rows.length };</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync validateCandidate({ userId, serviceName, candidate }) {
+<span class="cstat-no" title="statement not covered" >    if (!candidate) <span class="cstat-no" title="statement not covered" >throw new Error('candidate required');</span></span>
+    // Placeholder: basic length check; can plug provider-specific validation later
+    const valid = <span class="cstat-no" title="statement not covered" >candidate.length &gt; 10;</span>
+<span class="cstat-no" title="statement not covered" >    await logEvent('key.validated', userId, { serviceName, valid });</span>
+<span class="cstat-no" title="statement not covered" >    return { valid, hashPreview: hashKey(candidate).slice(0, 8) };</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync usageAnalytics(userId) {
+<span class="cstat-no" title="statement not covered" >    if (MEMORY_MODE) {</span>
+      const out = <span class="cstat-no" title="statement not covered" >[];</span>
+<span class="cstat-no" title="statement not covered" >      for (const rec of mem.keys.values()) {</span>
+<span class="cstat-no" title="statement not covered" >        if (rec.user_id === userId) <span class="cstat-no" title="statement not covered" >out.push({ service: [...mem.providers.values()].find(<span class="fstat-no" title="function not covered" >p=</span>&gt;<span class="cstat-no" title="statement not covered" >p.id===rec.provider_id)</span>?.name, usage_count: rec.usage_count, last_accessed_at: rec.last_accessed_at });</span></span>
+      }
+<span class="cstat-no" title="statement not covered" >      return out;</span>
+    }
+    const { rows } = <span class="cstat-no" title="statement not covered" >await db.query('SELECT p.name as service, usage_count, last_accessed_at FROM user_api_keys k JOIN api_providers p ON k.provider_id=p.id WHERE user_id=$1', [userId]);</span>
+<span class="cstat-no" title="statement not covered" >    return rows;</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync _ensureProvider(name) {
+    const existing = <span class="cstat-no" title="statement not covered" >await this._getProvider(name);</span>
+<span class="cstat-no" title="statement not covered" >    if (existing) <span class="cstat-no" title="statement not covered" >return existing;</span></span>
+<span class="cstat-no" title="statement not covered" >    if (MEMORY_MODE) {</span>
+      const rec = <span class="cstat-no" title="statement not covered" >{ id: mem.providerSeq++, name };</span>
+<span class="cstat-no" title="statement not covered" >      mem.providers.set(name, rec);</span>
+<span class="cstat-no" title="statement not covered" >      return rec;</span>
+    }
+    const { rows } = <span class="cstat-no" title="statement not covered" >await db.query('INSERT INTO api_providers (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id,name', [name]);</span>
+<span class="cstat-no" title="statement not covered" >    return rows[0];</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync _getProvider(name) {
+<span class="cstat-no" title="statement not covered" >    if (MEMORY_MODE) <span class="cstat-no" title="statement not covered" >return mem.providers.get(name);</span></span>
+    const { rows } = <span class="cstat-no" title="statement not covered" >await db.query('SELECT id,name FROM api_providers WHERE name=$1', [name]);</span>
+<span class="cstat-no" title="statement not covered" >    return rows[0];</span>
+  }
+}
+&nbsp;
+export default new KeyVaultService();
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2025-08-16T06:02:32.201Z
+            </div>
+        <script src="../../../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../../../sorter.js"></script>
+        <script src="../../../../block-navigation.js"></script>
+    </body>
+</html>
+    

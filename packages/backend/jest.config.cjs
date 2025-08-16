@@ -1,4 +1,4 @@
-// Jest configuration (CJS) for backend tests
+// Jest configuration (CommonJS) for backend tests
 // Goals:
 // - Run our backend tests under `tests/**` and `src/test/**`
 // - Exclude upstream/vendor test trees (e.g., opentelemetry sources)

@@ -27,7 +27,15 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import { redactSecrets } from './src/middleware/redactSecrets.js';
+import { createStructuredOutputMiddleware } from './src/middleware/structuredOutputMiddleware.js';
 import APIKeyManager from './src/services/APIKeyManager.js';
+import EnhancedDatabaseSecurityService from './src/services/EnhancedDatabaseSecurityService.js';
+import DatabaseSecurityMiddleware from './src/middleware/DatabaseSecurityMiddleware.js';
+import ComprehensiveSecurityTestingSuite from './src/services/ComprehensiveSecurityTestingSuite.js';
+import SecurityIntegrationManager from './src/security/SecurityIntegrationManager.js';
+import SecurityWebSocketServer from './src/security/SecurityWebSocketServer.js';
+import securityDashboardRoutes from './src/routes/securityDashboard.js';
+import mfaRoutes from './src/routes/mfa.js';
 
 // --- AGENT & SERVICE IMPORTS ---
 import CartritaSupervisorAgent from './src/agi/consciousness/EnhancedLangChainCoreAgent.js';
@@ -37,6 +45,7 @@ import OpenTelemetryTracing from './src/system/OpenTelemetryTracing.js';
 import openTelemetryIntegration from './src/opentelemetry/OpenTelemetryIntegrationService.js';
 import TelemetryAgent from './src/agi/system/TelemetryAgent.js';
 import SensoryProcessingService from './src/system/SensoryProcessingService.js';
+import RealTimeHealthMonitor from './src/services/RealTimeHealthMonitor.js';
 const RedisService = {
   async initialize() {
     try {
@@ -72,6 +81,7 @@ const RedisService = {
 };
 import authenticateTokenSocket from './src/middleware/authenticateTokenSocket.js';
 import authenticateToken from './src/middleware/authenticateToken.js';
+import ZeroTrustMiddleware from './src/middleware/ZeroTrustMiddleware.js';
 import socketConfig from './socket-config.js';
 
 // --- ROUTE IMPORTS ---
@@ -96,7 +106,9 @@ import contactRoutes from './src/routes/contact.js';
 import { router as notificationRoutes } from './src/routes/notifications.js';
 import { router as privacyRoutes } from './src/routes/privacy.js';
 import hierarchyRoutes from './src/routes/hierarchy.js';
+import databaseSecurityRoutes from './src/routes/databaseSecurity.js';
 import healthRoutes from './src/routes/health.js';
+import { router as performanceRoutes } from './src/routes/performance.js';
 import iteration22Routes from './src/routes/iteration22.js';
 import workflowToolsRoutes from './src/routes/workflowTools.js';
 import fineTuningRoutes from './src/routes/fineTuningRoutes.js';
@@ -108,14 +120,28 @@ import modelRoutingRoutes from './src/routes/modelRouting.js';
 import personalLifeOSRoutes from './src/routes/personalLifeOS.js';
 import rotationSchedulingRoutes from './src/routes/rotationScheduling.js';
 import securityMaskingRoutes from './src/routes/securityMasking.js';
+import securityMainRoutes from './src/routes/security.js';
 import apiKeyManagementRoutes from './src/routes/apiKeyManagement.js';
 import cartritaRouterRoutes from './src/routes/router.js';
+import fusionAggregationRoutes from './src/routes/fusionAggregation.js';
+import securityAuthRoutes from './src/routes/securityAuth.js';
+import securityMonitoringRoutes from './src/routes/securityMonitoring.js';
+import securityIntegrationsRoutes from './src/routes/securityIntegrations.js';
+import complianceRoutes from './src/routes/compliance.js';
+import securityTestingRoutes from './src/routes/securityTesting.js';
+import { router as docsRoutes } from './src/routes/docs.js';
+import dashboardRoutes from './src/routes/dashboard.js';
+import aiHubRoutes from './src/routes/ai-hub.js';
+console.log('🔧 [Index] Cartrita router imported:', typeof cartritaRouterRoutes);
 // Unified AI Inference (multi-provider via HF token)
 import { createUnifiedInferenceService } from './src/services/unifiedInference.js';
 
 // --- CONFIGURATION ---
 const PORT = process.env.PORT || 8001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
+// Feature flags to stabilize local dev
+const ENABLE_DB_SECURITY = process.env.ENABLE_DB_SECURITY === '1' || NODE_ENV === 'production';
+const ENABLE_SECURITY_TESTING = process.env.ENABLE_SECURITY_TESTING === '1';
 const DATABASE_URL = process.env.DATABASE_URL;
 const LIGHTWEIGHT_TEST = isLightweight();
 
@@ -171,6 +197,59 @@ const pool = new Pool({
   connectionTimeoutMillis: 2000,
 });
 
+// Initialize Enhanced Database Security Service
+let databaseSecurityService = null;
+let databaseSecurityMiddleware = null;
+
+if (ENABLE_DB_SECURITY) {
+  try {
+    databaseSecurityService = new EnhancedDatabaseSecurityService(pool);
+    databaseSecurityMiddleware = new DatabaseSecurityMiddleware(databaseSecurityService);
+    
+    // Wrap the database pool with security middleware
+    databaseSecurityMiddleware.wrapDatabasePool(pool);
+    
+    // Make services available to routes
+    app.locals.databaseSecurityService = databaseSecurityService;
+    app.locals.databasePool = pool;
+    
+    console.log('[Security] Enhanced Database Security Service initialized');
+  } catch (error) {
+    console.warn('[Security] Failed to initialize database security:', error.message);
+  }
+} else {
+  console.log('[Security] DB security middleware disabled (set ENABLE_DB_SECURITY=1 to enable)');
+}
+
+// Initialize Comprehensive Security Testing Suite
+let securityTestingSuite = null;
+
+if (ENABLE_SECURITY_TESTING) {
+  try {
+    securityTestingSuite = new ComprehensiveSecurityTestingSuite({
+      databasePool: pool,
+      databaseSecurityService,
+      enablePenetrationTesting: NODE_ENV !== 'production', // Only enable in dev/test
+      enableVulnerabilityScanning: true,
+      enableCodeAnalysis: true,
+      enableComplianceTesting: true,
+      testEnvironmentUrl: process.env.TEST_ENVIRONMENT_URL || 'http://localhost:3000',
+      maxConcurrentTests: 3,
+      testTimeout: 300000 // 5 minutes
+    });
+    
+    // Make security testing suite available to routes
+    app.locals.securityTestingSuite = securityTestingSuite;
+    app.locals.pool = pool; // Also make pool available directly
+    
+    console.log('[Security] Comprehensive Security Testing Suite initialized');
+  } catch (error) {
+    console.warn('[Security] Failed to initialize security testing suite:', error.message);
+  }
+} else {
+  console.log('[Security] Comprehensive Security Testing Suite disabled (set ENABLE_SECURITY_TESTING=1 to enable)');
+}
+
 // --- MIDDLEWARE SETUP ---
 app.use(
   helmet({
@@ -198,13 +277,41 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://localhost:3000',
+  'http://localhost:3001',
   ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : []),
 ].filter(Boolean);
 
+console.log('[CORS] Allowed origins:', allowedOrigins);
+
+// Test route to verify our changes are loaded
+app.get('/api/cors-test', (req, res) => {
+  res.json({ 
+    message: 'CORS test endpoint', 
+    origin: req.headers.origin,
+    allowedOrigins: allowedOrigins 
+  });
+});
+
 app.use(
   cors({
-    origin: allowedOrigins,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    origin: function(origin, callback) {
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin) return callback(null, true);
+      
+      // Check if origin is in allowed list
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      
+      // For development, allow any localhost origin
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return callback(null, true);
+      }
+      
+      // Reject other origins
+      return callback(new Error('Not allowed by CORS'), false);
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
     optionsSuccessStatus: 200,
   })
@@ -214,6 +321,16 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Redact secrets from all outgoing responses
 app.use(redactSecrets);
+
+// Add database security middleware (if initialized)
+if (databaseSecurityMiddleware) {
+  app.use(databaseSecurityMiddleware.middleware());
+  console.log('[Security] Database security middleware enabled');
+}
+
+// Initialize structured output middleware for automatic capturing
+console.log('[Middleware] Initializing structured output middleware...');
+app.use('/api', createStructuredOutputMiddleware());
 // Initialize unified inference service (server-side HF token)
 const unifiedAI = createUnifiedInferenceService();
 
@@ -264,6 +381,12 @@ const performanceMetrics = {
   agentErrors: 0,
   agentWarnings: [],
 };
+
+// Make performance metrics globally accessible for health monitoring
+global.performanceMetrics = performanceMetrics;
+
+// Real-time health monitoring service
+let healthMonitor;
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -334,6 +457,18 @@ app.get('/metrics', (req, res) => {
 
 // --- API ROUTE REGISTRATION ---
 console.log('[Route Registration] Starting route registration...');
+
+// --- ZERO-TRUST NETWORK SECURITY MIDDLEWARE ---
+console.log('[ZeroTrust] Initializing Zero-Trust Network Security middleware...');
+const zeroTrustMiddleware = new ZeroTrustMiddleware();
+
+// Apply zero-trust middleware to all API routes
+app.use('/api', zeroTrustMiddleware.verifyAccess());
+app.use('/api', zeroTrustMiddleware.enforceNetworkSegmentation());
+app.use('/api', zeroTrustMiddleware.continuousMonitoring());
+app.use('/api', zeroTrustMiddleware.threatDetection());
+console.log('[ZeroTrust] Zero-Trust Network Security middleware applied');
+
 // Middleware shim to guarantee HF agent names appear in role-call even if underlying route code lacks fallback
 app.use((req, res, next) => {
   if (req.path === '/api/agents/role-call') {
@@ -363,6 +498,7 @@ app.use('/api/knowledge', knowledgeRoutes);
 app.use('/api/vault', vaultRoutes);
 app.use('/api/keys', apiKeyRoutes);
 app.use('/api/monitoring', monitoringRoutes);
+app.use('/api/performance', performanceRoutes);
 app.use('/api/voice-to-text', voiceToTextRoutes);
 app.use('/api/voice-chat', voiceChatRoutes);
 app.use('/api/vision', visionRoutes);
@@ -388,7 +524,34 @@ app.use('/api/personal-life-os', personalLifeOSRoutes);
 app.use('/api/rotation-scheduling', rotationSchedulingRoutes);
 app.use('/api/api-keys', apiKeyManagementRoutes);
 app.use('/api/security-masking', securityMaskingRoutes);
+app.use('/api/security', securityAuthRoutes);
+app.use('/api/security/monitoring', securityMonitoringRoutes);
+app.use('/api/security/dashboard', securityDashboardRoutes);
+app.use('/api/mfa', mfaRoutes);
+app.use('/api/database-security', databaseSecurityRoutes);
+app.use('/api/security/integrations', securityIntegrationsRoutes);
+app.use('/api/compliance', complianceRoutes);
+app.use('/api/security-testing', securityTestingRoutes);
+app.use('/api/security', securityMainRoutes);
+app.use('/api/docs', docsRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/ai-hub', aiHubRoutes);
+app.use('/api/fusion', fusionAggregationRoutes);
+console.log('🔧 [Index] Mounting cartrita router at /api/router');
+console.log('🔧 [Index] Router type before mounting:', typeof cartritaRouterRoutes);
+console.log('🔧 [Index] Router constructor:', cartritaRouterRoutes?.constructor?.name);
 app.use('/api/router', cartritaRouterRoutes);
+console.log('🔧 [Index] Cartrita router mounted successfully');
+// Test if router is working by adding a test route
+app.get('/api/router-test', (req, res) => {
+  res.json({ message: 'Router test endpoint working', timestamp: new Date().toISOString() });
+});
+console.log('🔧 [Index] Router test endpoint added');
+
+// Add simple test route to isolate routing issues
+import testRoutes from './src/routes/test.js';
+app.use('/api/test', testRoutes);
+console.log('🔧 [Index] Test route mounted at /api/test');
 // New secure key vault unified endpoints (refactored service)
 import keyVaultRoutes from './src/routes/keyVault.js';
 app.use('/api/key-vault', keyVaultRoutes);
@@ -823,6 +986,11 @@ function setupSocketHandlers() {
       sensoryService.handleConnection(socket);
     });
 
+  // Initialize real-time health monitoring
+  healthMonitor = new RealTimeHealthMonitor(io);
+  healthMonitor.startMonitoring();
+  console.log('🔬 Real-time health monitoring initialized');
+
   console.log('✅ Socket.IO event handlers are now active.');
 }
 
@@ -916,6 +1084,21 @@ async function startServer() {
         handleAgentError('ServiceInitializer', serviceError);
       }
 
+      // Initialize Security Integration Manager
+      console.log('🔒 Initializing Security Integration Manager...');
+      try {
+        await SecurityIntegrationManager.initialize();
+        
+        // Apply security middleware to the app
+        SecurityIntegrationManager.applySecurityMiddleware(app);
+        
+        console.log('✅ Security Integration Manager initialized successfully');
+        global.securityManager = SecurityIntegrationManager;
+      } catch (securityError) {
+        console.warn('⚠️ Security Integration Manager initialization failed, continuing with reduced security...');
+        handleAgentError('SecurityIntegrationManager', securityError);
+      }
+
       console.log('🌟 Initializing Advanced 2025 MCP Orchestrator...');
       try {
         advanced2025Orchestrator =
@@ -962,6 +1145,34 @@ async function startServer() {
         console.warn('⚠️ MCP System initialization failed, continuing...');
         handleAgentError('MCPSystem', mcpSystemError);
       }
+
+      // Initialize Performance Monitoring Suite (Task 19)
+      console.log('📊 Initializing Performance Monitoring Suite...');
+      try {
+        const { getPerformanceMonitoringService } = await import('./src/services/PerformanceMonitoringService.js');
+        const performanceService = getPerformanceMonitoringService();
+        
+        await performanceService.initialize({
+          thresholds: {
+            responseTime: 2000, // 2s
+            errorRate: 0.05, // 5%
+            memoryUsage: 0.85, // 85%
+            cpuUsage: 0.80, // 80%
+            diskUsage: 0.90, // 90%
+          },
+          alerts: {
+            enabled: true,
+            channels: ['console'],
+            cooldown: 300000, // 5 minutes
+          },
+        });
+        
+        console.log('✅ Performance Monitoring Suite initialized successfully');
+        global.performanceService = performanceService;
+      } catch (performanceError) {
+        console.warn('⚠️ Performance Monitoring initialization failed, continuing...');
+        handleAgentError('PerformanceMonitoring', performanceError);
+      }
     } else {
       console.log('🧪 LIGHTWEIGHT_TEST=1 -> Skipping service + MCP initialization');
     }
@@ -987,11 +1198,20 @@ async function startServer() {
         if (stackLines) console.log(stackLines);
         const attemptListen = (p, attempt=0) => {
           try {
-            server.listen(p, () => {
+            server.listen(p, async () => {
               console.log(`✅ Cartrita backend is live on port ${p}${p!==PORT?` (fallback from ${PORT})`:''}`);
               console.log(`🌍 Environment: ${NODE_ENV}`);
               console.log(`🔗 Allowed origins: ${allowedOrigins.join(', ')}`);
               console.log(`📊 Health check available at: http://localhost:${p}/health`);
+              
+              // Initialize Security WebSocket Server after HTTP server is ready
+              try {
+                await SecurityWebSocketServer.start(server, '/ws/security');
+                console.log('🔒 Security WebSocket server started successfully');
+                global.securityWebSocket = SecurityWebSocketServer;
+              } catch (wsError) {
+                console.warn('⚠️ Security WebSocket server failed to start:', wsError.message);
+              }
             });
             server.on('error', err => {
               if (err.code === 'EADDRINUSE' && process.env.PORT_FALLBACK === '1') {
@@ -1096,6 +1316,20 @@ async function gracefulShutdown(signal) {
     console.log('🔴 Cleaning up Redis connection...');
     await RedisService.cleanup();
 
+    // Shutdown Security Integration Manager
+    if (global.securityManager) {
+      console.log('🔒 Shutting down Security Integration Manager...');
+      await global.securityManager.shutdown();
+      console.log('✅ Security Integration Manager shutdown complete');
+    }
+
+    // Shutdown Security WebSocket Server  
+    if (global.securityWebSocket) {
+      console.log('🔒 Shutting down Security WebSocket Server...');
+      global.securityWebSocket.shutdown();
+      console.log('✅ Security WebSocket Server shutdown complete');
+    }
+
     // Close database connections
     console.log('🗄️ Closing database connections...');
     await pool.end();
@@ -1143,6 +1377,25 @@ if (!isTestEnv() && process.env.AUTOSTART !== '0') {
 
 // Export handles for tests or external orchestrators
 export { app, server, startServer };
+
+// Graceful shutdown handler
+process.on('SIGINT', () => {
+  console.log('\n🔄 Graceful shutdown initiated...');
+  if (healthMonitor) {
+    healthMonitor.stopMonitoring();
+    console.log('🔬 Health monitoring stopped');
+  }
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('\n🔄 Graceful shutdown initiated...');
+  if (healthMonitor) {
+    healthMonitor.stopMonitoring();
+    console.log('🔬 Health monitoring stopped');
+  }
+  process.exit(0);
+});
 
 // Initialize in-memory HF binary store TTL cleanup
 if (!global.hfBinaryStore) {

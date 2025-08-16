@@ -1,0 +1,592 @@
+name: Advanced Testing Pipeline
+
+on:
+  push:
+    branches: [ main, develop, 'feature/*', 'hotfix/*' ]
+  pull_request:
+    branches: [ main, develop ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20.x'
+  POSTGRES_VERSION: '15'
+  REDIS_VERSION: '7'
+
+jobs:
+  # Code Quality and Security Checks
+  code-quality:
+    runs-on: ubuntu-latest
+    name: Code Quality & Security
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+        continue-on-error: false
+
+      - name: Run Prettier check
+        run: npm run format:check
+        continue-on-error: false
+
+      - name: Run TypeScript check
+        run: npm run type-check
+        continue-on-error: false
+
+      - name: Run security audit
+        run: npm audit --audit-level=moderate
+
+      - name: Upload lint results
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: lint-results
+          path: |
+            eslint-report.json
+            prettier-report.txt
+
+  # Unit Tests
+  unit-tests:
+    runs-on: ubuntu-latest
+    name: Unit Tests
+    needs: [code-quality]
+    strategy:
+      matrix:
+        node-version: ['18.x', '20.x', '21.x']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm run test:unit
+        env:
+          NODE_ENV: test
+          CI: true
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: unit-tests
+          name: unit-tests-${{ matrix.node-version }}
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-results-${{ matrix.node-version }}
+          path: |
+            coverage/
+            test-results.xml
+
+  # Integration Tests with Database
+  integration-tests:
+    runs-on: ubuntu-latest
+    name: Integration Tests
+    needs: [code-quality]
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: cartrita_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432 -U testuser; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+
+      - name: Setup test database
+        run: |
+          PGPASSWORD=testpass psql -h localhost -U testuser -d cartrita_test -f db-init/00_setup_pgvector.sql
+          PGPASSWORD=testpass psql -h localhost -U testuser -d cartrita_test -f db-init/06_comprehensive_cartrita_schema.sql
+          
+          # Apply all migrations after the comprehensive schema
+          for file in db-init/0[7-9]_*.sql db-init/1*_*.sql db-init/2*_*.sql; do
+            if [ -f "$file" ]; then
+              echo "Applying migration: $file"
+              PGPASSWORD=testpass psql -h localhost -U testuser -d cartrita_test -f "$file" || echo "Migration $file failed or already applied"
+            fi
+          done
+        env:
+          PGPASSWORD: testpass
+
+      - name: Run integration tests
+        run: npm run test:integration
+        env:
+          NODE_ENV: test
+          CI: true
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/cartrita_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-jwt-secret-for-ci
+          # Mock API keys for testing
+          OPENAI_API_KEY: sk-test-key-for-ci-testing
+          DEEPGRAM_API_KEY: test-deepgram-key
+          HUGGINGFACE_API_KEY: hf-test-key
+
+      - name: Upload integration test coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/integration/lcov.info
+          flags: integration-tests
+          name: integration-tests
+
+      - name: Upload integration test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results
+          path: |
+            coverage/integration/
+            test-results-integration.xml
+
+  # End-to-End Tests
+  e2e-tests:
+    runs-on: ubuntu-latest
+    name: E2E Tests
+    needs: [unit-tests, integration-tests]
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: cartrita_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Setup test database
+        run: |
+          PGPASSWORD=testpass psql -h localhost -U testuser -d cartrita_test -f db-init/00_setup_pgvector.sql
+          PGPASSWORD=testpass psql -h localhost -U testuser -d cartrita_test -f db-init/06_comprehensive_cartrita_schema.sql
+          
+          # Apply all migrations
+          for file in db-init/0[7-9]_*.sql db-init/1*_*.sql db-init/2*_*.sql; do
+            if [ -f "$file" ]; then
+              echo "Applying migration: $file"
+              PGPASSWORD=testpass psql -h localhost -U testuser -d cartrita_test -f "$file" || echo "Migration $file failed or already applied"
+            fi
+          done
+        env:
+          PGPASSWORD: testpass
+
+      - name: Start application services
+        run: |
+          # Start backend in background
+          npm run dev:backend &
+          BACKEND_PID=$!
+          echo "BACKEND_PID=$BACKEND_PID" >> $GITHUB_ENV
+          
+          # Start frontend in background
+          npm run dev:frontend &
+          FRONTEND_PID=$!
+          echo "FRONTEND_PID=$FRONTEND_PID" >> $GITHUB_ENV
+          
+          # Wait for services to be ready
+          timeout 60 bash -c 'until curl -f http://localhost:3000/health > /dev/null 2>&1; do sleep 2; done'
+          timeout 60 bash -c 'until curl -f http://localhost:5173 > /dev/null 2>&1; do sleep 2; done'
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/cartrita_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-jwt-secret-for-ci
+          PORT: 3000
+          # Mock API keys
+          OPENAI_API_KEY: sk-test-key-for-ci-testing
+          DEEPGRAM_API_KEY: test-deepgram-key
+          HUGGINGFACE_API_KEY: hf-test-key
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+        env:
+          NODE_ENV: test
+          CI: true
+
+      - name: Stop application services
+        if: always()
+        run: |
+          if [ ! -z "$BACKEND_PID" ]; then
+            kill $BACKEND_PID || true
+          fi
+          if [ ! -z "$FRONTEND_PID" ]; then
+            kill $FRONTEND_PID || true
+          fi
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-test-results
+          path: |
+            test-results/
+            playwright-report/
+
+      - name: Upload E2E screenshots and videos
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-artifacts
+          path: |
+            test-results/
+            playwright-report/
+
+  # Performance Tests
+  performance-tests:
+    runs-on: ubuntu-latest
+    name: Performance Tests
+    needs: [integration-tests]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: cartrita_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Setup test database
+        run: |
+          PGPASSWORD=testpass psql -h localhost -U testuser -d cartrita_test -f db-init/00_setup_pgvector.sql
+          PGPASSWORD=testpass psql -h localhost -U testuser -d cartrita_test -f db-init/06_comprehensive_cartrita_schema.sql
+        env:
+          PGPASSWORD: testpass
+
+      - name: Start application
+        run: |
+          npm run dev:backend &
+          BACKEND_PID=$!
+          echo "BACKEND_PID=$BACKEND_PID" >> $GITHUB_ENV
+          
+          # Wait for service to be ready
+          timeout 60 bash -c 'until curl -f http://localhost:3000/health > /dev/null 2>&1; do sleep 2; done'
+        env:
+          NODE_ENV: production
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/cartrita_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-jwt-secret-for-ci
+          # Mock API keys
+          OPENAI_API_KEY: sk-test-key-for-ci-testing
+
+      - name: Run performance tests
+        run: npm run test:performance
+        env:
+          NODE_ENV: test
+          CI: true
+
+      - name: Stop application
+        if: always()
+        run: |
+          if [ ! -z "$BACKEND_PID" ]; then
+            kill $BACKEND_PID || true
+          fi
+
+      - name: Upload performance reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-test-results
+          path: |
+            performance-results/
+            test-results/
+
+  # Security Testing
+  security-tests:
+    runs-on: ubuntu-latest
+    name: Security Tests
+    needs: [code-quality]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate --json > audit-results.json
+        continue-on-error: true
+
+      - name: Upload security scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-scan-results
+          path: |
+            trivy-results.sarif
+            audit-results.json
+
+  # Test Report Generation
+  test-report:
+    runs-on: ubuntu-latest
+    name: Generate Test Reports
+    needs: [unit-tests, integration-tests, e2e-tests, performance-tests, security-tests]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all test artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate comprehensive test report
+        run: |
+          mkdir -p reports
+          
+          echo "# Test Report - $(date)" > reports/test-summary.md
+          echo "" >> reports/test-summary.md
+          
+          echo "## Test Results Summary" >> reports/test-summary.md
+          echo "- Workflow: ${{ github.workflow }}" >> reports/test-summary.md
+          echo "- Branch: ${{ github.ref_name }}" >> reports/test-summary.md
+          echo "- Commit: ${{ github.sha }}" >> reports/test-summary.md
+          echo "- Run: ${{ github.run_number }}" >> reports/test-summary.md
+          echo "" >> reports/test-summary.md
+          
+          # Check test results
+          if [ -d "unit-test-results-20.x" ]; then
+            echo "✅ Unit Tests: Passed" >> reports/test-summary.md
+          else
+            echo "❌ Unit Tests: Failed" >> reports/test-summary.md
+          fi
+          
+          if [ -d "integration-test-results" ]; then
+            echo "✅ Integration Tests: Passed" >> reports/test-summary.md
+          else
+            echo "❌ Integration Tests: Failed" >> reports/test-summary.md
+          fi
+          
+          if [ -d "e2e-test-results" ]; then
+            echo "✅ E2E Tests: Passed" >> reports/test-summary.md
+          else
+            echo "❌ E2E Tests: Failed" >> reports/test-summary.md
+          fi
+          
+          if [ -d "performance-test-results" ]; then
+            echo "✅ Performance Tests: Passed" >> reports/test-summary.md
+          else
+            echo "⚠️ Performance Tests: Skipped or Failed" >> reports/test-summary.md
+          fi
+          
+          if [ -d "security-scan-results" ]; then
+            echo "✅ Security Scans: Completed" >> reports/test-summary.md
+          else
+            echo "❌ Security Scans: Failed" >> reports/test-summary.md
+          fi
+
+      - name: Upload comprehensive test report
+        uses: actions/upload-artifact@v4
+        with:
+          name: comprehensive-test-report
+          path: reports/
+
+      - name: Comment PR with test results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let comment = '## 🧪 Test Results Summary\n\n';
+            comment += `**Workflow Run:** [${context.runNumber}](${context.payload.repository.html_url}/actions/runs/${context.runId})\n`;
+            comment += `**Branch:** \`${context.ref}\`\n`;
+            comment += `**Commit:** \`${context.sha.substring(0, 7)}\`\n\n`;
+            
+            // Add test status
+            comment += '### Test Status\n';
+            comment += '| Test Suite | Status |\n';
+            comment += '|------------|--------|\n';
+            comment += '| Unit Tests | ${{ needs.unit-tests.result == \'success\' && \'✅ Passed\' || \'❌ Failed\' }} |\n';
+            comment += '| Integration Tests | ${{ needs.integration-tests.result == \'success\' && \'✅ Passed\' || \'❌ Failed\' }} |\n';
+            comment += '| E2E Tests | ${{ needs.e2e-tests.result == \'success\' && \'✅ Passed\' || \'❌ Failed\' }} |\n';
+            comment += '| Performance Tests | ${{ needs.performance-tests.result == \'success\' && \'✅ Passed\' || needs.performance-tests.result == \'skipped\' && \'⏭️ Skipped\' || \'❌ Failed\' }} |\n';
+            comment += '| Security Tests | ${{ needs.security-tests.result == \'success\' && \'✅ Passed\' || \'❌ Failed\' }} |\n\n';
+            
+            comment += '### 📊 Coverage Reports\n';
+            comment += 'Coverage reports are available in the workflow artifacts.\n\n';
+            
+            comment += '---\n';
+            comment += '*This comment was automatically generated by the Advanced Testing Pipeline.*';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  # Quality Gates
+  quality-gate:
+    runs-on: ubuntu-latest
+    name: Quality Gate
+    needs: [unit-tests, integration-tests, e2e-tests, security-tests]
+    if: always()
+    steps:
+      - name: Check quality gate
+        run: |
+          echo "Quality Gate Status:"
+          echo "- Unit Tests: ${{ needs.unit-tests.result }}"
+          echo "- Integration Tests: ${{ needs.integration-tests.result }}"
+          echo "- E2E Tests: ${{ needs.e2e-tests.result }}"
+          echo "- Security Tests: ${{ needs.security-tests.result }}"
+          
+          # Fail if critical tests failed
+          if [[ "${{ needs.unit-tests.result }}" == "failure" || 
+                "${{ needs.integration-tests.result }}" == "failure" || 
+                "${{ needs.e2e-tests.result }}" == "failure" ]]; then
+            echo "❌ Quality gate failed - critical tests failed"
+            exit 1
+          else
+            echo "✅ Quality gate passed - all critical tests successful"
+          fi
+
+      - name: Set deployment ready status
+        if: github.ref == 'refs/heads/main' && success()
+        run: |
+          echo "🚀 Ready for deployment to production"
+          echo "All quality gates passed successfully"

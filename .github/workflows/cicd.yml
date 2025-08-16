@@ -1,0 +1,353 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop, staging ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '20'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: cartrita_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+          
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        npm ci
+        cd packages/backend && npm ci
+        cd ../frontend && npm ci
+        
+    - name: Run linting
+      run: |
+        npm run lint
+        cd packages/backend && npm run lint
+        cd ../frontend && npm run lint
+        
+    - name: Run type checking
+      run: |
+        cd packages/backend && npm run type-check
+        cd ../frontend && npm run type-check
+        
+    - name: Setup test database
+      run: |
+        PGPASSWORD=testpass psql -h localhost -U postgres -d cartrita_test -f db-init/00_setup_pgvector.sql
+        PGPASSWORD=testpass psql -h localhost -U postgres -d cartrita_test -f db-init/06_comprehensive_cartrita_schema.sql
+        
+    - name: Run tests
+      run: |
+        npm run test
+        cd packages/backend && npm run test
+        cd ../frontend && npm run test
+      env:
+        NODE_ENV: test
+        DATABASE_URL: postgresql://postgres:testpass@localhost:5432/cartrita_test
+        REDIS_URL: redis://localhost:6379
+        
+    - name: Run integration tests
+      run: |
+        npm run test:integration
+      env:
+        NODE_ENV: test
+        DATABASE_URL: postgresql://postgres:testpass@localhost:5432/cartrita_test
+        REDIS_URL: redis://localhost:6379
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/staging'
+    
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./docker/Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+        
+    - name: Configure kubectl
+      run: |
+        mkdir -p $HOME/.kube
+        echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 --decode > $HOME/.kube/config
+        
+    - name: Deploy to staging
+      run: |
+        export IMAGE_TAG="${{ needs.build.outputs.image-tag }}"
+        export NAMESPACE="cartrita-staging"
+        export ENVIRONMENT="staging"
+        export REPLICAS="2"
+        
+        # Apply Kubernetes manifests
+        envsubst < k8s/namespace.template.yaml | kubectl apply -f -
+        envsubst < k8s/deployment.template.yaml | kubectl apply -f -
+        envsubst < k8s/service.template.yaml | kubectl apply -f -
+        envsubst < k8s/ingress.template.yaml | kubectl apply -f -
+        
+    - name: Wait for deployment
+      run: |
+        kubectl rollout status deployment/cartrita-backend -n cartrita-staging --timeout=600s
+        kubectl rollout status deployment/cartrita-frontend -n cartrita-staging --timeout=600s
+        
+    - name: Run smoke tests
+      run: |
+        STAGING_URL="https://staging.cartrita.app"
+        curl -f $STAGING_URL/api/health || exit 1
+        curl -f $STAGING_URL/api/status || exit 1
+        
+    - name: Notify deployment
+      if: always()
+      run: |
+        curl -X POST "${{ secrets.CARTRITA_DEPLOYMENT_WEBHOOK }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "environment": "staging",
+            "status": "${{ job.status }}",
+            "image": "${{ needs.build.outputs.image-tag }}",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}"
+          }'
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+        
+    - name: Configure kubectl
+      run: |
+        mkdir -p $HOME/.kube
+        echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 --decode > $HOME/.kube/config
+        
+    - name: Blue-Green Deployment
+      run: |
+        export IMAGE_TAG="${{ needs.build.outputs.image-tag }}"
+        export NAMESPACE="cartrita-production"
+        export ENVIRONMENT="production"
+        export REPLICAS="5"
+        
+        # Determine current and next environments
+        CURRENT_ENV=$(kubectl get service cartrita-active -n $NAMESPACE -o jsonpath='{.spec.selector.version}' 2>/dev/null || echo "blue")
+        if [ "$CURRENT_ENV" = "blue" ]; then
+          NEXT_ENV="green"
+        else
+          NEXT_ENV="blue"
+        fi
+        
+        echo "Deploying to $NEXT_ENV environment"
+        
+        # Deploy to inactive environment
+        export VERSION="$NEXT_ENV"
+        envsubst < k8s/namespace.template.yaml | kubectl apply -f -
+        envsubst < k8s/deployment.template.yaml | kubectl apply -f -
+        envsubst < k8s/service.template.yaml | kubectl apply -f -
+        
+        # Wait for new deployment to be ready
+        kubectl rollout status deployment/cartrita-backend-$NEXT_ENV -n $NAMESPACE --timeout=600s
+        kubectl rollout status deployment/cartrita-frontend-$NEXT_ENV -n $NAMESPACE --timeout=600s
+        
+        # Health check new environment
+        kubectl port-forward service/cartrita-$NEXT_ENV 8080:80 -n $NAMESPACE &
+        PF_PID=$!
+        sleep 10
+        
+        if curl -f http://localhost:8080/api/health; then
+          echo "Health check passed, switching traffic"
+          
+          # Switch active service to new environment
+          kubectl patch service cartrita-active -n $NAMESPACE -p "{\"spec\":{\"selector\":{\"version\":\"$NEXT_ENV\"}}}"
+          
+          # Wait a bit for traffic to switch
+          sleep 30
+          
+          # Scale down old environment
+          kubectl scale deployment cartrita-backend-$CURRENT_ENV --replicas=0 -n $NAMESPACE || true
+          kubectl scale deployment cartrita-frontend-$CURRENT_ENV --replicas=0 -n $NAMESPACE || true
+          
+          echo "Blue-green deployment completed successfully"
+        else
+          echo "Health check failed, keeping current environment"
+          exit 1
+        fi
+        
+        kill $PF_PID || true
+        
+    - name: Update ingress
+      run: |
+        export NAMESPACE="cartrita-production"
+        envsubst < k8s/ingress.template.yaml | kubectl apply -f -
+        
+    - name: Run production smoke tests
+      run: |
+        PRODUCTION_URL="https://app.cartrita.ai"
+        curl -f $PRODUCTION_URL/api/health || exit 1
+        curl -f $PRODUCTION_URL/api/status || exit 1
+        curl -f $PRODUCTION_URL/api/metrics || exit 1
+        
+    - name: Notify deployment
+      if: always()
+      run: |
+        curl -X POST "${{ secrets.CARTRITA_DEPLOYMENT_WEBHOOK }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "environment": "production",
+            "status": "${{ job.status }}",
+            "image": "${{ needs.build.outputs.image-tag }}",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}",
+            "deployment_type": "blue-green"
+          }'
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-results.sarif'
+        
+    - name: Run npm audit
+      run: |
+        cd packages/backend && npm audit --audit-level=high
+        cd ../frontend && npm audit --audit-level=high
+
+  performance-test:
+    name: Performance Test
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/develop'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        
+    - name: Install k6
+      run: |
+        curl https://github.com/grafana/k6/releases/download/v0.46.0/k6-v0.46.0-linux-amd64.tar.gz -L | tar xvz --strip-components 1
+        
+    - name: Run performance tests
+      run: |
+        ./k6 run tests/performance/load-test.js --env BASE_URL=https://staging.cartrita.app
+        
+    - name: Upload performance results
+      uses: actions/upload-artifact@v4
+      with:
+        name: performance-results
+        path: results/

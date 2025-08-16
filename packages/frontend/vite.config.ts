@@ -22,6 +22,17 @@ export default defineConfig({
         },
       },
     },
+    // PWA optimizations
+    target: ['es2015', 'safari11'],
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
+    sourcemap: false,
+    cssCodeSplit: true,
   },
   server: {
     host: '0.0.0.0',
@@ -38,5 +49,16 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+  },
+  // PWA optimizations
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', '@emotion/react', '@emotion/styled'],
+    exclude: ['@vite/client', '@vite/env'],
+  },
+  esbuild: {
+    logOverride: { 'this-is-undefined-in-esm': 'silent' },
   },
 });

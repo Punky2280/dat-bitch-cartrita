@@ -1,0 +1,498 @@
+---
+# Ansible playbook for Cartrita Multi-Agent OS deployment
+# Supports multiple cloud providers and Kubernetes clusters
+
+- name: Deploy Cartrita Multi-Agent OS
+  hosts: all
+  become: yes
+  vars:
+    cartrita_environment: "{{ environment | default('production') }}"
+    cartrita_namespace: "cartrita-{{ cartrita_environment }}"
+    cartrita_image_tag: "{{ image_tag | default('latest') }}"
+    cartrita_domain: "{{ domain | default('app.cartrita.ai') }}"
+    
+    # Resource configurations
+    backend_replicas: "{{ replicas | default(3) }}"
+    backend_memory_request: "{{ backend_memory_request | default('1Gi') }}"
+    backend_memory_limit: "{{ backend_memory_limit | default('4Gi') }}"
+    backend_cpu_request: "{{ backend_cpu_request | default('500m') }}"
+    backend_cpu_limit: "{{ backend_cpu_limit | default('2000m') }}"
+    
+    # Storage configurations
+    postgres_storage_size: "{{ postgres_storage | default('20Gi') }}"
+    redis_storage_size: "{{ redis_storage | default('5Gi') }}"
+    uploads_storage_size: "{{ uploads_storage | default('10Gi') }}"
+    logs_storage_size: "{{ logs_storage | default('5Gi') }}"
+    
+    # Monitoring
+    enable_monitoring: "{{ monitoring | default(true) }}"
+    enable_jaeger: "{{ tracing | default(true) }}"
+
+  tasks:
+    - name: Ensure required variables are set
+      fail:
+        msg: "Required variable {{ item }} is not defined"
+      when: vars[item] is undefined
+      loop:
+        - openai_api_key
+        - jwt_secret
+
+    - name: Create Cartrita namespace
+      kubernetes.core.k8s:
+        name: "{{ cartrita_namespace }}"
+        api_version: v1
+        kind: Namespace
+        state: present
+        definition:
+          metadata:
+            labels:
+              name: "{{ cartrita_namespace }}"
+              environment: "{{ cartrita_environment }}"
+              app: cartrita
+
+    - name: Generate database passwords if not provided
+      set_fact:
+        postgres_password: "{{ postgres_password | default(ansible_date_time.epoch + inventory_hostname) | hash('sha256') | truncate(32, True, '') }}"
+        redis_password: "{{ redis_password | default(ansible_date_time.epoch + inventory_hostname + 'redis') | hash('sha256') | truncate(32, True, '') }}"
+      when: postgres_password is undefined or redis_password is undefined
+
+    - name: Create Cartrita secrets
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: cartrita-secrets
+            namespace: "{{ cartrita_namespace }}"
+          type: Opaque
+          stringData:
+            DATABASE_URL: "postgresql://cartrita:{{ postgres_password }}@cartrita-postgres:5432/cartrita"
+            REDIS_URL: "redis://:{{ redis_password }}@cartrita-redis:6379"
+            JWT_SECRET: "{{ jwt_secret }}"
+            OPENAI_API_KEY: "{{ openai_api_key }}"
+            HUGGINGFACE_API_KEY: "{{ huggingface_api_key | default('') }}"
+            DEEPGRAM_API_KEY: "{{ deepgram_api_key | default('') }}"
+            ANTHROPIC_API_KEY: "{{ anthropic_api_key | default('') }}"
+            GROQ_API_KEY: "{{ groq_api_key | default('') }}"
+            REPLICATE_API_KEY: "{{ replicate_api_key | default('') }}"
+            LANGCHAIN_API_KEY: "{{ langchain_api_key | default('') }}"
+
+    - name: Create Cartrita ConfigMap
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: cartrita-config
+            namespace: "{{ cartrita_namespace }}"
+          data:
+            NODE_ENV: "{{ cartrita_environment }}"
+            PORT: "3000"
+            LOG_LEVEL: "{{ log_level | default('info') }}"
+            OTEL_RESOURCE_ATTRIBUTES: "service.name=cartrita-backend,service.version={{ cartrita_image_tag }},environment={{ cartrita_environment }}"
+            MAX_REQUEST_SIZE: "50mb"
+            SESSION_TIMEOUT: "24h"
+            CORS_ORIGIN: "*"
+            RATE_LIMIT_WINDOW: "15"
+            RATE_LIMIT_MAX: "1000"
+
+    - name: Create persistent volume claims
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            name: "{{ item.name }}"
+            namespace: "{{ cartrita_namespace }}"
+          spec:
+            accessModes:
+              - "{{ item.access_mode }}"
+            resources:
+              requests:
+                storage: "{{ item.size }}"
+            storageClassName: "{{ storage_class | default('fast-ssd') }}"
+      loop:
+        - name: cartrita-uploads
+          size: "{{ uploads_storage_size }}"
+          access_mode: ReadWriteMany
+        - name: cartrita-logs
+          size: "{{ logs_storage_size }}"
+          access_mode: ReadWriteMany
+        - name: postgres-data
+          size: "{{ postgres_storage_size }}"
+          access_mode: ReadWriteOnce
+        - name: redis-data
+          size: "{{ redis_storage_size }}"
+          access_mode: ReadWriteOnce
+
+    - name: Deploy PostgreSQL
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: cartrita-postgres
+            namespace: "{{ cartrita_namespace }}"
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: postgres
+            template:
+              metadata:
+                labels:
+                  app: postgres
+              spec:
+                securityContext:
+                  runAsUser: 999
+                  runAsGroup: 999
+                  fsGroup: 999
+                containers:
+                - name: postgres
+                  image: postgres:15-alpine
+                  env:
+                  - name: POSTGRES_DB
+                    value: cartrita
+                  - name: POSTGRES_USER
+                    value: cartrita
+                  - name: POSTGRES_PASSWORD
+                    value: "{{ postgres_password }}"
+                  - name: POSTGRES_INITDB_ARGS
+                    value: "--auth-host=scram-sha-256"
+                  ports:
+                  - containerPort: 5432
+                  volumeMounts:
+                  - name: postgres-data
+                    mountPath: /var/lib/postgresql/data
+                  resources:
+                    requests:
+                      memory: 512Mi
+                      cpu: 250m
+                    limits:
+                      memory: 2Gi
+                      cpu: 1000m
+                  livenessProbe:
+                    exec:
+                      command:
+                      - pg_isready
+                      - -U
+                      - cartrita
+                      - -d
+                      - cartrita
+                    initialDelaySeconds: 30
+                    periodSeconds: 10
+                  readinessProbe:
+                    exec:
+                      command:
+                      - pg_isready
+                      - -U
+                      - cartrita
+                      - -d
+                      - cartrita
+                    initialDelaySeconds: 5
+                    periodSeconds: 5
+                volumes:
+                - name: postgres-data
+                  persistentVolumeClaim:
+                    claimName: postgres-data
+
+    - name: Create PostgreSQL service
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: cartrita-postgres
+            namespace: "{{ cartrita_namespace }}"
+          spec:
+            selector:
+              app: postgres
+            ports:
+            - port: 5432
+              targetPort: 5432
+            type: ClusterIP
+
+    - name: Deploy Redis
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: cartrita-redis
+            namespace: "{{ cartrita_namespace }}"
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: redis
+            template:
+              metadata:
+                labels:
+                  app: redis
+              spec:
+                securityContext:
+                  runAsUser: 999
+                  runAsGroup: 999
+                  fsGroup: 999
+                containers:
+                - name: redis
+                  image: redis:7-alpine
+                  command:
+                  - redis-server
+                  - --appendonly
+                  - "yes"
+                  - --requirepass
+                  - "{{ redis_password }}"
+                  ports:
+                  - containerPort: 6379
+                  volumeMounts:
+                  - name: redis-data
+                    mountPath: /data
+                  resources:
+                    requests:
+                      memory: 256Mi
+                      cpu: 100m
+                    limits:
+                      memory: 1Gi
+                      cpu: 500m
+                volumes:
+                - name: redis-data
+                  persistentVolumeClaim:
+                    claimName: redis-data
+
+    - name: Create Redis service
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: cartrita-redis
+            namespace: "{{ cartrita_namespace }}"
+          spec:
+            selector:
+              app: redis
+            ports:
+            - port: 6379
+              targetPort: 6379
+            type: ClusterIP
+
+    - name: Deploy Cartrita Backend
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: cartrita-backend
+            namespace: "{{ cartrita_namespace }}"
+          spec:
+            replicas: "{{ backend_replicas }}"
+            selector:
+              matchLabels:
+                app: backend
+            template:
+              metadata:
+                labels:
+                  app: backend
+                annotations:
+                  prometheus.io/scrape: "true"
+                  prometheus.io/port: "3000"
+                  prometheus.io/path: "/api/metrics"
+              spec:
+                securityContext:
+                  runAsNonRoot: true
+                  runAsUser: 1001
+                  fsGroup: 1001
+                containers:
+                - name: backend
+                  image: "ghcr.io/cartrita/cartrita:{{ cartrita_image_tag }}"
+                  ports:
+                  - containerPort: 3000
+                    name: http
+                  envFrom:
+                  - configMapRef:
+                      name: cartrita-config
+                  - secretRef:
+                      name: cartrita-secrets
+                  volumeMounts:
+                  - name: uploads
+                    mountPath: /app/uploads
+                  - name: logs
+                    mountPath: /app/logs
+                  resources:
+                    requests:
+                      memory: "{{ backend_memory_request }}"
+                      cpu: "{{ backend_cpu_request }}"
+                    limits:
+                      memory: "{{ backend_memory_limit }}"
+                      cpu: "{{ backend_cpu_limit }}"
+                  livenessProbe:
+                    httpGet:
+                      path: /api/health
+                      port: 3000
+                    initialDelaySeconds: 60
+                    periodSeconds: 30
+                  readinessProbe:
+                    httpGet:
+                      path: /api/health
+                      port: 3000
+                    initialDelaySeconds: 30
+                    periodSeconds: 10
+                  securityContext:
+                    allowPrivilegeEscalation: false
+                    readOnlyRootFilesystem: false
+                    capabilities:
+                      drop:
+                      - ALL
+                volumes:
+                - name: uploads
+                  persistentVolumeClaim:
+                    claimName: cartrita-uploads
+                - name: logs
+                  persistentVolumeClaim:
+                    claimName: cartrita-logs
+
+    - name: Create Backend service
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: cartrita-backend
+            namespace: "{{ cartrita_namespace }}"
+          spec:
+            selector:
+              app: backend
+            ports:
+            - port: 3000
+              targetPort: 3000
+              name: http
+            type: ClusterIP
+
+    - name: Create HorizontalPodAutoscaler
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: autoscaling/v2
+          kind: HorizontalPodAutoscaler
+          metadata:
+            name: cartrita-backend-hpa
+            namespace: "{{ cartrita_namespace }}"
+          spec:
+            scaleTargetRef:
+              apiVersion: apps/v1
+              kind: Deployment
+              name: cartrita-backend
+            minReplicas: 2
+            maxReplicas: 20
+            metrics:
+            - type: Resource
+              resource:
+                name: cpu
+                target:
+                  type: Utilization
+                  averageUtilization: 70
+            - type: Resource
+              resource:
+                name: memory
+                target:
+                  type: Utilization
+                  averageUtilization: 80
+
+    - name: Create Ingress
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: cartrita-ingress
+            namespace: "{{ cartrita_namespace }}"
+            annotations:
+              nginx.ingress.kubernetes.io/ssl-redirect: "true"
+              nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+              nginx.ingress.kubernetes.io/websocket-services: "cartrita-backend"
+              cert-manager.io/cluster-issuer: "letsencrypt-prod"
+          spec:
+            ingressClassName: nginx
+            tls:
+            - hosts:
+              - "{{ cartrita_domain }}"
+              secretName: cartrita-tls-cert
+            rules:
+            - host: "{{ cartrita_domain }}"
+              http:
+                paths:
+                - path: /api
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: cartrita-backend
+                      port:
+                        number: 3000
+                - path: /ws
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: cartrita-backend
+                      port:
+                        number: 3000
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: cartrita-backend
+                      port:
+                        number: 3000
+
+    - name: Wait for deployment to be ready
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        name: cartrita-backend
+        namespace: "{{ cartrita_namespace }}"
+        wait_condition:
+          type: Progressing
+          status: "True"
+          reason: NewReplicaSetAvailable
+        wait_timeout: 600
+
+    - name: Verify deployment health
+      uri:
+        url: "https://{{ cartrita_domain }}/api/health"
+        method: GET
+        validate_certs: yes
+      register: health_check
+      retries: 10
+      delay: 30
+      until: health_check.status == 200
+
+    - name: Display deployment information
+      debug:
+        msg: |
+          Cartrita Multi-Agent OS deployed successfully!
+          
+          Environment: {{ cartrita_environment }}
+          Namespace: {{ cartrita_namespace }}
+          Domain: {{ cartrita_domain }}
+          Image Tag: {{ cartrita_image_tag }}
+          Backend Replicas: {{ backend_replicas }}
+          
+          Services:
+          - Backend: https://{{ cartrita_domain }}/api/health
+          - Frontend: https://{{ cartrita_domain }}
+          - Monitoring: https://{{ cartrita_domain }}/api/metrics
+          
+          Next steps:
+          1. Configure monitoring dashboards
+          2. Set up log aggregation
+          3. Configure backup procedures
+          4. Review security settings

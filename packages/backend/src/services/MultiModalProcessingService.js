@@ -1,5 +1,6 @@
 import pool from '../db.js';
 import SecureEncryptionService from '../system/SecureEncryptionService.js';
+import crypto from 'crypto';
 
 /**
  * Multi-Modal Processing Service for Iteration 22
@@ -626,7 +627,7 @@ class MultiModalProcessingService {
 
   generateContentHash(modalityResults) {
     const content = JSON.stringify(modalityResults.map(r => r.analysis));
-    return require('crypto').createHash('sha256').update(content).digest('hex');
+    return crypto.createHash('sha256').update(content).digest('hex');
   }
 
   estimateContentSize(content, type) {

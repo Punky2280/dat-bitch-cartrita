@@ -534,6 +534,42 @@ class HuggingFaceInferenceService {
       dimensions: 384
     };
   }
+
+  /**
+   * Generate method for Model Registry compatibility
+   * Wraps chatCompletion to provide a simple generate interface
+   */
+  async generate(options) {
+    try {
+      // Convert generate options to chatCompletion format
+      const messages = [{ 
+        role: 'user', 
+        content: options.prompt || options.input || options.text || ''
+      }];
+
+      const params = {
+        model: options.model,
+        messages,
+        temperature: options.temperature,
+        max_tokens: options.max_tokens || options.maxTokens,
+        top_p: options.top_p || options.topP
+      };
+
+      const result = await this.chatCompletion(params);
+      
+      if (result.success) {
+        return {
+          text: result.response.choices[0].message.content,
+          usage: result.usage
+        };
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('[HuggingFaceInferenceService] ❌ Generate failed:', error.message);
+      throw error;
+    }
+  }
 }
 
 export default new HuggingFaceInferenceService();

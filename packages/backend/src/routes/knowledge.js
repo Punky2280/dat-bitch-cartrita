@@ -28,6 +28,7 @@ try {
     openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
+    console.log('[Knowledge] ✅ OpenAI client initialized');
   } else {
     console.warn(
       '[Knowledge] OPENAI_API_KEY not provided - some features will be limited'
@@ -1223,6 +1224,474 @@ router.get('/stats', authenticateToken, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch knowledge base statistics',
+    });
+  }
+});
+
+// ==================================================================================
+// ENHANCED CATEGORY & TAG MANAGEMENT ENDPOINTS
+// ==================================================================================
+
+/**
+ * Get all knowledge categories with hierarchy
+ */
+router.get('/categories', authenticateToken, async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT 
+        id,
+        name,
+        description,
+        parent_id,
+        icon,
+        color,
+        sort_order,
+        is_active,
+        created_at,
+        updated_at,
+        (SELECT COUNT(*) FROM knowledge_items ki WHERE ki.category = kc.name) as item_count
+      FROM knowledge_categories kc
+      WHERE is_active = true
+      ORDER BY sort_order, name
+    `);
+
+    // Build hierarchical structure
+    const categories = result.rows;
+    const categoryMap = new Map();
+    const rootCategories = [];
+
+    categories.forEach(cat => {
+      cat.children = [];
+      categoryMap.set(cat.id, cat);
+    });
+
+    categories.forEach(cat => {
+      if (cat.parent_id) {
+        const parent = categoryMap.get(cat.parent_id);
+        if (parent) {
+          parent.children.push(cat);
+        }
+      } else {
+        rootCategories.push(cat);
+      }
+    });
+
+    res.json({
+      success: true,
+      categories: rootCategories,
+      flat_categories: categories
+    });
+  } catch (error) {
+    console.error('[Knowledge] ❌ Categories error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch categories'
+    });
+  }
+});
+
+/**
+ * Create new knowledge category
+ */
+router.post('/categories', authenticateToken, async (req, res) => {
+  try {
+    const { name, description, parent_id, icon, color, sort_order = 0 } = req.body;
+
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        error: 'Category name is required'
+      });
+    }
+
+    const result = await db.query(`
+      INSERT INTO knowledge_categories (name, description, parent_id, icon, color, sort_order)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *
+    `, [name, description, parent_id, icon, color, sort_order]);
+
+    res.json({
+      success: true,
+      category: result.rows[0]
+    });
+  } catch (error) {
+    console.error('[Knowledge] ❌ Create category error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.code === '23505' ? 'Category name already exists' : 'Failed to create category'
+    });
+  }
+});
+
+/**
+ * Update knowledge category
+ */
+router.put('/categories/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, parent_id, icon, color, sort_order, is_active } = req.body;
+
+    const result = await db.query(`
+      UPDATE knowledge_categories 
+      SET 
+        name = COALESCE($1, name),
+        description = COALESCE($2, description),
+        parent_id = $3,
+        icon = COALESCE($4, icon),
+        color = COALESCE($5, color),
+        sort_order = COALESCE($6, sort_order),
+        is_active = COALESCE($7, is_active),
+        updated_at = NOW()
+      WHERE id = $8
+      RETURNING *
+    `, [name, description, parent_id, icon, color, sort_order, is_active, id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Category not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      category: result.rows[0]
+    });
+  } catch (error) {
+    console.error('[Knowledge] ❌ Update category error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update category'
+    });
+  }
+});
+
+/**
+ * Delete knowledge category
+ */
+router.delete('/categories/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if category has items
+    const itemsResult = await db.query(
+      'SELECT COUNT(*) as count FROM knowledge_items WHERE category = (SELECT name FROM knowledge_categories WHERE id = $1)',
+      [id]
+    );
+
+    if (parseInt(itemsResult.rows[0].count) > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot delete category with existing items'
+      });
+    }
+
+    // Check if category has children
+    const childrenResult = await db.query(
+      'SELECT COUNT(*) as count FROM knowledge_categories WHERE parent_id = $1',
+      [id]
+    );
+
+    if (parseInt(childrenResult.rows[0].count) > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot delete category with subcategories'
+      });
+    }
+
+    const result = await db.query('DELETE FROM knowledge_categories WHERE id = $1 RETURNING *', [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Category not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Category deleted successfully'
+    });
+  } catch (error) {
+    console.error('[Knowledge] ❌ Delete category error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete category'
+    });
+  }
+});
+
+/**
+ * Get all knowledge tags with usage statistics
+ */
+router.get('/tags', authenticateToken, async (req, res) => {
+  try {
+    const { limit = 100, search } = req.query;
+
+    let query = `
+      SELECT 
+        kt.id,
+        kt.name,
+        kt.description,
+        kt.usage_count,
+        kt.created_at,
+        COUNT(kit.knowledge_item_id) as actual_usage
+      FROM knowledge_tags kt
+      LEFT JOIN knowledge_item_tags kit ON kt.id = kit.tag_id
+    `;
+
+    const params = [];
+    let paramIndex = 1;
+
+    if (search) {
+      query += ` WHERE kt.name ILIKE $${paramIndex}`;
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
+
+    query += `
+      GROUP BY kt.id, kt.name, kt.description, kt.usage_count, kt.created_at
+      ORDER BY actual_usage DESC, kt.name
+      LIMIT $${paramIndex}
+    `;
+    params.push(limit);
+
+    const result = await db.query(query, params);
+
+    res.json({
+      success: true,
+      tags: result.rows
+    });
+  } catch (error) {
+    console.error('[Knowledge] ❌ Tags error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch tags'
+    });
+  }
+});
+
+/**
+ * Create or get existing tag
+ */
+router.post('/tags', authenticateToken, async (req, res) => {
+  try {
+    const { name, description } = req.body;
+
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        error: 'Tag name is required'
+      });
+    }
+
+    const result = await db.query(`
+      INSERT INTO knowledge_tags (name, description)
+      VALUES ($1, $2)
+      ON CONFLICT (name) DO UPDATE SET
+        description = COALESCE(EXCLUDED.description, knowledge_tags.description)
+      RETURNING *
+    `, [name.toLowerCase().trim(), description]);
+
+    res.json({
+      success: true,
+      tag: result.rows[0]
+    });
+  } catch (error) {
+    console.error('[Knowledge] ❌ Create tag error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create tag'
+    });
+  }
+});
+
+/**
+ * Enhanced search with category and tag filtering
+ */
+router.post('/search/enhanced', authenticateToken, async (req, res) => {
+  try {
+    const { 
+      query, 
+      categories = [], 
+      tags = [], 
+      limit = 20, 
+      search_type = 'semantic',
+      min_score = 0.1,
+      date_range 
+    } = req.body;
+
+    if (!query || query.trim().length < 2) {
+      return res.status(400).json({
+        success: false,
+        error: 'Query must be at least 2 characters long'
+      });
+    }
+
+    const userId = req.user.id;
+    const startTime = Date.now();
+
+    let searchResults = [];
+    
+    if (knowledgeHub.disabled) {
+      // Fallback search when knowledge hub is disabled
+      let dbQuery = `
+        SELECT 
+          ki.id,
+          ki.title,
+          ki.category,
+          ki.content,
+          ki.importance_score,
+          ki.created_at,
+          ki.updated_at,
+          ARRAY_AGG(kt.name) FILTER (WHERE kt.name IS NOT NULL) as tags,
+          SUBSTRING(ki.content, 1, 200) as snippet,
+          'fulltext'::text as search_type,
+          0.8 as similarity_score
+        FROM knowledge_items ki
+        LEFT JOIN knowledge_item_tags kit ON ki.id = kit.knowledge_item_id
+        LEFT JOIN knowledge_tags kt ON kit.tag_id = kt.id
+        WHERE ki.user_id = $1
+          AND (ki.title ILIKE $2 OR ki.content ILIKE $2)
+      `;
+      
+      const params = [userId, `%${query}%`];
+      let paramIndex = 3;
+
+      if (categories.length > 0) {
+        dbQuery += ` AND ki.category = ANY($${paramIndex})`;
+        params.push(categories);
+        paramIndex++;
+      }
+
+      if (tags.length > 0) {
+        dbQuery += ` AND EXISTS (
+          SELECT 1 FROM knowledge_item_tags kit2 
+          JOIN knowledge_tags kt2 ON kit2.tag_id = kt2.id 
+          WHERE kit2.knowledge_item_id = ki.id AND kt2.name = ANY($${paramIndex})
+        )`;
+        params.push(tags);
+        paramIndex++;
+      }
+
+      if (date_range && date_range.from) {
+        dbQuery += ` AND ki.created_at >= $${paramIndex}`;
+        params.push(date_range.from);
+        paramIndex++;
+      }
+
+      if (date_range && date_range.to) {
+        dbQuery += ` AND ki.created_at <= $${paramIndex}`;
+        params.push(date_range.to);
+        paramIndex++;
+      }
+
+      dbQuery += `
+        GROUP BY ki.id, ki.title, ki.category, ki.content, ki.importance_score, ki.created_at, ki.updated_at
+        ORDER BY similarity_score DESC, ki.importance_score DESC
+        LIMIT $${paramIndex}
+      `;
+      params.push(limit);
+
+      const result = await db.query(dbQuery, params);
+      searchResults = result.rows;
+    } else {
+      // Use enhanced knowledge hub with filtering
+      const searchOptions = {
+        limit,
+        categories: categories.length > 0 ? categories : undefined,
+        tags: tags.length > 0 ? tags : undefined,
+        date_range,
+        min_score
+      };
+
+      const hubResult = await knowledgeHub.search(query, userId, search_type, searchOptions);
+      searchResults = hubResult.results || [];
+    }
+
+    // Log search for analytics
+    try {
+      await db.query(`
+        INSERT INTO knowledge_searches (user_id, query, results_count, search_type, response_time_ms)
+        VALUES ($1, $2, $3, $4, $5)
+      `, [userId, query, searchResults.length, search_type, Date.now() - startTime]);
+    } catch (logError) {
+      console.warn('[Knowledge] Failed to log search:', logError.message);
+    }
+
+    res.json({
+      success: true,
+      results: searchResults,
+      meta: {
+        query,
+        search_type,
+        total_results: searchResults.length,
+        duration_ms: Date.now() - startTime,
+        filters_applied: {
+          categories: categories.length > 0 ? categories : null,
+          tags: tags.length > 0 ? tags : null,
+          date_range: date_range || null
+        }
+      }
+    });
+  } catch (error) {
+    console.error('[Knowledge] ❌ Enhanced search error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to perform enhanced search'
+    });
+  }
+});
+
+/**
+ * Get search analytics and insights
+ */
+router.get('/search/analytics', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { timeframe = '7 days' } = req.query;
+
+    const [topQueries, searchStats] = await Promise.all([
+      db.query(`
+        SELECT 
+          query,
+          COUNT(*) as search_count,
+          AVG(results_count) as avg_results,
+          AVG(response_time_ms) as avg_response_time
+        FROM knowledge_searches 
+        WHERE user_id = $1 AND created_at > NOW() - INTERVAL '${timeframe}'
+        GROUP BY query
+        ORDER BY search_count DESC
+        LIMIT 10
+      `, [userId]),
+
+      db.query(`
+        SELECT 
+          COUNT(*) as total_searches,
+          AVG(results_count) as avg_results_per_search,
+          AVG(response_time_ms) as avg_response_time,
+          COUNT(DISTINCT query) as unique_queries,
+          search_type,
+          COUNT(*) as type_count
+        FROM knowledge_searches 
+        WHERE user_id = $1 AND created_at > NOW() - INTERVAL '${timeframe}'
+        GROUP BY search_type
+      `, [userId])
+    ]);
+
+    res.json({
+      success: true,
+      analytics: {
+        top_queries: topQueries.rows,
+        search_statistics: searchStats.rows,
+        timeframe
+      }
+    });
+  } catch (error) {
+    console.error('[Knowledge] ❌ Search analytics error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch search analytics'
     });
   }
 });

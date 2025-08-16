@@ -11,7 +11,7 @@ services:
       POSTGRES_DB: dat-bitch-cartrita
       POSTGRES_INITDB_ARGS: '--encoding=UTF-8'
     ports:
-      - '5435:5432'
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db-init:/docker-entrypoint-initdb.d

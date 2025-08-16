@@ -1,0 +1,53 @@
+{
+  "timestamp": "2025-08-16T11:07:24.659Z",
+  "testConfig": {
+    "timeout": 300000,
+    "verbose": false,
+    "generateReports": true,
+    "runPerformanceTests": false,
+    "runSecurityAudits": true,
+    "runLoadTests": false
+  },
+  "results": {
+    "validation": {
+      "status": "passed",
+      "errors": [],
+      "warnings": [],
+      "filesChecked": 11,
+      "es6Compliant": 11
+    },
+    "unitTests": {
+      "status": "passed",
+      "output": "\n> dat-bitch-cartrita-monorepo@1.0.0 test\n> echo 'No tests specified' && exit 0 --testPathPattern=.*\\.test\\.js$\n\nNo tests specified\n",
+      "exitCode": 0
+    },
+    "integrationTests": {
+      "status": "passed",
+      "output": "\n> dat-bitch-cartrita-monorepo@1.0.0 test\n> echo 'No tests specified' && exit 0 --testPathPattern=WorkflowSystemIntegrationTests\\.js$\n\nNo tests specified\n",
+      "exitCode": 0
+    },
+    "performanceTests": null,
+    "securityAudit": {
+      "status": "completed",
+      "checks": [
+        {
+          "name": "Hardcoded secrets check",
+          "status": "warning",
+          "message": "Potential secrets found in code"
+        },
+        {
+          "name": "SQL injection pattern check",
+          "status": "warning",
+          "message": "Potential SQL injection patterns found"
+        }
+      ],
+      "summary": "Basic security validation completed"
+    },
+    "overallStatus": "pending"
+  },
+  "summary": {
+    "overallStatus": "pending",
+    "totalSteps": 6,
+    "completedSteps": 5
+  }
+}

@@ -1,0 +1,226 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cartrita-backend${VERSION:+-$VERSION}
+  namespace: ${NAMESPACE}
+  labels:
+    app: cartrita-backend
+    version: ${VERSION:-main}
+    environment: ${ENVIRONMENT}
+spec:
+  replicas: ${REPLICAS:-3}
+  selector:
+    matchLabels:
+      app: cartrita-backend
+      version: ${VERSION:-main}
+  template:
+    metadata:
+      labels:
+        app: cartrita-backend
+        version: ${VERSION:-main}
+        environment: ${ENVIRONMENT}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/api/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      containers:
+      - name: cartrita-backend
+        image: ${IMAGE:-ghcr.io/cartrita/cartrita:latest}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: http
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: cartrita-config
+              key: NODE_ENV
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: cartrita-config
+              key: PORT
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          valueFrom:
+            configMapKeyRef:
+              name: cartrita-config
+              key: OTEL_RESOURCE_ATTRIBUTES
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: cartrita-secrets
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: cartrita-secrets
+              key: REDIS_URL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: cartrita-secrets
+              key: JWT_SECRET
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cartrita-secrets
+              key: OPENAI_API_KEY
+        - name: HUGGINGFACE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cartrita-secrets
+              key: HUGGINGFACE_API_KEY
+        - name: DEEPGRAM_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cartrita-secrets
+              key: DEEPGRAM_API_KEY
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cartrita-secrets
+              key: ANTHROPIC_API_KEY
+        - name: GROQ_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cartrita-secrets
+              key: GROQ_API_KEY
+        - name: REPLICATE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cartrita-secrets
+              key: REPLICATE_API_KEY
+        - name: LANGCHAIN_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cartrita-secrets
+              key: LANGCHAIN_API_KEY
+        volumeMounts:
+        - name: uploads
+          mountPath: /app/uploads
+        - name: logs
+          mountPath: /app/logs
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: uploads
+        persistentVolumeClaim:
+          claimName: cartrita-uploads
+      - name: logs
+        persistentVolumeClaim:
+          claimName: cartrita-logs
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cartrita-frontend${VERSION:+-$VERSION}
+  namespace: ${NAMESPACE}
+  labels:
+    app: cartrita-frontend
+    version: ${VERSION:-main}
+    environment: ${ENVIRONMENT}
+spec:
+  replicas: ${REPLICAS:-2}
+  selector:
+    matchLabels:
+      app: cartrita-frontend
+      version: ${VERSION:-main}
+  template:
+    metadata:
+      labels:
+        app: cartrita-frontend
+        version: ${VERSION:-main}
+        environment: ${ENVIRONMENT}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        fsGroup: 101
+      containers:
+      - name: cartrita-frontend
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        - name: static-files
+          mountPath: /usr/share/nginx/html
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: nginx-config
+      - name: static-files
+        emptyDir: {}
+      initContainers:
+      - name: copy-static-files
+        image: ${IMAGE:-ghcr.io/cartrita/cartrita:latest}
+        command: ['sh', '-c', 'cp -r /app/packages/frontend/dist/* /static/']
+        volumeMounts:
+        - name: static-files
+          mountPath: /static
+      restartPolicy: Always

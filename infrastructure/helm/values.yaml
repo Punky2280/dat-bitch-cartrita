@@ -1,0 +1,356 @@
+# Default values for Cartrita Multi-Agent OS
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global configuration
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# Application configuration
+app:
+  name: cartrita
+  version: "1.0.0"
+  environment: production
+
+# Backend configuration
+backend:
+  enabled: true
+  replicaCount: 3
+  
+  image:
+    repository: ghcr.io/cartrita/cartrita
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 3000
+    targetPort: 3000
+  
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: 3000
+    initialDelaySeconds: 60
+    periodSeconds: 30
+    timeoutSeconds: 10
+    failureThreshold: 3
+  
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: 3000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+# Frontend configuration
+frontend:
+  enabled: true
+  replicaCount: 2
+  
+  image:
+    repository: nginx
+    tag: "alpine"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 80
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 150m
+      memory: 256Mi
+  
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Database configuration
+postgresql:
+  enabled: true
+  auth:
+    database: cartrita
+    username: cartrita
+    password: ""  # Will be generated if empty
+  
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: ""
+    
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 250m
+        memory: 512Mi
+
+# Redis configuration
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    password: ""  # Will be generated if empty
+  
+  master:
+    persistence:
+      enabled: true
+      size: 5Gi
+      storageClass: ""
+    
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1Gi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+
+# Persistence
+persistence:
+  uploads:
+    enabled: true
+    size: 10Gi
+    accessMode: ReadWriteMany
+    storageClass: ""
+  
+  logs:
+    enabled: true
+    size: 5Gi
+    accessMode: ReadWriteMany
+    storageClass: ""
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/websocket-services: "cartrita-backend"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  
+  hosts:
+    - host: app.cartrita.ai
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+        - path: /api
+          pathType: Prefix
+          service: backend
+        - path: /ws
+          pathType: Prefix
+          service: backend
+  
+  tls:
+    - secretName: cartrita-tls
+      hosts:
+        - app.cartrita.ai
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod Security Context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  fsGroup: 1001
+
+# Security Context
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+    - ALL
+
+# Monitoring
+monitoring:
+  enabled: true
+  
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 30s
+      scrapeTimeout: 10s
+      path: /api/metrics
+  
+  grafana:
+    enabled: true
+    adminPassword: ""  # Will be generated if empty
+    
+    dashboards:
+      enabled: true
+      
+    datasources:
+      enabled: true
+
+# OpenTelemetry
+opentelemetry:
+  enabled: true
+  
+  collector:
+    enabled: true
+    image:
+      repository: otel/opentelemetry-collector-contrib
+      tag: "latest"
+    
+    config:
+      receivers:
+        otlp:
+          protocols:
+            grpc:
+              endpoint: 0.0.0.0:4317
+            http:
+              endpoint: 0.0.0.0:4318
+      
+      processors:
+        batch: {}
+        memory_limiter:
+          limit_mib: 512
+      
+      exporters:
+        prometheus:
+          endpoint: "0.0.0.0:8889"
+        jaeger:
+          endpoint: jaeger-collector:14250
+          tls:
+            insecure: true
+      
+      service:
+        pipelines:
+          traces:
+            receivers: [otlp]
+            processors: [memory_limiter, batch]
+            exporters: [jaeger]
+          metrics:
+            receivers: [otlp]
+            processors: [memory_limiter, batch]
+            exporters: [prometheus]
+
+# Jaeger Tracing
+jaeger:
+  enabled: true
+  
+  collector:
+    enabled: true
+  
+  query:
+    enabled: true
+    ingress:
+      enabled: false
+
+# Network Policies
+networkPolicies:
+  enabled: true
+  
+  backend:
+    ingress:
+      - from:
+        - podSelector:
+            matchLabels:
+              app: cartrita-frontend
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+        ports:
+        - protocol: TCP
+          port: 3000
+    
+    egress:
+      - to: []
+        ports:
+        - protocol: TCP
+          port: 5432  # PostgreSQL
+        - protocol: TCP
+          port: 6379  # Redis
+        - protocol: TCP
+          port: 443   # HTTPS
+        - protocol: TCP
+          port: 80    # HTTP
+        - protocol: UDP
+          port: 53    # DNS
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Configuration for external secrets (if using external-secrets operator)
+externalSecrets:
+  enabled: false
+  secretStore:
+    provider: aws  # aws, gcp, azure, vault, etc.
+    region: us-west-2
+    
+  secrets:
+    - name: cartrita-api-keys
+      refreshInterval: 1h
+      secretKey: cartrita/api-keys
+      data:
+        - secretKey: OPENAI_API_KEY
+          remoteRef:
+            key: openai-api-key
+        - secretKey: HUGGINGFACE_API_KEY
+          remoteRef:
+            key: huggingface-api-key
+
+# Additional environment variables
+env:
+  NODE_ENV: production
+  LOG_LEVEL: info
+  MAX_REQUEST_SIZE: 50mb
+  SESSION_TIMEOUT: 24h
+  CORS_ORIGIN: "*"
+  RATE_LIMIT_WINDOW: "15"
+  RATE_LIMIT_MAX: "1000"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://cartrita-otel-collector:4318"
+
+# Secrets (base64 encoded in production)
+secrets:
+  DATABASE_URL: ""
+  REDIS_URL: ""
+  JWT_SECRET: ""
+  OPENAI_API_KEY: ""
+  HUGGINGFACE_API_KEY: ""
+  DEEPGRAM_API_KEY: ""
+  ANTHROPIC_API_KEY: ""
+  GROQ_API_KEY: ""
+  REPLICATE_API_KEY: ""
+  LANGCHAIN_API_KEY: ""

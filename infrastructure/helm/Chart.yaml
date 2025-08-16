@@ -1,0 +1,34 @@
+apiVersion: v2
+name: cartrita
+description: Cartrita Multi-Agent OS Helm Chart
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+home: https://cartrita.ai
+maintainers:
+- name: Cartrita Team
+  email: team@cartrita.ai
+keywords:
+- ai
+- multi-agent
+- kubernetes
+- microservices
+- nodejs
+- react
+dependencies:
+- name: postgresql
+  version: "12.x.x"
+  repository: https://charts.bitnami.com/bitnami
+  condition: postgresql.enabled
+- name: redis
+  version: "18.x.x"
+  repository: https://charts.bitnami.com/bitnami
+  condition: redis.enabled
+- name: prometheus
+  version: "25.x.x"
+  repository: https://prometheus-community.github.io/helm-charts
+  condition: monitoring.prometheus.enabled
+- name: grafana
+  version: "7.x.x"
+  repository: https://grafana.github.io/helm-charts
+  condition: monitoring.grafana.enabled

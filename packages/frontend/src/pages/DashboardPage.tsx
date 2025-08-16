@@ -14,7 +14,11 @@ import { HuggingFaceIntegrationHub } from "@/components/huggingface/HuggingFaceI
 import HealthDashboardPage from "@/pages/HealthDashboardPage";
 import EmailInboxPage from "@/pages/EmailInboxPage";
 import { AIProvidersPage } from "@/pages/AIProvidersPage";
+import APIDocs from "@/components/APIDocs";
 import { AIPowerCard } from "@/components/ui/AIPowerCard";
+import CacheDashboard from "@/pages/CacheDashboard";
+import SecurityDashboard from "@/pages/SecurityDashboard";
+import SecurityTestingDashboard from "@/components/SecurityTestingDashboard";
 
 interface DashboardPageProps {
   token: string;
@@ -38,11 +42,15 @@ const DASHBOARD_VIEWS = [
   "models",
   "huggingface",
   "health",
+  "cache",
+  "security",
+  "security-testing",
   "email", // added email inbox
   "lifeos",
   "about",
   "license",
   "aiproviders",
+  "docs",
 ] as const;
 
 type DashboardView = typeof DASHBOARD_VIEWS[number];
@@ -364,7 +372,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
     return (
       <div className="min-h-screen bg-animated text-white">
     <header className="glass-card border-b border-slate-600/50 p-4">
-          <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex justify-between items-center pl-4">
             <div>
               <h1 className="text-3xl font-bold text-gradient">
                 HuggingFace AI Integration
@@ -383,7 +391,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
           </div>
         </header>
         
-        <main className="max-w-7xl mx-auto p-6">
+        <main className="max-w-6xl mx-auto p-6 pl-8">
           <HuggingFaceIntegrationHub 
             token={token}
             className="w-full"
@@ -398,6 +406,21 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
     return <HealthDashboardPage token={token} onBack={() => setCurrentView("chat")} />;
   }
 
+  // Show cache dashboard  
+  if (currentView === "cache") {
+    return <CacheDashboard token={token} onBack={() => setCurrentView("chat")} />;
+  }
+
+  // Show security dashboard  
+  if (currentView === "security") {
+    return <SecurityDashboard token={token} onBack={() => setCurrentView("chat")} />;
+  }
+
+  // Show security testing dashboard  
+  if (currentView === "security-testing") {
+    return <SecurityTestingDashboard token={token} onBack={() => setCurrentView("chat")} />;
+  }
+
   // Show email inbox page
   if (currentView === "email") {
     return <EmailInboxPage token={token} onBack={() => setCurrentView("chat")} />;
@@ -408,13 +431,18 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
     return <AIProvidersPage token={token} onBack={() => setCurrentView("chat")} />;
   }
 
+  // Show API Documentation
+  if (currentView === "docs") {
+    return <APIDocs token={token} onBack={() => setCurrentView("chat")} />;
+  }
+
   // Show main dashboard
   return (
     <div className="min-h-screen bg-animated text-white">
       {/* Header */}
   <header className="glass-card border-b border-slate-600/50 p-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div>
+        <div className="flex justify-between items-center">
+          <div className="pl-4">
             <h1 className="text-3xl font-bold text-gradient">
               Dat Bitch Cartrita
             </h1>
@@ -513,6 +541,33 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
             </button>
 
             <button
+              onClick={() => setCurrentView("cache")}
+      className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 flex items-center space-x-2"
+              title="Cache Management"
+            >
+              <span>⚡</span>
+              <span className="hidden sm:inline">Cache</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentView("security")}
+      className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 flex items-center space-x-2"
+              title="Security Dashboard"
+            >
+              <span>🛡️</span>
+              <span className="hidden sm:inline">Security</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentView("security-testing")}
+      className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 flex items-center space-x-2"
+              title="Security Testing"
+            >
+              <span>🔍</span>
+              <span className="hidden sm:inline">Testing</span>
+            </button>
+
+            <button
               onClick={() => setCurrentView("email")}
       className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 flex items-center space-x-2"
               title="Email Inbox"
@@ -533,7 +588,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto p-6">
+      <main className="max-w-6xl mx-auto p-6 pl-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Chat Section */}
           <div className="lg:col-span-3">
@@ -609,11 +664,39 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
                   <span>HuggingFace AI Hub</span>
                 </button>
                 <button
+                  onClick={() => setCurrentView("cache")}
+                  className="w-full text-left p-3 rounded-lg hover:bg-slate-800/50 transition-colors flex items-center space-x-3"
+                >
+                  <span>⚡</span>
+                  <span>Cache Management</span>
+                </button>
+                <button
+                  onClick={() => setCurrentView("security")}
+                  className="w-full text-left p-3 rounded-lg hover:bg-slate-800/50 transition-colors flex items-center space-x-3"
+                >
+                  <span>🛡️</span>
+                  <span>Security Dashboard</span>
+                </button>
+                <button
+                  onClick={() => setCurrentView("security-testing")}
+                  className="w-full text-left p-3 rounded-lg hover:bg-slate-800/50 transition-colors flex items-center space-x-3"
+                >
+                  <span>🔍</span>
+                  <span>Security Testing</span>
+                </button>
+                <button
                   onClick={() => setCurrentView("aiproviders")}
                   className="w-full text-left p-3 rounded-lg hover:bg-slate-800/50 transition-colors flex items-center space-x-3"
                 >
                   <span>🤖</span>
                   <span>Multi-Provider AI Hub</span>
+                </button>
+                <button
+                  onClick={() => setCurrentView("docs")}
+                  className="w-full text-left p-3 rounded-lg hover:bg-slate-800/50 transition-colors flex items-center space-x-3"
+                >
+                  <span>📚</span>
+                  <span>API Documentation</span>
                 </button>
                 <button className="w-full text-left p-3 rounded-lg hover:bg-slate-800/50 transition-colors flex items-center space-x-3">
                   <span>🗑️</span>
@@ -762,7 +845,7 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
 
       {/* Footer */}
       <footer className="border-t border-slate-600/50 mt-12">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-6xl mx-auto px-6 py-4 pl-8">
           <div className="flex justify-center items-center space-x-6">
             <button
               onClick={() => setCurrentView("about")}

@@ -6,7 +6,7 @@ const baseConfig = {
   host: process.env.POSTGRES_HOST || 'localhost',
   database: process.env.POSTGRES_DB || 'dat-bitch-cartrita',
   password: process.env.POSTGRES_PASSWORD || 'punky1',
-  port: Number(process.env.POSTGRES_PORT) || 5435,
+  port: Number(process.env.POSTGRES_PORT) || 5432,
 };
 
 let pool;
@@ -38,15 +38,15 @@ if (process.env.DB_SKIP === '1' || process.env.NODE_ENV === 'test') {
         baseConfig.port === 5432
       ) {
         try {
-          console.warn('[db] Primary port 5432 failed, attempting fallback port 5435');
-          const fallback = { ...baseConfig, port: 5435 };
+          console.warn('[db] Primary port 5432 failed, attempting fallback port 5433');
+          const fallback = { ...baseConfig, port: 5433 };
           const fallbackPool = new Pool(fallback);
           await fallbackPool.query('SELECT 1');
           pool.end().catch(()=>{});
           pool = fallbackPool;
-          console.log('[db] ✅ Connected via fallback port 5435');
+          console.log('[db] ✅ Connected via fallback port 5433');
         } catch (fallbackErr) {
-          console.error('[db] ❌ Fallback port 5435 also failed:', fallbackErr.message);
+          console.error('[db] ❌ Fallback port 5433 also failed:', fallbackErr.message);
         }
       } else {
         console.error('[db] ❌ Primary database unreachable (continuing):', err.message);

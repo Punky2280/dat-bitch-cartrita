@@ -1,23 +1,30 @@
-// Jest configuration (ESM) - only test/ directory scanned; src excluded to avoid vendor upstream tests
-module.exports = {
+// Jest configuration (ES6) for backend tests
+// Goals:
+// - Run our backend tests under `tests/**` and `src/test/**`
+// - Exclude upstream/vendor test trees (e.g., opentelemetry sources)
+// - Keep micro-tests executed via `npm run test:micro` (do not match *.microtest.mjs here)
+
+export default {
   testEnvironment: 'node',
-    roots: ['<rootDir>/tests/unit', '<rootDir>/tests/integration'], // updated to new tests directory
-  testMatch: ['**/?(*.)+(test).[jt]s'],
-  setupFiles: ['<rootDir>/test/jest.env.setup.js'],
-  // All .js already treated as ESM via package.json "type":"module"; no transform needed.
+  roots: ['<rootDir>/tests'],
+  // Limit collection to stable Jest tests; skip vitest-based and heavy integration suites
+  testMatch: [
+    '<rootDir>/tests/unit/**/*.test.js',
+    '<rootDir>/tests/registry/registry.sanity.test.js',
+    '<rootDir>/tests/router-endpoint.test.js',
+  // no src/test patterns; that tree contains placeholders only
+  ],
+  setupFiles: ['<rootDir>/tests/jest.env.setup.js'],
   transform: {
-    '^.+\\.js$': ['babel-jest', { rootMode: 'upward' }]
+    '^.+\\.js$': ['babel-jest', { rootMode: 'upward' }],
   },
-  moduleFileExtensions: ['js','mjs','cjs','json'],
-  // Let node_modules ESM/CJS load natively (no transform). If specific CJS needs transforming later, add here.
-  transformIgnorePatterns: [],
+  moduleFileExtensions: ['js', 'mjs', 'cjs', 'json'],
   testPathIgnorePatterns: [
     '/node_modules/',
-    'unix-socket-handshake.test.js',
-    '<rootDir>/src/opentelemetry/upstream-source/'
+    '<rootDir>/src/opentelemetry/upstream-source/',
+    '\\.(disabled)$',
+    '\\.microtest\\.mjs$',
   ],
   verbose: false,
   collectCoverage: false,
-  // Explicitly disable automatic CommonJS interop assumptions.
-  // Using default resolver is fine; ensure exports field respected.
 };

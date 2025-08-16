@@ -334,7 +334,7 @@ export const Registry = {
 
 // Helper functions
 export function getTaskModels(task: keyof typeof Registry): ProviderModel[] {
-  return Registry[task] || [];
+  return (Registry[task] || []) as ProviderModel[];
 }
 
 export function getModelsByTier(task: keyof typeof Registry, tier: ProviderModel['tier']): ProviderModel[] {

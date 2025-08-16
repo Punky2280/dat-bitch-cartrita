@@ -27,37 +27,37 @@ export class MCPMetrics {
   private readonly prometheusExporter?: PrometheusExporter;
 
   // Message metrics
-  private readonly messagesSentCounter: Counter;
-  private readonly messagesReceivedCounter: Counter;
-  private readonly messagesDroppedCounter: Counter;
-  private readonly messageErrorsCounter: Counter;
-  private readonly messageLatencyHistogram: Histogram;
-  private readonly messageQueueDepthGauge: ObservableGauge;
+  private messagesSentCounter!: Counter;
+  private messagesReceivedCounter!: Counter;
+  private messagesDroppedCounter!: Counter;
+  private messageErrorsCounter!: Counter;
+  private messageLatencyHistogram!: Histogram;
+  private messageQueueDepthGauge!: ObservableGauge;
 
   // Task metrics
-  private readonly tasksStartedCounter: Counter;
-  private readonly tasksCompletedCounter: Counter;
-  private readonly tasksFailedCounter: Counter;
-  private readonly taskDurationHistogram: Histogram;
-  private readonly taskQueueTimeHistogram: Histogram;
-  private readonly taskRetryCounter: Counter;
+  private tasksStartedCounter!: Counter;
+  private tasksCompletedCounter!: Counter;
+  private tasksFailedCounter!: Counter;
+  private taskDurationHistogram!: Histogram;
+  private taskQueueTimeHistogram!: Histogram;
+  private taskRetryCounter!: Counter;
 
   // Agent metrics
-  private readonly agentHealthGauge: ObservableGauge;
-  private readonly agentCpuUsageGauge: ObservableGauge;
-  private readonly agentMemoryUsageGauge: ObservableGauge;
-  private readonly agentActiveTasksGauge: ObservableGauge;
+  private agentHealthGauge!: ObservableGauge;
+  private agentCpuUsageGauge!: ObservableGauge;
+  private agentMemoryUsageGauge!: ObservableGauge;
+  private agentActiveTasksGauge!: ObservableGauge;
 
   // Cost and resource metrics
-  private readonly tokensUsedCounter: Counter;
-  private readonly costIncurredCounter: Counter;
-  private readonly modelUsageCounter: Counter;
-  private readonly resourceUtilizationGauge: ObservableGauge;
+  private tokensUsedCounter!: Counter;
+  private costIncurredCounter!: Counter;
+  private modelUsageCounter!: Counter;
+  private resourceUtilizationGauge!: ObservableGauge;
 
   // Transport metrics
-  private readonly transportConnectionsGauge: ObservableGauge;
-  private readonly transportErrorsCounter: Counter;
-  private readonly transportBytesTransferredCounter: Counter;
+  private transportConnectionsGauge!: ObservableGauge;
+  private transportErrorsCounter!: Counter;
+  private transportBytesTransferredCounter!: Counter;
 
   private constructor(enablePrometheus = true, prometheusPort = 9090) {
     // Initialize meter provider with resource information

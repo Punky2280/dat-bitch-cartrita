@@ -9,7 +9,7 @@ interface UseChatSocketOptions {
   onDisconnect: () => void;
 }
 
-export const useChatSocket = (token: string, options: UseChatSocketOptions) => {
+export const useChatSocket = (token: string | null, options: UseChatSocketOptions) => {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [connectionStats, setConnectionStats] = useState<ConnectionStats>({
@@ -59,12 +59,18 @@ export const useChatSocket = (token: string, options: UseChatSocketOptions) => {
   }, [options]);
 
   useEffect(() => {
-    if (!token) return;
-    if (token.split('.').length !== 3) {
+    // Allow connection without token for anonymous users
+    const socketConfig = token 
+      ? { ...SOCKET_CONFIG, auth: { token }, query: { token } }
+      : { ...SOCKET_CONFIG };
+    
+    if (token && token.split('.').length !== 3) {
       console.warn('🔒 Skipping socket connect: malformed token');
       return;
     }
-    const socket = io(SOCKET_URL, { ...SOCKET_CONFIG, auth: { token } });
+    
+    console.log('🔗 Connecting to socket with auth:', !!token);
+    const socket = io(SOCKET_URL, socketConfig);
     socketRef.current = socket;
 
     socket.on("connect", () => {

@@ -13,10 +13,20 @@ import ReactFlow, {
   Panel,
   ReactFlowProvider,
   useReactFlow,
+  NodeTypes,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { ExecutionLog, NodeDefinition } from "../types/workflow";
 import { gradients, semantic, colors } from "@/theme/tokens";
+import { 
+  ENHANCED_NODE_TYPES, 
+  getNodeTypesByCategory, 
+  getNodeTypeByType,
+  AdvancedNodeDefinition,
+  ConfigField 
+} from '../components/workflow/AdvancedNodeTypes';
+import { EnhancedCustomNode } from '../components/workflow/EnhancedCustomNode';
+import { NodeConfigurationPanel } from '../components/workflow/NodeConfigurationPanel';
 
 interface WorkflowsPageProps {
   token: string;
@@ -61,7 +71,14 @@ const WorkflowBuilder: React.FC<{
   const [executionLogs, setExecutionLogs] = useState<ExecutionLog[]>([]);
   const [showLogs, setShowLogs] = useState(false);
   const [pollingTimeoutId, setPollingTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [configPanelOpen, setConfigPanelOpen] = useState(false);
+  const [selectedNodeForConfig, setSelectedNodeForConfig] = useState<string | null>(null);
   const { project } = useReactFlow();
+
+  // Define custom node types for ReactFlow
+  const customNodeTypes: NodeTypes = {
+    enhanced: EnhancedCustomNode,
+  };
 
   // Cleanup polling on unmount
   useEffect(() => {
@@ -90,7 +107,7 @@ const WorkflowBuilder: React.FC<{
       const nodeTypeData = event.dataTransfer.getData("application/reactflow");
 
       if (nodeTypeData && reactFlowBounds) {
-        const nodeType: NodeDefinition = JSON.parse(nodeTypeData);
+        const nodeType: AdvancedNodeDefinition = JSON.parse(nodeTypeData);
         const position = project({
           x: event.clientX - reactFlowBounds.left,
           y: event.clientY - reactFlowBounds.top,
@@ -98,28 +115,13 @@ const WorkflowBuilder: React.FC<{
 
         const newNode: Node = {
           id: `${nodeType.type}_${Date.now()}`,
-          type: "default",
+          type: "enhanced",
           position,
           data: {
             label: nodeType.name,
-            nodeType: nodeType.type,
-            icon: nodeType.icon,
-            description: nodeType.description,
-            config: getDefaultConfig(nodeType.type),
-          },
-          style: {
-            background: getNodeColor(nodeType.type),
-            border: `2px solid ${semantic.border}`,
-            borderRadius: "12px",
-            fontSize: "12px",
-            fontWeight: "bold",
-            color: semantic.textInverted,
-            width: 180,
-            height: 80,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+            type: nodeType.type,
+            config: nodeType.defaultConfig || {},
+            nodeDefinition: nodeType,
           },
         };
 
@@ -323,7 +325,7 @@ const WorkflowBuilder: React.FC<{
 
         {showNodePalette && (
           <div className="px-4 pb-4 overflow-y-auto h-full">
-            {Object.entries(nodeTypes).map(([category, types]) => (
+            {nodeTypes && Object.entries(nodeTypes).map(([category, types]) => (
               <div key={category} className="mb-6">
                 <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">
                   {category}
@@ -373,6 +375,11 @@ const WorkflowBuilder: React.FC<{
             onConnect={onConnect}
             onDrop={onDrop}
             onDragOver={onDragOver}
+            onNodeDoubleClick={(event, node) => {
+              setSelectedNodeForConfig(node.id);
+              setConfigPanelOpen(true);
+            }}
+            nodeTypes={customNodeTypes}
             connectionMode={ConnectionMode.Loose}
             fitView
             style={{ background: semantic.bg }}
@@ -466,6 +473,29 @@ const WorkflowBuilder: React.FC<{
           </div>
         )}
       </div>
+
+      {/* Node Configuration Panel */}
+      {selectedNodeForConfig && (
+        <NodeConfigurationPanel
+          nodeId={selectedNodeForConfig}
+          nodeType={nodes.find(n => n.id === selectedNodeForConfig)?.data.type || ''}
+          currentConfig={nodes.find(n => n.id === selectedNodeForConfig)?.data.config || {}}
+          isOpen={configPanelOpen}
+          onClose={() => {
+            setConfigPanelOpen(false);
+            setSelectedNodeForConfig(null);
+          }}
+          onSave={(config) => {
+            setNodes(prevNodes => 
+              prevNodes.map(node => 
+                node.id === selectedNodeForConfig
+                  ? { ...node, data: { ...node.data, config } }
+                  : node
+              )
+            );
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -519,6 +549,12 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
       if (nodeTypesData.success) setNodeTypes(nodeTypesData.nodeTypes);
     } catch (error) {
       console.error("Failed to load data:", error);
+      
+      // Use enhanced node types with comprehensive categories
+      const enhancedNodeTypes = getNodeTypesByCategory();
+      setNodeTypes(enhancedNodeTypes);
+      setWorkflows([]);
+      setTemplates([]);
     } finally {
       setLoading(false);
     }

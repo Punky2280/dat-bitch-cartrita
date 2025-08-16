@@ -144,7 +144,23 @@ const KnowledgeHubPage: React.FC<KnowledgeHubPageProps> = () => {
       setGraphData(data);
     } catch (error) {
       console.error('Error loading graph data:', error);
-      setError('Failed to load knowledge graph');
+      // Provide mock data for development when backend is unavailable
+      const mockGraphData: GraphData = {
+        nodes: [
+          { id: '1', label: 'AI Research', category: 'concept', size: 20, color: '#3b82f6' },
+          { id: '2', label: 'Machine Learning', category: 'concept', size: 18, color: '#10b981' },
+          { id: '3', label: 'Neural Networks', category: 'concept', size: 16, color: '#f59e0b' }
+        ],
+        edges: [
+          { source: '1', target: '2', type: 'related', weight: 0.8, opacity: 0.8 },
+          { source: '2', target: '3', type: 'related', weight: 0.9, opacity: 0.9 }
+        ],
+        clusters: [
+          { id: 'ai', name: 'Artificial Intelligence', color: '#3b82f6' }
+        ]
+      };
+      setGraphData(mockGraphData);
+      setError('Using mock data - backend unavailable');
     } finally {
       setIsLoading(false);
     }

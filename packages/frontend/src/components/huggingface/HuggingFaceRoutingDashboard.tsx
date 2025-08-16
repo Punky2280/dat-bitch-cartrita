@@ -103,6 +103,7 @@ export const HuggingFaceRoutingDashboard: React.FC<HuggingFaceRoutingDashboardPr
       setError('');
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
+      
       const [statsResponse, healthResponse] = await Promise.all([
         fetch('/api/huggingface/stats', {
           headers: { 'Authorization': `Bearer ${token}` },
@@ -110,7 +111,9 @@ export const HuggingFaceRoutingDashboard: React.FC<HuggingFaceRoutingDashboardPr
         }).catch(err => ({ ok: false, status: 0, _err: err } as any)),
         fetch('/api/huggingface/health', { signal: controller.signal }).catch(err => ({ ok: false, status: 0, _err: err } as any))
       ]);
+      
       clearTimeout(timeout);
+      
       if (!statsResponse.ok) {
         if (statsResponse.status === 404 || statsResponse.status === 503) {
           // Graceful degraded mode – keep previous stats, set lightweight error but do not throw
@@ -118,23 +121,101 @@ export const HuggingFaceRoutingDashboard: React.FC<HuggingFaceRoutingDashboardPr
         } else {
           setError(prev => prev || 'Failed to fetch routing statistics');
         }
+        
+        // Set mock data when backend is unavailable
+        if (!stats) {
+          setStats({
+            totalRequests: 0,
+            successfulRequests: 0,
+            averageLatency: 0,
+            fallbacksUsed: 0,
+            successRate: 0,
+            ragCacheStats: { size: 0, entries: [] },
+            availableModels: 0
+          });
+        }
       } else {
         const statsData = await statsResponse.json();
         setStats(statsData.stats);
       }
+      
       if (!healthResponse.ok) {
         if (healthResponse.status === 503) {
           setError(prev => prev || 'Health check: orchestrator initializing');
         } else if (healthResponse.status !== 0) {
           setError(prev => prev || 'Failed to fetch health status');
         }
+        
+        // Set mock health data when backend is unavailable
+        if (!health) {
+          setHealth({
+            status: 'unhealthy',
+            message: 'Backend unavailable',
+            agents: {},
+            routing_service: { status: 'unhealthy', error: 'Service unavailable' },
+            rag_service: { status: 'unhealthy', cache_size: 0 },
+            performance: {
+              totalRequests: 0,
+              successfulRequests: 0,
+              averageLatency: 0,
+              fallbacksUsed: 0,
+              successRate: 0,
+              ragCacheStats: { size: 0, entries: [] },
+              availableModels: 0
+            },
+            enhanced_features: {
+              rag_pipeline: false,
+              advanced_routing: false,
+              safety_filtering: false,
+              cost_controls: false
+            }
+          });
+        }
       } else {
         const healthData = await healthResponse.json();
         setHealth(healthData.health);
       }
+      
       setLastUpdate(new Date());
     } catch (err) {
       setError(err instanceof Error ? (err.name === 'AbortError' ? 'Dashboard request timed out' : err.message) : 'Failed to fetch data');
+      
+      // Set mock data on error to prevent infinite loading
+      if (!stats) {
+        setStats({
+          totalRequests: 0,
+          successfulRequests: 0,
+          averageLatency: 0,
+          fallbacksUsed: 0,
+          successRate: 0,
+          ragCacheStats: { size: 0, entries: [] },
+          availableModels: 0
+        });
+      }
+      if (!health) {
+        setHealth({
+          status: 'unhealthy',
+          message: 'Backend unavailable',
+          agents: {},
+          routing_service: { status: 'unhealthy', error: 'Service unavailable' },
+          rag_service: { status: 'unhealthy', cache_size: 0 },
+          performance: {
+            totalRequests: 0,
+            successfulRequests: 0,
+            averageLatency: 0,
+            fallbacksUsed: 0,
+            successRate: 0,
+            ragCacheStats: { size: 0, entries: [] },
+            availableModels: 0
+          },
+          enhanced_features: {
+            rag_pipeline: false,
+            advanced_routing: false,
+            safety_filtering: false,
+            cost_controls: false
+          }
+        });
+      }
     } finally {
       setLoading(false);
     }

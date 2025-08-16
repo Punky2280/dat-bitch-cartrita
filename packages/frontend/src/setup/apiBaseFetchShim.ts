@@ -8,14 +8,21 @@ function needsRewrite(input: RequestInfo | URL): boolean {
 
 if (!(window as any).__API_BASE_SHIM_INSTALLED__) {
   (window as any).__API_BASE_SHIM_INSTALLED__ = true;
-  window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    if (needsRewrite(input)) {
-      const url = `${API_BASE_URL}${input}`;
-      return ORIGINAL_FETCH(url, init);
-    }
-    return ORIGINAL_FETCH(input, init);
-  }) as any;
+  
+  // In development mode, let Vite's proxy handle /api/* requests
   if (import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
+    console.log('[apiBaseFetchShim] DEV mode: using Vite proxy for /api/*');
+    // Don't rewrite URLs in development - let Vite proxy handle them
+  } else {
+    // Production mode - rewrite URLs to backend
+    window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (needsRewrite(input)) {
+        const url = `${API_BASE_URL}${input}`;
+        return ORIGINAL_FETCH(url, init);
+      }
+      return ORIGINAL_FETCH(input, init);
+    }) as any;
     // eslint-disable-next-line no-console
     console.log('[apiBaseFetchShim] /api/* ->', API_BASE_URL);
   }

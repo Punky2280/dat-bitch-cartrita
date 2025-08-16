@@ -52,7 +52,8 @@ router.post('/credentials', authenticateToken, async (req, res) => {
  * @access  Private
  * @body    { text: string, voice_style?: 'sassy' | 'neutral' }
  */
-router.post('/synthesize', authenticateToken, async (req, res) => {
+// Extracted synthesize handler so alias can reuse it safely
+const synthesizeHandler = async (req, res) => {
   const { text, voice_style = 'sassy', format = 'mp3' } = req.body || {};
   if (!text || !text.trim()) {
     return res.status(400).json({ error: 'Provide some text for synthesis.' });
@@ -100,15 +101,12 @@ router.post('/synthesize', authenticateToken, async (req, res) => {
     console.error('[VoiceChat] TTS Synthesis failed:', error.message);
     return res.status(500).json({ error: 'Voice synthesis failed.' });
   }
-});
+};
+
+router.post('/synthesize', authenticateToken, synthesizeHandler);
 
 // Backward-compatible alias: /api/voice-chat/speak -> /synthesize
-router.post('/speak', authenticateToken, async (req, res, next) => {
-  // Delegate to synthesize handler by calling next route with modified url if needed
-  // Simply call the same logic by copying body
-  req.url = '/synthesize';
-  next();
-});
+router.post('/speak', authenticateToken, synthesizeHandler);
 
 /**
  * @route POST /api/voice-chat/transcribe

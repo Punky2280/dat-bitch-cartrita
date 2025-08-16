@@ -2,12 +2,75 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Icons -->
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dat Bitch Cartrita</title>
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+    
+    <!-- Mobile Optimization -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Cartrita AI" />
+    <meta name="theme-color" content="#8b5cf6" />
+    <meta name="msapplication-TileColor" content="#8b5cf6" />
+    <meta name="msapplication-navbutton-color" content="#8b5cf6" />
+    
+    <!-- SEO and Social -->
+    <meta name="description" content="Advanced Multi-Agent AI Operating System - Cartrita AI provides intelligent automation, workflow management, and AI-powered assistance." />
+    <meta name="keywords" content="AI, automation, workflows, assistant, machine learning, productivity" />
+    <meta name="author" content="Cartrita AI" />
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="Cartrita AI OS" />
+    <meta property="og:description" content="Advanced Multi-Agent AI Operating System" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/icons/icon-512x512.png" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Cartrita AI OS" />
+    <meta name="twitter:description" content="Advanced Multi-Agent AI Operating System" />
+    <meta name="twitter:image" content="/icons/icon-512x512.png" />
+    
+    <!-- Preload Critical Resources -->
+    <link rel="modulepreload" href="/src/main.tsx" crossorigin="anonymous" />
+    
+    <!-- Performance Hints -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="preconnect" href="//fonts.gstatic.com" crossorigin />
+    
+    <title>Cartrita AI OS</title>
   </head>
   <body>
+    <!-- PWA Install Prompt (Fallback) -->
+    <noscript>
+      <div style="text-align: center; padding: 2rem; background: #1a1b23; color: #e2e8f0;">
+        <h1>Cartrita AI OS</h1>
+        <p>Please enable JavaScript to run this application.</p>
+      </div>
+    </noscript>
+    
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
   </body>
 </html>

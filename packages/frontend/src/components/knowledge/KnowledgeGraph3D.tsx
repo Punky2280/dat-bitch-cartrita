@@ -85,10 +85,10 @@ const KnowledgeGraph3D: React.FC<KnowledgeGraph3DProps> = ({
 
   // Filter graph data based on user selections
   const filteredGraphData = useMemo(() => {
-    if (!graphData) return null;
+    if (!graphData || !graphData.nodes || !graphData.edges) return null;
 
-    let nodes = graphData.nodes;
-    let edges = graphData.edges;
+    let nodes = [...graphData.nodes];
+    let edges = [...graphData.edges];
 
     // Filter by categories
     if (selectedCategories.length > 0) {

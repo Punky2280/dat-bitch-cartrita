@@ -1,0 +1,778 @@
+/* Security Testing Dashboard Styles */
+.security-testing-dashboard {
+    padding: 2rem;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #e0e6ed;
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Loading States */
+.security-testing-dashboard.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+.loading-spinner {
+    text-align: center;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(0, 255, 157, 0.3);
+    border-top: 3px solid #00ff9d;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-state, .empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #8892b0;
+    font-style: italic;
+}
+
+/* Header */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #00ff9d;
+}
+
+.dashboard-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #00ff9d;
+    margin: 0;
+    text-shadow: 0 0 20px rgba(0, 255, 157, 0.3);
+}
+
+.header-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.timeframe-selector {
+    background: rgba(0, 255, 157, 0.1);
+    border: 1px solid #00ff9d;
+    color: #e0e6ed;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.timeframe-selector:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 255, 157, 0.3);
+}
+
+.auto-refresh-toggle {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e6ed;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.auto-refresh-toggle.active {
+    background: rgba(0, 255, 157, 0.2);
+    border-color: #00ff9d;
+    color: #00ff9d;
+}
+
+.auto-refresh-toggle:hover {
+    background: rgba(0, 255, 157, 0.1);
+    border-color: #00ff9d;
+}
+
+/* Error Banner */
+.error-banner {
+    background: rgba(220, 53, 69, 0.1);
+    border: 1px solid #dc3545;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.error-banner .error-icon {
+    font-size: 1.2rem;
+}
+
+.error-banner button {
+    background: none;
+    border: none;
+    color: #dc3545;
+    cursor: pointer;
+    font-size: 1.5rem;
+    margin-left: auto;
+}
+
+/* Metrics Overview */
+.metrics-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.metric-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #00ff9d, #0099ff);
+}
+
+.metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 255, 157, 0.2);
+    border-color: rgba(0, 255, 157, 0.3);
+}
+
+.metric-card.active-tests::before {
+    background: linear-gradient(90deg, #ff6b6b, #feca57);
+}
+
+.metric-card.vulnerabilities::before {
+    background: linear-gradient(90deg, #dc3545, #fd7e14);
+}
+
+.metric-card.performance::before {
+    background: linear-gradient(90deg, #6f42c1, #e83e8c);
+}
+
+.metric-card h3 {
+    color: #8892b0;
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0 0 0.5rem 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.metric-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #00ff9d;
+    margin: 0.5rem 0;
+    text-shadow: 0 0 20px rgba(0, 255, 157, 0.4);
+}
+
+.metric-trend {
+    font-size: 0.9rem;
+    color: #8892b0;
+    margin-top: 0.5rem;
+}
+
+.trend-label {
+    opacity: 0.8;
+}
+
+.trend-value {
+    color: #00ff9d;
+    font-weight: 600;
+}
+
+.status-indicator {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-indicator.running {
+    background: rgba(0, 123, 255, 0.2);
+    color: #007bff;
+    border: 1px solid #007bff;
+    animation: pulse 2s infinite;
+}
+
+.status-indicator.idle {
+    background: rgba(108, 117, 125, 0.2);
+    color: #6c757d;
+    border: 1px solid #6c757d;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+
+/* Dashboard Sections */
+.dashboard-section {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.section-header h2 {
+    color: #e0e6ed;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.refresh-button {
+    background: rgba(0, 255, 157, 0.1);
+    border: 1px solid #00ff9d;
+    color: #00ff9d;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.refresh-button:hover {
+    background: rgba(0, 255, 157, 0.2);
+    transform: translateY(-1px);
+}
+
+.refresh-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Test Suites Grid */
+.test-suites-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+}
+
+.test-suite-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.test-suite-card:hover {
+    border-color: rgba(0, 255, 157, 0.3);
+    box-shadow: 0 5px 20px rgba(0, 255, 157, 0.1);
+}
+
+.test-suite-card.disabled {
+    opacity: 0.6;
+    filter: grayscale(50%);
+}
+
+.suite-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.suite-header h3 {
+    color: #e0e6ed;
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.suite-status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.suite-status.enabled {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+    border: 1px solid #28a745;
+}
+
+.suite-status.disabled {
+    background: rgba(108, 117, 125, 0.2);
+    color: #6c757d;
+    border: 1px solid #6c757d;
+}
+
+.suite-description {
+    color: #8892b0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 0 0 1rem 0;
+}
+
+.suite-stats {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+    color: #8892b0;
+}
+
+.suite-actions {
+    text-align: center;
+}
+
+.run-suite-button {
+    background: linear-gradient(135deg, #00ff9d, #0099ff);
+    border: none;
+    color: #ffffff;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.run-suite-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 255, 157, 0.3);
+}
+
+.run-suite-button:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Vulnerabilities */
+.vulnerability-filters {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.vulnerability-filters select {
+    background: rgba(0, 255, 157, 0.1);
+    border: 1px solid rgba(0, 255, 157, 0.3);
+    color: #e0e6ed;
+    padding: 0.5rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.vulnerability-filters select:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 255, 157, 0.3);
+}
+
+.vulnerabilities-table table,
+.recent-runs-table table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.vulnerabilities-table th,
+.vulnerabilities-table td,
+.recent-runs-table th,
+.recent-runs-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.vulnerabilities-table th,
+.recent-runs-table th {
+    background: rgba(255, 255, 255, 0.05);
+    color: #8892b0;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.85rem;
+}
+
+.vulnerabilities-table tbody tr:hover,
+.recent-runs-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.vulnerability-type {
+    background: rgba(0, 255, 157, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.severity-badge,
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.vulnerability-description strong {
+    color: #e0e6ed;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.vulnerability-description p {
+    color: #8892b0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin: 0.25rem 0;
+}
+
+.vulnerability-description code {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: #00ff9d;
+}
+
+.vulnerability-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.action-button {
+    padding: 0.4rem 0.8rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.action-button.investigate {
+    background: #ffc107;
+    color: #000;
+}
+
+.action-button.fixed {
+    background: #28a745;
+    color: white;
+}
+
+.action-button.details {
+    background: rgba(0, 255, 157, 0.2);
+    color: #00ff9d;
+    border: 1px solid #00ff9d;
+}
+
+.action-button:hover {
+    transform: translateY(-1px);
+    opacity: 0.9;
+}
+
+.date {
+    color: #8892b0;
+    font-size: 0.9rem;
+}
+
+.date small {
+    color: #6c757d;
+    font-size: 0.8rem;
+}
+
+/* Dialog */
+.dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
+
+.dialog {
+    background: #1a1a2e;
+    border: 1px solid rgba(0, 255, 157, 0.3);
+    border-radius: 16px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow: hidden;
+    animation: dialogSlideIn 0.3s ease;
+}
+
+@keyframes dialogSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 255, 157, 0.05);
+}
+
+.dialog-header h3 {
+    color: #e0e6ed;
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    color: #8892b0;
+    font-size: 2rem;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close-button:hover {
+    color: #e0e6ed;
+}
+
+.dialog-content {
+    padding: 1.5rem;
+    overflow-y: auto;
+    max-height: 400px;
+}
+
+.dialog-content p {
+    color: #8892b0;
+    line-height: 1.6;
+    margin: 0.5rem 0;
+}
+
+.test-options {
+    margin-top: 1.5rem;
+}
+
+.test-options h4 {
+    color: #e0e6ed;
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+}
+
+.test-options label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    color: #8892b0;
+    cursor: pointer;
+}
+
+.test-options input[type="checkbox"] {
+    accent-color: #00ff9d;
+}
+
+.dialog-actions {
+    display: flex;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.1);
+    justify-content: flex-end;
+}
+
+.cancel-button {
+    background: rgba(108, 117, 125, 0.2);
+    border: 1px solid #6c757d;
+    color: #6c757d;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.cancel-button:hover {
+    background: rgba(108, 117, 125, 0.3);
+    color: #8892b0;
+}
+
+.run-button {
+    background: linear-gradient(135deg, #00ff9d, #0099ff);
+    border: none;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.run-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(0, 255, 157, 0.3);
+}
+
+.run-button:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .security-testing-dashboard {
+        padding: 1.5rem;
+    }
+    
+    .metrics-overview {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .dashboard-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+    
+    .header-controls {
+        align-self: stretch;
+        justify-content: flex-end;
+    }
+}
+
+@media (max-width: 768px) {
+    .security-testing-dashboard {
+        padding: 1rem;
+    }
+    
+    .dashboard-header h1 {
+        font-size: 2rem;
+    }
+    
+    .metrics-overview {
+        grid-template-columns: 1fr;
+    }
+    
+    .test-suites-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+    
+    .vulnerability-filters {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+    
+    .vulnerability-actions {
+        flex-direction: column;
+    }
+    
+    .vulnerabilities-table,
+    .recent-runs-table {
+        overflow-x: auto;
+    }
+    
+    .dialog {
+        width: 95%;
+        margin: 1rem;
+    }
+    
+    .dialog-actions {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 480px) {
+    .security-testing-dashboard {
+        padding: 0.5rem;
+    }
+    
+    .dashboard-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .metric-card {
+        padding: 1rem;
+    }
+    
+    .metric-value {
+        font-size: 2rem;
+    }
+    
+    .dashboard-section {
+        padding: 1rem;
+    }
+    
+    .test-suite-card {
+        padding: 1rem;
+    }
+}

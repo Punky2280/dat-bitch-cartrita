@@ -17,10 +17,21 @@ function authenticateTokenSocket(socket, next) {
     return next();
   }
 
+  if (!process.env.JWT_SECRET) {
+    console.error('[Socket Auth] ❌ JWT_SECRET not configured, allowing anonymous connection');
+    socket.userId = null;
+    socket.username = 'anonymous';
+    socket.authenticated = false;
+    return next();
+  }
+
   jwt.verify(token, process.env.JWT_SECRET, (err, decodedPayload) => {
     if (err) {
-      console.error('[Socket Auth] ❌ Invalid token:', err.message);
-      return next(new Error('Authentication error: Invalid token.'));
+      console.error('[Socket Auth] ❌ Invalid token:', err.message, 'Allowing anonymous connection instead');
+      socket.userId = null;
+      socket.username = 'anonymous';
+      socket.authenticated = false;
+      return next(); // Don't fail, just allow anonymous connection
     }
 
     console.log(

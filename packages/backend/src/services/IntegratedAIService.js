@@ -149,28 +149,10 @@ class IntegratedAIService {
         }
       };
 
-      // Create a mock HuggingFace service for model registry
-      const mockHuggingFaceService = {
-        generate: async (options) => {
-          // Fallback to OpenAI if HuggingFace is not available
-          const { default: OpenAI } = await import('openai');
-          const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-          
-          const response = await openai.chat.completions.create({
-            model: options.model || 'gpt-4o',
-            messages: [{ role: 'user', content: options.prompt }],
-            temperature: options.temperature || 0.7,
-            max_tokens: options.max_tokens || 512
-          });
-          
-          return {
-            text: response.choices[0].message.content,
-            usage: response.usage
-          };
-        }
-      };
+      // Use real HuggingFace service
+      const { default: HuggingFaceInferenceService } = await import('./HuggingFaceInferenceService.js');
 
-      this.modelRegistry = new ModelRegistryService(modelRegistryConfig, mockHuggingFaceService);
+      this.modelRegistry = new ModelRegistryService(modelRegistryConfig, HuggingFaceInferenceService);
       await this.modelRegistry.initialize();
       
       console.log('[IntegratedAIService] ✅ Model Registry initialized');

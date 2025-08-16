@@ -9,7 +9,7 @@ export const SOCKET_URL =
   "http://localhost:8001";
 
 export const SOCKET_CONFIG = {
-  transports: ["websocket", "polling"],
+  transports: ["polling", "websocket"], // Start with polling, then upgrade to websocket
   withCredentials: true,
   timeout: 20000,
   forceNew: false,
@@ -18,6 +18,8 @@ export const SOCKET_CONFIG = {
   reconnectionDelayMax: 8000,
   randomizationFactor: 0.4,
   reconnectionAttempts: 6,
+  upgrade: true, // Allow transport upgrade
+  rememberUpgrade: false, // Don't remember the upgrade for next time
 };
 
 export const CHAT_SUGGESTIONS = [

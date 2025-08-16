@@ -28,9 +28,16 @@ import authRoutes from './routes/auth.js';
 import rotationSchedulingRoutes from './routes/rotationScheduling.js';
 import knowledgeHubRoutes from './routes/knowledgeHub.js';
 import { router as aiEnhancedRoutes } from './routes/aiEnhanced.js';
+import { router as voiceChatRoutes } from './routes/voiceChat.js';
+import conversationThreadingRoutes from './routes/conversationThreading.js';
+import searchRoutes from './routes/search.js';
+import collaborationRoutes from './routes/collaboration.js';
+import docsRoutes from './routes/docs-simple.js';
 import authenticateToken from './middleware/authenticateToken.js';
+import authenticateTokenSocket from './middleware/authenticateTokenSocket.js';
 import coreAgent from './agi/consciousness/CoreAgent.js';
 import { createUnifiedInferenceService } from './services/unifiedInference.js';
+import { RealTimeCollaborationService } from './services/RealTimeCollaborationService.js';
 
 // Initialize unified inference service
 const unifiedAI = createUnifiedInferenceService();
@@ -70,26 +77,39 @@ const PUBLIC_API_PATHS = [
 ];
 
 const app = express();
-app.use(helmet());
+
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   ...(process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim()).filter(Boolean)
 ];
 
-app.use(cors({ 
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
-  maxAge: 600
-}));
+// CORS configuration - allow development origins (BEFORE helmet)
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  console.log(`[CORS] Origin: ${origin}, Method: ${req.method}, Path: ${req.path}`);
+  
+  // Set CORS headers for all requests
+  if (origin && (allowedOrigins.includes(origin) || origin.includes('localhost'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    console.log(`[CORS] Set Allow-Origin: ${origin}`);
+  }
+  
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With');
+  res.setHeader('Access-Control-Max-Age', '600');
+  
+  // Handle preflight OPTIONS requests
+  if (req.method === 'OPTIONS') {
+    console.log(`[CORS] Handling OPTIONS preflight for ${req.path}`);
+    return res.sendStatus(200);
+  }
+  
+  next();
+});
+
+app.use(helmet());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
@@ -120,20 +140,30 @@ console.log('[Route Registration] ✅ /api/chat registered');
 // Authentication (register, login, verify)
 app.use('/api/auth', authRoutes);
 console.log('[Route Registration] ✅ /api/auth registered');
+app.use('/api/docs', docsRoutes);
+console.log('[Route Registration] ✅ /api/docs registered');
 app.use('/api/workflows', workflowsRoutes);
 console.log('[Route Registration] ✅ /api/workflows registered');
 app.use('/api/personal-life-os', personalLifeOSRoutes);
 console.log('[Route Registration] ✅ /api/personal-life-os registered');
 app.use('/api/voice', voiceToTextRoutes);
 console.log('[Route Registration] ✅ /api/voice registered');
+app.use('/api/voice-chat', voiceChatRoutes);
+console.log('[Route Registration] ✅ /api/voice-chat registered');
 app.use('/api/rotation-scheduling', rotationSchedulingRoutes);
 console.log('[Route Registration] ✅ /api/rotation-scheduling registered');
 app.use('/api/internal/registry', registryStatusRoutes);
 
 app.use('/api/knowledge', knowledgeHubRoutes);
+app.use('/api/threading', conversationThreadingRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/collaboration', collaborationRoutes);
 // Enhanced AI capabilities
 app.use('/api/ai', aiEnhancedRoutes);
 console.log('[Route Registration] ✅ /api/knowledge registered');
+console.log('[Route Registration] ✅ /api/threading registered');
+console.log('[Route Registration] ✅ /api/search registered');
+console.log('[Route Registration] ✅ /api/collaboration registered');
 console.log('[Route Registration] ✅ All API routes registered.');
 
 // Test rotation endpoint
@@ -946,6 +976,7 @@ app.use((req, res) => {
 
 let server = null;
 let io = null;
+let collaborationService = null;
 if (process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID) {
   const port = process.env.PORT || 8001;
   server = http.createServer(app);
@@ -955,9 +986,24 @@ if (process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID) {
       credentials: true 
     } 
   });
+
+  // Add Socket.IO authentication middleware
+  io.use(authenticateTokenSocket);
+
+  // Initialize collaboration service
+  collaborationService = new RealTimeCollaborationService(io);
+  
+  // Make io available to routes
+  app.set('io', io);
+  
   io.on('connection', socket => {
     console.log(`[Socket.IO] Client connected: ${socket.id}`);
-    socket.emit('connected', { socketId: socket.id });
+    console.log(`[Socket.IO] User: ${socket.username} (ID: ${socket.userId}), Authenticated: ${socket.authenticated}`);
+    socket.emit('connected', { 
+      socketId: socket.id, 
+      authenticated: socket.authenticated,
+      userId: socket.userId 
+    });
     
     socket.on('user_message', async (data) => {
       console.log(`[Socket.IO] Message from ${socket.id}:`, data.text);
@@ -976,7 +1022,7 @@ if (process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID) {
         const response = await coreAgent.generateResponse(
           data.text, 
           data.language || 'en',
-          socket.id // Use socket ID as user ID for now
+          socket.userId || socket.id // Use authenticated user ID or fallback to socket ID
         );
         
         // Stop typing and send response

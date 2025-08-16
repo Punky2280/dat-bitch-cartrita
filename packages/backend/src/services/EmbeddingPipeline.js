@@ -18,7 +18,7 @@ class EmbeddingPipeline extends EventEmitter {
             host: process.env.POSTGRES_HOST || 'localhost',
             database: process.env.POSTGRES_DB || 'dat-bitch-cartrita',
             password: process.env.POSTGRES_PASSWORD || 'punky1',
-            port: process.env.POSTGRES_PORT || 5435,
+            port: process.env.POSTGRES_PORT || 5432,
         });
 
         this.openai = new OpenAI({

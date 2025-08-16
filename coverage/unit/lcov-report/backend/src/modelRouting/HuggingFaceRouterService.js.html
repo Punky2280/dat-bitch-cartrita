@@ -1,0 +1,220 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for backend/src/modelRouting/HuggingFaceRouterService.js</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../../prettify.css" />
+    <link rel="stylesheet" href="../../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../../index.html">All files</a> / <a href="index.html">backend/src/modelRouting</a> HuggingFaceRouterService.js</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>0/210</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>0/140</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>0/44</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>0/31</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line low'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// Runtime JS version of HuggingFaceRouterService to ensure Express route mounting works.
+// Mirrors logic from HuggingFaceRouterService.ts (kept for typed/editor usage). Keep both in sync.
+import fs from 'fs';
+import path from 'path';
+import axios from 'axios';
+import OpenTelemetryTracing from '../system/OpenTelemetryTracing.js';
+&nbsp;
+let catalogPath = <span class="cstat-no" title="statement not covered" >path.join(process.cwd(), 'packages/backend/src/modelRouting/hfModelCatalog.json');</span>
+<span class="cstat-no" title="statement not covered" >if (!fs.existsSync(catalogPath)) {</span>
+  const alt = <span class="cstat-no" title="statement not covered" >path.join(process.cwd(), 'src/modelRouting/hfModelCatalog.json');</span>
+<span class="cstat-no" title="statement not covered" >  if (fs.existsSync(alt)) <span class="cstat-no" title="statement not covered" >catalogPath = alt;</span></span>
+}
+const MODEL_CATALOG = <span class="cstat-no" title="statement not covered" >JSON.parse(fs.readFileSync(catalogPath, 'utf-8'));</span>
+const CATALOG_BY_ID = <span class="cstat-no" title="statement not covered" >Object.fromEntries(MODEL_CATALOG.map(<span class="fstat-no" title="function not covered" >m </span>=&gt; <span class="cstat-no" title="statement not covered" >[m.repo_id, m])</span>);</span>
+&nbsp;
+const HF_BASE = <span class="cstat-no" title="statement not covered" >'https://api-inference.huggingface.co';</span>
+const HF_TOKEN = <span class="cstat-no" title="statement not covered" >process.env.HF_TOKEN || '';</span>
+&nbsp;
+const SESSION = <span class="cstat-no" title="statement not covered" >axios.create({ baseURL: HF_BASE, timeout: 90_000 });</span>
+<span class="cstat-no" title="statement not covered" >if (HF_TOKEN) <span class="cstat-no" title="statement not covered" >SESSION.defaults.headers.common['Authorization'] = `Bearer ${HF_TOKEN}`;</span></span>
+&nbsp;
+const latencyMs = <span class="cstat-no" title="statement not covered" >new Map();</span>
+const success = <span class="cstat-no" title="statement not covered" >new Map();</span>
+const errors = <span class="cstat-no" title="statement not covered" >new Map();</span>
+function <span class="fstat-no" title="function not covered" >ewmaLatency(</span>id, val) { const prev = <span class="cstat-no" title="statement not covered" >latencyMs.get(id) ?? val;</span> <span class="cstat-no" title="statement not covered" >latencyMs.set(id, 0.3 * val + 0.7 * prev); </span>}
+function <span class="fstat-no" title="function not covered" >recordOutcome(</span>id, ok) { <span class="cstat-no" title="statement not covered" >success.set(id,(success.get(id)||0)+(ok?1:0)); <span class="cstat-no" title="statement not covered" ></span>errors.set(id,(errors.get(id)||0)+(ok?0:1)); <span class="cstat-no" title="statement not covered" ></span>try { <span class="cstat-no" title="statement not covered" >if (ok) <span class="cstat-no" title="statement not covered" >global.otelCounters?.hfRoutingSuccess?.add(1,{model:id}); </span>else <span class="cstat-no" title="statement not covered" >global.otelCounters?.hfRoutingErrors?.add(1,{model:id}); </span></span>} catch(_){} </span>}
+function <span class="fstat-no" title="function not covered" >reliability(</span>id){ const s=<span class="cstat-no" title="statement not covered" >success.get(id)||1;</span> const e=<span class="cstat-no" title="statement not covered" >errors.get(id)||0;</span> const t=<span class="cstat-no" title="statement not covered" >s+e;</span> <span class="cstat-no" title="statement not covered" >return t===0?0.5:s/t; </span>}
+function <span class="fstat-no" title="function not covered" >latencyScore(</span>id){ const l=<span class="cstat-no" title="statement not covered" >latencyMs.get(id)||3000;</span> <span class="cstat-no" title="statement not covered" >return Math.max(0,Math.min(1,1-l/4000)); </span>}
+function <span class="fstat-no" title="function not covered" >qualityPrior(</span>m){ const s=<span class="cstat-no" title="statement not covered" >m.approx_params;</span> <span class="cstat-no" title="statement not covered" >if(s.includes('70B')||s.includes('72B')) <span class="cstat-no" title="statement not covered" >return 0.95; <span class="cstat-no" title="statement not covered" ></span></span>if(['33B','34B','35B'].some(<span class="fstat-no" title="function not covered" >x=</span>&gt;<span class="cstat-no" title="statement not covered" >s.includes(x))</span>) <span class="cstat-no" title="statement not covered" >return 0.85; <span class="cstat-no" title="statement not covered" ></span></span>if(['20B','22B','32B'].some(<span class="fstat-no" title="function not covered" >x=</span>&gt;<span class="cstat-no" title="statement not covered" >s.includes(x))</span>) <span class="cstat-no" title="statement not covered" >return 0.8; <span class="cstat-no" title="statement not covered" ></span></span>if(['14B','15B','13B','12B','10.7B'].some(<span class="fstat-no" title="function not covered" >x=</span>&gt;<span class="cstat-no" title="statement not covered" >s.includes(x))</span>) <span class="cstat-no" title="statement not covered" >return 0.75; <span class="cstat-no" title="statement not covered" ></span></span>if(['9B','8B','7B','6B'].some(<span class="fstat-no" title="function not covered" >x=</span>&gt;<span class="cstat-no" title="statement not covered" >s.includes(x))</span>) <span class="cstat-no" title="statement not covered" >return 0.65; <span class="cstat-no" title="statement not covered" ></span></span>if(['3.3B','3B','2.7B','2B','1.6B','1.3B','1.1B'].some(<span class="fstat-no" title="function not covered" >x=</span>&gt;<span class="cstat-no" title="statement not covered" >s.includes(x))</span>) <span class="cstat-no" title="statement not covered" >return 0.55; <span class="cstat-no" title="statement not covered" ></span></span>if(['small','nano','MiniLM','124M'].some(<span class="fstat-no" title="function not covered" >x=</span>&gt;<span class="cstat-no" title="statement not covered" >s.includes(x))</span>) <span class="cstat-no" title="statement not covered" >return 0.5; <span class="cstat-no" title="statement not covered" ></span></span>return 0.55; </span>}
+function <span class="fstat-no" title="function not covered" >costScore(</span>m){ const s=<span class="cstat-no" title="statement not covered" >m.approx_params;</span> <span class="cstat-no" title="statement not covered" >if(['70B','72B','33B','34B','35B'].some(<span class="fstat-no" title="function not covered" >x=</span>&gt;<span class="cstat-no" title="statement not covered" >s.includes(x))</span>) <span class="cstat-no" title="statement not covered" >return 0.3; <span class="cstat-no" title="statement not covered" ></span></span>if(['14B','15B','13B','12B','10.7B'].some(<span class="fstat-no" title="function not covered" >x=</span>&gt;<span class="cstat-no" title="statement not covered" >s.includes(x))</span>) <span class="cstat-no" title="statement not covered" >return 0.55; <span class="cstat-no" title="statement not covered" ></span></span>if(['9B','8B','7B','6B'].some(<span class="fstat-no" title="function not covered" >x=</span>&gt;<span class="cstat-no" title="statement not covered" >s.includes(x))</span>) <span class="cstat-no" title="statement not covered" >return 0.7; <span class="cstat-no" title="statement not covered" ></span></span>if(['3.3B','3B','2.7B','2B','1.6B','1.3B','1.1B','small','nano'].some(<span class="fstat-no" title="function not covered" >x=</span>&gt;<span class="cstat-no" title="statement not covered" >s.includes(x))</span>) <span class="cstat-no" title="statement not covered" >return 0.85; <span class="cstat-no" title="statement not covered" ></span></span>return 0.6; </span>}
+function <span class="fstat-no" title="function not covered" >composite(</span>m){ const q=<span class="cstat-no" title="statement not covered" >qualityPrior(m);</span> const l=<span class="cstat-no" title="statement not covered" >latencyScore(m.repo_id);</span> const c=<span class="cstat-no" title="statement not covered" >costScore(m);</span> const r=<span class="cstat-no" title="statement not covered" >reliability(m.repo_id);</span> <span class="cstat-no" title="statement not covered" >return 0.5*q+0.2*l+0.2*c+0.1*r; </span>}
+&nbsp;
+const TASK_KEYWORDS=<span class="cstat-no" title="statement not covered" >{ code:['def ','class ','import ','bug','compile','refactor'], math:['solve','equation','integral','theorem','proof','derivative'], multilingual:['translate','traduce','übersetze','traduire','翻译','traducción'], long_context:['summary','summarize','minutes','transcript','long document'], embedding:['semantic search','embedding','vectorize'], rerank:['rerank','re-rank'], tool_use:['function call','tool:','api schema'], vision_language:['image:','diagram','figure','chart','ocr'], audio:['audio:','asr','speech','transcribe'], safety:['moderate this','safety check'], general:[] };</span>
+function <span class="fstat-no" title="function not covered" >classify(</span>prompt){ const low=<span class="cstat-no" title="statement not covered" >prompt.toLowerCase();</span> <span class="cstat-no" title="statement not covered" >for(const [task,kws] of Object.entries(TASK_KEYWORDS)){ <span class="cstat-no" title="statement not covered" >if(kws.some(<span class="fstat-no" title="function not covered" >k=</span>&gt;<span class="cstat-no" title="statement not covered" >low.includes(k))</span>) <span class="cstat-no" title="statement not covered" >return task; </span></span>} <span class="cstat-no" title="statement not covered" ></span>return 'general'; </span>}
+function <span class="fstat-no" title="function not covered" >shortlist(</span>task,max=<span class="branch-0 cbranch-no" title="branch not covered" >6)</span>{ let candidates=<span class="cstat-no" title="statement not covered" >MODEL_CATALOG.filter(<span class="fstat-no" title="function not covered" >m=</span>&gt;{ <span class="cstat-no" title="statement not covered" >if(task==='general') <span class="cstat-no" title="statement not covered" >return ['general','lightweight'].includes(m.category); <span class="cstat-no" title="statement not covered" ></span></span>if(task==='embedding') <span class="cstat-no" title="statement not covered" >return ['embedding','rerank'].includes(m.category); <span class="cstat-no" title="statement not covered" ></span></span>if(task==='rerank') <span class="cstat-no" title="statement not covered" >return m.category==='rerank'; <span class="cstat-no" title="statement not covered" ></span></span>return m.category===task; </span>});</span> <span class="cstat-no" title="statement not covered" >if(candidates.length===0) <span class="cstat-no" title="statement not covered" >candidates=MODEL_CATALOG.filter(<span class="fstat-no" title="function not covered" >m=</span>&gt;<span class="cstat-no" title="statement not covered" >['general','lightweight'].includes(m.category))</span>; <span class="cstat-no" title="statement not covered" ></span></span>return candidates.sort(<span class="fstat-no" title="function not covered" >(a</span>,b)=&gt;<span class="cstat-no" title="statement not covered" >composite(b)-composite(a))</span>.slice(0,max); </span>}
+async function <span class="fstat-no" title="function not covered" >probe(</span>repo,category){ <span class="cstat-no" title="statement not covered" >if(['vision_language','audio'].includes(category)) <span class="cstat-no" title="statement not covered" >return true; </span></span>const payload=<span class="cstat-no" title="statement not covered" >{};</span> <span class="cstat-no" title="statement not covered" >if(category==='embedding'||category==='rerank') <span class="cstat-no" title="statement not covered" >payload.inputs='probe'; </span>else <span class="cstat-no" title="statement not covered" >if(category==='safety') <span class="cstat-no" title="statement not covered" >payload.inputs='Safety probe content.'; </span>else <span class="cstat-no" title="statement not covered" >payload.inputs='Health check. Reply OK.'; </span></span></span>const start=<span class="cstat-no" title="statement not covered" >Date.now();</span> <span class="cstat-no" title="statement not covered" >try{ const res=<span class="cstat-no" title="statement not covered" >await SESSION.post(`/models/${repo}`,payload,{ timeout:6000 });</span> <span class="cstat-no" title="statement not covered" >ewmaLatency(repo,Date.now()-start); <span class="cstat-no" title="statement not covered" ></span>recordOutcome(repo,res.status===200); <span class="cstat-no" title="statement not covered" ></span>return res.status===200; </span>} catch(_){ <span class="cstat-no" title="statement not covered" >recordOutcome(repo,false); <span class="cstat-no" title="statement not covered" ></span>return false; </span>} </span>}
+function <span class="fstat-no" title="function not covered" >confidenceHeuristic(</span>output){ <span class="cstat-no" title="statement not covered" >if(!output) <span class="cstat-no" title="statement not covered" >return 0; </span></span>const len=<span class="cstat-no" title="statement not covered" >output.trim().length;</span> <span class="cstat-no" title="statement not covered" >if(len&lt;16) <span class="cstat-no" title="statement not covered" >return 0.1; <span class="cstat-no" title="statement not covered" ></span></span>if(len&lt;40) <span class="cstat-no" title="statement not covered" >return 0.25; <span class="cstat-no" title="statement not covered" ></span></span>if(len&lt;120) <span class="cstat-no" title="statement not covered" >return 0.55; </span></span>const tokens=<span class="cstat-no" title="statement not covered" >output.split(/\s+/);</span> const unique=<span class="cstat-no" title="statement not covered" >new Set(tokens).size;</span> const diversity=<span class="cstat-no" title="statement not covered" >unique/Math.max(1,tokens.length);</span> <span class="cstat-no" title="statement not covered" >return Math.min(1,0.6+0.4*diversity); </span>}
+async function <span class="fstat-no" title="function not covered" >generate(</span>model,prompt,params=<span class="branch-0 cbranch-no" title="branch not covered" >{})</span>{ const body=<span class="cstat-no" title="statement not covered" >{ inputs:prompt, parameters:{ max_new_tokens:params.max_new_tokens??512, temperature:params.temperature??0.7, return_full_text:false } };</span> const start=<span class="cstat-no" title="statement not covered" >Date.now();</span> <span class="cstat-no" title="statement not covered" >try{ const res=<span class="cstat-no" title="statement not covered" >await SESSION.post(`/models/${model}`,body);</span> <span class="cstat-no" title="statement not covered" >ewmaLatency(model,Date.now()-start); <span class="cstat-no" title="statement not covered" ></span>recordOutcome(model,res.status===200); <span class="cstat-no" title="statement not covered" ></span>if(!res.data) <span class="cstat-no" title="statement not covered" >throw new Error('No data'); <span class="cstat-no" title="statement not covered" ></span></span>if(Array.isArray(res.data)&amp;&amp;res.data[0]?.generated_text) <span class="cstat-no" title="statement not covered" >return String(res.data[0].generated_text); <span class="cstat-no" title="statement not covered" ></span></span>return typeof res.data==='string'?res.data:JSON.stringify(res.data); </span>} catch(e){ <span class="cstat-no" title="statement not covered" >recordOutcome(model,false); <span class="cstat-no" title="statement not covered" ></span>throw e; </span>} </span>}
+async function <span class="fstat-no" title="function not covered" >embed(</span>model,text){ const start=<span class="cstat-no" title="statement not covered" >Date.now();</span> const res=<span class="cstat-no" title="statement not covered" >await SESSION.post(`/models/${model}`,{ inputs:text });</span> <span class="cstat-no" title="statement not covered" >ewmaLatency(model,Date.now()-start); <span class="cstat-no" title="statement not covered" ></span>recordOutcome(model,res.status===200); </span>const d=<span class="cstat-no" title="statement not covered" >res.data;</span> <span class="cstat-no" title="statement not covered" >if(Array.isArray(d)&amp;&amp;Array.isArray(d[0])) <span class="cstat-no" title="statement not covered" >return d[0]; <span class="cstat-no" title="statement not covered" ></span></span>if(d?.embedding) <span class="cstat-no" title="statement not covered" >return d.embedding; <span class="cstat-no" title="statement not covered" ></span></span>return d; </span>}
+async function <span class="fstat-no" title="function not covered" >rerank(</span>model,query,docs){ const pairs=<span class="cstat-no" title="statement not covered" >docs.map(<span class="fstat-no" title="function not covered" >d=</span>&gt;(<span class="cstat-no" title="statement not covered" >{ text:d, query })</span>);</span> const start=<span class="cstat-no" title="statement not covered" >Date.now();</span> const res=<span class="cstat-no" title="statement not covered" >await SESSION.post(`/models/${model}`,{ inputs:pairs });</span> <span class="cstat-no" title="statement not covered" >ewmaLatency(model,Date.now()-start); <span class="cstat-no" title="statement not covered" ></span>recordOutcome(model,res.status===200); </span>const data=<span class="cstat-no" title="statement not covered" >res.data;</span> <span class="cstat-no" title="statement not covered" >return data.map(<span class="fstat-no" title="function not covered" >(s</span>,i)=&gt;{ const score=<span class="cstat-no" title="statement not covered" >typeof s==='object'&amp;&amp;s.score!==undefined?s.score:(typeof s==='number'?s:0);</span> <span class="cstat-no" title="statement not covered" >return { doc:docs[i], score }; </span>}).sort(<span class="fstat-no" title="function not covered" >(a</span>,b)=&gt;<span class="cstat-no" title="statement not covered" >b.score-a.score)</span>; </span>}
+async function <span class="fstat-no" title="function not covered" >translate(</span>model,text){ const meta=<span class="cstat-no" title="statement not covered" >CATALOG_BY_ID[model];</span> <span class="cstat-no" title="statement not covered" >if(meta?.category==='multilingual'&amp;&amp;meta.primary_tasks.includes('translation')){ const res=<span class="cstat-no" title="statement not covered" >await SESSION.post(`/models/${model}`,{ inputs:text });</span> <span class="cstat-no" title="statement not covered" >recordOutcome(model,res.status===200); </span>const d=<span class="cstat-no" title="statement not covered" >res.data;</span> <span class="cstat-no" title="statement not covered" >if(Array.isArray(d)&amp;&amp;d[0]?.translation_text) <span class="cstat-no" title="statement not covered" >return d[0].translation_text; <span class="cstat-no" title="statement not covered" ></span></span>return typeof d==='string'?d:JSON.stringify(d); </span>} else { const prompt=<span class="cstat-no" title="statement not covered" >`Translate the following text:\n\n${text}\n\nReturn only the translation.`;</span> <span class="cstat-no" title="statement not covered" >return generate(model,prompt,{ max_new_tokens:256, temperature:0.2 }); </span>} </span>}
+&nbsp;
+export class HuggingFaceRouterService { <span class="fstat-no" title="function not covered" >as</span>ync route(prompt,opts=<span class="branch-0 cbranch-no" title="branch not covered" >{})</span>{ const spanAttrs=<span class="cstat-no" title="statement not covered" >{ 'hf.route.prompt_chars':prompt.length };</span> <span class="cstat-no" title="statement not covered" >return OpenTelemetryTracing.traceOperation('hf.route_inference',{ attributes:spanAttrs }, <span class="fstat-no" title="function not covered" >as</span>ync ()=&gt;{ const task=<span class="cstat-no" title="statement not covered" >opts.taskOverride||classify(prompt);</span> const candidates=<span class="cstat-no" title="statement not covered" >shortlist(task,opts.max_candidates??8);</span> const availability=<span class="cstat-no" title="statement not covered" >[];</span> <span class="cstat-no" title="statement not covered" >for(const m of candidates){ const available=<span class="cstat-no" title="statement not covered" >await probe(m.repo_id,m.category);</span> <span class="cstat-no" title="statement not covered" >availability.push({ model:m, available }); </span>} </span>const ordered=<span class="cstat-no" title="statement not covered" >availability.filter(<span class="fstat-no" title="function not covered" >a=</span>&gt;<span class="cstat-no" title="statement not covered" >a.available)</span>.map(<span class="fstat-no" title="function not covered" >a=</span>&gt;<span class="cstat-no" title="statement not covered" >a.model)</span>.concat(availability.filter(<span class="fstat-no" title="function not covered" >a=</span>&gt;<span class="cstat-no" title="statement not covered" >!a.available)</span>.map(<span class="fstat-no" title="function not covered" >a=</span>&gt;<span class="cstat-no" title="statement not covered" >a.model)</span>);</span> const startTotal=<span class="cstat-no" title="statement not covered" >Date.now();</span> let usedFallbacks=<span class="cstat-no" title="statement not covered" >0;</span> let lastErr=<span class="cstat-no" title="statement not covered" >null;</span> <span class="cstat-no" title="statement not covered" >for(const m of ordered){ <span class="cstat-no" title="statement not covered" >try{ let output; <span class="cstat-no" title="statement not covered" >if(task==='embedding') <span class="cstat-no" title="statement not covered" >output=await embed(m.repo_id,prompt); </span>else <span class="cstat-no" title="statement not covered" >if(task==='rerank'){ const docs=<span class="cstat-no" title="statement not covered" >opts.documents||['Doc A','Doc B','Doc C'];</span> <span class="cstat-no" title="statement not covered" >output=await rerank(m.repo_id,prompt,docs); </span>} else <span class="cstat-no" title="statement not covered" >if(task==='tool_use') <span class="cstat-no" title="statement not covered" >output=await generate(m.repo_id,prompt,{ temperature:opts.temperature, max_new_tokens:opts.max_new_tokens }); </span>else <span class="cstat-no" title="statement not covered" >if(task==='multilingual'&amp;&amp;prompt.toLowerCase().includes('translate')) <span class="cstat-no" title="statement not covered" >output=await translate(m.repo_id,prompt); </span>else <span class="cstat-no" title="statement not covered" >output=await generate(m.repo_id,prompt,{ temperature:opts.temperature, max_new_tokens:opts.max_new_tokens }); </span></span></span></span></span>const conf=<span class="cstat-no" title="statement not covered" >typeof output==='string'?confidenceHeuristic(output):0.9;</span> <span class="cstat-no" title="statement not covered" >if(conf&lt;0.3&amp;&amp;usedFallbacks&lt;3){ <span class="cstat-no" title="statement not covered" >usedFallbacks++; <span class="cstat-no" title="statement not covered" ></span>global.otelCounters?.hfRoutingFallbacks?.add(1,{ reason:'low_conf', model:m.repo_id }); <span class="cstat-no" title="statement not covered" ></span>continue; </span>} <span class="cstat-no" title="statement not covered" ></span>return { model_id:m.repo_id, output, used_fallbacks:usedFallbacks, task, timing_ms:Date.now()-startTotal, confidence:conf, candidates_considered:candidates.map(<span class="fstat-no" title="function not covered" >c=</span>&gt;<span class="cstat-no" title="statement not covered" >c.repo_id)</span> }; </span>} catch(e){ <span class="cstat-no" title="statement not covered" >lastErr=e; <span class="cstat-no" title="statement not covered" ></span>usedFallbacks++; <span class="cstat-no" title="statement not covered" ></span>global.otelCounters?.hfRoutingFallbacks?.add(1,{ reason:'error', model:m.repo_id }); <span class="cstat-no" title="statement not covered" ></span>continue; </span>} </span>} <span class="cstat-no" title="statement not covered" ></span>throw new Error(`All candidates failed. Last: ${lastErr}`); </span>}); </span>} <span class="fstat-no" title="function not covered" >ge</span>tCatalog(){ <span class="cstat-no" title="statement not covered" >return MODEL_CATALOG; </span>} <span class="fstat-no" title="function not covered" >cl</span>assify(prompt){ <span class="cstat-no" title="statement not covered" >return classify(prompt); </span>} <span class="fstat-no" title="function not covered" >sh</span>ortlist(prompt,taskHint,max=<span class="branch-0 cbranch-no" title="branch not covered" >6)</span>{ const task=<span class="cstat-no" title="statement not covered" >taskHint||classify(prompt);</span> <span class="cstat-no" title="statement not covered" >return shortlist(task,max).map(<span class="fstat-no" title="function not covered" >m=</span>&gt;(<span class="cstat-no" title="statement not covered" >{ ...m, compositeScore:composite(m) })</span>); </span>} }
+const singleton = <span class="cstat-no" title="statement not covered" >new HuggingFaceRouterService();</span>
+export default singleton;
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2025-08-16T06:02:32.946Z
+            </div>
+        <script src="../../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../../sorter.js"></script>
+        <script src="../../../block-navigation.js"></script>
+    </body>
+</html>
+    

@@ -477,7 +477,7 @@ export const PersonalLifeOSPage: React.FC<PersonalLifeOSPageProps> = ({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-orange-100">Contacts</p>
-                    <p className="text-2xl font-bold">{contacts.length}</p>
+                    <p className="text-2xl font-bold">{contacts?.length || 0}</p>
                   </div>
                   <div className="text-3xl">👥</div>
                 </div>

@@ -22,11 +22,13 @@ import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 
 class EnhancedKnowledgeHub {
   constructor() {
-    this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    // Initialize OpenAI conditionally
+    this.openai = null;
     this.embeddings = null; // Will store embedding model
     this.vectorDimension = 1536; // OpenAI ada-002 dimensions
     this.chunkSize = 1000;
     this.chunkOverlap = 200;
+    this.disabled = false; // Flag for missing dependencies
 
     // Knowledge processing stats
     this.processingStats = {
@@ -83,6 +85,20 @@ class EnhancedKnowledgeHub {
       this.disabled = true;
       return false;
     }
+    
+    // Try to initialize OpenAI if API key is available
+    try {
+      if (process.env.OPENAI_API_KEY) {
+        const { default: OpenAI } = await import('openai');
+        this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        console.log('[EnhancedKnowledgeHub] ✅ OpenAI client initialized');
+      } else {
+        console.warn('[EnhancedKnowledgeHub] ⚠️ OPENAI_API_KEY not provided - AI features disabled');
+      }
+    } catch (error) {
+      console.warn('[EnhancedKnowledgeHub] ⚠️ Failed to initialize OpenAI:', error.message);
+    }
+    
     const attemptInit = async () => {
       try {
         await this.ensureDatabaseSchema();
