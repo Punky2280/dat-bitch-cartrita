@@ -24,6 +24,16 @@ function ensureKnowledgeHub() {
 // Input: { task: 'chat'|'search'|'rag'|'embedding'|'classify'|'vision'|'audio_transcribe', prompt?, query?, documents?, options? }
 // Output: { success, task, provider, model_id?, result, timing_ms, confidence? }
 
+// Router health endpoint
+router.get('/health', (req, res) => {
+  res.json({ 
+    success: true, 
+    status: 'operational', 
+    service: 'router',
+    timestamp: new Date().toISOString()
+  });
+});
+
 router.post('/', authenticateToken, async (req, res) => {
   const started = Date.now();
   const body = req.body || {};

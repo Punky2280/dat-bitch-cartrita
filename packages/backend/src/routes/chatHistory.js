@@ -145,4 +145,72 @@ router.get('/stats', authenticateToken, async (req, res) => {
   }
 });
 
+// Send a chat message (POST /api/chat/message)
+router.post('/message', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { message } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'Missing userId in request context' });
+    }
+
+    if (!message || typeof message !== 'string') {
+      return res.status(400).json({ error: 'Message is required and must be a string' });
+    }
+
+    console.log(`[Chat] 📨 Received message from user ${userId}: "${message.substring(0, 50)}..."`);
+
+    // Create or get conversation
+    let conversationResult = await db.query(
+      'SELECT id FROM conversations WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1',
+      [userId]
+    );
+
+    let conversationId;
+    if (conversationResult.rows.length === 0) {
+      // Create new conversation
+      const newConv = await db.query(
+        'INSERT INTO conversations (user_id, title, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) RETURNING id',
+        [userId, `Chat ${new Date().toISOString().split('T')[0]}`]
+      );
+      conversationId = newConv.rows[0].id;
+    } else {
+      conversationId = conversationResult.rows[0].id;
+      // Update conversation timestamp
+      await db.query(
+        'UPDATE conversations SET updated_at = NOW() WHERE id = $1',
+        [conversationId]
+      );
+    }
+
+    // Save user message
+    await db.query(
+      'INSERT INTO conversation_messages (conversation_id, user_id, role, content, created_at) VALUES ($1, $2, $3, $4, NOW())',
+      [conversationId, userId, 'user', message]
+    );
+
+    // Generate simple response (we'll improve this later)
+    const response = `Hello! I received your message: "${message}". I'm Cartrita, your AI assistant. How can I help you today?`;
+
+    // Save assistant response
+    await db.query(
+      'INSERT INTO conversation_messages (conversation_id, user_id, role, content, created_at) VALUES ($1, $2, $3, $4, NOW())',
+      [conversationId, userId, 'assistant', response]
+    );
+
+    console.log(`[Chat] 🤖 Generated response for user ${userId}`);
+
+    res.json({
+      success: true,
+      response: response,
+      conversationId: conversationId
+    });
+
+  } catch (error) {
+    console.error('[Chat] ❌ Error processing message:', error);
+    res.status(500).json({ error: 'Failed to process message' });
+  }
+});
+
 export default router;

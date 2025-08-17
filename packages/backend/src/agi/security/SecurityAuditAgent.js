@@ -16,20 +16,20 @@ class SecurityAuditAgent extends BaseAgent {
    * @param {AgentToolRegistry} toolRegistry - The tool registry instance.
    */
   constructor(llm, toolRegistry) {
-    const config = {
-      name: 'security', // This name must match the name in the supervisor
-      description:
-        'A specialist agent for security analysis, vulnerability scanning, and compliance audits.',
-      capabilities: [
-        'security_monitoring',
-        'vulnerability_detection',
-        'access_control',
-        'audit_logging',
-        'threat_assessment',
-      ],
-      allowedTools: ['code_reviewer', 'file_analyzer'], // External tools it can use
-    };
-    super(config, llm, toolRegistry);
+    const capabilities = [
+      'security_monitoring',
+      'vulnerability_detection',
+      'access_control',
+      'audit_logging',
+      'threat_assessment',
+    ];
+    const description = 'A specialist agent for security analysis, vulnerability scanning, and compliance audits.';
+    
+    super('security', 'sub', capabilities, description);
+    
+    this.llm = llm;
+    this.toolRegistry = toolRegistry;
+    this.allowedTools = ['code_reviewer', 'file_analyzer'];
 
     // Your original setup
     this.securityAlerts = [];

@@ -8,7 +8,7 @@ import express from 'express';
 import http from 'http';
 // Optional early OpenTelemetry pre-initialization to reduce instrumentation load-order warnings.
 // Set PREINIT_OTEL=1 before starting to enable.
-if (process.env.PREINIT_OTEL === '1') {
+if (process.env.PREINIT_OTEL === '1' && process.env.ENABLE_TELEMETRY !== 'false') {
   try {
     const { default: OpenTelemetryTracing } = await import('./src/system/OpenTelemetryTracing.js');
     if (!OpenTelemetryTracing.initialized) {
@@ -613,6 +613,110 @@ try {
   console.log('[Route Registration] ℹ️ Override /api/agents/role-call with HF injection active');
 } catch (_) {}
 
+// --- Simple Chat Test Route ---
+app.get('/api/cartrita/ping', (req, res) => {
+  res.json({ message: 'Cartrita chat endpoint is working!', timestamp: new Date().toISOString() });
+});
+
+// --- Simple Chat Endpoint for Frontend Testing ---
+app.post('/api/cartrita/chat', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const userName = req.user?.name || 'User';
+    const { message } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'Missing userId in request context' });
+    }
+
+    if (!message || typeof message !== 'string') {
+      return res.status(400).json({ error: 'Message is required and must be a string' });
+    }
+
+    console.log(`[Chat] 📨 ${userName} (${userId}): "${message.substring(0, 50)}..."`);
+
+    // Create or get conversation
+    let conversationResult = await db.query(
+      'SELECT id FROM conversations WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1',
+      [userId]
+    );
+
+    let conversationId;
+    if (conversationResult.rows.length === 0) {
+      const newConv = await db.query(
+        'INSERT INTO conversations (user_id, title, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) RETURNING id',
+        [userId, `Chat ${new Date().toISOString().split('T')[0]}`]
+      );
+      conversationId = newConv.rows[0].id;
+    } else {
+      conversationId = conversationResult.rows[0].id;
+      await db.query('UPDATE conversations SET updated_at = NOW() WHERE id = $1', [conversationId]);
+    }
+
+    // Save user message
+    await db.query(
+      'INSERT INTO conversation_messages (conversation_id, user_id, role, content, created_at) VALUES ($1, $2, $3, $4, NOW())',
+      [conversationId, userId, 'user', message]
+    );
+
+    // Generate Cartrita response using the real orchestrator
+    let response;
+    let responseMetadata = {};
+    
+    try {
+      if (global.coreAgent && global.coreAgent.isHealthy()) {
+        console.log('[Chat] 🤖 Using Cartrita EnhancedLangChainCoreAgent for response');
+        const result = await global.coreAgent.generateResponse(message, 'en', userId);
+        
+        if (result && result.text) {
+          response = result.text;
+          responseMetadata = {
+            speaker: result.speaker || 'cartrita',
+            model: result.model || 'cartrita-hierarchical-supervisor',
+            tools_used: result.tools_used || [],
+            response_time_ms: result.response_time_ms || 0,
+            image_url: result.image_url || null
+          };
+          console.log(`[Chat] ✅ Cartrita generated response in ${result.response_time_ms || 0}ms`);
+        } else {
+          throw new Error('Invalid response from Cartrita core agent');
+        }
+      } else {
+        throw new Error('Cartrita core agent not available or not healthy');
+      }
+    } catch (error) {
+      console.error('[Chat] ⚠️ Cartrita core agent error, using fallback:', error.message);
+      const fallbacks = [
+        `¡Ayyy ${userName}! Cartrita's here, pero my main brain is taking a quick siesta. I still got you though! You said: "${message}". What's the move, mi amor?`,
+        `Hey ${userName}! I'm having a little tech moment, but don't worry - I'm still your girl Cartrita. I heard: "${message}". How can I help you out while I fix my circuits?`,
+        `Hola ${userName}! Cartrita speaking, and honestly? My system's being a little dramatic right now. But I caught your message: "${message}". Let's figure this out together, ¿sí?`
+      ];
+      response = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+      responseMetadata = { speaker: 'cartrita-fallback', error: true };
+    }
+
+    // Save assistant response
+    await db.query(
+      'INSERT INTO conversation_messages (conversation_id, user_id, role, content, created_at) VALUES ($1, $2, $3, $4, NOW())',
+      [conversationId, userId, 'assistant', response]
+    );
+
+    console.log(`[Chat] 🤖 Cartrita responded to ${userName}`);
+
+    res.json({
+      success: true,
+      response: response,
+      conversationId: conversationId,
+      metadata: responseMetadata,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('[Chat] ❌ Error processing message:', error);
+    res.status(500).json({ error: 'Failed to process message' });
+  }
+});
+
 // --- Custom lightweight metrics snapshot route (for tests & local inspection) ---
 app.get('/api/metrics/custom', (req, res) => {
   try {
@@ -845,7 +949,7 @@ async function startServer() {
   try {
     console.log('🚀 Initializing Cartrita backend...');
     // Skip heavy OpenTelemetry initialization in test environment to reduce noise & duplicate registration
-  if (NODE_ENV !== 'test' && !LIGHTWEIGHT_TEST) {
+  if (NODE_ENV !== 'test' && !LIGHTWEIGHT_TEST && process.env.ENABLE_TELEMETRY !== 'false') {
       console.log('📊 Initializing Complete OpenTelemetry Integration with merged upstream components...');
       try {
         const integrationResult = await openTelemetryIntegration.initialize();

@@ -3,8 +3,8 @@ set -e
 
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 
-# Prefer CI-provided API_BASE_URL, else default to backend on 3000
-BACKEND_URL=${API_BASE_URL:-"http://localhost:3000"}
+# Prefer CI-provided API_BASE_URL, else default to backend on 8001
+BACKEND_URL=${API_BASE_URL:-"http://localhost:8001"}
 FRONTEND_URL=${FRONTEND_URL:-"http://localhost:3000"}
 
 echo "== Quick Smoke =="

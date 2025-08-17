@@ -28,6 +28,11 @@ import authRoutes from './routes/auth.js';
 import rotationSchedulingRoutes from './routes/rotationScheduling.js';
 import knowledgeHubRoutes from './routes/knowledgeHub.js';
 import { router as aiEnhancedRoutes } from './routes/aiEnhanced.js';
+import routerRoutes from './routes/router.js';
+import aiHubRoutes from './routes/ai-hub.js';
+import dashboardRoutes from './routes/dashboard.js';
+import securityRoutes from './routes/securityIntegrations.js';
+import testRoutes from './routes/test.js';
 import authenticateToken from './middleware/authenticateToken.js';
 import coreAgent from './agi/consciousness/CoreAgent.js';
 import { createUnifiedInferenceService } from './services/unifiedInference.js';
@@ -134,6 +139,27 @@ app.use('/api/knowledge', knowledgeHubRoutes);
 // Enhanced AI capabilities
 app.use('/api/ai', aiEnhancedRoutes);
 console.log('[Route Registration] ✅ /api/knowledge registered');
+
+// Router service
+app.use('/api/router', routerRoutes);
+console.log('[Route Registration] ✅ /api/router registered');
+
+// AI Hub service
+app.use('/api/ai-hub', aiHubRoutes);
+console.log('[Route Registration] ✅ /api/ai-hub registered');
+
+// Dashboard service
+app.use('/api/dashboard', dashboardRoutes);
+console.log('[Route Registration] ✅ /api/dashboard registered');
+
+// Security service
+app.use('/api/security', securityRoutes);
+console.log('[Route Registration] ✅ /api/security registered');
+
+// Test service
+app.use('/api/test', testRoutes);
+console.log('[Route Registration] ✅ /api/test registered');
+
 console.log('[Route Registration] ✅ All API routes registered.');
 
 // Test rotation endpoint

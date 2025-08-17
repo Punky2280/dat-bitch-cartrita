@@ -8,6 +8,8 @@ import express from 'express';
 import authenticateToken from '../middleware/authenticateToken.js'; // Might need admin checks
 import Advanced2025MCPInitializer from '../agi/orchestration/Advanced2025MCPInitializer.js';
 import OpenTelemetryTracing from '../system/OpenTelemetryTracing.js';
+import SecurityAuditLogger from '../services/SecurityAuditLogger.js';
+import pool from '../db.js';
 
 const router = express.Router();
 
@@ -43,16 +45,37 @@ router.get('/agent-metrics', authenticateToken, (req, res) => {
  * @access  Private
  */
 router.get('/dependencies', authenticateToken, async (req, res) => {
-  // TODO: Implement actual health checks for each service.
   console.log('[Monitoring] Checking external dependencies.');
-  res.status(200).json({
-    dependencies: [
-      { service: 'PostgreSQL', status: 'OPERATIONAL' },
-      { service: 'OpenAI API (GPT-4)', status: 'OPERATIONAL' },
-      { service: 'Deepgram API', status: 'DEGRADED_PERFORMANCE' },
-      { service: 'Google Calendar API', status: 'OPERATIONAL' },
-    ],
-  });
+  const deps = [];
+  // DB check
+  try {
+    const r = await Promise.race([
+      pool.query('SELECT 1 as ok'),
+      new Promise((resolve) => setTimeout(() => resolve(null), 300)),
+    ]);
+    deps.push({ service: 'PostgreSQL', status: r && r.rows ? 'OPERATIONAL' : 'TIMEOUT' });
+  } catch (e) {
+    deps.push({ service: 'PostgreSQL', status: 'ERROR', detail: e.message });
+  }
+  // OpenAI key presence (no request)
+  deps.push({ service: 'OpenAI API', status: process.env.OPENAI_API_KEY ? 'CONFIGURED' : 'MISSING_KEY' });
+  // Redis (best-effort via global)
+  deps.push({ service: 'Redis', status: process.env.REDIS_URL ? 'CONFIGURED' : 'UNKNOWN' });
+  res.status(200).json({ dependencies: deps, timestamp: new Date().toISOString() });
+});
+
+/**
+ * @route   GET /api/monitoring/security-metrics
+ * @desc    Proxy to real security metrics for dashboards
+ * @access  Private
+ */
+router.get('/security-metrics', authenticateToken, (req, res) => {
+  try {
+    const metrics = SecurityAuditLogger.getSecurityMetrics();
+    res.status(200).json(metrics);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to load security metrics', message: e.message });
+  }
 });
 
 /**

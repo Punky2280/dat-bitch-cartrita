@@ -68,6 +68,12 @@ class EnhancedKnowledgeHub {
   console.log('[EnhancedKnowledgeHub] 🧠 Advanced RAG system constructed');
   }
 
+  // Format a JS number[] embedding to pgvector literal string
+  formatVector(arr) {
+    if (!Array.isArray(arr)) return null;
+    return `[${arr.join(',')}]`;
+  }
+
   /**
    * Initialize the knowledge hub with database setup
    */
@@ -384,17 +390,18 @@ class EnhancedKnowledgeHub {
         const tokenCount = Math.ceil(chunkText.length / 4);
 
         // Store chunk with embedding
+        const vec = this.formatVector(embedding);
         await pool.query(
           `INSERT INTO knowledge_chunks 
            (document_id, user_id, chunk_text, chunk_index, chunk_tokens, embedding, metadata)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+           VALUES ($1, $2, $3, $4, $5, $6::vector, $7)`,
           [
             documentId,
             userId,
             chunkText,
             chunkIndex,
             tokenCount,
-            JSON.stringify(embedding),
+            vec,
             JSON.stringify({ processed_at: new Date().toISOString() }),
           ]
         );
@@ -501,13 +508,14 @@ class EnhancedKnowledgeHub {
       } = options;
 
       // Generate query embedding
-      const queryEmbedding = await this.generateEmbedding(query);
+  const queryEmbedding = await this.generateEmbedding(query);
+  const queryVector = this.formatVector(queryEmbedding);
 
       // Store query for analytics
       const queryResult = await pool.query(
         `INSERT INTO knowledge_queries (user_id, query_text, query_embedding, search_type)
-         VALUES ($1, $2, $3, 'semantic') RETURNING id`,
-        [userId, query, JSON.stringify(queryEmbedding)]
+         VALUES ($1, $2, $3::vector, 'semantic') RETURNING id`,
+        [userId, query, queryVector]
       );
 
       const queryId = queryResult.rows[0].id;
@@ -530,7 +538,7 @@ class EnhancedKnowledgeHub {
           AND 1 - (kc.embedding <=> $2::vector) >= $3
       `;
 
-      const params = [userId, JSON.stringify(queryEmbedding), threshold];
+  const params = [userId, queryVector, threshold];
 
       // Add document filter if specified
       if (documentIds && documentIds.length > 0) {

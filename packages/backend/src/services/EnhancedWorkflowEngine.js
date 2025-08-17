@@ -1085,9 +1085,9 @@ class EnhancedWorkflowEngine {
         FROM workflow_schedules ws
         JOIN workflows w ON ws.workflow_id = w.id
         WHERE ws.is_active = true 
-          AND ws.next_run_at <= NOW()
+          AND ws.next_run <= NOW()
           AND w.is_active = true
-        ORDER BY ws.next_run_at
+        ORDER BY ws.next_run
         LIMIT 10
       `);
 
@@ -1110,7 +1110,7 @@ class EnhancedWorkflowEngine {
           // Update next run time based on cron expression
           const nextRun = this.calculateNextRun(schedule.cron_expression);
           await pool.query(
-            'UPDATE workflow_schedules SET last_run_at = NOW(), next_run_at = $1 WHERE id = $2',
+            'UPDATE workflow_schedules SET last_run_at = NOW(), next_run = $1 WHERE id = $2',
             [nextRun, schedule.id]
           );
         } catch (error) {

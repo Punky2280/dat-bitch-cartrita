@@ -13,19 +13,18 @@ class ConstitutionalAI extends BaseAgent {
    * @param {AgentToolRegistry} toolRegistry - The tool registry instance.
    */
   constructor(llm, toolRegistry) {
-    const config = {
-      name: 'constitutional', // A simple name for the supervisor
-      description:
-        'An ethics agent that ensures AI responses adhere to a core set of safety and ethical principles.',
-      capabilities: [
-        'principle_adherence',
-        'safety_check',
-        'ethical_guardrails',
-        'response_revision',
-      ],
-      allowedTools: [],
-    };
-    super(config, llm, toolRegistry);
+    const capabilities = [
+      'principle_adherence',
+      'safety_check',
+      'ethical_guardrails',
+      'response_revision',
+    ];
+    const description = 'An ethics agent that ensures AI responses adhere to a core set of safety and ethical principles.';
+    
+    super('constitutional', 'sub', capabilities, description);
+    
+    this.llm = llm;
+    this.toolRegistry = toolRegistry;
 
     // ✅ Uses the principles from your dedicated file
     this.principles = principles;

@@ -11,7 +11,7 @@ services:
       POSTGRES_DB: dat-bitch-cartrita
       POSTGRES_INITDB_ARGS: '--encoding=UTF-8'
     ports:
-      - '5435:5432'
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db-init:/docker-entrypoint-initdb.d
@@ -28,7 +28,7 @@ services:
     container_name: cartrita-redis-new
     restart: unless-stopped
     ports:
-      - '6380:6379'
+      - '6379:6379'
     volumes:
       - redis_data:/data
     networks:
@@ -71,8 +71,12 @@ services:
     container_name: cartrita-backend
     restart: unless-stopped
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - PORT=8001
+      - ENABLE_TELEMETRY=false
+      - ENABLE_WORKFLOW_ENGINE=false
+      - ENABLE_MULTIMODAL_FUSION=false
+      - ENABLE_SECURITY_AUDIT=false
       - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
       - POSTGRES_USER=robert
       - POSTGRES_PASSWORD=punky1

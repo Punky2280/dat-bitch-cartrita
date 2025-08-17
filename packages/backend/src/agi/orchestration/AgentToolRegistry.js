@@ -380,7 +380,7 @@ class AgentToolRegistry {
       clearTimeout(timeout);
       global.hfOrchestrator = hfOrchestrator;
       // Create per-task counters (once)
-      if (!global.hfTaskCounters && OpenTelemetryTracing && OpenTelemetryTracing.meter) {
+      if (!global.hfTaskCounters) {
         global.hfTaskCounters = {};
       }
 
@@ -388,10 +388,24 @@ class AgentToolRegistry {
         if (!global.hfTaskCounters) return null;
         if (!global.hfTaskCounters[task]) {
           try {
-            global.hfTaskCounters[task] = OpenTelemetryTracing.createCounter(`hf_task_${task.replace(/[^a-z0-9_]/g,'_')}_total`, `HuggingFace task executions for ${task}`);
-          } catch(_) {}
+            if (OpenTelemetryTracing && OpenTelemetryTracing.createCounter) {
+              global.hfTaskCounters[task] = OpenTelemetryTracing.createCounter(`hf_task_${task.replace(/[^a-z0-9_]/g,'_')}_total`, `HuggingFace task executions for ${task}`);
+            } else {
+              global.hfTaskCounters[task] = { add: () => {} }; // Mock counter
+            }
+          } catch(_) {
+            global.hfTaskCounters[task] = { add: () => {} }; // Mock counter on error
+          }
         }
         return global.hfTaskCounters[task];
+      };
+
+      const safeTraceOperation = async (name, attributes, operation) => {
+        if (OpenTelemetryTracing && OpenTelemetryTracing.traceOperation) {
+          return await OpenTelemetryTracing.traceOperation(name, attributes, operation);
+        } else {
+          return await operation();
+        }
       };
 
       const hfTools = [
@@ -453,7 +467,7 @@ class AgentToolRegistry {
 
             const counter = ensureCounter(t.task);
             const start = Date.now();
-            return await OpenTelemetryTracing.traceOperation('huggingface.task', { attributes: { 'hf.task': t.task, 'hf.tool': t.name } }, async () => {
+            return await safeTraceOperation('huggingface.task', { attributes: { 'hf.task': t.task, 'hf.tool': t.name } }, async () => {
               try {
                 const result = await hfOrchestrator.routeTask(t.task, payload, options || {});
                 counter && counter.add(1, { status: 'success' });
@@ -484,7 +498,7 @@ class AgentToolRegistry {
         category: 'huggingface_routing',
         schema: baseSchema,
         func: async ({ prompt, options }) => {
-          return await OpenTelemetryTracing.traceOperation('hf.route.tool', { attributes: { 'hf.route.tool': 'inference' } }, async () => {
+          return await safeTraceOperation('hf.route.tool', { attributes: { 'hf.route.tool': 'inference' } }, async () => {
             const result = await hfRouter.route(prompt, options || {});
             return { success: true, ...result };
           });
@@ -496,7 +510,7 @@ class AgentToolRegistry {
         category: 'huggingface_routing',
         schema: z.object({ prompt: z.string(), model: z.string().optional() }),
         func: async ({ prompt, model }) => {
-          return await OpenTelemetryTracing.traceOperation('hf.route.embed', { attributes: { 'hf.route.tool': 'embed' } }, async () => {
+          return await safeTraceOperation('hf.route.embed', { attributes: { 'hf.route.tool': 'embed' } }, async () => {
             if (model) {
               const { default: raw } = await import('axios');
               const res = await raw.post(`https://api-inference.huggingface.co/models/${model}`, { inputs: prompt }, { headers: { Authorization: `Bearer ${process.env.HF_TOKEN||''}` } });
@@ -513,7 +527,7 @@ class AgentToolRegistry {
         category: 'huggingface_routing',
         schema: z.object({ query: z.string(), documents: z.array(z.string()) }),
         func: async ({ query, documents }) => {
-          return await OpenTelemetryTracing.traceOperation('hf.route.rerank', { attributes: { 'hf.route.tool': 'rerank' } }, async () => {
+          return await safeTraceOperation('hf.route.rerank', { attributes: { 'hf.route.tool': 'rerank' } }, async () => {
             const routed = await hfRouter.route(query, { taskOverride: 'rerank', documents });
             return { success: true, model: routed.model_id, ranked: routed.output };
           });
@@ -525,7 +539,7 @@ class AgentToolRegistry {
         category: 'huggingface_routing',
         schema: z.object({ text: z.string(), source: z.string().optional(), target: z.string().optional() }),
         func: async ({ text, source, target }) => {
-          return await OpenTelemetryTracing.traceOperation('hf.route.translate', { attributes: { 'hf.route.tool': 'translate' } }, async () => {
+          return await safeTraceOperation('hf.route.translate', { attributes: { 'hf.route.tool': 'translate' } }, async () => {
             const routed = await hfRouter.route(`Translate${source?` from ${source}`:''}${target?` to ${target}`:''}: ${text}`, { taskOverride: 'multilingual' });
             return { success: true, model: routed.model_id, translation: routed.output };
           });
