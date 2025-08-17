@@ -20,7 +20,7 @@ import './db.js';
 
 // Route imports
 import chatHistoryRoutes from './routes/chatHistory.js';
-import workflowsRoutes from './routes/workflows.js';
+import workflowsRoutes, { initializeServices as initializeWorkflowServices } from './routes/workflows.js';
 import personalLifeOSRoutes from './routes/personalLifeOS.js';
 import voiceToTextRoutes from './routes/voiceToText.js';
 import registryStatusRoutes from './routes/registryStatus.js';
@@ -36,6 +36,9 @@ import testRoutes from './routes/test.js';
 import authenticateToken from './middleware/authenticateToken.js';
 import coreAgent from './agi/consciousness/CoreAgent.js';
 import { createUnifiedInferenceService } from './services/unifiedInference.js';
+
+// Phase A Workflow Automation Services
+import WorkflowServices from './services/WorkflowServices.js';
 
 // Initialize unified inference service
 const unifiedAI = createUnifiedInferenceService();
@@ -981,6 +984,23 @@ if (process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID) {
       credentials: true 
     } 
   });
+
+  // Initialize Phase A Workflow Automation Services
+  (async () => {
+    try {
+      console.log('[Server] 🔧 Initializing Phase A Workflow Automation services...');
+      const workflowServices = await WorkflowServices.initialize();
+      
+      // Wire services into workflow routes  
+      initializeWorkflowServices(workflowServices.getServices());
+      
+      console.log('[Server] ✅ Phase A Workflow Automation services initialized and wired');
+    } catch (error) {
+      console.error('[Server] ❌ Failed to initialize workflow services:', error);
+      console.error('[Server] ⚠️ Workflow automation will be unavailable');
+    }
+  })();
+
   io.on('connection', socket => {
     console.log(`[Socket.IO] Client connected: ${socket.id}`);
     socket.emit('connected', { socketId: socket.id });

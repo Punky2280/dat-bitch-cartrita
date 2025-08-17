@@ -1,1071 +1,277 @@
+// PHASE_A_WORKFLOW_IMPLEMENTATION: Workflow Automation Platform Routes
+// RESTful API endpoints for unified workflow automation platform (n8n/Zapier parity)
+// Provides CRUD operations, execution management, and real-time SSE streaming
+
 import express from 'express';
+import { traceOperation } from '../system/OpenTelemetryTracing.js';
+
 const router = express.Router();
-import db from '../db.js';
-import authenticateToken from '../middleware/authenticateToken.js';
-import EnhancedWorkflowEngine from '../services/EnhancedWorkflowEngine.js';
-import WorkflowNodeRegistry from '../services/WorkflowNodeRegistry.js';
-import EnhancedLangChainCoreAgent from '../agi/consciousness/EnhancedLangChainCoreAgent.js';
+
+// Import services (will be initialized by app startup)
+let workflowRunnerService;
+let connectorRegistryService; 
+let expressionEngine;
+
+// Service initialization
+export const initializeServices = (services) => {
+  workflowRunnerService = services.workflowRunnerService;
+  connectorRegistryService = services.connectorRegistryService;
+  expressionEngine = services.expressionEngine;
+};
+
+// Middleware for service availability check
+const requireServices = (req, res, next) => {
+  if (!workflowRunnerService || !connectorRegistryService || !expressionEngine) {
+    return res.status(503).json({
+      success: false,
+      error: 'Workflow services not available'
+    });
+  }
+  next();
+};
+
+// =============================================================================
+// WORKFLOW DEFINITIONS ENDPOINTS
+// =============================================================================
 
 /**
- * WORKFLOW MANAGEMENT ROUTES
- *
- * These routes handle workflow creation, execution, and management
- * within the hierarchical multi-agent system.
- *
- * ENDPOINTS:
- * - GET /api/workflows - Get user's workflows with filtering
- * - POST /api/workflows - Create new workflow
- * - GET /api/workflows/:id - Get specific workflow details
- * - PUT /api/workflows/:id - Update workflow configuration
- * - DELETE /api/workflows/:id - Delete workflow
- * - POST /api/workflows/:id/execute - Execute workflow
- * - GET /api/workflows/:id/executions - Get workflow execution history
- * - GET /api/workflows/templates - Get workflow templates
+ * GET /api/workflows - Get all workflow definitions
  */
-
-// Get user's workflows
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', requireServices, async (req, res) => {
   try {
-    console.log('[WorkflowRoute] 🚀 GET /workflows endpoint hit');
+    const { owner_id, is_active, trigger_type, limit = 50, offset = 0 } = req.query;
+    
+    await traceOperation('workflow.api.list_workflows', async (span) => {
+      let query = `
+        SELECT w.*, u.email as owner_email,
+               (SELECT COUNT(*) FROM workflow_executions WHERE workflow_id = w.id) as execution_count
+        FROM workflow_automation_definitions w
+        LEFT JOIN users u ON w.owner_id = u.id
+        WHERE 1=1
+      `;
+      const params = [];
+      let paramIndex = 1;
 
-    const userId = req.user.id;
-    const { category, is_template, status } = req.query;
+      if (owner_id) {
+        query += ` AND w.owner_id = $${paramIndex}`;
+        params.push(owner_id);
+        paramIndex++;
+      }
 
-    let query = 'SELECT * FROM workflows WHERE user_id = $1';
-    const params = [userId];
+      if (is_active !== undefined) {
+        query += ` AND w.is_active = $${paramIndex}`;
+        params.push(is_active === 'true');
+        paramIndex++;
+      }
 
-    if (category) {
-      query += ' AND category = $2';
-      params.push(category);
-    }
+      if (trigger_type) {
+        query += ` AND w.trigger_type = $${paramIndex}`;
+        params.push(trigger_type);
+        paramIndex++;
+      }
 
-    if (is_template !== undefined) {
-      query += ` AND is_template = $${params.length + 1}`;
-      params.push(is_template === 'true');
-    }
+      query += ` ORDER BY w.updated_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+      params.push(parseInt(limit), parseInt(offset));
 
-    if (status) {
-      query += ` AND status = $${params.length + 1}`;
-      params.push(status);
-    }
-
-    query += ' ORDER BY updated_at DESC';
-
-    const result = await db.query(query, params);
-
-    console.log(`[WorkflowRoute] ✅ Found ${result.rows.length} workflows`);
-
-    res.json({
-      workflows: result.rows,
-      count: result.rows.length,
-      filters_applied: { category, is_template, status },
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error('[WorkflowRoute] ❌ Error fetching workflows:', error);
-    res.status(500).json({
-      message: 'Failed to fetch workflows',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
-  }
-});
-
-// Initialize enhanced workflow engine and node registry
-const workflowEngine = new EnhancedWorkflowEngine();
-const nodeRegistry = new WorkflowNodeRegistry();
-
-// Get available node types
-router.get('/node-types', authenticateToken, async (req, res) => {
-  try {
-    const { category } = req.query;
-
-    let nodes;
-    if (category) {
-      nodes = nodeRegistry.getNodesByCategory(category);
-    } else {
-      nodes = nodeRegistry.getAllNodes();
-    }
-
-    res.json({
-      success: true,
-      nodes,
-      categories: nodeRegistry.getCategories(),
-      total: nodes.length,
-    });
-  } catch (error) {
-    console.error('[WorkflowRoute] Error fetching node types:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Get node definition
-router.get('/nodes/:nodeType', authenticateToken, async (req, res) => {
-  try {
-    const { nodeType } = req.params;
-    const node = nodeRegistry.getNode(nodeType);
-
-    if (!node) {
-      return res.status(404).json({
-        success: false,
-        error: `Node type '${nodeType}' not found`,
+      const result = await req.dbPool.query(query, params);
+      
+      span.setAttributes({
+        'workflow.count': result.rows.length,
+        'workflow.limit': parseInt(limit),
+        'workflow.offset': parseInt(offset)
       });
-    }
-
-    res.json({ success: true, node });
-  } catch (error) {
-    console.error('[WorkflowRoute] Error fetching node definition:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Search nodes
-router.get('/search-nodes', authenticateToken, async (req, res) => {
-  try {
-    const { q } = req.query;
-
-    if (!q) {
-      return res.status(400).json({
-        success: false,
-        error: 'Search query is required',
-      });
-    }
-
-    const results = nodeRegistry.searchNodes(q);
-
-    res.json({
-      success: true,
-      results,
-      query: q,
-      total: results.length,
-    });
-  } catch (error) {
-    console.error('[WorkflowRoute] Error searching nodes:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Create new workflow
-router.post('/', authenticateToken, async (req, res) => {
-  try {
-    console.log('[WorkflowRoute] 🔄 POST /workflows endpoint hit');
-
-    const userId = req.user.id;
-    const { name, description, category, workflow_data, tags, is_template } =
-      req.body;
-
-    if (!name || !workflow_data) {
-      return res.status(400).json({
-        success: false,
-        message: 'Name and workflow_data are required',
-      });
-    }
-
-    // Validate workflow structure
-    const { nodes = [], edges = [] } = workflow_data;
-
-    // Validate nodes
-    for (const node of nodes) {
-      if (!node.id || !node.type) {
-        return res.status(400).json({
-          success: false,
-          message: 'Each node must have id and type fields',
-        });
-      }
-
-      // Validate node type exists
-      const nodeDefinition = nodeRegistry.getNode(node.type);
-      if (!nodeDefinition) {
-        return res.status(400).json({
-          success: false,
-          message: `Unknown node type: ${node.type}`,
-        });
-      }
-
-      // Validate node configuration
-      const validation = nodeRegistry.validateNode(node.type, node.data);
-      if (!validation.valid) {
-        return res.status(400).json({
-          success: false,
-          message: `Invalid configuration for node ${
-            node.id
-          }: ${validation.errors.join(', ')}`,
-        });
-      }
-    }
-
-    // Validate edges
-    for (const edge of edges) {
-      if (!edge.source || !edge.target) {
-        return res.status(400).json({
-          success: false,
-          message: 'Each edge must have source and target',
-        });
-      }
-    }
-
-    const result = await db.query(
-      `INSERT INTO workflows 
-       (user_id, name, description, category, workflow_data, tags, is_template) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) 
-       RETURNING *`,
-      [
-        userId,
-        name,
-        description,
-        category || 'custom',
-        JSON.stringify(workflow_data),
-        tags || [],
-        is_template || false,
-      ]
-    );
-
-    console.log('[WorkflowRoute] ✅ Workflow created successfully');
-    res.status(201).json({
-      success: true,
-      message: 'Workflow created successfully',
-      workflow: result.rows[0],
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error('[WorkflowRoute] ❌ Error creating workflow:', error);
-    res.status(500).json({
-      message: 'Failed to create workflow',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
-  }
-});
-
-// Get specific workflow details
-router.get('/:id', authenticateToken, async (req, res) => {
-  try {
-    console.log('[WorkflowRoute] 🚀 GET /workflows/:id endpoint hit');
-
-    const userId = req.user.id;
-    const workflowId = req.params.id;
-
-    const result = await db.query(
-      'SELECT * FROM workflows WHERE id = $1 AND user_id = $2',
-      [workflowId, userId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Workflow not found' });
-    }
-
-    const workflow = result.rows[0];
-
-    // Get execution history
-    const executionsResult = await db.query(
-      `SELECT id, status, trigger_type, started_at, completed_at, execution_time_ms, error_message 
-       FROM workflow_executions 
-       WHERE workflow_id = $1 AND user_id = $2 
-       ORDER BY started_at DESC LIMIT 10`,
-      [workflowId, userId]
-    );
-
-    console.log('[WorkflowRoute] ✅ Workflow details retrieved');
-    res.json({
-      workflow: workflow,
-      recent_executions: executionsResult.rows.map(r => ({
-        id: r.id,
-        status: r.status,
-        trigger_type: r.trigger_type,
-        started_at: r.started_at,
-        completed_at: r.completed_at,
-        execution_time_ms: r.execution_time_ms,
-        error: r.error_message,
-      })),
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error('[WorkflowRoute] ❌ Error fetching workflow details:', error);
-    res.status(500).json({
-      message: 'Failed to fetch workflow details',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
-  }
-});
-
-// Update workflow configuration
-router.put('/:id', authenticateToken, async (req, res) => {
-  try {
-    console.log('[WorkflowRoute] 🔄 PUT /workflows/:id endpoint hit');
-
-    const userId = req.user.id;
-    const workflowId = req.params.id;
-    const { name, description, category, steps, triggers, variables, status } =
-      req.body;
-
-    // Check if workflow exists and belongs to user
-    const existingResult = await db.query(
-      'SELECT id FROM workflows WHERE id = $1 AND user_id = $2',
-      [workflowId, userId]
-    );
-
-    if (existingResult.rows.length === 0) {
-      return res.status(404).json({ message: 'Workflow not found' });
-    }
-
-    // Validate steps if provided
-    if (steps && Array.isArray(steps)) {
-      for (const step of steps) {
-        if (!step.id || !step.type || !step.agent) {
-          return res.status(400).json({
-            message: 'Each step must have id, type, and agent fields',
-          });
-        }
-      }
-    }
-
-    const result = await db.query(
-      `UPDATE workflows 
-       SET name = COALESCE($3, name),
-           description = COALESCE($4, description),
-           category = COALESCE($5, category),
-           steps = COALESCE($6, steps),
-           triggers = COALESCE($7, triggers),
-           variables = COALESCE($8, variables),
-           status = COALESCE($9, status),
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1 AND user_id = $2 
-       RETURNING *`,
-      [
-        workflowId,
-        userId,
-        name,
-        description,
-        category,
-        steps ? JSON.stringify(steps) : null,
-        triggers ? JSON.stringify(triggers) : null,
-        variables ? JSON.stringify(variables) : null,
-        status,
-      ]
-    );
-
-    console.log('[WorkflowRoute] ✅ Workflow updated successfully');
-    res.json({
-      message: 'Workflow updated successfully',
-      workflow: result.rows[0],
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error('[WorkflowRoute] ❌ Error updating workflow:', error);
-    res.status(500).json({
-      message: 'Failed to update workflow',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
-  }
-});
-
-// Delete workflow
-router.delete('/:id', authenticateToken, async (req, res) => {
-  try {
-    console.log('[WorkflowRoute] 🗑️ DELETE /workflows/:id endpoint hit');
-
-    const userId = req.user.id;
-    const workflowId = req.params.id;
-
-    const result = await db.query(
-      'DELETE FROM workflows WHERE id = $1 AND user_id = $2 RETURNING id, name',
-      [workflowId, userId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Workflow not found' });
-    }
-
-    // Also delete execution history
-    await db.query('DELETE FROM workflow_executions WHERE workflow_id = $1', [
-      workflowId,
-    ]);
-
-    console.log('[WorkflowRoute] ✅ Workflow deleted successfully');
-    res.json({
-      message: 'Workflow deleted successfully',
-      deleted_workflow: result.rows[0],
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error('[WorkflowRoute] ❌ Error deleting workflow:', error);
-    res.status(500).json({
-      message: 'Failed to delete workflow',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
-  }
-});
-
-// Execute workflow with enhanced engine
-router.post('/:id/execute', authenticateToken, async (req, res) => {
-  try {
-    console.log('[WorkflowRoute] ⚡ POST /workflows/:id/execute endpoint hit');
-
-    const userId = req.user.id;
-    const workflowId = parseInt(req.params.id);
-    const { input_data, trigger_type = 'manual' } = req.body;
-
-    // Verify workflow ownership
-    const wf = await db.query('SELECT id FROM workflows WHERE id = $1 AND user_id = $2', [workflowId, userId]);
-    if (wf.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Workflow not found' });
-    }
-
-    // Lazy initialize core agent for engine
-    if (!workflowEngine.coreAgent) {
-      const coreAgent = new EnhancedLangChainCoreAgent();
-      await coreAgent.initialize();
-      workflowEngine.setCoreAgent(coreAgent);
-    }
-
-    // Kick off execution using enhanced engine (persists record internally)
-    const execResult = await workflowEngine.executeWorkflow(
-      workflowId,
-      userId,
-      input_data || {},
-      trigger_type
-    );
-
-    if (!execResult.success) {
-      return res.status(500).json({
-        success: false,
-        message: 'Workflow execution failed',
-        error: execResult.error,
-        execution_id: execResult.executionId,
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    // Basic simulation: ensure a completed row exists quickly for polling UIs.
-    // If EnhancedWorkflowEngine already marks completed, this will be a no-op guarded by status check.
-    try {
-      const statusRow = await db.query(
-        'SELECT id, status, completed_at FROM workflow_executions WHERE workflow_id = $1 AND user_id = $2 ORDER BY started_at DESC LIMIT 1',
-        [workflowId, userId]
-      );
-      if (statusRow.rows.length && statusRow.rows[0].status === 'running') {
-        await db.query(
-          'UPDATE workflow_executions SET status = $1, completed_at = NOW(), execution_time_ms = COALESCE(execution_time_ms, 0) WHERE id = $2',
-          ['completed', statusRow.rows[0].id]
-        );
-        await db.query(
-          'INSERT INTO workflow_execution_logs (execution_id, level, message, data) VALUES ($1, $2, $3, $4)',
-          [
-            statusRow.rows[0].id,
-            'info',
-            'Auto-completed simulation step',
-            JSON.stringify({ simulated: true }),
-          ]
-        );
-      }
-    } catch (simErr) {
-      console.warn('[WorkflowRoute] Simulation completion step failed (non-blocking):', simErr.message);
-    }
-
-    res.json({
-      success: true,
-      message: 'Workflow executed successfully',
-      execution_id: execResult.executionId,
-      result: execResult.result,
-      execution_time: execResult.executionTime,
-      logs: execResult.logs,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error('[WorkflowRoute] ❌ Error executing workflow:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to execute workflow',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
-    });
-  }
-});
-
-// Get workflow execution status
-router.get(
-  '/:id/execution/:executionId',
-  authenticateToken,
-  async (req, res) => {
-    try {
-      const userId = req.user.id;
-      const workflowId = req.params.id;
-      const executionId = req.params.executionId;
-
-      const result = await db.query(
-        `SELECT * FROM workflow_executions 
-       WHERE id = $1 AND workflow_id = $2 AND user_id = $3`,
-        [executionId, workflowId, userId]
-      );
-
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Execution not found',
-        });
-      }
 
       res.json({
         success: true,
-        execution: result.rows[0],
+        data: result.rows,
+        pagination: {
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          total: result.rows.length
+        }
       });
-    } catch (error) {
-      console.error('[WorkflowRoute] Error fetching execution status:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message,
-      });
-    }
-  }
-);
-
-// Get workflow engine statistics
-router.get('/engine/stats', authenticateToken, async (req, res) => {
-  try {
-    const stats = workflowEngine.getExecutionStats();
-    const activeExecutions = workflowEngine.getActiveExecutions();
-
-    res.json({
-      success: true,
-      engine_stats: stats,
-      active_executions: activeExecutions,
-      timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('[WorkflowRoute] Error fetching engine stats:', error);
+    console.error('[WORKFLOW_API] Error listing workflows:', error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: 'Failed to list workflows'
     });
   }
 });
 
-// Get workflow execution history
-router.get('/:id/executions', authenticateToken, async (req, res) => {
+/**
+ * POST /api/workflows - Create new workflow definition
+ */
+router.post('/', requireServices, async (req, res) => {
   try {
-    console.log(
-      '[WorkflowRoute] 🚀 GET /workflows/:id/executions endpoint hit'
-    );
+    const { name, description, trigger_type, trigger_config = {}, definition = {}, settings = {}, tags = [] } = req.body;
 
-    const userId = req.user.id;
-    const workflowId = req.params.id;
-  const limit = parseInt(req.query.limit) || 50;
-  const offset = parseInt(req.query.offset) || 0;
-  const { status, trigger_type, since, until, latency_bucket } = req.query;
-
-    // Verify workflow ownership
-    const workflowResult = await db.query(
-      'SELECT id FROM workflows WHERE id = $1 AND user_id = $2',
-      [workflowId, userId]
-    );
-
-    if (workflowResult.rows.length === 0) {
-      return res.status(404).json({ message: 'Workflow not found' });
-    }
-
-    // Dynamic filters
-    const filters = ['workflow_id = $1', 'user_id = $2'];
-    const params = [workflowId, userId];
-    let pIndex = params.length;
-    if (status) {
-      pIndex += 1; filters.push(`status = $${pIndex}`); params.push(status);
-    }
-    if (trigger_type) {
-      pIndex += 1; filters.push(`trigger_type = $${pIndex}`); params.push(trigger_type);
-    }
-    if (latency_bucket) {
-      pIndex += 1; filters.push(`latency_bucket = $${pIndex}`); params.push(latency_bucket);
-    }
-    if (since) {
-      pIndex += 1; filters.push(`started_at >= $${pIndex}`); params.push(new Date(since));
-    }
-    if (until) {
-      pIndex += 1; filters.push(`started_at <= $${pIndex}`); params.push(new Date(until));
-    }
-
-    pIndex += 1; params.push(limit);
-    pIndex += 1; params.push(offset);
-
-    const sql = `SELECT id, workflow_id, user_id, status, trigger_type, started_at, completed_at, execution_time_ms, error_message, input_data, output_data, node_count, success_node_count, failed_node_count, latency_bucket 
-                 FROM workflow_executions
-                 WHERE ${filters.join(' AND ')}
-                 ORDER BY started_at DESC
-                 LIMIT $${pIndex-1} OFFSET $${pIndex}`;
-
-    const result = await db.query(sql, params);
-
-    console.log(
-      `[WorkflowRoute] ✅ Retrieved ${result.rows.length} executions`
-    );
-    res.json({
-      executions: result.rows.map(r => ({
-        id: r.id,
-        workflow_id: r.workflow_id,
-        status: r.status,
-        trigger_type: r.trigger_type,
-        started_at: r.started_at,
-        completed_at: r.completed_at,
-        execution_time_ms: r.execution_time_ms,
-        error: r.error_message,
-      })),
-      workflow_id: workflowId,
-      pagination: {
-        limit: limit,
-        offset: offset,
-        total: result.rows.length,
-      },
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error('[WorkflowRoute] ❌ Error fetching executions:', error);
-    res.status(500).json({
-      message: 'Failed to fetch workflow executions',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
-  }
-});
-
-// Aggregate execution stats
-router.get('/:id/executions/aggregate', authenticateToken, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const workflowId = req.params.id;
-    const { since, until } = req.query;
-
-    // Ownership check
-    const wf = await db.query('SELECT id FROM workflows WHERE id = $1 AND user_id = $2', [workflowId, userId]);
-    if (wf.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Workflow not found' });
-    }
-
-    const filters = ['workflow_id = $1', 'user_id = $2'];
-    const params = [workflowId, userId];
-    let idx = 2;
-    if (since) { idx += 1; filters.push(`started_at >= $${idx}`); params.push(new Date(since)); }
-    if (until) { idx += 1; filters.push(`started_at <= $${idx}`); params.push(new Date(until)); }
-
-    const baseWhere = filters.join(' AND ');
-
-    const statusSql = `SELECT status, COUNT(*)::int AS count FROM workflow_executions WHERE ${baseWhere} GROUP BY status`;
-    const durationSql = `SELECT AVG(execution_time_ms)::float AS avg_ms FROM workflow_executions WHERE ${baseWhere} AND execution_time_ms IS NOT NULL`;
-    const latencySql = `SELECT latency_bucket, COUNT(*)::int AS count FROM workflow_executions WHERE ${baseWhere} AND latency_bucket IS NOT NULL GROUP BY latency_bucket`;
-
-    const [statusResult, durationResult, latencyResult] = await Promise.all([
-      db.query(statusSql, params),
-      db.query(durationSql, params),
-      db.query(latencySql, params),
-    ]);
-
-    res.json({
-      success: true,
-      workflow_id: workflowId,
-      status_counts: statusResult.rows.reduce((acc, r) => { acc[r.status] = r.count; return acc; }, {}),
-      average_duration_ms: durationResult.rows[0]?.avg_ms || null,
-      latency_histogram: latencyResult.rows,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error('[WorkflowRoute] Error aggregate executions:', error);
-    res.status(500).json({ success: false, message: 'Failed to compute aggregates', error: process.env.NODE_ENV==='development'? error.message: undefined });
-  }
-});
-
-// Time-series execution metrics (fixed interval buckets)
-router.get('/:id/executions/timeseries', authenticateToken, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const workflowId = req.params.id;
-    const { since, until, interval } = req.query;
-
-    // Ownership check
-    const wf = await db.query('SELECT id FROM workflows WHERE id = $1 AND user_id = $2', [workflowId, userId]);
-    if (wf.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Workflow not found' });
-    }
-
-    // Determine time range
-    const endTs = until ? new Date(until) : new Date();
-    const startTs = since ? new Date(since) : new Date(endTs.getTime() - 6 * 60 * 60 * 1000); // default last 6h
-
-    if (isNaN(startTs) || isNaN(endTs) || startTs >= endTs) {
-      return res.status(400).json({ success: false, message: 'Invalid since/until range' });
-    }
-
-    // Interval parsing (supports: 1m,5m,15m,1h)
-    const intervalMap = { '1m': 60_000, '5m': 5 * 60_000, '15m': 15 * 60_000, '1h': 60 * 60_000 };
-    const intervalKey = interval && intervalMap[interval] ? interval : '5m';
-    const stepMs = intervalMap[intervalKey];
-
-    const bucketCount = Math.ceil((endTs - startTs) / stepMs);
-    if (bucketCount > 2000) {
-      return res.status(400).json({ success: false, message: 'Requested range produces too many buckets' });
-    }
-
-    // Fetch executions in range
-    const execs = await db.query(
-      `SELECT started_at, status, execution_time_ms FROM workflow_executions
-       WHERE workflow_id = $1 AND user_id = $2 AND started_at >= $3 AND started_at <= $4`,
-      [workflowId, userId, startTs, endTs]
-    );
-
-    // Initialize buckets
-    const buckets = [];
-    for (let i = 0; i < bucketCount; i++) {
-      const bucketStart = new Date(startTs.getTime() + i * stepMs);
-      const bucketEnd = new Date(Math.min(startTs.getTime() + (i + 1) * stepMs, endTs.getTime()));
-      buckets.push({
-        start: bucketStart.toISOString(),
-        end: bucketEnd.toISOString(),
-        count: 0,
-        completed: 0,
-        failed: 0,
-        running: 0,
-        avg_duration_ms: null,
-        p50_duration_ms: null,
-        p95_duration_ms: null,
-        durations: [], // internal aggregation, removed in response
+    if (!name || !trigger_type) {
+      return res.status(400).json({
+        success: false,
+        error: 'Name and trigger_type are required'
       });
     }
 
-    // Assign executions to buckets
-    for (const row of execs.rows) {
-      const ts = new Date(row.started_at).getTime();
-      const index = Math.min(Math.floor((ts - startTs.getTime()) / stepMs), bucketCount - 1);
-      if (index < 0 || index >= buckets.length) continue;
-      const b = buckets[index];
-      b.count += 1;
-      if (row.status === 'completed') {
-        b.completed += 1; if (row.execution_time_ms != null) b.durations.push(row.execution_time_ms);
-      } else if (row.status === 'failed') {
-        b.failed += 1; if (row.execution_time_ms != null) b.durations.push(row.execution_time_ms);
-      } else if (row.status === 'running') {
-        b.running += 1;
-      }
-    }
+    await traceOperation('workflow.api.create_workflow', async (span) => {
+      // TODO: Get owner_id from authenticated user context
+      const owner_id = req.user?.id || null;
 
-    // Compute aggregates per bucket
-    for (const b of buckets) {
-      if (b.durations.length) {
-        const sorted = b.durations.slice().sort((a, z) => a - z);
-        const sum = sorted.reduce((acc, v) => acc + v, 0);
-        b.avg_duration_ms = Math.round(sum / sorted.length);
-        const p50Idx = Math.floor(sorted.length * 0.5);
-        const p95Idx = Math.floor(sorted.length * 0.95);
-        b.p50_duration_ms = sorted[p50Idx] || sorted[sorted.length - 1];
-        b.p95_duration_ms = sorted[p95Idx] || sorted[sorted.length - 1];
-      }
-      delete b.durations;
-    }
+      const result = await req.dbPool.query(`
+        INSERT INTO workflow_automation_definitions (name, description, trigger_type, trigger_config, definition, settings, tags, owner_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING *
+      `, [name, description, trigger_type, JSON.stringify(trigger_config), JSON.stringify(definition), JSON.stringify(settings), tags, owner_id]);
 
-    res.json({
-      success: true,
-      workflow_id: workflowId,
-      interval: intervalKey,
-      range: { since: startTs.toISOString(), until: endTs.toISOString() },
-      buckets,
-      generated_at: new Date().toISOString(),
+      const newWorkflow = result.rows[0];
+      
+      span.setAttributes({
+        'workflow.id': newWorkflow.id,
+        'workflow.name': name,
+        'workflow.trigger_type': trigger_type
+      });
+
+      res.status(201).json({
+        success: true,
+        data: newWorkflow
+      });
     });
   } catch (error) {
-    console.error('[WorkflowRoute] Error timeseries executions:', error);
-    res.status(500).json({ success: false, message: 'Failed to compute timeseries', error: process.env.NODE_ENV==='development'? error.message: undefined });
-  }
-});
-
-// Get workflow node types (available node types for workflow builder)
-router.get('/node-types', authenticateToken, async (req, res) => {
-  try {
-    console.log('[WorkflowRoute] 🧩 GET /workflows/node-types endpoint hit');
-
-    // Define available node types for workflow builder
-    const nodeTypes = [
-      {
-        id: 'start',
-        name: 'Start',
-        description: 'Entry point for workflow execution',
-        category: 'flow',
-        icon: 'play',
-        inputs: [],
-        outputs: ['next'],
-        configurable: false,
-      },
-      {
-        id: 'end',
-        name: 'End',
-        description: 'Exit point for workflow execution',
-        category: 'flow',
-        icon: 'stop',
-        inputs: ['previous'],
-        outputs: [],
-        configurable: false,
-      },
-      {
-        id: 'agent_task',
-        name: 'Agent Task',
-        description: 'Execute a task using a specific agent',
-        category: 'agent',
-        icon: 'bot',
-        inputs: ['previous'],
-        outputs: ['success', 'failure'],
-        configurable: true,
-        config_schema: {
-          agent: {
-            type: 'select',
-            options: [
-              'codewriter',
-              'researcher',
-              'artist',
-              'writer',
-              'scheduler',
-              'taskmanager',
-              'comedian',
-              'analyst',
-              'designer',
-              'security',
-            ],
-          },
-          task: { type: 'text', required: true },
-          timeout: { type: 'number', default: 300 },
-        },
-      },
-      {
-        id: 'condition',
-        name: 'Condition',
-        description: 'Branch workflow based on conditions',
-        category: 'logic',
-        icon: 'branch',
-        inputs: ['previous'],
-        outputs: ['true', 'false'],
-        configurable: true,
-        config_schema: {
-          condition: { type: 'text', required: true },
-          variable: { type: 'text', required: true },
-        },
-      },
-      {
-        id: 'delay',
-        name: 'Delay',
-        description: 'Add a delay before continuing',
-        category: 'utility',
-        icon: 'clock',
-        inputs: ['previous'],
-        outputs: ['next'],
-        configurable: true,
-        config_schema: {
-          duration: { type: 'number', required: true, min: 1 },
-          unit: { type: 'select', options: ['seconds', 'minutes', 'hours'] },
-        },
-      },
-      {
-        id: 'variable_set',
-        name: 'Set Variable',
-        description: 'Set a workflow variable',
-        category: 'data',
-        icon: 'variable',
-        inputs: ['previous'],
-        outputs: ['next'],
-        configurable: true,
-        config_schema: {
-          variable_name: { type: 'text', required: true },
-          value: { type: 'text', required: true },
-          type: { type: 'select', options: ['string', 'number', 'boolean'] },
-        },
-      },
-      {
-        id: 'http_request',
-        name: 'HTTP Request',
-        description: 'Make an HTTP request',
-        category: 'integration',
-        icon: 'globe',
-        inputs: ['previous'],
-        outputs: ['success', 'failure'],
-        configurable: true,
-        config_schema: {
-          url: { type: 'url', required: true },
-          method: { type: 'select', options: ['GET', 'POST', 'PUT', 'DELETE'] },
-          headers: { type: 'json' },
-          body: { type: 'text' },
-        },
-      },
-      {
-        id: 'notification',
-        name: 'Send Notification',
-        description: 'Send a notification to the user',
-        category: 'communication',
-        icon: 'bell',
-        inputs: ['previous'],
-        outputs: ['next'],
-        configurable: true,
-        config_schema: {
-          message: { type: 'text', required: true },
-          type: {
-            type: 'select',
-            options: ['info', 'success', 'warning', 'error'],
-          },
-        },
-      },
-    ];
-
-    console.log(`[WorkflowRoute] ✅ Retrieved ${nodeTypes.length} node types`);
-    res.json({
-      nodeTypes: nodeTypes,
-      count: nodeTypes.length,
-      categories: [...new Set(nodeTypes.map(n => n.category))],
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error('[WorkflowRoute] ❌ Error fetching node types:', error);
+    console.error('[WORKFLOW_API] Error creating workflow:', error);
     res.status(500).json({
-      message: 'Failed to fetch workflow node types',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-      nodeTypes: [],
+      success: false,
+      error: 'Failed to create workflow'
     });
   }
 });
 
-// Get workflow templates
-router.get('/templates', authenticateToken, async (req, res) => {
+/**
+ * POST /api/workflows/:id/execute - Execute workflow
+ */
+router.post('/:id/execute', requireServices, async (req, res) => {
   try {
-    console.log('[WorkflowRoute] 🚀 GET /workflows/templates endpoint hit');
+    const { id } = req.params;
+    const { trigger_data = {}, options = {} } = req.body;
 
+    const result = await workflowRunnerService.executeWorkflow(id, trigger_data, options);
+    
+    res.json(result);
+  } catch (error) {
+    console.error('[WORKFLOW_API] Error executing workflow:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/executions/:executionId/stream - Server-Sent Events for execution progress
+ */
+router.get('/executions/:executionId/stream', requireServices, (req, res) => {
+  const { executionId } = req.params;
+
+  // Setup SSE headers
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Cache-Control'
+  });
+
+  console.log(`[WORKFLOW_API] SSE stream started for execution: ${executionId}`);
+
+  // Send initial connection event
+  res.write(`data: ${JSON.stringify({
+    type: 'connection',
+    execution_id: executionId,
+    timestamp: new Date().toISOString()
+  })}\n\n`);
+
+  // Event handlers for workflow runner events
+  const eventHandlers = {
+    execution_started: (data) => {
+      if (data.execution_id === executionId) {
+        res.write(`data: ${JSON.stringify({ type: 'execution_started', ...data })}\n\n`);
+      }
+    },
+    step_started: (data) => {
+      if (data.execution_id === executionId) {
+        res.write(`data: ${JSON.stringify({ type: 'step_started', ...data })}\n\n`);
+      }
+    },
+    step_completed: (data) => {
+      if (data.execution_id === executionId) {
+        res.write(`data: ${JSON.stringify({ type: 'step_completed', ...data })}\n\n`);
+      }
+    },
+    execution_completed: (data) => {
+      if (data.execution_id === executionId) {
+        res.write(`data: ${JSON.stringify({ type: 'execution_completed', ...data })}\n\n`);
+        res.end(); // Close stream on completion
+      }
+    }
+  };
+
+  // Register event listeners
+  Object.entries(eventHandlers).forEach(([event, handler]) => {
+    workflowRunnerService.on(event, handler);
+  });
+
+  // Cleanup on client disconnect
+  req.on('close', () => {
+    console.log(`[WORKFLOW_API] SSE stream closed for execution: ${executionId}`);
+    
+    // Remove event listeners
+    Object.entries(eventHandlers).forEach(([event, handler]) => {
+      workflowRunnerService.removeListener(event, handler);
+    });
+  });
+});
+
+/**
+ * GET /api/workflows/connectors - Get available connectors
+ */
+router.get('/connectors', requireServices, async (req, res) => {
+  try {
     const { category } = req.query;
-
-    let query = 'SELECT * FROM workflows WHERE is_template = true';
-    const params = [];
-
-    if (category) {
-      query += ' AND category = $1';
-      params.push(category);
-    }
-
-    query += ' ORDER BY name ASC';
-
-    const result = await db.query(query, params);
-
-    // If no templates found, provide default templates
-    let templates = result.rows;
-    if (templates.length === 0) {
-      templates = [
-        {
-          id: 'template_1',
-          name: 'Simple Research Workflow',
-          description: 'Research a topic and generate a summary',
-          category: 'research',
-          steps: [
-            { id: 'start', type: 'start', agent: 'system' },
-            {
-              id: 'research',
-              type: 'agent_task',
-              agent: 'researcher',
-              config: { task: 'Research the provided topic' },
-            },
-            {
-              id: 'summarize',
-              type: 'agent_task',
-              agent: 'writer',
-              config: { task: 'Create a summary from research results' },
-            },
-            { id: 'end', type: 'end', agent: 'system' },
-          ],
-          triggers: [],
-          variables: {},
-          is_template: true,
-          status: 'active',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          id: 'template_2',
-          name: 'Code Review Workflow',
-          description: 'Analyze code and provide feedback',
-          category: 'development',
-          steps: [
-            { id: 'start', type: 'start', agent: 'system' },
-            {
-              id: 'analyze',
-              type: 'agent_task',
-              agent: 'codewriter',
-              config: { task: 'Analyze the provided code' },
-            },
-            {
-              id: 'security_check',
-              type: 'agent_task',
-              agent: 'security',
-              config: { task: 'Check for security issues' },
-            },
-            {
-              id: 'report',
-              type: 'agent_task',
-              agent: 'writer',
-              config: { task: 'Generate code review report' },
-            },
-            { id: 'end', type: 'end', agent: 'system' },
-          ],
-          triggers: [],
-          variables: {},
-          is_template: true,
-          status: 'active',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          id: 'template_3',
-          name: 'Content Creation Workflow',
-          description: 'Create and design content',
-          category: 'creative',
-          steps: [
-            { id: 'start', type: 'start', agent: 'system' },
-            {
-              id: 'ideate',
-              type: 'agent_task',
-              agent: 'writer',
-              config: { task: 'Generate content ideas' },
-            },
-            {
-              id: 'design',
-              type: 'agent_task',
-              agent: 'designer',
-              config: { task: 'Create visual design concepts' },
-            },
-            {
-              id: 'create_art',
-              type: 'agent_task',
-              agent: 'artist',
-              config: { task: 'Generate visual assets' },
-            },
-            {
-              id: 'finalize',
-              type: 'agent_task',
-              agent: 'writer',
-              config: { task: 'Finalize content' },
-            },
-            { id: 'end', type: 'end', agent: 'system' },
-          ],
-          triggers: [],
-          variables: {},
-          is_template: true,
-          status: 'active',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      ];
-
-      // Filter by category if provided
-      if (category) {
-        templates = templates.filter(t => t.category === category);
-      }
-    }
-
-    console.log(`[WorkflowRoute] ✅ Retrieved ${templates.length} templates`);
-    res.json({
-      templates: templates,
-      count: templates.length,
-      category_filter: category,
-      timestamp: new Date().toISOString(),
-    });
+    const result = await connectorRegistryService.getConnectors(category);
+    res.json(result);
   } catch (error) {
-    console.error('[WorkflowRoute] ❌ Error fetching templates:', error);
+    console.error('[WORKFLOW_API] Error getting connectors:', error);
     res.status(500).json({
-      message: 'Failed to fetch workflow templates',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      success: false,
+      error: error.message
     });
   }
 });
 
+/**
+ * POST /api/workflows/expressions/evaluate - Evaluate expression
+ */
+router.post('/expressions/evaluate', requireServices, async (req, res) => {
+  try {
+    const { expression, context = {}, options = {} } = req.body;
+
+    if (!expression) {
+      return res.status(400).json({
+        success: false,
+        error: 'Expression is required'
+      });
+    }
+
+    const result = await expressionEngine.evaluate(expression, context, options);
+    res.json(result);
+  } catch (error) {
+    console.error('[WORKFLOW_API] Error evaluating expression:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Export router as default
 export default router;
