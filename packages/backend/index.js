@@ -80,6 +80,7 @@ import agentRoutes from './src/routes/agent.js';
 import userRoutes from './src/routes/user.js';
 import chatHistoryRoutes from './src/routes/chatHistory.js';
 import workflowRoutes from './src/routes/workflows.js';
+import workflowsV1Routes from './src/routes/workflowsV1.js'; // Phase B Workflows
 import knowledgeRoutes from './src/routes/knowledge.js';
 import vaultRoutes from './src/routes/vault.js';
 import apiKeyRoutes from './src/routes/apiKeys.js';
@@ -358,7 +359,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/agent', agentRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/chat', chatHistoryRoutes);
-app.use('/api/workflows', workflowRoutes);
+app.use('/api/workflows', workflowRoutes); // Legacy workflow API
+app.use('/api/v1/workflows', workflowsV1Routes); // Phase B Workflow API
 app.use('/api/knowledge', knowledgeRoutes);
 app.use('/api/vault', vaultRoutes);
 app.use('/api/keys', apiKeyRoutes);
