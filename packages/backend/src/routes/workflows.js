@@ -5,12 +5,16 @@ import authenticateToken from '../middleware/authenticateToken.js';
 import EnhancedWorkflowEngine from '../services/EnhancedWorkflowEngine.js';
 import WorkflowNodeRegistry from '../services/WorkflowNodeRegistry.js';
 import EnhancedLangChainCoreAgent from '../agi/consciousness/EnhancedLangChainCoreAgent.js';
+// Phase A imports
+import PhaseAWorkflowRunner from '../services/PhaseAWorkflowRunner.js';
+import workflowStreamer from '../services/WorkflowExecutionStreamer.js';
 
 /**
- * WORKFLOW MANAGEMENT ROUTES
+ * WORKFLOW MANAGEMENT ROUTES - Enhanced with Phase A Features
  *
  * These routes handle workflow creation, execution, and management
- * within the hierarchical multi-agent system.
+ * within the hierarchical multi-agent system, now with Phase A
+ * workflow automation platform capabilities.
  *
  * ENDPOINTS:
  * - GET /api/workflows - Get user's workflows with filtering
@@ -18,10 +22,19 @@ import EnhancedLangChainCoreAgent from '../agi/consciousness/EnhancedLangChainCo
  * - GET /api/workflows/:id - Get specific workflow details
  * - PUT /api/workflows/:id - Update workflow configuration
  * - DELETE /api/workflows/:id - Delete workflow
- * - POST /api/workflows/:id/execute - Execute workflow
+ * - POST /api/workflows/:id/execute - Execute workflow (Phase A)
  * - GET /api/workflows/:id/executions - Get workflow execution history
  * - GET /api/workflows/templates - Get workflow templates
+ * - GET /api/workflows/stream/:executionId - SSE streaming endpoint
+ * - POST /api/workflows/:id/validate - Validate workflow
+ * - POST /api/workflows/:id/cancel - Cancel execution
+ * - GET /api/workflows/node-types - Get available node types (Phase A)
  */
+
+// Initialize engines
+const legacyWorkflowEngine = new EnhancedWorkflowEngine();
+const nodeRegistry = new WorkflowNodeRegistry();
+const phaseARunner = new PhaseAWorkflowRunner(); // Phase A runner
 
 // Get user's workflows
 router.get('/', authenticateToken, async (req, res) => {
@@ -56,16 +69,19 @@ router.get('/', authenticateToken, async (req, res) => {
     console.log(`[WorkflowRoute] ✅ Found ${result.rows.length} workflows`);
 
     res.json({
-      workflows: result.rows,
-      count: result.rows.length,
-      filters_applied: { category, is_template, status },
-      timestamp: new Date().toISOString(),
+      success: true,
+      data: {
+        workflows: result.rows,
+        count: result.rows.length,
+        filters_applied: { category, is_template, status },
+        timestamp: new Date().toISOString(),
+      }
     });
   } catch (error) {
     console.error('[WorkflowRoute] ❌ Error fetching workflows:', error);
     res.status(500).json({
-      message: 'Failed to fetch workflows',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      success: false,
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Failed to fetch workflows'
     });
   }
 });
@@ -394,30 +410,45 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Execute workflow with enhanced engine
+// Execute workflow with enhanced engine - Phase A Implementation
 router.post('/:id/execute', authenticateToken, async (req, res) => {
   try {
-    console.log('[WorkflowRoute] ⚡ POST /workflows/:id/execute endpoint hit');
+    console.log('[WorkflowRoute] ⚡ POST /workflows/:id/execute endpoint hit (Phase A)');
 
     const userId = req.user.id;
     const workflowId = parseInt(req.params.id);
-    const { input_data, trigger_type = 'manual' } = req.body;
+    const { input_data, trigger_type = 'manual', use_phase_a = true } = req.body;
 
-    // Verify workflow ownership
+    if (use_phase_a) {
+      // Use Phase A workflow runner
+      const result = await phaseARunner.executeWorkflow(
+        workflowId,
+        userId,
+        input_data || {},
+        trigger_type
+      );
+
+      return res.json(result);
+    }
+
+    // Legacy execution path (preserving existing functionality)
     const wf = await db.query('SELECT id FROM workflows WHERE id = $1 AND user_id = $2', [workflowId, userId]);
     if (wf.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Workflow not found' });
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Workflow not found or access denied'
+      });
     }
 
-    // Lazy initialize core agent for engine
-    if (!workflowEngine.coreAgent) {
+    // Lazy initialize core agent for legacy engine
+    if (!legacyWorkflowEngine.coreAgent) {
       const coreAgent = new EnhancedLangChainCoreAgent();
       await coreAgent.initialize();
-      workflowEngine.setCoreAgent(coreAgent);
+      legacyWorkflowEngine.setCoreAgent(coreAgent);
     }
 
-    // Kick off execution using enhanced engine (persists record internally)
-    const execResult = await workflowEngine.executeWorkflow(
+    // Kick off execution using legacy enhanced engine
+    const execResult = await legacyWorkflowEngine.executeWorkflow(
       workflowId,
       userId,
       input_data || {},
@@ -427,15 +458,13 @@ router.post('/:id/execute', authenticateToken, async (req, res) => {
     if (!execResult.success) {
       return res.status(500).json({
         success: false,
-        message: 'Workflow execution failed',
         error: execResult.error,
         execution_id: execResult.executionId,
         timestamp: new Date().toISOString(),
       });
     }
 
-    // Basic simulation: ensure a completed row exists quickly for polling UIs.
-    // If EnhancedWorkflowEngine already marks completed, this will be a no-op guarded by status check.
+    // Basic simulation for legacy mode
     try {
       const statusRow = await db.query(
         'SELECT id, status, completed_at FROM workflow_executions WHERE workflow_id = $1 AND user_id = $2 ORDER BY started_at DESC LIMIT 1',
@@ -446,15 +475,6 @@ router.post('/:id/execute', authenticateToken, async (req, res) => {
           'UPDATE workflow_executions SET status = $1, completed_at = NOW(), execution_time_ms = COALESCE(execution_time_ms, 0) WHERE id = $2',
           ['completed', statusRow.rows[0].id]
         );
-        await db.query(
-          'INSERT INTO workflow_execution_logs (execution_id, level, message, data) VALUES ($1, $2, $3, $4)',
-          [
-            statusRow.rows[0].id,
-            'info',
-            'Auto-completed simulation step',
-            JSON.stringify({ simulated: true }),
-          ]
-        );
       }
     } catch (simErr) {
       console.warn('[WorkflowRoute] Simulation completion step failed (non-blocking):', simErr.message);
@@ -462,71 +482,156 @@ router.post('/:id/execute', authenticateToken, async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Workflow executed successfully',
-      execution_id: execResult.executionId,
-      result: execResult.result,
-      execution_time: execResult.executionTime,
-      logs: execResult.logs,
+      data: {
+        execution_id: execResult.executionId,
+        result: execResult.result,
+        execution_time: execResult.executionTime,
+        logs: execResult.logs,
+        legacy_mode: true
+      },
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
     console.error('[WorkflowRoute] ❌ Error executing workflow:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to execute workflow',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
     });
   }
 });
 
-// Get workflow execution status
-router.get(
-  '/:id/execution/:executionId',
-  authenticateToken,
-  async (req, res) => {
-    try {
-      const userId = req.user.id;
-      const workflowId = req.params.id;
-      const executionId = req.params.executionId;
+// SSE Streaming endpoint for real-time workflow execution updates (Phase A)
+router.get('/stream/:executionId', authenticateToken, async (req, res) => {
+  try {
+    const { executionId } = req.params;
+    const userId = req.user.id;
 
-      const result = await db.query(
-        `SELECT * FROM workflow_executions 
-       WHERE id = $1 AND workflow_id = $2 AND user_id = $3`,
-        [executionId, workflowId, userId]
-      );
+    // Verify user has access to this execution
+    const execution = await db.query(
+      'SELECT id FROM workflow_executions WHERE id = $1 AND user_id = $2',
+      [executionId, userId]
+    );
 
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Execution not found',
-        });
-      }
-
-      res.json({
-        success: true,
-        execution: result.rows[0],
-      });
-    } catch (error) {
-      console.error('[WorkflowRoute] Error fetching execution status:', error);
-      res.status(500).json({
+    if (execution.rows.length === 0) {
+      return res.status(404).json({
         success: false,
-        error: error.message,
+        error: 'Execution not found or access denied'
       });
     }
-  }
-);
 
-// Get workflow engine statistics
-router.get('/engine/stats', authenticateToken, async (req, res) => {
+    // Create SSE connection
+    const connectionId = workflowStreamer.createSSEConnection(req, res, executionId);
+    
+    console.log(`[WorkflowRoute] SSE connection created: ${connectionId} for execution: ${executionId}`);
+
+  } catch (error) {
+    console.error('[WorkflowRoute] Error creating SSE connection:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Validate workflow without executing (Phase A)
+router.post('/:id/validate', authenticateToken, async (req, res) => {
   try {
-    const stats = workflowEngine.getExecutionStats();
-    const activeExecutions = workflowEngine.getActiveExecutions();
+    const userId = req.user.id;
+    const workflowId = req.params.id;
+
+    // Get workflow data
+    const result = await db.query(
+      'SELECT workflow_data FROM workflows WHERE id = $1 AND user_id = $2',
+      [workflowId, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Workflow not found or access denied'
+      });
+    }
+
+    const validation = phaseARunner.validateWorkflow(result.rows[0].workflow_data);
 
     res.json({
       success: true,
-      engine_stats: stats,
-      active_executions: activeExecutions,
-      timestamp: new Date().toISOString(),
+      data: validation
+    });
+
+  } catch (error) {
+    console.error('[WorkflowRoute] Error validating workflow:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Cancel workflow execution (Phase A)
+router.post('/:id/executions/:executionId/cancel', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { executionId } = req.params;
+
+    const result = await phaseARunner.cancelExecution(executionId, userId);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+
+  } catch (error) {
+    console.error('[WorkflowRoute] Error cancelling execution:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Test node execution (Phase A)
+router.post('/test-node', authenticateToken, async (req, res) => {
+  try {
+    const { nodeConfig, testContext = {} } = req.body;
+
+    if (!nodeConfig || !nodeConfig.type) {
+      return res.status(400).json({
+        success: false,
+        error: 'Node configuration with type is required'
+      });
+    }
+
+    const result = await phaseARunner.testNode(nodeConfig, testContext);
+    res.json(result);
+
+  } catch (error) {
+    console.error('[WorkflowRoute] Error testing node:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get workflow engine statistics (Phase A Enhanced)
+router.get('/engine/stats', authenticateToken, async (req, res) => {
+  try {
+    const phaseAStats = phaseARunner.getExecutionStats();
+    const legacyStats = legacyWorkflowEngine.getExecutionStats();
+    const legacyActiveExecutions = legacyWorkflowEngine.getActiveExecutions();
+
+    res.json({
+      success: true,
+      data: {
+        phaseA: phaseAStats,
+        legacy: {
+          stats: legacyStats,
+          activeExecutions: legacyActiveExecutions
+        },
+        timestamp: new Date().toISOString(),
+      }
     });
   } catch (error) {
     console.error('[WorkflowRoute] Error fetching engine stats:', error);
@@ -768,39 +873,122 @@ router.get('/:id/executions/timeseries', authenticateToken, async (req, res) => 
   }
 });
 
-// Get workflow node types (available node types for workflow builder)
+// Get workflow node types (Phase A Enhanced)
 router.get('/node-types', authenticateToken, async (req, res) => {
   try {
-    console.log('[WorkflowRoute] 🧩 GET /workflows/node-types endpoint hit');
+    console.log('[WorkflowRoute] 🧩 GET /workflows/node-types endpoint hit (Phase A)');
 
-    // Define available node types for workflow builder
-    const nodeTypes = [
+    // Phase A node types - four foundational types
+    const phaseANodeTypes = [
+      {
+        id: 'transform',
+        name: 'Transform',
+        description: 'Data manipulation and processing with advanced transformations',
+        category: 'data',
+        icon: '🔄',
+        inputs: ['input'],
+        outputs: ['output'],
+        configurable: true,
+        config_schema: {
+          input: { type: 'text', default: 'input', description: 'Input data path' },
+          transformations: {
+            type: 'array',
+            items: {
+              type: { type: 'select', options: ['map', 'filter', 'extract', 'format'] },
+              config: { type: 'object' }
+            },
+            description: 'Array of transformations to apply'
+          },
+          outputField: { type: 'text', default: 'output', description: 'Output field name' }
+        },
+        phaseA: true
+      },
+      {
+        id: 'http-request',
+        name: 'HTTP Request',
+        description: 'External API integration with retry logic and error handling',
+        category: 'integration',
+        icon: '🌐',
+        inputs: ['previous'],
+        outputs: ['success', 'failure'],
+        configurable: true,
+        config_schema: {
+          method: { type: 'select', options: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], default: 'GET' },
+          url: { type: 'url', required: true, description: 'API endpoint URL (supports templates)' },
+          headers: { type: 'object', description: 'HTTP headers' },
+          body: { type: 'text', description: 'Request body (for POST/PUT/PATCH)' },
+          timeout: { type: 'number', default: 10000, description: 'Timeout in milliseconds' },
+          retries: { type: 'number', default: 0, description: 'Number of retry attempts' },
+          responseType: { type: 'select', options: ['json', 'text'], default: 'json' }
+        },
+        phaseA: true
+      },
+      {
+        id: 'delay',
+        name: 'Delay',
+        description: 'Workflow timing and scheduling control with conditional waits',
+        category: 'utility',
+        icon: '⏰',
+        inputs: ['previous'],
+        outputs: ['next'],
+        configurable: true,
+        config_schema: {
+          duration: { type: 'number', required: true, min: 1, description: 'Delay duration' },
+          unit: { type: 'select', options: ['milliseconds', 'seconds', 'minutes', 'hours'], default: 'seconds' },
+          condition: { type: 'text', description: 'Optional condition to wait for (template)' },
+          maxWait: { type: 'number', default: 30000, description: 'Maximum wait time in milliseconds' }
+        },
+        phaseA: true
+      },
+      {
+        id: 'set-variable',
+        name: 'Set Variable',
+        description: 'Context and state management with type conversion',
+        category: 'data',
+        icon: '📝',
+        inputs: ['previous'],
+        outputs: ['next'],
+        configurable: true,
+        config_schema: {
+          variableName: { type: 'text', required: true, description: 'Variable name (valid identifier)' },
+          value: { type: 'text', required: true, description: 'Variable value (supports templates)' },
+          type: { type: 'select', options: ['string', 'number', 'boolean', 'json'], default: 'string' },
+          scope: { type: 'select', options: ['local', 'global'], default: 'local', description: 'Variable scope' }
+        },
+        phaseA: true
+      }
+    ];
+
+    // Legacy node types (preserved for backward compatibility)
+    const legacyNodeTypes = [
       {
         id: 'start',
         name: 'Start',
         description: 'Entry point for workflow execution',
         category: 'flow',
-        icon: 'play',
+        icon: '▶️',
         inputs: [],
         outputs: ['next'],
         configurable: false,
+        legacy: true
       },
       {
         id: 'end',
         name: 'End',
         description: 'Exit point for workflow execution',
         category: 'flow',
-        icon: 'stop',
+        icon: '⏹️',
         inputs: ['previous'],
         outputs: [],
         configurable: false,
+        legacy: true
       },
       {
         id: 'agent_task',
         name: 'Agent Task',
         description: 'Execute a task using a specific agent',
         category: 'agent',
-        icon: 'bot',
+        icon: '🤖',
         inputs: ['previous'],
         outputs: ['success', 'failure'],
         configurable: true,
@@ -823,13 +1011,14 @@ router.get('/node-types', authenticateToken, async (req, res) => {
           task: { type: 'text', required: true },
           timeout: { type: 'number', default: 300 },
         },
+        legacy: true
       },
       {
         id: 'condition',
         name: 'Condition',
         description: 'Branch workflow based on conditions',
         category: 'logic',
-        icon: 'branch',
+        icon: '🔀',
         inputs: ['previous'],
         outputs: ['true', 'false'],
         configurable: true,
@@ -837,58 +1026,14 @@ router.get('/node-types', authenticateToken, async (req, res) => {
           condition: { type: 'text', required: true },
           variable: { type: 'text', required: true },
         },
-      },
-      {
-        id: 'delay',
-        name: 'Delay',
-        description: 'Add a delay before continuing',
-        category: 'utility',
-        icon: 'clock',
-        inputs: ['previous'],
-        outputs: ['next'],
-        configurable: true,
-        config_schema: {
-          duration: { type: 'number', required: true, min: 1 },
-          unit: { type: 'select', options: ['seconds', 'minutes', 'hours'] },
-        },
-      },
-      {
-        id: 'variable_set',
-        name: 'Set Variable',
-        description: 'Set a workflow variable',
-        category: 'data',
-        icon: 'variable',
-        inputs: ['previous'],
-        outputs: ['next'],
-        configurable: true,
-        config_schema: {
-          variable_name: { type: 'text', required: true },
-          value: { type: 'text', required: true },
-          type: { type: 'select', options: ['string', 'number', 'boolean'] },
-        },
-      },
-      {
-        id: 'http_request',
-        name: 'HTTP Request',
-        description: 'Make an HTTP request',
-        category: 'integration',
-        icon: 'globe',
-        inputs: ['previous'],
-        outputs: ['success', 'failure'],
-        configurable: true,
-        config_schema: {
-          url: { type: 'url', required: true },
-          method: { type: 'select', options: ['GET', 'POST', 'PUT', 'DELETE'] },
-          headers: { type: 'json' },
-          body: { type: 'text' },
-        },
+        legacy: true
       },
       {
         id: 'notification',
         name: 'Send Notification',
         description: 'Send a notification to the user',
         category: 'communication',
-        icon: 'bell',
+        icon: '🔔',
         inputs: ['previous'],
         outputs: ['next'],
         configurable: true,
@@ -899,22 +1044,41 @@ router.get('/node-types', authenticateToken, async (req, res) => {
             options: ['info', 'success', 'warning', 'error'],
           },
         },
+        legacy: true
       },
     ];
 
-    console.log(`[WorkflowRoute] ✅ Retrieved ${nodeTypes.length} node types`);
+    const allNodeTypes = [...phaseANodeTypes, ...legacyNodeTypes];
+    const categories = [...new Set(allNodeTypes.map(n => n.category))];
+
+    console.log(`[WorkflowRoute] ✅ Retrieved ${allNodeTypes.length} node types (${phaseANodeTypes.length} Phase A, ${legacyNodeTypes.length} Legacy)`);
+    
     res.json({
-      nodeTypes: nodeTypes,
-      count: nodeTypes.length,
-      categories: [...new Set(nodeTypes.map(n => n.category))],
-      timestamp: new Date().toISOString(),
+      success: true,
+      data: {
+        nodeTypes: allNodeTypes,
+        phaseANodeTypes,
+        legacyNodeTypes,
+        count: allNodeTypes.length,
+        categories,
+        capabilities: {
+          phaseA: ['expression-engine', 'graph-validation', 'real-time-streaming'],
+          security: ['no-eval', 'whitelist-functions', 'input-validation'],
+          reliability: ['error-boundaries', 'retry-logic', 'cycle-detection']
+        },
+        timestamp: new Date().toISOString(),
+      }
     });
   } catch (error) {
     console.error('[WorkflowRoute] ❌ Error fetching node types:', error);
     res.status(500).json({
-      message: 'Failed to fetch workflow node types',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-      nodeTypes: [],
+      success: false,
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Failed to fetch node types',
+      data: {
+        nodeTypes: [],
+        count: 0,
+        categories: []
+      }
     });
   }
 });
