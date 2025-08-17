@@ -88,7 +88,7 @@ router.get('/', authenticateToken, async (req, res) => {
 
 // Initialize enhanced workflow engine and node registry
 const workflowEngine = new EnhancedWorkflowEngine();
-const nodeRegistry = new WorkflowNodeRegistry();
+// nodeRegistry already declared above
 
 // Get available node types
 router.get('/node-types', authenticateToken, async (req, res) => {
