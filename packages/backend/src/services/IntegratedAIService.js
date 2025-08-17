@@ -12,6 +12,7 @@
 // Model Registry will be loaded dynamically to avoid TypeScript import issues
 import EnhancedWorkflowEngine from './EnhancedWorkflowEngine.js';
 import EnhancedKnowledgeHub from './EnhancedKnowledgeHub.js';
+import EnhancedRAGService from './EnhancedRAGService.js';
 import pool from '../db.js';
 import { createClient } from 'redis';
 import { shouldQuietLogs } from '../util/env.js';
@@ -21,11 +22,12 @@ class IntegratedAIService {
     this.modelRegistry = null;
     this.workflowEngine = null;
     this.knowledgeHub = null;
+    this.enhancedRAG = null; // New Phase C RAG service
     this.coreAgent = null;
     this.redisClient = null;
     this.isInitialized = false;
     
-    console.log('[IntegratedAIService] 🎯 Integrated AI service constructed');
+    console.log('[IntegratedAIService] 🎯 Integrated AI service constructed with Phase C RAG support');
   }
 
   /**
@@ -45,6 +47,9 @@ class IntegratedAIService {
       
       // Initialize Knowledge Hub
       await this.initializeKnowledgeHub();
+      
+      // Initialize Enhanced RAG Service (Phase C)
+      await this.initializeEnhancedRAG();
       
       // Initialize Model Registry
       await this.initializeModelRegistry();
@@ -98,6 +103,28 @@ class IntegratedAIService {
       console.log('[IntegratedAIService] ✅ Knowledge Hub initialized');
     } else {
       console.warn('[IntegratedAIService] ⚠️ Knowledge Hub initialization failed, continuing with limited functionality');
+    }
+  }
+
+  /**
+   * Initialize Enhanced RAG Service (Phase C)
+   */
+  async initializeEnhancedRAG() {
+    console.log('[IntegratedAIService] 🎯 Initializing Enhanced RAG Service (Phase C)...');
+    
+    try {
+      this.enhancedRAG = new EnhancedRAGService();
+      const ragInitialized = await this.enhancedRAG.initialize();
+      
+      if (ragInitialized) {
+        console.log('[IntegratedAIService] ✅ Enhanced RAG Service initialized with Gemini embeddings');
+      } else {
+        console.warn('[IntegratedAIService] ⚠️ Enhanced RAG Service initialization failed or disabled');
+        this.enhancedRAG = null;
+      }
+    } catch (error) {
+      console.error('[IntegratedAIService] ❌ Enhanced RAG Service initialization error:', error.message);
+      this.enhancedRAG = null;
     }
   }
 
@@ -312,11 +339,59 @@ class IntegratedAIService {
   }
 
   /**
-   * Generate RAG response using knowledge hub
+   * Generate RAG response using enhanced RAG service or knowledge hub fallback
    */
   async generateRAGResponse(userId, query, searchResults = null, options = {}) {
+    const { useEnhancedRAG = true, ...otherOptions } = options;
+    
+    // Try enhanced RAG service first if enabled and available
+    if (useEnhancedRAG && this.enhancedRAG && this.enhancedRAG.initialized) {
+      try {
+        let contextResults = searchResults;
+        
+        // If no search results provided, perform enhanced search
+        if (!contextResults) {
+          const searchResult = await this.enhancedRAG.searchSimilar(
+            userId, 
+            query, 
+            { 
+              limit: otherOptions.searchLimit || 5, 
+              threshold: otherOptions.searchThreshold || 0.7,
+              includeChunks: true
+            }
+          );
+          
+          if (!searchResult.success || searchResult.results.length === 0) {
+            return {
+              success: false,
+              message: "No relevant information found in enhanced RAG knowledge base",
+              source: 'enhanced_rag'
+            };
+          }
+          
+          contextResults = searchResult.results;
+        }
+        
+        // For now, return the search results with metadata
+        // Full response generation would integrate with language models
+        return {
+          success: true,
+          response: this.formatRAGContext(contextResults, query),
+          contextResults,
+          source: 'enhanced_rag',
+          model: 'gemini_text_embedding_004',
+          searchMethod: 'vector_similarity'
+        };
+        
+      } catch (error) {
+        console.warn('[IntegratedAIService] Enhanced RAG failed, falling back to knowledge hub:', error.message);
+        // Fall through to knowledge hub fallback
+      }
+    }
+
+    // Fallback to existing knowledge hub
     if (!this.knowledgeHub) {
-      throw new Error('Knowledge Hub not available');
+      throw new Error('No RAG service available (both enhanced RAG and knowledge hub unavailable)');
     }
 
     try {
@@ -325,26 +400,52 @@ class IntegratedAIService {
         const searchResult = await this.knowledgeHub.semanticSearch(
           userId, 
           query, 
-          { limit: options.searchLimit || 5, threshold: options.searchThreshold || 0.7 }
+          { limit: otherOptions.searchLimit || 5, threshold: otherOptions.searchThreshold || 0.7 }
         );
         
         if (!searchResult.success || searchResult.results.length === 0) {
           return {
             success: false,
-            message: "No relevant information found in knowledge base"
+            message: "No relevant information found in knowledge base",
+            source: 'knowledge_hub'
           };
         }
         
         searchResults = searchResult.results;
       }
       
-      const result = await this.knowledgeHub.generateRAGResponse(userId, query, searchResults, options);
+      const result = await this.knowledgeHub.generateRAGResponse(userId, query, searchResults, otherOptions);
+      result.source = 'knowledge_hub';
       return result;
       
     } catch (error) {
       console.error('[IntegratedAIService] ❌ RAG response generation failed:', error);
       throw error;
     }
+  }
+
+  /**
+   * Format RAG context results for response
+   */
+  formatRAGContext(results, query) {
+    const context = results.map((result, index) => {
+      return `[${index + 1}] ${result.documentTitle}: ${result.chunkText}`;
+    }).join('\n\n');
+    
+    return {
+      query,
+      context,
+      contextLength: context.length,
+      sourcesUsed: results.length,
+      sources: results.map((result, index) => ({
+        id: index + 1,
+        documentId: result.documentId,
+        title: result.documentTitle,
+        similarity: result.similarity,
+        chunkIndex: result.chunkIndex
+      })),
+      note: 'This is formatted context from enhanced RAG search. Full response generation requires language model integration.'
+    };
   }
 
   /**
@@ -456,6 +557,61 @@ class IntegratedAIService {
     }
 
     return analytics;
+  }
+
+  /**
+   * Enhanced semantic search using Phase C RAG service
+   */
+  async enhancedSemanticSearch(userId, query, options = {}) {
+    if (!this.enhancedRAG || !this.enhancedRAG.initialized) {
+      // Fallback to regular semantic search
+      return this.semanticSearch(userId, query, options);
+    }
+
+    try {
+      const result = await this.enhancedRAG.searchSimilar(userId, query, options);
+      return result;
+    } catch (error) {
+      console.error('[IntegratedAIService] ❌ Enhanced semantic search failed:', error);
+      
+      // Fallback to regular semantic search
+      console.log('[IntegratedAIService] 🔄 Falling back to regular semantic search');
+      return this.semanticSearch(userId, query, options);
+    }
+  }
+
+  /**
+   * Ingest document using enhanced RAG service
+   */
+  async ingestDocument(userId, documentData, fileBuffer = null) {
+    if (!this.enhancedRAG || !this.enhancedRAG.initialized) {
+      throw new Error('Enhanced RAG service not available for document ingestion');
+    }
+
+    try {
+      const result = await this.enhancedRAG.ingestDocument(userId, documentData, fileBuffer);
+      return result;
+    } catch (error) {
+      console.error('[IntegratedAIService] ❌ Document ingestion failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get enhanced RAG statistics
+   */
+  async getEnhancedRAGStats(userId) {
+    if (!this.enhancedRAG || !this.enhancedRAG.initialized) {
+      return { success: false, error: 'Enhanced RAG service not available' };
+    }
+
+    try {
+      const result = await this.enhancedRAG.getStats(userId);
+      return result;
+    } catch (error) {
+      console.error('[IntegratedAIService] ❌ Enhanced RAG stats failed:', error);
+      return { success: false, error: error.message };
+    }
   }
 
   /**
