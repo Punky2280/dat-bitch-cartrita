@@ -3,22 +3,14 @@ import './src/loadEnv.js';
 import { isTestEnv, isLightweight } from './src/util/env.js';
 
 console.log('[Index] 🚀 Starting Cartrita backend...');
+console.log('[Index] 🧪 MINIMAL_MODE =', process.env.MINIMAL_MODE);
+console.log('[Index] 🧪 ENABLE_TELEMETRY =', process.env.ENABLE_TELEMETRY);
+console.log('[Index] 🧪 LIGHTWEIGHT_TEST =', process.env.LIGHTWEIGHT_TEST);
 
 import express from 'express';
 import http from 'http';
-// Optional early OpenTelemetry pre-initialization to reduce instrumentation load-order warnings.
-// Set PREINIT_OTEL=1 before starting to enable.
-if (process.env.PREINIT_OTEL === '1' && process.env.ENABLE_TELEMETRY !== 'false') {
-  try {
-    const { default: OpenTelemetryTracing } = await import('./src/system/OpenTelemetryTracing.js');
-    if (!OpenTelemetryTracing.initialized) {
-      await OpenTelemetryTracing.initialize();
-      console.log('[PreInit] OpenTelemetryTracing initialized early (PREINIT_OTEL=1)');
-    }
-  } catch (e) {
-    console.warn('[PreInit] Failed early OTel init:', e.message);
-  }
-}
+// NOTE: OpenTelemetry initialization is now handled by OpenTelemetryIntegrationService 
+// to avoid duplicate registrations. PREINIT_OTEL is disabled.
 import { Server } from 'socket.io';
 import cors from 'cors';
 import { Pool } from 'pg';
@@ -37,6 +29,10 @@ import OpenTelemetryTracing from './src/system/OpenTelemetryTracing.js';
 import openTelemetryIntegration from './src/opentelemetry/OpenTelemetryIntegrationService.js';
 import TelemetryAgent from './src/agi/system/TelemetryAgent.js';
 import SensoryProcessingService from './src/system/SensoryProcessingService.js';
+
+// Phase A Workflow Automation Services
+import WorkflowServices from './src/services/WorkflowServices.js';
+import { initializeServices as initializeWorkflowRoutes } from './src/routes/workflows.js';
 const RedisService = {
   async initialize() {
     try {
@@ -106,6 +102,7 @@ import hfBinaryRoutes from './src/routes/hf.js';
 import audioRoutes from './src/routes/audio.js';
 import modelRoutingRoutes from './src/routes/modelRouting.js';
 import personalLifeOSRoutes from './src/routes/personalLifeOS.js';
+import workflowTemplatesRoutes from './src/routes/workflowTemplates.js';
 import rotationSchedulingRoutes from './src/routes/rotationScheduling.js';
 import securityMaskingRoutes from './src/routes/securityMasking.js';
 import apiKeyManagementRoutes from './src/routes/apiKeyManagement.js';
@@ -118,6 +115,7 @@ const PORT = process.env.PORT || 8001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const DATABASE_URL = process.env.DATABASE_URL;
 const LIGHTWEIGHT_TEST = isLightweight();
+const MINIMAL_MODE = process.env.MINIMAL_MODE === '1' || process.env.ENABLE_TELEMETRY === 'false';
 
 if (!DATABASE_URL && !LIGHTWEIGHT_TEST) {
   console.error('❌ DATABASE_URL environment variable is required');
@@ -198,6 +196,11 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002',
+  'http://localhost:3003',
+  'http://localhost:3004',
+  'http://localhost:3005',
   ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : []),
 ].filter(Boolean);
 
@@ -359,6 +362,7 @@ app.use('/api/agent', agentRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/chat', chatHistoryRoutes);
 app.use('/api/workflows', workflowRoutes);
+app.use('/api/workflow-templates', workflowTemplatesRoutes);
 app.use('/api/knowledge', knowledgeRoutes);
 app.use('/api/vault', vaultRoutes);
 app.use('/api/keys', apiKeyRoutes);
@@ -949,7 +953,8 @@ async function startServer() {
   try {
     console.log('🚀 Initializing Cartrita backend...');
     // Skip heavy OpenTelemetry initialization in test environment to reduce noise & duplicate registration
-  if (NODE_ENV !== 'test' && !LIGHTWEIGHT_TEST && process.env.ENABLE_TELEMETRY !== 'false') {
+    const MINIMAL_MODE = process.env.MINIMAL_MODE === '1' || process.env.ENABLE_TELEMETRY === 'false';
+  if (NODE_ENV !== 'test' && !LIGHTWEIGHT_TEST && !MINIMAL_MODE && process.env.ENABLE_TELEMETRY === 'true') {
       console.log('📊 Initializing Complete OpenTelemetry Integration with merged upstream components...');
       try {
         const integrationResult = await openTelemetryIntegration.initialize();
@@ -985,12 +990,12 @@ async function startServer() {
     } else {
       console.warn('⚠️ Redis initialization failed, continuing without cache');
     }
-    if (!LIGHTWEIGHT_TEST) {
+    if (!LIGHTWEIGHT_TEST && !MINIMAL_MODE) {
       console.log('🧠 Initializing Hierarchical Supervisor Agent...');
       await coreAgent.initialize();
       console.log('✅ Hierarchical Supervisor Agent initialized');
     } else {
-      console.log('🧪 LIGHTWEIGHT_TEST=1 -> Skipping supervisor agent initialization');
+      console.log('🧪 MINIMAL_MODE -> Skipping supervisor agent initialization');
     }
 
     // Initialize custom counters once OpenTelemetry is active
@@ -1009,7 +1014,7 @@ async function startServer() {
       console.warn('[Metrics] Failed to init custom counters', mErr.message);
     }
 
-    if (!LIGHTWEIGHT_TEST) {
+    if (!LIGHTWEIGHT_TEST && !MINIMAL_MODE) {
       console.log('🔧 Initializing services...');
       try {
         await ServiceInitializer.initializeServices();
@@ -1018,6 +1023,39 @@ async function startServer() {
           '⚠️ Some services failed to initialize, but continuing startup...'
         );
         handleAgentError('ServiceInitializer', serviceError);
+      }
+    } else {
+      console.log('🧪 MINIMAL_MODE -> Skipping service initialization');
+    }
+
+    if (!MINIMAL_MODE) {
+      // Initialize Phase A Workflow Automation Services
+      console.log('🔧 Initializing Phase A Workflow Automation services...');
+      try {
+        const workflowServices = await WorkflowServices.initialize();
+        
+        // Wire services into workflow routes  
+        initializeWorkflowRoutes(workflowServices.getServices());
+        
+        console.log('✅ Phase A Workflow Automation services initialized and wired');
+      } catch (workflowError) {
+        console.error('❌ Failed to initialize Phase A workflow services:', workflowError);
+        console.error('⚠️ Workflow automation will be unavailable');
+      }
+    } else {
+      console.log('🧪 MINIMAL_MODE -> Skipping workflow automation initialization');
+    }
+
+    if (!MINIMAL_MODE) {
+      // Initialize Workflow Templates Service
+      console.log('🔧 Initializing Workflow Templates Service...');
+      try {
+        const { default: WorkflowTemplateService } = await import('./src/services/WorkflowTemplateService.js');
+        await WorkflowTemplateService.initialize();
+        console.log('✅ Workflow Templates Service initialized');
+      } catch (templateError) {
+        console.error('❌ Failed to initialize Workflow Templates Service:', templateError);
+        console.error('⚠️ Template system will be unavailable');
       }
 
       console.log('🌟 Initializing Advanced 2025 MCP Orchestrator...');
@@ -1067,15 +1105,15 @@ async function startServer() {
         handleAgentError('MCPSystem', mcpSystemError);
       }
     } else {
-      console.log('🧪 LIGHTWEIGHT_TEST=1 -> Skipping service + MCP initialization');
+      console.log('🧪 MINIMAL_MODE -> Skipping template/MCP initialization');
     }
 
     // --- ✅ MODIFICATION IS HERE ---
     // Call the new function to attach socket handlers only AFTER initialization.
-    if (!LIGHTWEIGHT_TEST) {
+    if (!LIGHTWEIGHT_TEST && !MINIMAL_MODE) {
       setupSocketHandlers();
     } else {
-      console.log('🧪 LIGHTWEIGHT_TEST=1 -> Skipping Socket.IO handlers');
+      console.log('🧪 MINIMAL_MODE -> Skipping Socket.IO handlers');
     }
     console.log(
       performanceMetrics.agentErrors > 0

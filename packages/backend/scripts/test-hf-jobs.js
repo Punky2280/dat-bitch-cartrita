@@ -142,6 +142,7 @@ class HFJobsTestSuite {
             console.log('  ℹ️  Would use flavor: a10g-small for GPU acceleration');
             
         } catch (error) {
+            console.error('  ❌ Audio analysis job test failed:', error.message);
             throw error;
         }
     }

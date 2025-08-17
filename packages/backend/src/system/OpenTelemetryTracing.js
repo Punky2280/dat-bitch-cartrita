@@ -50,6 +50,17 @@ class OpenTelemetryTracing {
       );
       return true;
     }
+    
+    // Check if OpenTelemetry is already initialized globally (by OpenTelemetryIntegrationService)
+    const { trace, metrics } = await import('@opentelemetry/api');
+    const existingTracer = trace.getTracer('test-existing');
+    if (existingTracer && existingTracer.constructor.name !== 'NoopTracer') {
+      console.log('[OpenTelemetryTracing] 🔍 OpenTelemetry already initialized globally, reusing existing instance...');
+      this.tracer = trace.getTracer(this.serviceName, this.serviceVersion);
+      this.meter = metrics.getMeter(this.serviceName, this.serviceVersion);
+      this.initialized = true;
+      return true;
+    }
     try {
       console.log(
         '[OpenTelemetryTracing] 🔍 Initializing advanced observability...'

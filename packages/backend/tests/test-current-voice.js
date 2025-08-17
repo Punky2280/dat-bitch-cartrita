@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const BASE_URL = 'http://localhost:8001';
 
-async function testCurrentVoiceSetup((error) {
+async function testCurrentVoiceSetup() {
   console.log('🔍 Testing Current Voice Setup Status\n');
 
   try {

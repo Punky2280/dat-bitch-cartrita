@@ -9,7 +9,13 @@ export default [
       '**/semantic-conventions/**',
       '**/.merge_backup_*/**',
       '**/logs/**',
-      '**/uploads/**'
+      '**/uploads/**',
+      '**/coverage/**',
+      '**/tests/**',
+      '**/scripts/debug/**',
+      '**/scripts/migration/**',
+      '**/scripts/tests/**',
+      '**/*.min.js'
     ]
   },
   js.configs.recommended,

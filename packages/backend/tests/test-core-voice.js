@@ -7,16 +7,13 @@ import path from 'path';
 const BASE_URL = 'http://localhost:8001';
 const WS_URL = 'ws://localhost:8001';
 
-// Test authentication token((error) {
-    // TODO: Implement method
-  }
+// Test authentication token
+const AUTH_TOKEN = 'test-token';
 
-  log((error) {
-    // TODO: Implement method
-  }
-
-  Date().toISOString();
-    const logMessage = `[${timestamp}] ${type.toUpperCase()}: ${message}`
+function log(type, message) {
+  const timestamp = new Date().toISOString();
+  const logMessage = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
+  console.log(logMessage);
 
     console.log(logMessage);
     this.testResults.push({ timestamp, type, message });

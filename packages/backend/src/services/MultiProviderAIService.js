@@ -181,11 +181,11 @@ class MultiProviderAIService {
     } else if (input.audio) {
       processed.modality = 'audio';
       processed.metadata.contentType = 'audio/wav';
+    } else if (input.image && input.textPrompt) {
+      processed.modality = 'multimodal';
     } else if (input.image) {
       processed.modality = 'image';
       processed.metadata.contentType = 'image/jpeg';
-    } else if (input.image && input.textPrompt) {
-      processed.modality = 'multimodal';
     }
 
     return processed;

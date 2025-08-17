@@ -298,7 +298,7 @@ agent.initialize();
     // First call should miss cache
     console.log(`   First context fetch (should miss cache)...`);
     const context1 = await agent.getEnhancedUserContext(
-      cacheTestUser)
+      cacheTestUser,
       'cache-test-1'
     );
 

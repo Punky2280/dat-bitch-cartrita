@@ -14,7 +14,7 @@ const agentUsageExamples = {
       'Look up the current stock price of Apple',
       'Research the history of the internet',
       'What happened in the news today?'
-
+    ]
   },
   
   writer: {
@@ -26,7 +26,7 @@ const agentUsageExamples = {
       'Draft a report on market trends',
       'Write a story about cats',
       'Create content for social media'
-
+    ]
   },
   
   comedian: {
@@ -38,7 +38,7 @@ const agentUsageExamples = {
       'Say something funny',
       'Create a humorous story',
       'Write a funny poem'
-
+    ]
   },
   
   codeWriter: {
@@ -50,7 +50,7 @@ const agentUsageExamples = {
       'Create a REST API',
       'Explain this algorithm',
       'Write SQL queries'
-
+    ]
   },
   
   scheduler: {
@@ -62,7 +62,7 @@ const agentUsageExamples = {
       'Add an appointment',
       'Find free time slots',
       'Set a reminder'
-
+    ]
   },
   
   artist: {
@@ -74,7 +74,7 @@ const agentUsageExamples = {
       'Generate creative ideas',
       'Make something artistic',
       'Create visual content'
-
+    ]
   },
   
   githubSearch: {
@@ -86,7 +86,7 @@ const agentUsageExamples = {
       'Look for JavaScript libraries',
       'Search for Python packages',
       'Find open source projects'
-
+    ]
   },
   
   ethicalDilemma: {
@@ -98,8 +98,8 @@ const agentUsageExamples = {
       'What are the ethical implications?',
       'Is this the right thing to do?',
       'Ethics of AI development'
-
-
+    ]
+  }
 };
 
 export default { agentUsageExamples };

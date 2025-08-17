@@ -504,6 +504,7 @@ METADATA:
       });
       return result.success ? result.analysis : null;
     } catch (error) {
+      console.error(`Vision analysis failed for type ${type}:`, error.message);
       throw error;
     }
   }

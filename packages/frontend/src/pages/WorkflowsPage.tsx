@@ -17,6 +17,7 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import { ExecutionLog, NodeDefinition } from "../types/workflow";
 import { gradients, semantic, colors } from "@/theme/tokens";
+import { WorkflowTemplatesHub } from "@/components/workflow/WorkflowTemplatesHub";
 
 interface WorkflowsPageProps {
   token: string;
@@ -58,7 +59,11 @@ const WorkflowBuilder: React.FC<{
   );
   const [showNodePalette, setShowNodePalette] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [executionLogs, setExecutionLogs] = useState<ExecutionLog[]>([]);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<any>(null);
+  const [activeView, setActiveView] = useState<'designer' | 'templates'>('designer');
   const [showLogs, setShowLogs] = useState(false);
   const [pollingTimeoutId, setPollingTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const { project } = useReactFlow();
@@ -679,45 +684,73 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
               </p>
             </div>
           </div>
-          <button
-            onClick={handleCreateWorkflow}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition-colors flex items-center space-x-2"
-          >
-            <span>➕</span>
-            <span>Create Workflow</span>
-          </button>
+          <div className="flex items-center space-x-4">
+            {/* View Switcher */}
+            <div className="flex items-center bg-slate-700 rounded-lg p-1">
+              <button
+                onClick={() => setActiveView('designer')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeView === 'designer'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-600'
+                }`}
+              >
+                Workflows
+              </button>
+              <button
+                onClick={() => setActiveView('templates')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeView === 'templates'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-600'
+                }`}
+              >
+                Templates
+              </button>
+            </div>
+            <button
+              onClick={handleCreateWorkflow}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition-colors flex items-center space-x-2"
+            >
+              <span>➕</span>
+              <span>Create Workflow</span>
+            </button>
+          </div>
         </div>
       </header>
 
       <div className="max-w-7xl mx-auto p-6">
-        {/* Search and Filters */}
-        <div className="mb-8 flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <input
-              type="text"
-              placeholder="Search workflows..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-          >
-            <option value="all">All Categories</option>
-            {categories
-              .filter((c) => c !== "all")
-              .map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-          </select>
-        </div>
-
-        {/* Templates Section */}
+        {/* Conditional View Rendering */}
+        {activeView === 'designer' ? (
+          <>
+            {/* Search and Filters */}
+            <div className="mb-8 flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <input
+                  type="text"
+                  placeholder="Search workflows..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              >
+                <option value="all">All Categories</option>
+                {categories
+                  .filter((c) => c !== "all")
+                  .map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            
+            {/* Templates Section */}
         {templates.length > 0 && (
           <div className="mb-12">
             <h2 className="text-2xl font-bold mb-6 flex items-center space-x-2">
@@ -939,8 +972,15 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
               ))}
             </div>
           )}
-        </div>
+          </>
+        ) : (
+          <div className="p-6">
+            <WorkflowTemplatesHub />
+          </div>
+        )}
       </div>
     </div>
   );
 };
+
+export default WorkflowsPage;

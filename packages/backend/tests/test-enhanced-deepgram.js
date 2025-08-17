@@ -11,9 +11,10 @@ dotenv.config();
 
 import fs from 'fs';
 import path from 'path';
-import DeepgramService from './src/services/DeepgramService';
+import DeepgramService from '../src/services/DeepgramService.js';
 
-async function testEnhancedDeepgram(console.log('🚀 Testing Enhanced Deepgram Service with Nova-3');
+async function testEnhancedDeepgram() {
+  console.log('🚀 Testing Enhanced Deepgram Service with Nova-3');
   console.log('================================================\n');
 
   // Test service status

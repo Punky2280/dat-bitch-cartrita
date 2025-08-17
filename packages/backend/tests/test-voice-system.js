@@ -3,14 +3,15 @@ import axios from 'axios';
 
 const BASE_URL = 'http://localhost:8001';
 
-async function testVoiceSystem((error) {
+async function testVoiceSystem() {
   console.log('🧪 Testing Cartrita Iteration 21 Voice System...\n');
 
   // Test 1: Basic backend connectivity
   try {
     const response = await axios.get(`${BASE_URL}/`);
     console.log('✅ Backend connectivity:', response.data.message);
-  } catch(console.error('❌ Backend connectivity failed:', error.message);
+  } catch (error) {
+    console.error('❌ Backend connectivity failed:', error.message);
     return;
 
   // Test 2: Voice-to-text endpoint) {

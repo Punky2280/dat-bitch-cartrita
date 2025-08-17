@@ -46,6 +46,14 @@ class ServiceInitializer {
    */
   async _performInitialization() {
     try {
+      const MINIMAL_MODE = process.env.MINIMAL_MODE === '1' || process.env.ENABLE_TELEMETRY === 'false';
+      
+      if (MINIMAL_MODE) {
+        console.log('[ServiceInitializer] 🧪 MINIMAL_MODE detected - skipping complex service initialization');
+        this.servicesInitialized = true;
+        return true;
+      }
+      
       console.log(
         '[ServiceInitializer] Starting Cartrita Iteration 21 service initialization...'
       );

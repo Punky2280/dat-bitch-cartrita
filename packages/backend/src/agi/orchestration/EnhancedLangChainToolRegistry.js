@@ -397,6 +397,16 @@ class EnhancedLangChainToolRegistry {
     );
 
     this.registerTool(
+      new DynamicStructuredTool({
+        name: 'data-analyzer',
+        description: 'Analyze data and provide insights',
+        schema: z.object({
+          data: z.string().describe('Data to analyze'),
+          analysisType: z.string().describe('Type of analysis to perform')
+        }),
+        func: async ({ data, analysisType }) => {
+          return `Analysis of ${data} using ${analysisType} method completed`;
+        }
       }),
       {
         category: 'analysis',

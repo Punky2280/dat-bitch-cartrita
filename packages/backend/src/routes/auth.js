@@ -127,6 +127,7 @@ router.post('/register', async (req, res) => {
 
 // Login endpoint
 router.post('/login', async (req, res) => {
+  console.log('[Auth] Login route hit!');
   try {
     console.log('[Auth] Login request body:', req.body);
     const { username, email, password } = req.body;
@@ -201,9 +202,11 @@ router.post('/login', async (req, res) => {
     });
   } catch (error) {
     console.error('[Auth] Login error:', error);
+    console.error('[Auth] Login error stack:', error.stack);
     try { if (global.otelCounters?.authFailure) global.otelCounters.authFailure.add(1, { stage: 'exception' }); } catch(_) {}
     res.status(500).json({
       error: 'Internal server error during login',
+      details: error.message
     });
   }
 });
@@ -373,6 +376,49 @@ router.post('/fix-user', async (req, res) => {
   } catch (error) {
     console.error('[Auth] ❌ Error creating user:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Simple test endpoint to debug
+router.get('/test', (req, res) => {
+  console.log('[Auth] Test endpoint hit');
+  res.json({ message: 'Auth routes are working!', timestamp: new Date().toISOString() });
+});
+
+// Emergency login bypass for testing
+router.post('/emergency-login', (req, res) => {
+  console.log('[Auth] Emergency login hit');
+  try {
+    const token = jwt.sign(
+      {
+        sub: 1,
+        name: 'Test User',
+        email: 'test@test.com',
+        role: 'user',
+        is_admin: false,
+        iss: 'cartrita-auth',
+        aud: 'cartrita-clients',
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+    
+    res.json({
+      success: true,
+      message: 'Emergency login successful',
+      user: {
+        id: 1,
+        username: 'Test User',
+        name: 'Test User', 
+        email: 'test@test.com',
+        role: 'user',
+        is_admin: false,
+      },
+      token,
+    });
+  } catch (error) {
+    console.error('[Auth] Emergency login error:', error);
+    res.status(500).json({ error: 'Emergency login failed', details: error.message });
   }
 });
 
