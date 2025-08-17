@@ -28,6 +28,7 @@ export default defineConfig({
     port: 3000,
     hmr: {
       port: 3000,
+      overlay: false,
     },
     proxy: {
       '/api': { 

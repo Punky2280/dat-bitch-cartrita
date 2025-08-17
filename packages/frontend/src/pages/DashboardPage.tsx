@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { ChatComponent } from "@/components/ChatComponent";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { WorkflowsPage } from "@/pages/WorkflowsPage";
+import { WorkflowTemplatesHub } from "@/components/workflow/WorkflowTemplatesHub";
 import KnowledgeHubPage from "@/pages/KnowledgeHubPage";
 import { ApiKeyVaultPage } from "@/pages/ApiKeyVaultPage";
 import { PersonalLifeOSPage } from "@/pages/PersonalLifeOSPage";
@@ -32,6 +33,7 @@ const DASHBOARD_VIEWS = [
   "chat",
   "settings",
   "workflows",
+  "workflow-templates",
   "knowledge",
   "vault",
   "manual",
@@ -307,6 +309,27 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
     );
   }
 
+  // Show workflow templates hub
+  if (currentView === "workflow-templates") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
+        <div className="container mx-auto">
+          <div className="flex items-center mb-6 pt-6">
+            <button
+              onClick={() => setCurrentView("chat")}
+              className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 mr-4"
+              title="Back to Chat"
+            >
+              <span>←</span>
+            </button>
+            <h1 className="text-2xl font-bold text-white">Workflow Templates Hub</h1>
+          </div>
+          <WorkflowTemplatesHub />
+        </div>
+      </div>
+    );
+  }
+
   // Show knowledge hub page
   if (currentView === "knowledge") {
     return (
@@ -441,6 +464,15 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
             </button>
 
             <button
+              onClick={() => setCurrentView("workflow-templates")}
+              className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 flex items-center space-x-2"
+              title="Workflow Templates"
+            >
+              <span>📋</span>
+              <span className="hidden sm:inline">Templates</span>
+            </button>
+
+            <button
               onClick={() => setCurrentView("knowledge")}
       className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 flex items-center space-x-2"
               title="Knowledge Hub"
@@ -572,6 +604,13 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
                 >
                   <span>🚀</span>
                   <span>Workflow Automation</span>
+                </button>
+                <button
+                  onClick={() => setCurrentView("workflow-templates")}
+                  className="w-full text-left p-3 rounded-lg hover:bg-slate-800/50 transition-colors flex items-center space-x-3"
+                >
+                  <span>📋</span>
+                  <span>Workflow Templates</span>
                 </button>
                 <button
                   onClick={() => setCurrentView("knowledge")}
