@@ -12,10 +12,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from '@/components/ui/use-toast';
-import { Star, Filter, Search, Play, Settings, Users, Eye, Heart } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/components/ui/use-toast';
+import { Star, Search, Play, Settings, Users, Heart } from 'lucide-react';
 
 interface TemplateCategory {
   id: number;
@@ -190,6 +189,7 @@ const InstantiateTemplateDialog: React.FC<{
     __workflow_description: `Created from template: ${template.name}`,
   });
   const [isInstantiating, setIsInstantiating] = useState(false);
+  const { toast } = useToast();
 
   const handleInstantiate = async () => {
     // Validate required fields
@@ -290,6 +290,7 @@ const RateTemplateDialog: React.FC<{
   const [rating, setRating] = useState(template.user_rating?.rating || 0);
   const [review, setReview] = useState(template.user_rating?.review || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = async () => {
     if (rating === 0) {
@@ -362,6 +363,7 @@ export const WorkflowTemplatesHub: React.FC<WorkflowTemplatesHubProps> = ({ toke
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const { toast } = useToast();
   const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'rating'>('popular');
   
   // Dialog states

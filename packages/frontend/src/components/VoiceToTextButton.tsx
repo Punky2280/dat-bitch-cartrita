@@ -7,7 +7,7 @@ import {
   getSupportedMimeType,
   logMediaDeviceInfo,
 } from "@/utils/mediaUtils";
-import { API_BASE_URL } from "../config/constants";
+import api from "../services/apiService";
 import { AudioVisualizer } from "./AudioVisualizer";
 import {
   MediaPermissionHandler,
@@ -171,32 +171,24 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
           formData.append("audio", audioBlob, "recording.webm");
           console.log("[VoiceToText] FormData created, sending request...");
 
-          const response = await fetch(
-            `${API_BASE_URL}/api/voice-to-text/transcribe`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-              body: formData,
-            },
+          const response = await api.postFormData(
+            "/api/voice-to-text/transcribe",
+            formData
           );
 
           console.log(
             "[VoiceToText] Response received:",
-            response.status,
-            response.statusText,
+            response.status
           );
 
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error("[VoiceToText] Error response:", errorText);
+          if (!response.success) {
+            console.error("[VoiceToText] Error response:", response.error);
             throw new Error(
-              `Transcription failed: ${response.status} ${response.statusText} - ${errorText}`,
+              `Transcription failed: ${response.status} - ${response.error}`,
             );
           }
 
-          const result = await response.json();
+          const result = response.data;
           console.log("[VoiceToText] Transcription result:", result);
 
           if (result.transcript) {

@@ -1,0 +1,84 @@
+# Cartrita V2 Multi-Agent OS Backend - Production Dockerfile
+FROM node:20-alpine AS base
+
+# Install dependencies needed for native modules and Python
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    cairo-dev \
+    jpeg-dev \
+    pango-dev \
+    musl-dev \
+    giflib-dev \
+    pixman-dev \
+    pangomm-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    dumb-init
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY packages/backend/package*.json ./packages/backend/
+COPY packages/shared/package*.json ./packages/shared/
+COPY packages/ui/package*.json ./packages/ui/
+COPY packages/config/package*.json ./packages/config/
+
+# Development stage
+FROM base AS development
+ENV NODE_ENV=development
+
+# Install all dependencies including devDependencies
+RUN npm ci --workspace=packages/backend --workspace=packages/shared --workspace=packages/ui --workspace=packages/config
+
+# Copy source code
+COPY . .
+
+# Create uploads directory with proper permissions
+RUN mkdir -p /app/uploads /app/logs && \
+    chown -R node:node /app/uploads /app/logs
+
+USER node
+
+EXPOSE 8001
+CMD ["dumb-init", "npm", "run", "dev:backend"]
+
+# Production dependencies stage
+FROM base AS prod-deps
+ENV NODE_ENV=production
+
+# Install only production dependencies
+RUN npm ci --workspace=packages/backend --workspace=packages/shared --workspace=packages/ui --workspace=packages/config --omit=dev
+
+# Production stage
+FROM base AS production
+ENV NODE_ENV=production
+
+# Copy production dependencies
+COPY --from=prod-deps /app/node_modules ./node_modules
+COPY --from=prod-deps /app/packages ./packages
+
+# Copy source code and configuration
+COPY packages/backend/src ./packages/backend/src
+COPY packages/backend/package.json ./packages/backend/
+COPY packages/shared ./packages/shared
+COPY packages/ui/dist ./packages/ui/dist
+COPY packages/config ./packages/config
+COPY db-init ./db-init
+COPY config ./config
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/uploads /app/logs /app/temp && \
+    chown -R node:node /app/uploads /app/logs /app/temp
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD node -e "const http=require('http');const req=http.request({hostname:'localhost',port:8001,path:'/health',timeout:5000},(res)=>{process.exit(res.statusCode===200?0:1)});req.on('error',()=>process.exit(1));req.end();"
+
+USER node
+
+EXPOSE 8001
+
+CMD ["dumb-init", "node", "packages/backend/src/index.js"]

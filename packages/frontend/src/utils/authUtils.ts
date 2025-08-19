@@ -1,67 +1,66 @@
 /**
  * Authentication Utilities
- * 🚨 TEMPORARY FRONTEND BYPASS IMPLEMENTATION
- * 
- * This file contains mock authentication utilities for frontend testing
- * while the backend auth system has critical issues.
+ * Real JWT token handling for backend authentication
  */
 
-export interface MockUser {
+export interface User {
   id: number;
   name: string;
   email: string;
   role: string;
   is_admin: boolean;
-  iss: string;
-  aud: string;
-  exp: number;
-  iat: number;
 }
 
 /**
- * Decode the mock token created by frontend bypass
+ * Decode JWT token payload (without verification - for client-side only)
  */
-export function decodeMockToken(token: string): MockUser | null {
+export function decodeJWT(token: string): any | null {
   try {
-    const decoded = JSON.parse(atob(token));
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
     
-    // Verify it's a mock token (has the bypass issuer)
-    if (decoded.iss === "cartrita-frontend-bypass") {
-      return decoded as MockUser;
-    }
-    
-    // If it's a real JWT token, we'd need proper JWT decoding
-    console.warn("⚠️ Received non-mock token, cannot decode with mock utilities");
-    return null;
+    return JSON.parse(jsonPayload);
   } catch (error) {
-    console.error("Failed to decode mock token:", error);
+    console.error("Failed to decode JWT token:", error);
     return null;
   }
 }
 
 /**
- * Check if the user is authenticated with a valid mock token
+ * Check if the user is authenticated with a valid JWT token
  */
 export function isAuthenticated(): boolean {
   const token = localStorage.getItem("token");
   if (!token) return false;
   
-  const user = decodeMockToken(token);
-  if (!user) return false;
+  const decoded = decodeJWT(token);
+  if (!decoded) return false;
   
   // Check if token is expired
   const now = Math.floor(Date.now() / 1000);
-  return user.exp > now;
+  return decoded.exp > now;
 }
 
 /**
- * Get current user data from stored token
+ * Get current user data from stored JWT token
  */
-export function getCurrentUser(): MockUser | null {
+export function getCurrentUser(): User | null {
   const token = localStorage.getItem("token");
   if (!token) return null;
   
-  return decodeMockToken(token);
+  const decoded = decodeJWT(token);
+  if (!decoded) return null;
+  
+  return {
+    id: decoded.sub,
+    name: decoded.name,
+    email: decoded.email,
+    role: decoded.role,
+    is_admin: decoded.is_admin
+  };
 }
 
 /**
@@ -75,7 +74,6 @@ export function logout(): void {
 
 /**
  * Get authorization header for API calls
- * Note: Most API calls will still fail due to backend auth issues
  */
 export function getAuthHeader(): Record<string, string> {
   const token = localStorage.getItem("token");
@@ -95,6 +93,6 @@ export function isAdmin(): boolean {
 }
 
 // Development helper to log current auth state
-if (process.env.NODE_ENV === 'development') {
+if (import.meta.env.DEV) {
   console.log("🔐 Auth Utils loaded - Current user:", getCurrentUser());
 }

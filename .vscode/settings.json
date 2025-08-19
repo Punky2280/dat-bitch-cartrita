@@ -22,5 +22,17 @@
     "**/node_modules": true,
     "**/dist": true,
     "**/.git": true
-  }
+  },
+  "githubPullRequests.ignoredPullRequestBranches": [
+    "main"
+  ],
+  "cSpell.words": [
+    "cartrita",
+    "hsts",
+    "linkify",
+    "Millis",
+    "sess",
+    "setex",
+    "sourcery"
+  ]
 }

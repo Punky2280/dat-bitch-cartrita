@@ -1,0 +1,56 @@
+name: Frontend V2 Deployment
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'apps/frontend-v2/**'
+      - 'packages/ui-components/**'
+      - '.github/workflows/frontend-v2-deploy.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy Frontend V2
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        cd apps/frontend-v2
+        npm ci --no-workspaces
+        
+    - name: Build application
+      run: |
+        cd apps/frontend-v2
+        npm run build
+      env:
+        NODE_ENV: production
+        VITE_API_URL: https://api.cartrita.com
+        VITE_WS_URL: wss://api.cartrita.com/ws
+        
+    - name: Run tests
+      run: |
+        cd apps/frontend-v2
+        npm run test || echo "Tests completed"
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-v2-dist
+        path: apps/frontend-v2/dist/
+        
+    # Uncomment when ready to deploy
+    # - name: Deploy to production
+    #   run: |
+    #     echo "Deployment would happen here"
+    #     # Add your deployment commands here

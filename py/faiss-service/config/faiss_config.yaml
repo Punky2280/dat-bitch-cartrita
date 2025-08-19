@@ -1,0 +1,6 @@
+# FAISS Service Configuration
+vector_dimension: 1536
+index_type: "hnsw"
+ef_construction: 200
+ef_search: 100
+max_elements: 1000000

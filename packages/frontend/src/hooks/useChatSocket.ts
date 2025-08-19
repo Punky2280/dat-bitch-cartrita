@@ -23,6 +23,9 @@ export const useChatSocket = (token: string, options: UseChatSocketOptions) => {
   const socketRef = useRef<Socket | null>(null);
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stableHandlersRef = useRef(options);
+  const lastTokenRef = useRef<string | null>(null);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const maxRetryAttempts = 5;
 
   const startPingMonitoring = useCallback(() => {
     if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
@@ -64,7 +67,42 @@ export const useChatSocket = (token: string, options: UseChatSocketOptions) => {
       console.warn('🔒 Skipping socket connect: malformed token');
       return;
     }
-    const socket = io(SOCKET_URL, { ...SOCKET_CONFIG, auth: { token } });
+    
+    // Skip if token hasn't actually changed or if socket is connecting/connected
+    if (lastTokenRef.current === token && socketRef.current) {
+      if (socketRef.current.connected || socketRef.current.connecting) {
+        console.log('🔗 Token unchanged and socket active, skipping reconnection');
+        return;
+      }
+    }
+    
+    lastTokenRef.current = token;
+    
+    // Properly cleanup existing socket before creating new one
+    if (socketRef.current) {
+      console.log('🔌 Cleaning up existing socket before reconnection...');
+      socketRef.current.removeAllListeners();
+      if (socketRef.current.connected) {
+        socketRef.current.disconnect();
+      }
+      socketRef.current = null;
+    }
+    
+    console.log('🔗 Creating new socket connection...');
+    console.log('🔗 Socket URL:', SOCKET_URL);
+    
+    // Enhanced socket configuration with better error handling
+    const socketConfig = {
+      ...SOCKET_CONFIG,
+      auth: { token },
+      // Add query params for better debugging
+      query: {
+        version: '1.0.0',
+        client: 'web'
+      }
+    };
+    
+    const socket = io(SOCKET_URL, socketConfig);
     socketRef.current = socket;
 
     socket.on("connect", () => {
@@ -93,7 +131,24 @@ export const useChatSocket = (token: string, options: UseChatSocketOptions) => {
 
     socket.on("connect_error", (error: any) => {
       console.error("🚨 Connect error:", error);
-      setConnectionError("Connection failed, please try again later.");
+      
+      // Enhanced error handling based on error type
+      let errorMessage = "Connection failed";
+      if (error.message?.includes('ECONNREFUSED')) {
+        errorMessage = "Server is not available. Please check if the backend is running.";
+      } else if (error.message?.includes('timeout')) {
+        errorMessage = "Connection timed out. Please try again.";
+      } else if (error.type === 'TransportError') {
+        errorMessage = "Network connection failed. Please check your internet connection.";
+      } else {
+        errorMessage = `Connection failed: ${error.message || error.type || 'Unknown error'}`;
+      }
+      
+      setConnectionError(errorMessage);
+      setConnectionStats(prev => ({
+        ...prev,
+        reconnectAttempts: prev.reconnectAttempts + 1
+      }));
     });
 
     socket.on("pong", (startTime: number) => {
@@ -114,10 +169,27 @@ export const useChatSocket = (token: string, options: UseChatSocketOptions) => {
     });
 
     return () => {
-      socket.disconnect();
-      if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
+      console.log('🔌 Cleaning up socket connection...');
+      try {
+        if (socket) {
+          socket.removeAllListeners();
+          if (socket.connected) {
+            socket.disconnect();
+          }
+        }
+      } catch (error) {
+        console.warn('Error during socket cleanup:', error);
+      }
+      if (pingIntervalRef.current) {
+        clearInterval(pingIntervalRef.current);
+        pingIntervalRef.current = null;
+      }
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
     };
-  }, [token, handleIncomingMessage, startPingMonitoring]);
+  }, [token, SOCKET_URL]);
 
   const sendMessage = useCallback((text: string, language = "en") => {
     if (!socketRef.current?.connected) return;
@@ -133,6 +205,34 @@ export const useChatSocket = (token: string, options: UseChatSocketOptions) => {
     setConnectionError(null);
   }, []);
 
+  const retryConnection = useCallback(() => {
+    if (!token || connectionStats.reconnectAttempts >= maxRetryAttempts) {
+      console.log('🚫 Max retry attempts reached or no token available');
+      return;
+    }
+
+    console.log(`🔄 Retrying connection (attempt ${connectionStats.reconnectAttempts + 1}/${maxRetryAttempts})`);
+    setConnectionError(null);
+    
+    // Force cleanup of existing socket
+    if (socketRef.current) {
+      socketRef.current.removeAllListeners();
+      if (socketRef.current.connected) {
+        socketRef.current.disconnect();
+      }
+      socketRef.current = null;
+    }
+    
+    // Reset token ref to force reconnection
+    lastTokenRef.current = null;
+    
+    // Trigger reconnection with a small delay
+    retryTimeoutRef.current = setTimeout(() => {
+      // This will trigger the useEffect to create a new connection
+      lastTokenRef.current = token;
+    }, 1000);
+  }, [token, connectionStats.reconnectAttempts, maxRetryAttempts]);
+
   return {
     socket: socketRef.current,
     isConnected,
@@ -141,5 +241,6 @@ export const useChatSocket = (token: string, options: UseChatSocketOptions) => {
     isTyping,
     sendMessage,
     clearConnectionError,
+    retryConnection,
   };
 };

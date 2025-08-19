@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import ReactFlow, {
   Node,
   Edge,
@@ -12,11 +12,8 @@ import ReactFlow, {
   ConnectionMode,
   Panel,
   ReactFlowProvider,
-  useReactFlow,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { ExecutionLog, NodeDefinition } from "../types/workflow";
-import { gradients, semantic, colors } from "@/theme/tokens";
 import { WorkflowTemplatesHub } from "@/components/workflow/WorkflowTemplatesHub";
 
 interface WorkflowsPageProps {
@@ -40,691 +37,326 @@ interface Workflow {
   updated_at: string;
 }
 
-interface NodeCategories {
-  [key: string]: NodeDefinition[];
-}
 
 const WorkflowBuilder: React.FC<{
   workflow: Workflow | null;
   onSave: (workflow: any) => void;
   token: string;
-  nodeTypes: NodeCategories;
-}> = ({ workflow, onSave, token, nodeTypes }) => {
-  const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const [nodes, setNodes, onNodesChange] = useNodesState(
-    workflow?.workflow_data.nodes || [],
-  );
-  const [edges, setEdges, onEdgesChange] = useEdgesState(
-    workflow?.workflow_data.edges || [],
-  );
-  const [showNodePalette, setShowNodePalette] = useState(false);
-  const [isExecuting, setIsExecuting] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [executionLogs, setExecutionLogs] = useState<ExecutionLog[]>([]);
-  const [selectedWorkflow, setSelectedWorkflow] = useState<any>(null);
-  const [activeView, setActiveView] = useState<'designer' | 'templates'>('designer');
-  const [showLogs, setShowLogs] = useState(false);
-  const [pollingTimeoutId, setPollingTimeoutId] = useState<NodeJS.Timeout | null>(null);
-  const { project } = useReactFlow();
-
-  // Cleanup polling on unmount
-  useEffect(() => {
-    return () => {
-      if (pollingTimeoutId) {
-        clearTimeout(pollingTimeoutId);
-      }
-    };
-  }, [pollingTimeoutId]);
+}> = ({ workflow, onSave }) => {
+  const [nodes, , onNodesChange] = useNodesState(workflow?.workflow_data?.nodes || []);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(workflow?.workflow_data?.edges || []);
 
   const onConnect = useCallback(
-    (params: Edge | Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges],
+    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+    [setEdges]
   );
 
-  const onDragOver = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-  }, []);
-
-  const onDrop = useCallback(
-    (event: React.DragEvent) => {
-      event.preventDefault();
-
-      const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
-      const nodeTypeData = event.dataTransfer.getData("application/reactflow");
-
-      if (nodeTypeData && reactFlowBounds) {
-        const nodeType: NodeDefinition = JSON.parse(nodeTypeData);
-        const position = project({
-          x: event.clientX - reactFlowBounds.left,
-          y: event.clientY - reactFlowBounds.top,
-        });
-
-        const newNode: Node = {
-          id: `${nodeType.type}_${Date.now()}`,
-          type: "default",
-          position,
-          data: {
-            label: nodeType.name,
-            nodeType: nodeType.type,
-            icon: nodeType.icon,
-            description: nodeType.description,
-            config: getDefaultConfig(nodeType.type),
-          },
-          style: {
-            background: getNodeColor(nodeType.type),
-            border: `2px solid ${semantic.border}`,
-            borderRadius: "12px",
-            fontSize: "12px",
-            fontWeight: "bold",
-            color: semantic.textInverted,
-            width: 180,
-            height: 80,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-          },
-        };
-
-        setNodes((nds) => nds.concat(newNode));
-      }
-    },
-    [project, setNodes],
-  );
-
-  const getNodeColor = (nodeType: string): string => {
-    if (nodeType.startsWith("trigger")) return gradients.trigger;
-    if (nodeType.startsWith("ai-")) return gradients.ai;
-    if (nodeType.startsWith("rag-")) return gradients.rag;
-    if (nodeType.startsWith("mcp-")) return gradients.mcp;
-    if (nodeType.startsWith("http-") || nodeType.includes("integration")) return gradients.http;
-    if (nodeType.startsWith("logic-")) return gradients.logic;
-    if (nodeType.startsWith("data-")) return gradients.data;
-    return gradients.fallback;
-  };
-
-  const getDefaultConfig = (nodeType: string): any => {
-    const configs: { [key: string]: any } = {
-      "ai-gpt4": {
-        model: "gpt-4",
-        prompt: "You are a helpful assistant. Please respond to: {{input}}",
-        temperature: 0.7,
-      },
-      "ai-claude": {
-        model: "claude-3-sonnet",
-        prompt: "You are a helpful assistant. Please respond to: {{input}}",
-        temperature: 0.7,
-      },
-      "http-request": {
-        method: "GET",
-        url: "https://api.example.com",
-        headers: {},
-      },
-      "rag-search": { query: "{{input}}", top_k: 5 },
-      "logic-condition": {
-        condition: "data.value > 0",
-        true_value: "positive",
-        false_value: "negative",
-      },
-    };
-    return configs[nodeType] || {};
-  };
-
-  const handleSave = async () => {
+  const handleSave = () => {
     const workflowData = {
-      name: workflow?.name || "New Workflow",
-      description: workflow?.description || "",
-      workflow_data: { nodes, edges },
-      category: workflow?.category || "custom",
-      tags: workflow?.tags || [],
+      ...workflow,
+      workflow_data: { nodes, edges }
     };
-
     onSave(workflowData);
   };
 
-  const handleExecute = async () => {
-    if (!workflow?.id) return;
-
-    setIsExecuting(true);
-    setExecutionLogs([]);
-    setShowLogs(true);
-
-    try {
-      const response = await fetch(`/api/workflows/${workflow.id}/execute`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ input_data: { message: "Test execution" } }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Poll for execution status
-        pollExecutionStatus(result.execution.id);
-      } else {
-        setExecutionLogs([{
-          level: "error",
-          message: result.error || "Failed to start workflow execution",
-          timestamp: new Date().toISOString()
-        }]);
-        setIsExecuting(false);
-      }
-    } catch (error) {
-      console.error("Execution failed:", error);
-      setExecutionLogs([{
-        level: "error",
-        message: `Execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        timestamp: new Date().toISOString()
-      }]);
-      setIsExecuting(false);
-    }
-  };
-
-  const pollExecutionStatus = async (executionId: string) => {
-    try {
-      const response = await fetch(`/api/workflows/executions/${executionId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        const execution = result.execution;
-
-        if (execution.status === "running") {
-          // Continue polling with cleanup
-          const timeoutId = setTimeout(() => pollExecutionStatus(executionId), 1000);
-          setPollingTimeoutId(timeoutId);
-        } else {
-          // Execution completed
-          setIsExecuting(false);
-          setExecutionLogs(execution.execution_logs || []);
-          
-          // Clear polling timeout
-          if (pollingTimeoutId) {
-            clearTimeout(pollingTimeoutId);
-            setPollingTimeoutId(null);
-          }
-        }
-      } else {
-        setExecutionLogs([{
-          level: "error",
-          message: result.error || "Failed to get execution status",
-          timestamp: new Date().toISOString()
-        }]);
-        setIsExecuting(false);
-      }
-    } catch (error) {
-      console.error("Polling failed:", error);
-      setExecutionLogs(prev => [...prev, {
-        level: "error",
-        message: `Polling failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        timestamp: new Date().toISOString()
-      }]);
-      setIsExecuting(false);
-      
-      // Clear polling timeout on error
-      if (pollingTimeoutId) {
-        clearTimeout(pollingTimeoutId);
-        setPollingTimeoutId(null);
-      }
-    }
-  };
-
-  const [isNarrow, setIsNarrow] = useState(false);
-  useEffect(()=>{
-    const handler = ()=> setIsNarrow(window.innerWidth < 640);
-    handler();
-    window.addEventListener('resize', handler);
-    return ()=> window.removeEventListener('resize', handler);
-  }, []);
-
-  if(isNarrow){
-    return (
-      <div className="min-h-screen bg-slate-900 text-white flex flex-col">
-        <div className="p-4 flex items-center justify-between border-b border-slate-700">
-          <button onClick={()=> window.history.back()} className="text-slate-400 hover:text-white">← Back</button>
-          <span className="text-sm text-slate-500">Mobile View</span>
-        </div>
-        <div className="p-6 space-y-4">
-          <h2 className="text-xl font-semibold">Workflow Builder Unavailable on Small Screens</h2>
-          <p className="text-sm text-slate-400 leading-relaxed">Editing complex graphs is disabled below the small (640px) breakpoint for usability. View execution history & metadata from the Workflows list instead. Rotate your device or use a larger screen to edit.</p>
-          <button onClick={()=> setShowLogs(!showLogs)} className="px-4 py-2 bg-slate-700 rounded-lg text-sm">{showLogs? 'Hide Logs':'Show Logs'}</button>
-          {showLogs && (
-            <div className="border border-slate-700 rounded-lg p-4 max-h-64 overflow-y-auto text-xs space-y-2">
-              {executionLogs.length===0 && <div className="text-slate-500">No logs yet.</div>}
-              {executionLogs.map((l,i)=> <div key={i} className="bg-slate-800/60 px-2 py-1 rounded">{l.timestamp} – {l.message}</div>)}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="h-screen bg-slate-900 flex">
-      {/* Node Palette */}
-      <div
-  className={`bg-slate-800 border-r border-slate-700 transition-all duration-300 ${
-          showNodePalette ? "w-80" : "w-16"
-        }`}
+    <div className="h-full w-full">
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        connectionMode={ConnectionMode.Loose}
+        fitView
       >
-        <div className="p-4">
+        <Background />
+        <Controls />
+        <MiniMap />
+        <Panel position="top-right">
           <button
-            onClick={() => setShowNodePalette(!showNodePalette)}
-            className="w-full flex items-center justify-center p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+            onClick={handleSave}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
-            <span className="text-xl">🧩</span>
-            {showNodePalette && (
-              <span className="ml-2 font-semibold">Node Palette</span>
-            )}
+            Save Workflow
           </button>
-        </div>
-
-        {showNodePalette && (
-          <div className="px-4 pb-4 overflow-y-auto h-full">
-            {Object.entries(nodeTypes).map(([category, types]) => (
-              <div key={category} className="mb-6">
-                <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">
-                  {category}
-                </h3>
-                <div className="space-y-2">
-                  {types.map((nodeType) => (
-                    <div
-                      key={nodeType.type}
-                      draggable
-                      onDragStart={(event) => {
-                        event.dataTransfer.setData(
-                          "application/reactflow",
-                          JSON.stringify(nodeType),
-                        );
-                        event.dataTransfer.effectAllowed = "move";
-                      }}
-                      className="p-3 bg-slate-700 hover:bg-slate-600 rounded-lg cursor-grab active:cursor-grabbing transition-colors border border-slate-600 hover:border-blue-400"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <span className="text-lg">{nodeType.icon}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-white truncate">
-                            {nodeType.name}
-                          </p>
-                          <p className="text-xs text-slate-400 truncate">
-                            {nodeType.description}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Main Workflow Canvas */}
-      <div className="flex-1 relative">
-        <div ref={reactFlowWrapper} className="w-full h-full">
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onDrop={onDrop}
-            onDragOver={onDragOver}
-            connectionMode={ConnectionMode.Loose}
-            fitView
-            style={{ background: semantic.bg }}
-          >
-            <Background
-              color={colors.gray500}
-              gap={20}
-              size={1}
-              style={{ backgroundColor: semantic.bg }}
-            />
-            <Controls />
-            <MiniMap
-              style={{
-                backgroundColor: semantic.bgAlt,
-                border: `1px solid ${semantic.border}`,
-              }}
-              nodeColor={() => semantic.focus}
-            />
-
-            {/* Top Toolbar */}
-            <Panel position="top-right" className="flex space-x-2">
-              <button
-                onClick={handleSave}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
-              >
-                <span>💾</span>
-                <span>Save</span>
-              </button>
-
-              <button
-                onClick={handleExecute}
-                disabled={isExecuting || !workflow?.id}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
-              >
-                <span>{isExecuting ? "⏳" : "▶️"}</span>
-                <span>{isExecuting ? "Executing..." : "Execute"}</span>
-              </button>
-
-              <button
-                onClick={() => setShowLogs(!showLogs)}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
-              >
-                <span>📋</span>
-                <span>Logs</span>
-              </button>
-            </Panel>
-          </ReactFlow>
-        </div>
-
-        {/* Execution Logs Panel */}
-        {showLogs && (
-      <div className="absolute bottom-0 left-0 right-0 h-64 bg-slate-800 border-t border-slate-700 p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">
-                Execution Logs
-              </h3>
-              <button
-                onClick={() => setShowLogs(false)}
-        className="text-slate-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="overflow-y-auto h-40 space-y-2">
-              {executionLogs.map((log, index) => (
-                <div
-                  key={index}
-                  className={`p-2 rounded text-sm ${
-                    log.level === "error"
-                      ? "bg-red-900/50 text-red-200"
-                      : log.level === "success"
-                        ? "bg-green-900/50 text-green-200"
-        : "bg-slate-700 text-slate-200"
-                  }`}
-                >
-      <span className="text-slate-400 text-xs">{log.timestamp}</span>
-                  <span className="ml-2 font-medium">{log.message}</span>
-                  {log.nodeId && (
-        <span className="ml-2 text-xs text-slate-400">
-                      ({log.nodeId})
-                    </span>
-                  )}
-                </div>
-              ))}
-      {executionLogs.length === 0 && (
-        <div className="text-slate-400 text-center py-8">
-                  No execution logs yet. Run a workflow to see logs here.
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+        </Panel>
+      </ReactFlow>
     </div>
   );
 };
 
-export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
-  token,
-  onBack,
-}) => {
-  const [workflows, setWorkflows] = useState<Workflow[]>([]);
-  const [templates, setTemplates] = useState<Workflow[]>([]);
-  const [nodeTypes, setNodeTypes] = useState<NodeCategories>({});
-  const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(
-    null,
-  );
-  const [showHistoryFor, setShowHistoryFor] = useState<string | null>(null);
-  interface ExecutionRow { id: string; status: string; started_at: string; completed_at?: string; error?: string; }
-  const [executions, setExecutions] = useState<ExecutionRow[]>([]);
-  const [loadingExecutions, setLoadingExecutions] = useState(false);
-  const [showBuilder, setShowBuilder] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-
-  useEffect(() => {
-    loadData();
-  }, [token]);
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const [workflowsRes, templatesRes, nodeTypesRes] = await Promise.all([
-        fetch("/api/workflows", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch("/api/workflows/templates", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch("/api/workflows/node-types", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
-
-      const [workflowsData, templatesData, nodeTypesData] = await Promise.all([
-        workflowsRes.json(),
-        templatesRes.json(),
-        nodeTypesRes.json(),
-      ]);
-
-      if (workflowsData.success) setWorkflows(workflowsData.workflows);
-      if (templatesData.success) setTemplates(templatesData.templates);
-      if (nodeTypesData.success) setNodeTypes(nodeTypesData.nodeTypes);
-    } catch (error) {
-      console.error("Failed to load data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreateWorkflow = () => {
-    const newWorkflow: Workflow = {
-      id: 0,
-      name: "New Workflow",
-      description: "A new workflow",
-      workflow_data: { nodes: [], edges: [] },
-      category: "custom",
-      tags: [],
-      is_active: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    setSelectedWorkflow(newWorkflow);
-    setShowBuilder(true);
-  };
-
-  const handleUseTemplate = (template: Workflow) => {
-    const newWorkflow: Workflow = {
-      ...template,
-      id: 0,
-      name: `${template.name} (Copy)`,
-      is_template: false,
-    };
-    setSelectedWorkflow(newWorkflow);
-    setShowBuilder(true);
-  };
-
-  const handleSaveWorkflow = async (workflowData: any) => {
-    try {
-      const url = selectedWorkflow?.id
-        ? `/api/workflows/${selectedWorkflow.id}`
-        : "/api/workflows";
-      const method = selectedWorkflow?.id ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(workflowData),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        loadData();
-        setShowBuilder(false);
-        setSelectedWorkflow(null);
-      }
-    } catch (error) {
-      console.error("Failed to save workflow:", error);
-    }
-  };
-
-  const handleDeleteWorkflow = async (workflowId: number) => {
-    if (!confirm("Are you sure you want to delete this workflow?")) return;
-
-    try {
-      const response = await fetch(`/api/workflows/${workflowId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        loadData();
-      }
-    } catch (error) {
-      console.error("Failed to delete workflow:", error);
-    }
-  };
-
-  const filteredWorkflows = workflows.filter((workflow) => {
-    const matchesSearch =
-      workflow.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      workflow.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "all" || workflow.category === selectedCategory;
+const WorkflowsList: React.FC<{
+  workflows: Workflow[];
+  onEdit: (workflow: Workflow) => void;
+  onDelete: (id: number) => void;
+  searchTerm: string;
+  selectedCategory: string;
+}> = ({ workflows, onEdit, onDelete, searchTerm, selectedCategory }) => {
+  const filteredWorkflows = workflows.filter(workflow => {
+    const matchesSearch = workflow.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         workflow.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || workflow.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const categories = [...new Set(workflows.map((w) => w.category)), "all"];
-
-  // Fetch execution history when showHistoryFor changes
-  useEffect(()=>{
-    if(!showHistoryFor) return;
-    let abort = false;
-    const fetchExecutions = async ()=>{
-      setLoadingExecutions(true);
-      try {
-        const res = await fetch(`/api/workflows/${showHistoryFor}/executions?limit=15`, { headers: { Authorization: `Bearer ${token}` }});
-        const data = await res.json();
-        if(!abort && data.executions){
-          setExecutions(data.executions.map((e:any)=>({ id: e.id, status: e.status || 'unknown', started_at: e.started_at || e.created_at, completed_at: e.completed_at, error: e.error })));
-        }
-      } catch (e){ /* silent */ }
-      finally { if(!abort) setLoadingExecutions(false); }
-    };
-    fetchExecutions();
-    const interval = setInterval(fetchExecutions, 10000);
-    return ()=>{ abort = true; clearInterval(interval); };
-  }, [showHistoryFor, token]);
-
-  const statusPill = (status:string)=>{
-    const map: Record<string,string> = { pending: 'bg-slate-700 text-slate-200', running:'bg-blue-600 text-white', completed:'bg-green-600 text-white', failed:'bg-red-600 text-white', canceled:'bg-yellow-600 text-white' };
-    const cls = map[status] || 'bg-slate-600 text-slate-200';
-    return <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${cls}`}>{status}</span>;
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="text-white text-xl mt-4">Loading Workflow System...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (showBuilder) {
-    return (
-      <ReactFlowProvider>
-        <WorkflowBuilder
-          workflow={selectedWorkflow}
-          onSave={handleSaveWorkflow}
-          token={token}
-          nodeTypes={nodeTypes}
-        />
-      </ReactFlowProvider>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
-      {/* Header */}
-      <header className="bg-slate-800 border-b border-slate-700 p-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={onBack}
-              className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-700"
-            >
-              ← Back
-            </button>
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-                🚀 Workflow Automation
-              </h1>
-              <p className="text-slate-400 mt-1">
-                Build powerful AI workflows, RAG pipelines, and multi-agent
-                automations
-              </p>
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {filteredWorkflows.map((workflow) => (
+        <div key={workflow.id} className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="text-lg font-semibold text-white">{workflow.name}</h3>
+            <div className="flex gap-2">
+              <button
+                onClick={() => onEdit(workflow)}
+                className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => onDelete(workflow.id)}
+                className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+              >
+                Delete
+              </button>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            {/* View Switcher */}
-            <div className="flex items-center bg-slate-700 rounded-lg p-1">
-              <button
-                onClick={() => setActiveView('designer')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeView === 'designer'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-600'
-                }`}
+          <p className="text-slate-300 text-sm mb-4">{workflow.description}</p>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {workflow.tags.map((tag, index) => (
+              <span
+                key={index}
+                className="px-2 py-1 bg-slate-700 text-slate-300 rounded text-xs"
               >
-                Workflows
-              </button>
-              <button
-                onClick={() => setActiveView('templates')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeView === 'templates'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-600'
-                }`}
-              >
-                Templates
-              </button>
+                {tag}
+              </span>
+            ))}
+          </div>
+          <div className="flex justify-between items-center text-xs text-slate-400">
+            <span>Category: {workflow.category}</span>
+            <span className={workflow.is_active ? 'text-green-400' : 'text-red-400'}>
+              {workflow.is_active ? 'Active' : 'Inactive'}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const ExecutionMonitor: React.FC<{
+  executions: any[];
+  loadingExecutions: boolean;
+}> = ({ executions, loadingExecutions }) => {
+  const statusPill = (status: string) => {
+    const statusColors = {
+      completed: 'bg-green-500',
+      running: 'bg-blue-500',
+      failed: 'bg-red-500',
+      pending: 'bg-yellow-500'
+    };
+    
+    return (
+      <span className={`px-2 py-1 rounded text-xs text-white ${statusColors[status as keyof typeof statusColors] || 'bg-gray-500'}`}>
+        {status}
+      </span>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold text-white">Execution Monitor</h2>
+      
+      {loadingExecutions ? (
+        <div className="text-center text-slate-400">Loading executions...</div>
+      ) : (
+        <div className="space-y-4">
+          {executions.length === 0 ? (
+            <div className="text-center text-slate-500">No executions yet.</div>
+          ) : (
+            <div className="space-y-3">
+              {executions.map(execution => {
+                const duration = (execution.started_at && execution.completed_at) 
+                  ? ((new Date(execution.completed_at).getTime() - new Date(execution.started_at).getTime()) / 1000).toFixed(2) + 's'
+                  : '—';
+
+                return (
+                  <div key={execution.id} className="border border-slate-700 rounded-lg p-4 bg-slate-800/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-mono text-sm">{execution.id.slice(0, 8)}</span>
+                      {statusPill(execution.status)}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-slate-400">
+                      <div>Start: {execution.started_at ? new Date(execution.started_at).toLocaleTimeString() : '—'}</div>
+                      <div>End: {execution.completed_at ? new Date(execution.completed_at).toLocaleTimeString() : '—'}</div>
+                      <div>Duration: {duration}</div>
+                    </div>
+                    {execution.error && (
+                      <div className="mt-2 text-red-400 text-sm truncate" title={execution.error}>
+                        {execution.error}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-            <button
-              onClick={handleCreateWorkflow}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition-colors flex items-center space-x-2"
-            >
-              <span>➕</span>
-              <span>Create Workflow</span>
-            </button>
+          )}
+          
+          <div className="mt-6 p-4 bg-slate-800/60 border border-slate-700 rounded">
+            <div className="text-sm text-slate-400 mb-2">Auto-refresh every 10s (MVP polling)</div>
+            <div className="text-sm text-slate-400">Upcoming Monitoring Enhancements:</div>
+            <ul className="mt-2 text-sm text-slate-300 space-y-1 list-disc list-inside">
+              <li>Real-time streaming via SSE/WebSocket</li>
+              <li>Node-level progress & timeline visualization</li>
+              <li>Log streaming with auto-scroll & filters</li>
+            </ul>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const WorkflowsPage: React.FC<WorkflowsPageProps> = ({ token, onBack }) => {
+  const [activeView, setActiveView] = useState<'designer' | 'monitor' | 'templates'>('templates');
+  const [workflows, setWorkflows] = useState<Workflow[]>([]);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [executions, setExecutions] = useState<any[]>([]);
+  const [loadingExecutions, setLoadingExecutions] = useState(false);
+
+  // Fetch workflows
+  const fetchWorkflows = async () => {
+    try {
+      const response = await fetch('/api/workflows', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setWorkflows(data);
+      }
+    } catch (error) {
+      console.error('Error fetching workflows:', error);
+    }
+  };
+
+  // Fetch executions
+  const fetchExecutions = async () => {
+    setLoadingExecutions(true);
+    try {
+      const response = await fetch('/api/workflows/executions', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setExecutions(data);
+      }
+    } catch (error) {
+      console.error('Error fetching executions:', error);
+    } finally {
+      setLoadingExecutions(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchWorkflows();
+    if (activeView === 'monitor') {
+      fetchExecutions();
+      const interval = setInterval(fetchExecutions, 10000); // Auto-refresh every 10s
+      return () => clearInterval(interval);
+    }
+  }, [activeView]);
+
+  const handleSaveWorkflow = async (workflowData: any) => {
+    try {
+      const url = workflowData.id ? `/api/workflows/${workflowData.id}` : '/api/workflows';
+      const method = workflowData.id ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(workflowData)
+      });
+
+      if (response.ok) {
+        fetchWorkflows();
+        setSelectedWorkflow(null);
+        setActiveView('templates');
+      }
+    } catch (error) {
+      console.error('Error saving workflow:', error);
+    }
+  };
+
+  const handleDeleteWorkflow = async (id: number) => {
+    try {
+      const response = await fetch(`/api/workflows/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        fetchWorkflows();
+      }
+    } catch (error) {
+      console.error('Error deleting workflow:', error);
+    }
+  };
+
+  const categories = ['all', ...Array.from(new Set(workflows.map(w => w.category)))];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      {/* Header */}
+      <header className="border-b border-slate-700 bg-slate-800/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={onBack}
+                className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back
+              </button>
+              <h1 className="text-2xl font-bold text-white">Workflow Management</h1>
+            </div>
+            
+            <nav className="flex gap-2">
+              {[
+                { key: 'templates', label: 'Templates', icon: '📋' },
+                { key: 'designer', label: 'Designer', icon: '🎨' },
+                { key: 'monitor', label: 'Monitor', icon: '📊' }
+              ].map(({ key, label, icon }) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveView(key as any)}
+                  className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+                    activeView === key
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }`}
+                >
+                  <span>{icon}</span>
+                  {label}
+                </button>
+              ))}
+            </nav>
           </div>
         </div>
       </header>
 
       <div className="max-w-7xl mx-auto p-6">
-        {/* Conditional View Rendering */}
-        {activeView === 'designer' ? (
-          <>
+        {activeView === 'designer' && (
+          <div className="space-y-6">
             {/* Search and Filters */}
-            <div className="mb-8 flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <input
                   type="text"
@@ -739,241 +371,53 @@ export const WorkflowsPage: React.FC<WorkflowsPageProps> = ({
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
               >
-                <option value="all">All Categories</option>
-                {categories
-                  .filter((c) => c !== "all")
-                  .map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category === 'all' ? 'All Categories' : category}
+                  </option>
+                ))}
               </select>
+              <button
+                onClick={() => {
+                  setSelectedWorkflow(null);
+                  setActiveView('designer');
+                }}
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                + New Workflow
+              </button>
             </div>
-            
-            {/* Templates Section */}
-        {templates.length > 0 && (
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold mb-6 flex items-center space-x-2">
-              <span>📚</span>
-              <span>Workflow Templates</span>
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {templates.map((template) => (
-                <div
-                  key={template.id}
-                  className="bg-slate-800 border border-slate-700 rounded-xl p-6 hover:border-blue-500 transition-colors"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-2">
-                        {template.name}
-                      </h3>
-                      <p className="text-slate-400 text-sm">
-                        {template.description}
-                      </p>
-                    </div>
-                    <span className="px-3 py-1 bg-blue-600 text-blue-100 rounded-full text-xs font-medium">
-                      {template.category}
-                    </span>
-                  </div>
 
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {template.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="px-2 py-1 bg-slate-700 text-slate-300 rounded text-xs"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={() => handleUseTemplate(template)}
-                    className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg font-semibold transition-all transform hover:scale-105"
-                  >
-                    Use Template
-                  </button>
+            {selectedWorkflow ? (
+              <ReactFlowProvider>
+                <div className="h-[600px] border border-slate-700 rounded-lg overflow-hidden">
+                  <WorkflowBuilder
+                    workflow={selectedWorkflow}
+                    onSave={handleSaveWorkflow}
+                    token={token}
+                  />
                 </div>
-              ))}
-            </div>
+              </ReactFlowProvider>
+            ) : (
+              <WorkflowsList
+                workflows={workflows}
+                onEdit={setSelectedWorkflow}
+                onDelete={handleDeleteWorkflow}
+                searchTerm={searchTerm}
+                selectedCategory={selectedCategory}
+              />
+            )}
           </div>
         )}
 
-        {/* Your Workflows */}
-        <div>
-          <h2 className="text-2xl font-bold mb-6 flex items-center space-x-2">
-            <span>⚙️</span>
-            <span>Your Workflows</span>
-            <span className="text-sm font-normal text-slate-400">
-              ({filteredWorkflows.length})
-            </span>
-          </h2>
+        {activeView === 'monitor' && (
+          <ExecutionMonitor
+            executions={executions}
+            loadingExecutions={loadingExecutions}
+          />
+        )}
 
-          {filteredWorkflows.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-slate-400 text-lg mb-4">
-                {searchTerm || selectedCategory !== "all"
-                  ? "No workflows match your filters"
-                  : "No workflows yet"}
-              </div>
-              <button
-                onClick={handleCreateWorkflow}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition-colors"
-              >
-                Create Your First Workflow
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredWorkflows.map((workflow) => (
-                <div
-                  key={workflow.id}
-                  className="bg-slate-800 border border-slate-700 rounded-xl p-6 hover:border-blue-500 transition-colors"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-white mb-2">
-                        {workflow.name}
-                      </h3>
-                      <p className="text-slate-400 text-sm">
-                        {workflow.description}
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span
-                        className={`w-3 h-3 rounded-full ${
-                          workflow.is_active ? "bg-green-400" : "bg-red-400"
-                        }`}
-                      ></span>
-                      <span className="px-3 py-1 bg-purple-600 text-purple-100 rounded-full text-xs font-medium">
-                        {workflow.category}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {workflow.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="px-2 py-1 bg-slate-700 text-slate-300 rounded text-xs"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="text-xs text-slate-500 mb-4">
-                    <div>
-                      Nodes: {workflow.workflow_data.nodes?.length || 0}
-                    </div>
-                    <div>
-                      Updated:{" "}
-                      {new Date(workflow.updated_at).toLocaleDateString()}
-                    </div>
-                  </div>
-
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => {
-                        setSelectedWorkflow(workflow);
-                        setShowBuilder(true);
-                      }}
-                      className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition-colors"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteWorkflow(workflow.id)}
-                      className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition-colors"
-                    >
-                      🗑️
-                    </button>
-                    <button
-                      onClick={()=> setShowHistoryFor(showHistoryFor===workflow.id.toString()? null : workflow.id.toString())}
-                      className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-semibold transition-colors"
-                    >
-                      {showHistoryFor===workflow.id.toString()? 'Hide' : 'History'}
-                    </button>
-                  </div>
-
-                  {showHistoryFor===workflow.id.toString() && (
-                    <div className="mt-6 border-t border-slate-700 pt-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-sm font-semibold text-slate-300 flex items-center space-x-2"><span>📜</span><span>Recent Executions</span></h4>
-                        {loadingExecutions && <span className="text-xs text-slate-500 animate-pulse">Refreshing...</span>}
-                      </div>
-                      {/* Desktop Table */}
-                      <div className="overflow-x-auto hidden md:block">
-                        <table className="min-w-full text-xs">
-                          <thead className="bg-slate-700/60 text-slate-300">
-                            <tr>
-                              <th className="text-left px-3 py-2">ID</th>
-                              <th className="text-left px-3 py-2">Status</th>
-                              <th className="text-left px-3 py-2">Started</th>
-                              <th className="text-left px-3 py-2">Completed</th>
-                              <th className="text-left px-3 py-2">Duration</th>
-                              <th className="text-left px-3 py-2">Error</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-700/70">
-                            {executions.length===0 && !loadingExecutions && (
-                              <tr><td colSpan={6} className="px-4 py-6 text-center text-slate-500">No executions yet.</td></tr>
-                            )}
-                            {executions.map(ex=>{
-                              const dur = (ex.started_at && ex.completed_at) ? ( (new Date(ex.completed_at).getTime() - new Date(ex.started_at).getTime())/1000).toFixed(2)+'s' : '—';
-                              return (
-                                <tr key={ex.id} className="hover:bg-slate-700/40">
-                                  <td className="px-3 py-2 font-mono text-[10px]">{ex.id.slice(0,8)}</td>
-                                  <td className="px-3 py-2">{statusPill(ex.status)}</td>
-                                  <td className="px-3 py-2 text-slate-400">{ex.started_at? new Date(ex.started_at).toLocaleTimeString(): '—'}</td>
-                                  <td className="px-3 py-2 text-slate-400">{ex.completed_at? new Date(ex.completed_at).toLocaleTimeString(): '—'}</td>
-                                  <td className="px-3 py-2 text-slate-300">{dur}</td>
-                                  <td className="px-3 py-2 text-red-400 truncate max-w-[160px]" title={ex.error||''}>{ex.error? ex.error.slice(0,40): ''}</td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                      {/* Mobile Cards */}
-                      <div className="md:hidden space-y-3">
-                        {executions.length===0 && !loadingExecutions && <div className="text-slate-500 text-xs">No executions yet.</div>}
-                        {executions.map(ex=>{
-                          const dur = (ex.started_at && ex.completed_at) ? ( (new Date(ex.completed_at).getTime() - new Date(ex.started_at).getTime())/1000).toFixed(2)+'s' : '—';
-                          return (
-                            <div key={ex.id} className="border border-slate-700 rounded-lg p-3 bg-slate-800/50 text-[11px]">
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="font-mono">{ex.id.slice(0,8)}</span>
-                                {statusPill(ex.status)}
-                              </div>
-                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-slate-400">
-                                <span>Start: {ex.started_at? new Date(ex.started_at).toLocaleTimeString(): '—'}</span>
-                                <span>End: {ex.completed_at? new Date(ex.completed_at).toLocaleTimeString(): '—'}</span>
-                                <span>Dur: {dur}</span>
-                              </div>
-                              {ex.error && <div className="mt-1 text-red-400 truncate" title={ex.error}>{ex.error.slice(0,60)}</div>}
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <div className="mt-3 text-[10px] text-slate-500">Auto-refresh every 10s (MVP polling)</div>
-                      <div className="mt-4 bg-slate-800/60 border border-slate-700 rounded p-3">
-                        <div className="text-[11px] text-slate-400">Upcoming Monitoring Enhancements:</div>
-                        <ul className="mt-2 text-[11px] text-slate-300 space-y-1 list-disc list-inside">
-                          <li>Real-time streaming via SSE/WebSocket</li>
-                          <li>Node-level progress & timeline visualization</li>
-                          <li>Log streaming with auto-scroll & filters</li>
-                        </ul>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-          </>
-        ) : (
+        {activeView === 'templates' && (
           <div className="p-6">
             <WorkflowTemplatesHub />
           </div>

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from "react";
 import { VoiceToTextButton } from "../VoiceToTextButton";
+import api from "../../services/apiService";
 
 interface ChatInputProps {
   inputText: string;
@@ -98,20 +99,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
     setIsExecutingCode(true);
     try {
-      const response = await fetch('/api/ai/code-execution', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          code: inputText,
-          language: 'python' // Default to Python, could be detected
-        })
+      const response = await api.post('/api/ai/code-execution', {
+        code: inputText,
+        language: 'python' // Default to Python, could be detected
       });
 
-      const result = await response.json();
-      if (result.success) {
+      if (response.success) {
+        const result = response.data;
         // Add execution result to chat
         onVoiceTranscript(`\n\nCode execution result:\n${result.output || result.result}`);
       } else {
@@ -131,16 +125,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       formData.append('image', file);
       formData.append('task', 'analyze');
 
-      const response = await fetch('/api/ai/vision-analysis', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
+      const response = await api.postFormData('/api/ai/vision-analysis', formData);
 
-      const result = await response.json();
-      if (result.success) {
+      if (response.success) {
+        const result = response.data;
         onVoiceTranscript(`\n\nImage analysis: ${result.description || result.analysis}`);
       }
     } catch (error) {

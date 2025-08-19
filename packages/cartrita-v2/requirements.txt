@@ -1,0 +1,25 @@
+# Cartrita V2 - Computer Use Agent Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# OpenAI API client
+openai>=1.12.0
+
+# LangChain integration
+langchain-openai>=0.1.0
+langchain-core>=0.2.0
+
+# Data validation and parsing
+pydantic>=2.5.0
+typing-extensions>=4.8.0
+
+# Computer control (optional - for actual computer interaction)
+pyautogui>=0.9.54
+Pillow>=10.0.0
+
+# Async support
+asyncio-throttle>=1.0.2
+
+# Optional: Enhanced computer control
+# opencv-python>=4.8.0  # For advanced image processing
+# selenium>=4.15.0      # For web automation
+# psutil>=5.9.0         # For system monitoring

@@ -1,0 +1,48 @@
+{
+  "name": "@cartrita/backend-v2",
+  "version": "2.0.0",
+  "description": "Cartrita V2 Multi-Agent OS Backend",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "nodemon --exec node --inspect=0.0.0.0:9229 src/index.js",
+    "dev:simple": "nodemon --exec node src/index.simple.js",
+    "start": "node src/index.js",
+    "start:simple": "node src/index.simple.js",
+    "build": "echo 'No build step required for Node.js backend'",
+    "test": "echo 'Tests will be implemented later'",
+    "lint": "eslint src --ext .js --fix",
+    "format": "prettier --write src"
+  },
+  "dependencies": {
+    "fastify": "^4.28.1",
+    "@fastify/helmet": "^11.1.1",
+    "@fastify/cors": "^9.0.1",
+    "@fastify/compress": "^7.0.3",
+    "@fastify/rate-limit": "^9.1.0",
+    "@fastify/jwt": "^8.0.1",
+    "@fastify/multipart": "^8.3.0",
+    "@fastify/websocket": "^10.0.1",
+    "@fastify/static": "^7.0.4",
+    "pg": "^8.13.1",
+    "ioredis": "^5.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "uuid": "^10.0.0",
+    "zod": "^3.23.8",
+    "winston": "^3.15.0",
+    "ws": "^8.18.0",
+    "socket.io": "^4.8.1",
+    "dotenv": "^16.4.7",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10",
+    "eslint": "^9.15.0",
+    "prettier": "^3.6.2"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=8.0.0"
+  }
+}

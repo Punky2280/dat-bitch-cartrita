@@ -1,0 +1,18 @@
+{
+  "name": "@cartrita/fastapi-service",
+  "version": "2.0.0",
+  "description": "FastAPI service for AI/ML processing in Cartrita Multi-Agent OS",
+  "scripts": {
+    "dev": "python main.py",
+    "start": "uvicorn main:app --host 0.0.0.0 --port 8002",
+    "start:prod": "uvicorn main:app --host 0.0.0.0 --port 8002 --workers 4",
+    "install": "pip install -r requirements.txt",
+    "test": "python -m pytest tests/ -v",
+    "lint": "python -m flake8 . && python -m black --check .",
+    "format": "python -m black . && python -m isort ."
+  },
+  "keywords": ["fastapi", "ai", "ml", "python", "cartrita"],
+  "engines": {
+    "python": ">=3.9"
+  }
+}

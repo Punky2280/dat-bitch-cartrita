@@ -23,7 +23,7 @@ export const LoginPage = ({
       // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Basic validation (any email/password combination works)
+      // Basic validation
       if (!email || !password) {
         throw new Error("Email and password are required");
       }
@@ -32,25 +32,24 @@ export const LoginPage = ({
         throw new Error("Password must be at least 3 characters");
       }
 
-      // Create mock user data and token
-      const mockUser = {
-        id: 1,
-        name: email.split('@')[0] || "User",
-        email: email,
-        role: "user",
-        is_admin: false,
-        iss: "cartrita-frontend-bypass",
-        aud: "cartrita-clients",
-        exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // 24h expiry
-        iat: Math.floor(Date.now() / 1000)
-      };
+      // Make actual API call to backend
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-      // Create a JWT-like token (base64 encoded user data)
-      const mockToken = btoa(JSON.stringify(mockUser));
+      const data = await res.json();
 
-      console.log("🚨 Using frontend auth bypass - user logged in:", mockUser);
+      if (!res.ok) {
+        throw new Error(data.error || "Login failed");
+      }
+
+      console.log("✅ Backend auth successful - user logged in:", data.user);
       
-      onLoginSuccess(mockToken);
+      onLoginSuccess(data.token);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -90,13 +89,6 @@ export const LoginPage = ({
         <div className="text-center">
           <h2 className="text-4xl font-extrabold text-white">Welcome Back</h2>
           <p className="mt-2 text-slate-400">Log in to access your dashboard</p>
-          {/* Temporary bypass warning */}
-          <div className="mt-4 p-3 bg-yellow-900/30 border border-yellow-600 rounded-lg">
-            <p className="text-yellow-300 text-sm">
-              🚨 <strong>Development Mode:</strong> Frontend auth bypass active<br/>
-              <span className="text-yellow-400">Any email/password (3+ chars) will work</span>
-            </p>
-          </div>
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
           <input

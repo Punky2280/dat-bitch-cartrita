@@ -1,12 +1,15 @@
 // Unified backend base URL resolution.
-// Prefer explicit websocket URL if provided, else fall back to HTTP backend URL.
-// Keep final fallback to localhost:8001 (backend default PORT).
-export const API_BASE_URL =
-  import.meta.env.VITE_BACKEND_URL || "http://localhost:8001";
-export const SOCKET_URL =
-  import.meta.env.VITE_BACKEND_WS_URL ||
-  import.meta.env.VITE_BACKEND_URL ||
-  "http://localhost:8001";
+// In development, use the Vite proxy to avoid CORS issues
+// In production, use explicit backend URL
+export const API_BASE_URL = import.meta.env.DEV 
+  ? "" // Use relative URLs in dev mode to leverage Vite proxy
+  : import.meta.env.VITE_BACKEND_URL || "http://localhost:8001";
+
+export const SOCKET_URL = import.meta.env.DEV
+  ? "" // Use relative URLs in dev mode to leverage Vite proxy  
+  : import.meta.env.VITE_BACKEND_WS_URL ||
+    import.meta.env.VITE_BACKEND_URL ||
+    "http://localhost:8001";
 
 export const SOCKET_CONFIG = {
   transports: ["websocket", "polling"],
@@ -14,10 +17,26 @@ export const SOCKET_CONFIG = {
   timeout: 20000,
   forceNew: false,
   reconnection: true,
-  reconnectionDelay: 1500,
-  reconnectionDelayMax: 8000,
-  randomizationFactor: 0.4,
-  reconnectionAttempts: 6,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
+  randomizationFactor: 0.5,
+  reconnectionAttempts: 10,
+  // Add upgrade options for better WebSocket handling
+  upgrade: true,
+  rememberUpgrade: true,
+  // Add autoConnect to prevent immediate connection
+  autoConnect: true,
+  // Add additional error handling options
+  closeOnBeforeunload: false,
+};
+
+// Fallback configuration for problematic connections
+export const SOCKET_CONFIG_FALLBACK = {
+  ...SOCKET_CONFIG,
+  transports: ["polling"], // Force polling if WebSocket fails
+  upgrade: false,
+  reconnectionDelay: 2000,
+  reconnectionAttempts: 5,
 };
 
 export const CHAT_SUGGESTIONS = [

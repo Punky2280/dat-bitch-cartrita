@@ -6,7 +6,6 @@ import { NotificationProvider } from "@/components/ui/NotificationProvider";
 import "./index.css";
 import "./i18n";
 import { AmbientProvider } from "@/context/AmbientContext";
-import "./setup/apiBaseFetchShim";
 import { ThemeProvider } from "@/theme/ThemeProvider";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

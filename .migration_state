@@ -1,0 +1,9 @@
+{
+    "migration_version": "v1_to_v2",
+    "migration_date": "2025-08-18T02:10:06Z",
+    "backup_location": "/home/robbie/development/dat-bitch-cartrita/backups/20250817_220700",
+    "status": "completed",
+    "database_migrated": true,
+    "config_migrated": true,
+    "services_restarted": true
+}

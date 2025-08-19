@@ -118,6 +118,20 @@ describe('Endpoint availability', () => {
     });
   });
 
+  it('GET /api/ai-hub/models responds 2xx', async () => {
+    await safeRequest('get', '/api/ai-hub/models', (res) => {
+      expect(res.statusCode).toBeGreaterThanOrEqual(200);
+      expect(res.statusCode).toBeLessThan(300);
+    });
+  });
+
+  it('GET /api/ai-hub/test responds 2xx', async () => {
+    await safeRequest('get', '/api/ai-hub/test', (res) => {
+      expect(res.statusCode).toBeGreaterThanOrEqual(200);
+      expect(res.statusCode).toBeLessThan(300);
+    });
+  });
+
   it('GET /api/ai-hub/test responds 2xx', async () => {
     await safeRequest('get', '/api/ai-hub/test', (res) => {
       expect(res.statusCode).toBeGreaterThanOrEqual(200);

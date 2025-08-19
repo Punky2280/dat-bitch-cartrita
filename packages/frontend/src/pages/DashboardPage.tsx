@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ChatComponent } from "@/components/ChatComponent";
 import { SettingsPage } from "@/pages/SettingsPage";
-import { WorkflowsPage } from "@/pages/WorkflowsPage";
+import WorkflowsPage from "@/pages/WorkflowsPage";
 import KnowledgeHubPage from "@/pages/KnowledgeHubPage";
 import { ApiKeyVaultPage } from "@/pages/ApiKeyVaultPage";
 import { PersonalLifeOSPage } from "@/pages/PersonalLifeOSPage";
@@ -15,6 +15,7 @@ import HealthDashboardPage from "@/pages/HealthDashboardPage";
 import EmailInboxPage from "@/pages/EmailInboxPage";
 import { AIProvidersPage } from "@/pages/AIProvidersPage";
 import { AIPowerCard } from "@/components/ui/AIPowerCard";
+import api from "@/services/apiService";
 
 interface DashboardPageProps {
   token: string;
@@ -127,34 +128,13 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      // Check if we're in development mode with auth bypass
-      try {
-        const decoded = JSON.parse(atob(token));
-        if (decoded.iss === "cartrita-frontend-bypass") {
-          console.log("🚨 Development mode detected - skipping backend health checks");
-          // Set mock healthy status for development mode
-          setSystemStatus({
-            ai_core: { status: "online", message: "AI Core (Dev Mode)" },
-            database: { status: "online", message: "Database (Dev Mode)" },
-            websocket: { status: "online", message: "WebSocket (Dev Mode)" },
-            voice_service: { status: "online", message: "Voice Services (Dev Mode)" },
-            visual_service: { status: "online", message: "Visual Analysis (Dev Mode)" },
-            email_service: { status: "online", message: "Email Service (Dev Mode)" },
-            calendar_service: { status: "online", message: "Calendar Service (Dev Mode)" },
-            contacts_service: { status: "online", message: "Contacts Service (Dev Mode)" },
-          });
-          return;
-        }
-      } catch (error) {
-        console.warn("Failed to decode token for dev mode check:", error);
-      }
 
       // Use the comprehensive health endpoint (public endpoint)
       try {
-        const healthResponse = await fetch("/api/health");
+        const healthResponse = await api.get("/api/health");
 
-        if (healthResponse.ok) {
-          const healthData = await healthResponse.json();
+        if (healthResponse.success) {
+          const healthData = healthResponse.data;
 
           // Update system status based on health data
           setSystemStatus((prev) => ({
@@ -237,12 +217,10 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
 
       for (const check of statusChecks) {
         try {
-          const response = await fetch(check.endpoint, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const response = await api.get(check.endpoint);
 
-          if (response.ok) {
-            const data = await response.json();
+          if (response.success) {
+            const data = response.data;
             setSystemStatus((prev) => ({
               ...prev,
               [check.key]: {
@@ -441,27 +419,6 @@ export const DashboardPage = ({ token, onLogout }: DashboardPageProps) => {
               Dat Bitch Cartrita
             </h1>
     <p className="text-slate-400 mt-1">Welcome back, {user?.name} 👋</p>
-            {/* Development Mode Indicator */}
-            {(() => {
-              try {
-                const token = localStorage.getItem("token");
-                if (token) {
-                  const decoded = JSON.parse(atob(token));
-                  if (decoded.iss === "cartrita-frontend-bypass") {
-                    return (
-                      <div className="mt-2 px-3 py-1 bg-yellow-900/30 border border-yellow-600 rounded-lg">
-                        <p className="text-yellow-300 text-sm">
-                          🚨 <strong>Development Mode:</strong> Frontend auth bypass active
-                        </p>
-                      </div>
-                    );
-                  }
-                }
-              } catch (error) {
-                // Ignore decode errors
-              }
-              return null;
-            })()}
           </div>
 
           <div className="flex items-center space-x-4">

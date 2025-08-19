@@ -18,7 +18,7 @@ addFormats(ajv);
 // Base schema definitions
 const providerSchema = {
   type: 'string',
-  enum: ['huggingface', 'openai', 'anthropic', 'google', 'local', 'aws', 'azure']
+  enum: ['huggingface', 'openai', 'google', 'local', 'aws', 'azure']
 };
 
 const taskTypeSchema = {

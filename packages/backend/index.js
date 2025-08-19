@@ -81,7 +81,7 @@ import vaultRoutes from './src/routes/vault.js';
 import apiKeyRoutes from './src/routes/apiKeys.js';
 import { router as monitoringRoutes } from './src/routes/monitoring.js';
 import voiceToTextRoutes from './src/routes/voiceToText.js';
-import { router as voiceChatRoutes } from './src/routes/voiceChat.js';
+import voiceChatRoutes from './src/routes/voiceChat.js';
 import { router as visionRoutes } from './src/routes/vision.js';
 import settingsRoutes from './src/routes/settings.js';
 import personaRoutes from './src/routes/persona.js';
@@ -91,6 +91,7 @@ import emailRoutes from './src/routes/email.js';
 import contactRoutes from './src/routes/contact.js';
 import { router as notificationRoutes } from './src/routes/notifications.js';
 import { router as privacyRoutes } from './src/routes/privacy.js';
+import validationRoutes from './src/routes/validation.js';
 import hierarchyRoutes from './src/routes/hierarchy.js';
 import healthRoutes from './src/routes/health.js';
 import iteration22Routes from './src/routes/iteration22.js';
@@ -101,17 +102,25 @@ import agentsRoutes from './src/routes/agents.js';
 import hfBinaryRoutes from './src/routes/hf.js';
 import audioRoutes from './src/routes/audio.js';
 import modelRoutingRoutes from './src/routes/modelRouting.js';
+import systemMetricsRoutes from './src/routes/systemMetrics.js';
 import personalLifeOSRoutes from './src/routes/personalLifeOS.js';
 import workflowTemplatesRoutes from './src/routes/workflowTemplates.js';
 import rotationSchedulingRoutes from './src/routes/rotationScheduling.js';
 import securityMaskingRoutes from './src/routes/securityMasking.js';
+import securityIntegrationsRoutes from './src/routes/securityIntegrations.js';
 import apiKeyManagementRoutes from './src/routes/apiKeyManagement.js';
 import cartritaRouterRoutes from './src/routes/router.js';
+import aiHubRoutes, { initializeAIHubService } from './src/routes/ai-hub.js';
+// Real-time WebSocket support
+import { router as realtimeRoutes, initializeRealTimeSupport } from './src/routes/realtime.js';
 // Unified AI Inference (multi-provider via HF token)
 import { createUnifiedInferenceService } from './src/services/unifiedInference.js';
+import AIHubService from './src/services/AIHubService.js';
+import KnowledgeHubService from './src/services/KnowledgeHubService.js';
+import HuggingFaceRouterService from './src/services/HuggingFaceRouterService.js';
 
 // --- CONFIGURATION ---
-const PORT = process.env.PORT || 8001;
+const PORT = process.env.PORT || 8000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const DATABASE_URL = process.env.DATABASE_URL;
 const LIGHTWEIGHT_TEST = isLightweight();
@@ -192,6 +201,22 @@ const limiter = rateLimit({
 // Temporarily disable rate limiting for development
 // app.use('/api/', limiter);
 
+// Enhanced security rate limiting for security endpoints
+const securityLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: NODE_ENV === 'production' ? 20 : 100, // Stricter limits for security endpoints
+  message: {
+    error: 'Too many security requests from this IP, please try again later.',
+    retryAfter: '5 minutes',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply strict rate limiting to security endpoints
+app.use('/api/security/', securityLimiter);
+app.use('/api/security-masking/', securityLimiter);
+
 const allowedOrigins = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
@@ -219,6 +244,34 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(redactSecrets);
 // Initialize unified inference service (server-side HF token)
 const unifiedAI = createUnifiedInferenceService();
+
+// Initialize AI Hub service now that all dependencies are available
+console.log('[AI-Hub] 🔧 Starting AI Hub service initialization...');
+if (!global.aiHubServiceInitialized) {
+  try {
+    console.log('[AI-Hub] Dependencies check:', {
+      unifiedAI: !!unifiedAI,
+      KnowledgeHubService: !!KnowledgeHubService,
+      HuggingFaceRouterService: !!HuggingFaceRouterService
+    });
+    
+    const aiHubService = new AIHubService(
+      unifiedAI,              // UnifiedInferenceService
+      KnowledgeHubService,    // KnowledgeHubService (static class)
+      HuggingFaceRouterService // HuggingFaceRouterService (static class)
+    );
+    console.log('[AI-Hub] ✅ AIHubService instance created successfully');
+    
+    initializeAIHubService(aiHubService);
+    console.log('[AI-Hub] ✅ AIHubService initialized in routes');
+    
+    global.aiHubServiceInitialized = true;
+    console.log('[AI-Hub] ✅ AI Hub service initialized with unified inference and knowledge integration');
+  } catch (error) {
+    console.error('[AI-Hub] ⚠️ AI Hub service initialization failed:', error);
+    console.error('[AI-Hub] Error stack:', error.stack);
+  }
+}
 
 // Early key configuration validation (non-fatal): logs if overlay missing required mappings
 try {
@@ -378,6 +431,7 @@ app.use('/api/email', emailRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/privacy', privacyRoutes);
+app.use('/api/validation', validationRoutes);
 app.use('/api/hierarchy', hierarchyRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/iteration22', iteration22Routes);
@@ -388,11 +442,16 @@ app.use('/api/agents', agentsRoutes);
 app.use('/api/hf', hfBinaryRoutes);
 app.use('/api/audio', audioRoutes);
 app.use('/api/models', modelRoutingRoutes);
+app.use('/api/system', systemMetricsRoutes);
 app.use('/api/personal-life-os', personalLifeOSRoutes);
 app.use('/api/rotation-scheduling', rotationSchedulingRoutes);
 app.use('/api/api-keys', apiKeyManagementRoutes);
 app.use('/api/security-masking', securityMaskingRoutes);
+app.use('/api/security', securityIntegrationsRoutes);
 app.use('/api/router', cartritaRouterRoutes);
+app.use('/api/ai-hub', aiHubRoutes);
+// Real-time data endpoints for UI/UX effectiveness
+app.use('/api/realtime', realtimeRoutes);
 // New secure key vault unified endpoints (refactored service)
 import keyVaultRoutes from './src/routes/keyVault.js';
 app.use('/api/key-vault', keyVaultRoutes);
@@ -745,6 +804,14 @@ app.get('/api/metrics/custom', (req, res) => {
  */
 function setupSocketHandlers() {
   console.log('🔌 Setting up Socket.IO event handlers...');
+
+  // Initialize real-time WebSocket support for UI/UX effectiveness
+  try {
+    const realtimeNamespace = initializeRealTimeSupport(io);
+    console.log('📡 Real-time WebSocket support initialized');
+  } catch (error) {
+    console.warn('⚠️ Real-time WebSocket initialization failed:', error.message);
+  }
 
   io.of('/')
     .use(authenticateTokenSocket)

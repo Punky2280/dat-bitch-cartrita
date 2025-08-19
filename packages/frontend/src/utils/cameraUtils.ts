@@ -280,3 +280,125 @@ export function isCameraSupported(): boolean {
     typeof HTMLCanvasElement.prototype.toBlob === "function"
   );
 }
+
+/**
+ * Enhanced black frame detection with multiple algorithms
+ */
+export function detectBlackFrame(videoElement: HTMLVideoElement): {
+  isBlack: boolean;
+  confidence: number;
+  details: string;
+} {
+  if (!videoElement.videoWidth || !videoElement.videoHeight) {
+    return { isBlack: true, confidence: 1.0, details: 'No video dimensions' };
+  }
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    return { isBlack: true, confidence: 1.0, details: 'No canvas context' };
+  }
+
+  // Use small sample for performance
+  const sampleWidth = Math.min(64, videoElement.videoWidth);
+  const sampleHeight = Math.min(64, videoElement.videoHeight);
+  
+  canvas.width = sampleWidth;
+  canvas.height = sampleHeight;
+  
+  ctx.drawImage(videoElement, 0, 0, sampleWidth, sampleHeight);
+  
+  const imageData = ctx.getImageData(0, 0, sampleWidth, sampleHeight);
+  const data = imageData.data;
+  
+  // Algorithm 1: Average brightness
+  let totalBrightness = 0;
+  let brightPixels = 0;
+  
+  // Algorithm 2: Color variance
+  let rSum = 0, gSum = 0, bSum = 0;
+  let rVar = 0, gVar = 0, bVar = 0;
+  
+  const pixelCount = data.length / 4;
+  
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    
+    const brightness = (r + g + b) / 3;
+    totalBrightness += brightness;
+    
+    if (brightness > 20) brightPixels++;
+    
+    rSum += r;
+    gSum += g;
+    bSum += b;
+  }
+  
+  const avgBrightness = totalBrightness / pixelCount;
+  const brightPixelRatio = brightPixels / pixelCount;
+  
+  // Calculate variance for color distribution
+  const rAvg = rSum / pixelCount;
+  const gAvg = gSum / pixelCount;
+  const bAvg = bSum / pixelCount;
+  
+  for (let i = 0; i < data.length; i += 4) {
+    rVar += Math.pow(data[i] - rAvg, 2);
+    gVar += Math.pow(data[i + 1] - gAvg, 2);
+    bVar += Math.pow(data[i + 2] - bAvg, 2);
+  }
+  
+  const colorVariance = (rVar + gVar + bVar) / (3 * pixelCount);
+  
+  // Determine if black frame based on multiple criteria
+  const isBlackByBrightness = avgBrightness < 10;
+  const isBlackByRatio = brightPixelRatio < 0.05;
+  const isBlackByVariance = colorVariance < 100;
+  
+  const blackCriteria = [isBlackByBrightness, isBlackByRatio, isBlackByVariance];
+  const blackCount = blackCriteria.filter(Boolean).length;
+  
+  const isBlack = blackCount >= 2;
+  const confidence = blackCount / blackCriteria.length;
+  
+  const details = `brightness: ${avgBrightness.toFixed(1)}, bright ratio: ${(brightPixelRatio * 100).toFixed(1)}%, variance: ${colorVariance.toFixed(1)}`;
+  
+  return { isBlack, confidence, details };
+}
+
+/**
+ * Wait for camera to warm up and provide stable frames
+ */
+export async function waitForCameraWarmup(
+  videoElement: HTMLVideoElement,
+  maxWaitMs: number = 3000
+): Promise<boolean> {
+  const startTime = Date.now();
+  const checkInterval = 100;
+  
+  return new Promise((resolve) => {
+    const checkFrame = () => {
+      const elapsed = Date.now() - startTime;
+      
+      if (elapsed > maxWaitMs) {
+        console.warn('[CameraUtils] Camera warmup timeout');
+        resolve(false);
+        return;
+      }
+      
+      const detection = detectBlackFrame(videoElement);
+      
+      if (!detection.isBlack) {
+        console.log(`[CameraUtils] Camera ready after ${elapsed}ms`);
+        resolve(true);
+        return;
+      }
+      
+      setTimeout(checkFrame, checkInterval);
+    };
+    
+    checkFrame();
+  });
+}

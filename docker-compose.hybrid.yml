@@ -1,0 +1,116 @@
+version: '3.8'
+
+name: cartrita-hybrid
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: cartrita
+      POSTGRES_USER: cartrita
+      POSTGRES_PASSWORD: cartrita123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cartrita"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Fastify Service (Node.js)
+  fastify-backend:
+    build:
+      context: .
+      dockerfile: apps/backend-v2/Dockerfile
+    environment:
+      NODE_ENV: development
+      PORT: 8001
+      DATABASE_URL: postgresql://cartrita:cartrita123@postgres:5432/cartrita
+      REDIS_URL: redis://redis:6379
+      FASTAPI_URL: http://fastapi-backend:8002
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./apps/backend-v2:/app
+      - /app/node_modules
+    command: npm run dev
+
+  # FastAPI Service (Python)
+  fastapi-backend:
+    build:
+      context: .
+      dockerfile: apps/fastapi-service/Dockerfile
+    environment:
+      ENVIRONMENT: development
+      PORT: 8002
+      DATABASE_URL: postgresql://cartrita:cartrita123@postgres:5432/cartrita
+      REDIS_URL: redis://redis:6379
+      FASTIFY_URL: http://fastify-backend:8001
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./apps/fastapi-service:/app
+    command: python main.py
+
+  # Frontend (React + Vite)
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend-v2/Dockerfile
+    environment:
+      VITE_BACKEND_URL: http://localhost:8001
+      VITE_FASTAPI_URL: http://localhost:8002
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/frontend-v2:/app
+      - /app/node_modules
+    command: npm run dev
+
+  # Nginx Reverse Proxy (Optional)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./config/nginx-hybrid.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - fastify-backend
+      - fastapi-backend
+      - frontend
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  default:
+    driver: bridge

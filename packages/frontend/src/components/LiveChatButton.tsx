@@ -6,8 +6,8 @@ import {
   SparklesIcon,
   VideoCameraIcon,
 } from "@heroicons/react/24/outline";
-import { API_BASE_URL } from "../config/constants";
 import FloatingMediaOverlay from "./ui/FloatingMediaOverlay";
+import api from "../services/apiService";
 
 interface LiveChatButtonProps {
   token: string;
@@ -315,19 +315,13 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
       const formData = new FormData();
       formData.append("audio", audioBlob, "wake-check.webm");
 
-      const response = await fetch(
-        `${API_BASE_URL}/api/voice-to-text/transcribe`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        },
+      const response = await api.postFormData(
+        "/api/voice-to-text/transcribe",
+        formData
       );
 
-      if (response.ok) {
-        const result = await response.json();
+      if (response.success) {
+        const result = response.data;
 
         if (result.wakeWord && result.wakeWord.detected) {
           console.log(
@@ -387,20 +381,13 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
       }));
 
       // Send to your chat API for processing
-      const response = await fetch(`${API_BASE_URL}/api/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          message: command,
-          mode: "voice",
-        }),
+      const response = await api.post("/api/chat", {
+        message: command,
+        mode: "voice",
       });
 
-      if (response.ok) {
-        const result = await response.json();
+      if (response.success) {
+        const result = response.data;
 
         // Speak the response
         if (result.response) {
@@ -424,24 +411,18 @@ export const LiveChatButton: React.FC<LiveChatButtonProps> = ({
     try {
       setChatState((prev) => ({ ...prev, isSpeaking: true }));
 
-      const response = await fetch(
-        `${API_BASE_URL}/api/voice-chat/speak`,
+      const response = await api.post(
+        "/api/voice-chat/speak",
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            text: text,
-            voice: "nova",
-            speed: 1.0,
-          }),
+          text: text,
+          voice: "nova",
+          speed: 1.0,
         },
+        { responseType: "blob" }
       );
 
-      if (response.ok) {
-        const audioBuffer = await response.arrayBuffer();
+      if (response.success) {
+        const audioBuffer = await response.data.arrayBuffer();
         const audioContext = new AudioContext();
         const audioData = await audioContext.decodeAudioData(audioBuffer);
         const source = audioContext.createBufferSource();

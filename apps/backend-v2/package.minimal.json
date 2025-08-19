@@ -1,0 +1,29 @@
+{
+  "name": "@cartrita/backend-v2-minimal",
+  "version": "2.0.0",
+  "description": "Cartrita V2 Multi-Agent OS Backend - Minimal Version",
+  "type": "module",
+  "main": "src/index.simple.js",
+  "scripts": {
+    "dev": "nodemon src/index.simple.js",
+    "start": "node src/index.simple.js",
+    "test": "echo 'Tests will be implemented later'"
+  },
+  "dependencies": {
+    "fastify": "^4.28.1",
+    "@fastify/helmet": "^11.1.1",
+    "@fastify/cors": "^9.0.1",
+    "@fastify/compress": "^7.0.3",
+    "@fastify/websocket": "^10.0.1",
+    "@fastify/static": "^7.0.4",
+    "uuid": "^10.0.0",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=8.0.0"
+  }
+}

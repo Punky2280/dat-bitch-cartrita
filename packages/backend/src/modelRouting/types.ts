@@ -16,7 +16,7 @@ export type TaskType = 'text-generation' | 'chat-completions' | 'embeddings' | '
                       'summarization' | 'translation' | 'code-generation' | 'image-generation' |
                       'image-to-text' | 'text-to-speech' | 'speech-to-text' | 'reranking' |
                       'safety-moderation' | 'video-generation' | 'audio-generation';
-export type Provider = 'huggingface' | 'openai' | 'anthropic' | 'google' | 'local' | 'aws' | 'azure';
+export type Provider = 'huggingface' | 'openai' | 'google' | 'local' | 'aws' | 'azure';
 export type Quantization = 'fp32' | 'fp16' | 'bf16' | 'int8' | 'int4' | 'nf4' | 'gguf';
 export type BudgetType = 'hourly' | 'daily' | 'weekly' | 'monthly';
 export type EventType = 'model_call.planned' | 'model_call.started' | 'model_call.completed' | 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { API_BASE_URL } from "../config/constants";
+import api from "../services/apiService";
 import type { AgentMetrics, AgentHealth } from "../types/chat";
 
 export const useAgentMetrics = (token: string, isConnected: boolean) => {
@@ -10,12 +10,10 @@ export const useAgentMetrics = (token: string, isConnected: boolean) => {
     if (!token) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/agent/metrics`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get("/api/agent/metrics");
 
-      if (response.ok) {
-        const data = await response.json();
+      if (response.success) {
+        const data = response.data;
         setAgentMetrics(data.metrics);
         setAgentHealth(data.health);
       }

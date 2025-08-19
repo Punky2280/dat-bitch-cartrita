@@ -1,108 +1,99 @@
-# Cartrita MCP Transformation - Documentation Build System
-# Usage: make pdf
+# Cartrita Core Hygiene & Development Automation
+# Aligned with Copilot Instructions v1.0.0
 
-# Variables
-DOCS_DIR = docs
-OUTPUT_DIR = $(DOCS_DIR)/output
-WHITEPAPER_MD = $(DOCS_DIR)/Cartrita_Hierarchical_MCP_Transformation_Whitepaper.md
-WHITEPAPER_PDF = $(OUTPUT_DIR)/Cartrita_MCP_Whitepaper.pdf
-WHITEPAPER_HTML = $(OUTPUT_DIR)/Cartrita_MCP_Whitepaper.html
-TEMPLATE_DIR = $(DOCS_DIR)/templates
+.PHONY: hygiene hygiene-quick commit-hygiene dev-backend dev-frontend start-backend start-frontend docker-up docker-down clean install
 
-# Pandoc options
-PANDOC_OPTS = \
-	--from markdown \
-	--to pdf \
-	--toc \
-	--toc-depth=3 \
-	--number-sections \
-	--pdf-engine=pdflatex \
-	--template=$(TEMPLATE_DIR)/whitepaper.tex \
-	--variable fontsize=11pt \
-	--variable geometry:margin=1in \
-	--variable papersize=a4 \
-	--variable colorlinks=true \
-	--variable linkcolor=blue \
-	--variable urlcolor=blue \
-	--variable citecolor=blue \
-	--variable toccolor=black
+# Full hygiene pass with all checks
+hygiene:
+	bash packages/cartrita_core/scripts/run_full_hygiene.sh
 
-# Default target
-.PHONY: all
-all: pdf
+# Quick hygiene (skip heavy tests)
+hygiene-quick:
+	QUICK_MODE=1 bash packages/cartrita_core/scripts/run_full_hygiene.sh
 
-# Generate PDF from Markdown
-.PHONY: pdf
-pdf: $(WHITEPAPER_PDF)
+# Run hygiene and commit changes
+commit-hygiene:
+	$(MAKE) hygiene
+	git add .
+	git commit -S -m "chore(cartrita): full hygiene pass, branding audit clean"
+	git push
 
-$(WHITEPAPER_PDF): $(WHITEPAPER_MD) $(OUTPUT_DIR) $(TEMPLATE_DIR)/whitepaper.tex
-	@echo "🔄 Generating PDF from Markdown..."
-	pandoc $(PANDOC_OPTS) $(WHITEPAPER_MD) -o $(WHITEPAPER_PDF)
-	@echo "✅ PDF generated: $(WHITEPAPER_PDF)"
-	@echo "📄 File size: $$(du -h $(WHITEPAPER_PDF) | cut -f1)"
+# Development server commands
+dev-backend:
+	cd packages/backend && npm run dev
 
-# Generate HTML version
-.PHONY: html
-html: $(WHITEPAPER_HTML)
+dev-frontend:
+	cd packages/frontend && npm run dev
 
-$(WHITEPAPER_HTML): $(WHITEPAPER_MD) $(OUTPUT_DIR)
-	@echo "🔄 Generating HTML from Markdown..."
-	pandoc --from markdown --to html --toc --toc-depth=3 --number-sections --standalone $(WHITEPAPER_MD) -o $(WHITEPAPER_HTML)
-	@echo "✅ HTML generated: $(WHITEPAPER_HTML)"
-	@echo "📄 File size: $$(du -h $(WHITEPAPER_HTML) | cut -f1)"
+start-backend:
+	cd packages/backend && npm start
 
-# Create output directory
-$(OUTPUT_DIR):
-	mkdir -p $(OUTPUT_DIR)
+start-frontend:
+	cd packages/frontend && npm start
 
-# Create LaTeX template directory
-$(TEMPLATE_DIR):
-	mkdir -p $(TEMPLATE_DIR)
+# Docker orchestration
+docker-up:
+	docker-compose up -d
 
-# LaTeX template (already created manually)
-$(TEMPLATE_DIR)/whitepaper.tex: $(TEMPLATE_DIR)
-	@echo "✅ LaTeX template ready"
+docker-down:
+	docker-compose down
 
-# Clean generated files
-.PHONY: clean
+docker-rebuild:
+	docker-compose up --build -d
+
+# Database operations
+db-migrate:
+	psql postgresql://localhost/cartrita -f db-init/28_v2_gpt5_features.sql
+
+db-status:
+	psql postgresql://localhost/cartrita -c "SELECT COUNT(*) as total_users FROM users;"
+
+# Installation and setup
+install:
+	cd packages/backend && npm install
+	cd packages/frontend && npm install
+	if [ -f py/mcp_core/requirements.txt ]; then cd py/mcp_core && pip install -r requirements.txt; fi
+
+# Clean build artifacts
 clean:
-	rm -rf $(OUTPUT_DIR)
-	@echo "🧹 Cleaned generated files"
+	cd packages/backend && rm -rf node_modules dist
+	cd packages/frontend && rm -rf node_modules dist build
+	docker system prune -f
 
-# Show file info
-.PHONY: info
-info:
-	@echo "📄 Documentation Status:"
-	@if [ -f $(WHITEPAPER_HTML) ]; then \
-		echo "   HTML: ✅ Available"; \
-		echo "   File: $(WHITEPAPER_HTML)"; \
-		echo "   Size: $$(du -h $(WHITEPAPER_HTML) | cut -f1)"; \
-		echo "   Modified: $$(stat -c %y $(WHITEPAPER_HTML) 2>/dev/null || stat -f %Sm $(WHITEPAPER_HTML) 2>/dev/null || echo 'Unknown')"; \
-	else \
-		echo "   HTML: ❌ Not generated. Run 'make html'"; \
-	fi
-	@if [ -f $(WHITEPAPER_PDF) ]; then \
-		echo "   PDF: ✅ Available"; \
-		echo "   File: $(WHITEPAPER_PDF)"; \
-		echo "   Size: $$(du -h $(WHITEPAPER_PDF) | cut -f1)"; \
-		echo "   Modified: $$(stat -c %y $(WHITEPAPER_PDF) 2>/dev/null || stat -f %Sm $(WHITEPAPER_PDF) 2>/dev/null || echo 'Unknown')"; \
-		echo "   Pages: $$(pdfinfo $(WHITEPAPER_PDF) 2>/dev/null | grep Pages | awk '{print $$2}' || echo 'Unknown')"; \
-	else \
-		echo "   PDF: ❌ Not generated. Run 'make pdf' (requires LaTeX)"; \
-	fi
+# Audit commands
+audit-v1:
+	bash packages/cartrita_core/scripts/scan_v1_references.sh
 
-# Help
-.PHONY: help
-help:
-	@echo "Cartrita MCP Transformation - Documentation Build System"
-	@echo ""
-	@echo "Usage:"
-	@echo "  make pdf          Generate PDF from Markdown (default)"
-	@echo "  make html         Generate HTML from Markdown"
-	@echo "  make clean        Remove generated files"
-	@echo "  make info         Show information about generated files"
-	@echo "  make help         Show this help message"
-	@echo ""
-	@echo "Generated files will be available at:"
-	@echo "  HTML: $(WHITEPAPER_HTML)"
-	@echo "  PDF: $(WHITEPAPER_PDF)"
+audit-branding:
+	bash packages/cartrita_core/scripts/rename_audit.sh
+
+# Health checks
+health-backend:
+	curl -sf http://localhost:8001/health || echo "Backend not running"
+
+health-frontend:
+	curl -sf http://localhost:3001 || echo "Frontend not running"
+
+health-db:
+	psql postgresql://localhost/cartrita -c "SELECT 1;" >/dev/null 2>&1 && echo "Database OK" || echo "Database unavailable"
+
+# Complete health check
+health: health-db health-backend health-frontend
+	echo "System health check complete"
+
+# Development workflow
+dev: install hygiene-quick dev-backend
+
+# Production readiness check
+prod-ready: hygiene audit-v1 audit-branding health
+	echo "Production readiness verified"
+
+# Legacy documentation build (preserved)
+pdf:
+	@if [ -f docs/Cartrita_Hierarchical_MCP_Transformation_Whitepaper.md ]; then \
+		mkdir -p docs/output; \
+		pandoc --from markdown --to pdf --toc docs/Cartrita_Hierarchical_MCP_Transformation_Whitepaper.md -o docs/output/Cartrita_MCP_Whitepaper.pdf; \
+		echo "PDF generated"; \
+	else \
+		echo "Whitepaper not found"; \
+	fi

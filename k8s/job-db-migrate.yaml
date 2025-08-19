@@ -1,0 +1,105 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate
+  namespace: data-stack
+  labels:
+    app: db-migrate
+    version: v2
+spec:
+  template:
+    metadata:
+      labels:
+        app: db-migrate
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: migrate
+        image: node:20-alpine
+        env:
+        - name: POSTGRES_HOST
+          value: postgres.data-stack.svc.cluster.local
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_DB
+        - name: NODE_ENV
+          value: "production"
+        volumeMounts:
+        - name: migrations
+          mountPath: /workspace/db
+        - name: app-source
+          mountPath: /workspace/src
+        workingDir: /workspace
+        command: ["sh", "-c"]
+        args:
+        - |
+          echo "Installing dependencies..."
+          npm init -y >/dev/null 2>&1
+          npm install --silent pg tsx @types/node
+          
+          echo "Waiting for Postgres to be ready..."
+          until nc -z $POSTGRES_HOST $POSTGRES_PORT; do
+            echo "Waiting for postgres..."
+            sleep 2
+          done
+          
+          echo "Running database migrations..."
+          npx tsx db/migrate.ts
+          
+          echo "Migration job completed successfully"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: migrations
+        configMap:
+          name: db-migrations
+      - name: app-source
+        configMap:
+          name: app-source
+          optional: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-migrations
+  namespace: data-stack
+data:
+  migrate.ts: |
+    // Migration runner content will be mounted here
+    // In production, use an init container or include in app image
+  MIGRATION_MANIFEST.json: |
+    {
+      "migrations": [
+        {
+          "version": "0001_initial_baseline.sql",
+          "checksum": "SHA256:placeholder",
+          "description": "Baseline marker for v1 to v2 migration",
+          "type": "baseline",
+          "dependencies": []
+        }
+      ],
+      "metadata": {
+        "version": "2.0",
+        "target_db": "postgresql",
+        "extensions_required": ["vector", "uuid-ossp"]
+      }
+    }

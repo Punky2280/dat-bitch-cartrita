@@ -1,0 +1,552 @@
+name: MCP Development Assistant
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths: 
+      - 'py/mcp_core/**'
+      - 'packages/backend/src/mcp/**'
+      - 'packages/backend/src/agi/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'py/mcp_core/**'
+      - 'packages/backend/src/mcp/**'
+      - 'packages/backend/src/agi/**'
+  workflow_dispatch:
+    inputs:
+      mcp_task:
+        description: 'MCP Task to execute'
+        required: true
+        type: choice
+        options:
+          - 'agent-validation'
+          - 'mcp-protocol-test' 
+          - 'agent-performance-benchmark'
+          - 'mcp-integration-test'
+          - 'agent-memory-analysis'
+          - 'full-system-health-check'
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '18'
+
+jobs:
+  mcp-agent-validation:
+    name: MCP Agent Validation
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, '[mcp]') || github.event.inputs.mcp_task == 'agent-validation'
+    
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: cartrita
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: cartrita_mcp_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Setup Node.js  
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Python dependencies
+        run: |
+          cd py/mcp_core
+          pip install -e .
+          pip install pytest pytest-asyncio pytest-cov
+
+      - name: Install Node.js dependencies
+        run: npm ci
+
+      - name: Initialize test database
+        run: |
+          cd packages/backend
+          npm run db:migrate:test
+        env:
+          DATABASE_URL: postgresql://cartrita:test_password@localhost:5432/cartrita_mcp_test
+
+      - name: Run MCP Agent validation
+        run: |
+          cd py/mcp_core
+          python -m pytest tests/test_agent_validation.py -v --cov=mcp_core --cov-report=xml
+        env:
+          DATABASE_URL: postgresql://cartrita:test_password@localhost:5432/cartrita_mcp_test
+          REDIS_URL: redis://localhost:6379
+          MCP_LOG_LEVEL: DEBUG
+
+      - name: Validate all 15 sophisticated agents
+        run: |
+          cd packages/backend
+          node scripts/validate-agents.mjs
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://cartrita:test_password@localhost:5432/cartrita_mcp_test
+
+      - name: Upload MCP validation results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: mcp-validation-results
+          path: |
+            py/mcp_core/coverage.xml
+            packages/backend/agent-validation-report.json
+
+  mcp-protocol-testing:
+    name: MCP Protocol Testing
+    runs-on: ubuntu-latest
+    if: github.event.inputs.mcp_task == 'mcp-protocol-test' || contains(github.event.head_commit.message, '[mcp-protocol]')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          pip install -e py/mcp_core
+          npm ci
+
+      - name: Test MCP message serialization
+        run: |
+          cd py/mcp_core
+          python -c "
+          import asyncio
+          from mcp_core.protocol import MCPMessage, MCPResponse
+          from mcp_core.serialization import serialize_message, deserialize_message
+          
+          # Test message round-trip
+          msg = MCPMessage(
+              id='test-123',
+              type='agent_request',
+              source='test_agent',
+              target='cartrita_core',
+              payload={'test': 'data'},
+              timestamp=1234567890
+          )
+          
+          serialized = serialize_message(msg)
+          deserialized = deserialize_message(serialized)
+          
+          assert msg.id == deserialized.id
+          assert msg.type == deserialized.type
+          assert msg.payload == deserialized.payload
+          print('✅ MCP message serialization test passed')
+          "
+
+      - name: Test MCP WebSocket communication
+        run: |
+          cd packages/backend
+          node -e "
+          const { MCPWebSocketTransport } = require('./src/mcp/MCPWebSocketTransport.js');
+          const { MCPMessage } = require('./src/mcp/MCPTypes.js');
+          
+          // Mock WebSocket test
+          console.log('✅ MCP WebSocket transport loaded successfully');
+          "
+
+      - name: Test agent message routing
+        run: |
+          cd packages/backend
+          node scripts/test-mcp-routing.mjs
+        env:
+          NODE_ENV: test
+          MCP_DEBUG: true
+
+  agent-performance-benchmark:
+    name: Agent Performance Benchmarking
+    runs-on: ubuntu-latest
+    if: github.event.inputs.mcp_task == 'agent-performance-benchmark'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup test environment
+        run: |
+          docker-compose -f docker-compose.test.yml up -d postgres redis
+          sleep 20
+
+      - name: Run agent performance benchmarks
+        run: |
+          cd packages/backend
+          node scripts/benchmark-agents.mjs
+        env:
+          NODE_ENV: test
+          BENCHMARK_ITERATIONS: 100
+          CONCURRENT_AGENTS: 5
+
+      - name: Generate performance report
+        run: |
+          cd packages/backend
+          node scripts/generate-perf-report.mjs
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF: ${{ github.ref }}
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
+        with:
+          name: agent-performance-benchmark
+          path: |
+            packages/backend/benchmark-results.json
+            packages/backend/performance-report.html
+
+      - name: Comment performance results
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const fs = require('fs');
+            const results = JSON.parse(fs.readFileSync('packages/backend/benchmark-results.json', 'utf8'));
+            
+            const comment = `
+            ## 🚀 Agent Performance Benchmark Results
+            
+            | Agent | Avg Response Time | P95 | P99 | Success Rate |
+            |-------|-------------------|-----|-----|--------------|
+            ${results.agents.map(agent => 
+              `| ${agent.name} | ${agent.avgResponseTime}ms | ${agent.p95}ms | ${agent.p99}ms | ${agent.successRate}% |`
+            ).join('\n')}
+            
+            **Overall System Performance:**
+            - Total Requests: ${results.summary.totalRequests}
+            - Avg System Load: ${results.summary.avgSystemLoad}%
+            - Memory Usage Peak: ${results.summary.memoryPeak}MB
+            - Errors: ${results.summary.errors}
+            
+            Performance threshold: ${results.summary.passedThreshold ? '✅ PASSED' : '❌ FAILED'}
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose -f docker-compose.test.yml down
+
+  mcp-integration-testing:
+    name: MCP Integration Testing
+    runs-on: ubuntu-latest
+    if: github.event.inputs.mcp_task == 'mcp-integration-test'
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: cartrita
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: cartrita_mcp_integration
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup comprehensive test environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Initialize test database with all migrations
+        run: |
+          cd packages/backend
+          npm run db:migrate:all
+        env:
+          DATABASE_URL: postgresql://cartrita:test_password@localhost:5432/cartrita_mcp_integration
+
+      - name: Test complete MCP agent ecosystem
+        run: |
+          cd packages/backend
+          node scripts/test-mcp-ecosystem.mjs
+        env:
+          DATABASE_URL: postgresql://cartrita:test_password@localhost:5432/cartrita_mcp_integration
+          REDIS_URL: redis://localhost:6379
+          MCP_INTEGRATION_TEST: true
+          TEST_ALL_AGENTS: true
+
+      - name: Test agent handoff mechanisms
+        run: |
+          cd packages/backend
+          node scripts/test-agent-handoffs.mjs
+
+      - name: Test MCP message durability
+        run: |
+          cd packages/backend
+          node scripts/test-mcp-durability.mjs
+
+      - name: Generate integration test report
+        run: |
+          cd packages/backend
+          node scripts/generate-integration-report.mjs
+
+      - name: Upload integration test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: mcp-integration-results
+          path: |
+            packages/backend/integration-test-results.json
+            packages/backend/mcp-ecosystem-health.json
+            packages/backend/agent-handoff-results.json
+
+  agent-memory-analysis:
+    name: Agent Memory Analysis
+    runs-on: ubuntu-latest
+    if: github.event.inputs.mcp_task == 'agent-memory-analysis'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js with heap analysis
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup monitoring services
+        run: |
+          docker-compose -f docker-compose.test.yml up -d
+
+      - name: Run memory profiling on agents
+        run: |
+          cd packages/backend
+          node --max-old-space-size=4096 --inspect scripts/memory-profile-agents.mjs
+        env:
+          NODE_ENV: test
+          MEMORY_PROFILING: true
+          AGENT_MEMORY_TRACKING: true
+
+      - name: Analyze memory usage patterns
+        run: |
+          cd packages/backend
+          node scripts/analyze-memory-patterns.mjs
+
+      - name: Generate memory analysis report
+        run: |
+          cd packages/backend
+          node scripts/generate-memory-report.mjs
+
+      - name: Check for memory leaks
+        run: |
+          cd packages/backend
+          node scripts/detect-memory-leaks.mjs
+
+      - name: Upload memory analysis results
+        uses: actions/upload-artifact@v3
+        with:
+          name: agent-memory-analysis
+          path: |
+            packages/backend/memory-profile-*.json
+            packages/backend/memory-analysis-report.html
+            packages/backend/memory-leak-report.json
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose -f docker-compose.test.yml down
+
+  full-system-health-check:
+    name: Full System Health Check
+    runs-on: ubuntu-latest
+    if: github.event.inputs.mcp_task == 'full-system-health-check'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start full system
+        run: |
+          docker-compose up -d
+          sleep 60  # Wait for full initialization
+
+      - name: Comprehensive health check
+        run: |
+          cd packages/backend
+          node scripts/comprehensive-health-check.mjs
+        env:
+          HEALTH_CHECK_TIMEOUT: 120000
+          CHECK_ALL_ENDPOINTS: true
+          CHECK_ALL_AGENTS: true
+          CHECK_MCP_TRANSPORT: true
+
+      - name: Test critical user journeys
+        run: |
+          cd packages/backend
+          node scripts/test-critical-journeys.mjs
+
+      - name: Validate system metrics
+        run: |
+          cd packages/backend
+          node scripts/validate-system-metrics.mjs
+
+      - name: Generate system health report
+        run: |
+          cd packages/backend
+          node scripts/generate-health-report.mjs
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF: ${{ github.ref }}
+          BUILD_NUMBER: ${{ github.run_number }}
+
+      - name: Upload health check results
+        uses: actions/upload-artifact@v3
+        with:
+          name: system-health-check
+          path: |
+            packages/backend/system-health-report.json
+            packages/backend/health-check-detailed.html
+            packages/backend/critical-journey-results.json
+
+      - name: Post health status to Slack
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          channel: '#system-health'
+          custom_payload: |
+            {
+              "text": "System Health Check Complete",
+              "attachments": [
+                {
+                  "color": "${{ job.status == 'success' && 'good' || 'danger' }}",
+                  "fields": [
+                    {
+                      "title": "Status",
+                      "value": "${{ job.status }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Commit",
+                      "value": "${{ github.sha }}",
+                      "short": true
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose down
+
+  mcp-copilot-integration:
+    name: MCP Copilot Integration Test
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, '[mcp-copilot]')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test MCP server for Copilot
+        run: |
+          cd py/mcp_core
+          python -m mcp_core.server --test-mode &
+          SERVER_PID=$!
+          sleep 5
+          
+          # Test MCP server endpoints
+          curl -f http://localhost:8000/health || exit 1
+          curl -f http://localhost:8000/capabilities || exit 1
+          
+          kill $SERVER_PID
+
+      - name: Test Copilot MCP client integration
+        run: |
+          cd packages/backend
+          node scripts/test-copilot-mcp-integration.mjs
+        env:
+          MCP_SERVER_URL: http://localhost:8000
+          COPILOT_INTEGRATION_TEST: true
+
+      - name: Validate MCP message compatibility
+        run: |
+          cd packages/backend
+          node scripts/validate-mcp-compatibility.mjs
+
+      - name: Upload Copilot integration results
+        uses: actions/upload-artifact@v3
+        with:
+          name: mcp-copilot-integration
+          path: |
+            packages/backend/copilot-integration-results.json
+            packages/backend/mcp-compatibility-report.json

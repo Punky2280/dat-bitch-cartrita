@@ -20,6 +20,11 @@ interface CardTitleProps {
   className?: string;
 }
 
+interface CardDescriptionProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
 export const Card: React.FC<CardProps> = ({ children, className = "" }) => {
   return <div className={`glass-card rounded-xl ${className}`}>{children}</div>;
 };
@@ -50,5 +55,16 @@ export const CardTitle: React.FC<CardTitleProps> = ({
     <h3 className={`text-lg font-semibold text-white ${className}`}>
       {children}
     </h3>
+  );
+};
+
+export const CardDescription: React.FC<CardDescriptionProps> = ({
+  children,
+  className = "",
+}) => {
+  return (
+    <p className={`text-sm text-gray-400 ${className}`}>
+      {children}
+    </p>
   );
 };

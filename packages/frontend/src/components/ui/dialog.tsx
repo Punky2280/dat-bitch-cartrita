@@ -33,6 +33,16 @@ interface DialogTitleProps {
   className?: string;
 }
 
+interface DialogDescriptionProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+interface DialogFooterProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
 export const Dialog: React.FC<DialogProps> = ({
   open,
   onOpenChange,
@@ -126,5 +136,27 @@ export const DialogTitle: React.FC<DialogTitleProps> = ({
     <h2 className={`text-lg font-semibold text-white ${className}`}>
       {children}
     </h2>
+  );
+};
+
+export const DialogDescription: React.FC<DialogDescriptionProps> = ({
+  children,
+  className = "",
+}) => {
+  return (
+    <p className={`text-sm text-gray-400 ${className}`}>
+      {children}
+    </p>
+  );
+};
+
+export const DialogFooter: React.FC<DialogFooterProps> = ({
+  children,
+  className = "",
+}) => {
+  return (
+    <div className={`px-6 py-4 border-t border-gray-600/50 flex justify-end gap-2 ${className}`}>
+      {children}
+    </div>
   );
 };
