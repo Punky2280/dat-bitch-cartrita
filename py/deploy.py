@@ -87,6 +87,7 @@ class CartritaDeployer:
 DATABASE_URL=postgresql://robert:punky1@postgres:5432/dat-bitch-cartrita
 REDIS_URL=redis://redis:6379/0
 OPENAI_API_KEY=sk-proj-bF1fvxRLlkLJYpN6Yld6gWjr1Z4lH2e8kxXSBvKjdPLJA_hgTpz1rVHLe8YqpHGpJ8K6Lz0-2F_9bR5dN3pE6wJ8YlT3-vU7Q2sW8z
+LANGCHAIN_API_KEY=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
 ANTHROPIC_API_KEY=sk-ant-api03-8n5YUmHb75lNPbqhJXdIWwOgV2nqL6m7qzE-0YxkJl3mvzsN1SrKe6zBGpPJQn3xqH
 HUGGINGFACE_API_KEY=hf_SdJhqRmbNXKQvzOLfG3RpK7xYcpVZq2C8K
 NODE_ENV=development

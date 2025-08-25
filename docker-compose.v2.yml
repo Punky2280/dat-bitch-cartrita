@@ -39,12 +39,12 @@ services:
       timeout: 5s
       retries: 3
 
-  # Fastify Backend Service (MCP Orchestrator + V2 API)
-  fastify-backend:
+  # Node.js Backend Service (MCP Orchestrator + V2 API)
+  node-backend:
     build:
-      context: ./packages/cartrita-v2
-      dockerfile: Dockerfile.fastify
-    container_name: cartrita-fastify-backend
+      context: ./packages/cartrita-v2/backend
+      dockerfile: Dockerfile
+    container_name: cartrita-node-backend
     environment:
       NODE_ENV: development
       PORT: 8001
@@ -59,7 +59,7 @@ services:
       OPENAI_TPM_LIMIT: 90000
       OPENAI_CONCURRENT_LIMIT: 10
       
-      # LangChain Configuration
+      # LangChain Configuration (LangChain key for tracing, OpenAI key for API calls)
       LANGCHAIN_TRACING_V2: "false"
       LANGCHAIN_API_KEY: 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
       
@@ -90,7 +90,7 @@ services:
       VECTOR_INDEX_TYPE: hnsw
       
       # Cross-language communication
-      PYTHON_SERVICE_URL: http://fastapi-backend:8002
+      PYTHON_SERVICE_URL: http://python-backend:8002
       MCP_SOCKET_PATH: /tmp/cartrita_mcp.sock
       
     ports:
@@ -113,11 +113,11 @@ services:
       timeout: 10s
       retries: 3
 
-  # FastAPI Backend Service (AI/ML + MCP Copilot Delegation)
-  fastapi-backend:
+  # Python Backend Service (AI/ML + MCP Copilot Delegation)
+  python-backend:
     build:
-      context: ./packages/cartrita-v2
-      dockerfile: Dockerfile.fastapi
+      context: ./py
+      dockerfile: Dockerfile
     container_name: cartrita-python-backend
     environment:
       ENVIRONMENT: development
@@ -139,7 +139,7 @@ services:
       
       # MCP Configuration
       MCP_SOCKET_PATH: /tmp/cartrita_mcp.sock
-      NODE_SERVICE_URL: http://fastify-backend:8001
+      NODE_SERVICE_URL: http://node-backend:8001
       PYTHON_SERVICE_PORT: 8002
       
       # Observability
@@ -155,8 +155,7 @@ services:
       - "8002:8002"
       - "8001:8001"  # Prometheus metrics
     volumes:
-      - ./packages/cartrita-v2/py:/app
-      - ./packages/cartrita-v2/copilot-instructions.md:/app/copilot-instructions.md
+      - ./py:/app
       - mcp_socket:/tmp
       - faiss_data:/data
       - ml_cache:/app/.cache
@@ -182,13 +181,16 @@ services:
   # V2 Frontend (React + Vite)
   frontend:
     build:
-      context: ./packages/cartrita-v2
-      dockerfile: frontend/Dockerfile
+      context: ./packages/cartrita-v2/frontend
+      dockerfile: Dockerfile
     container_name: cartrita-frontend
     environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8001
+      NEXT_PUBLIC_WS_URL: ws://localhost:8001
       VITE_BACKEND_URL: http://localhost:8001
       VITE_PYTHON_BACKEND_URL: http://localhost:8002
       VITE_NODE_ENV: development
+      NODE_ENV: development
     ports:
       - "3000:3000"
     volumes:
@@ -197,8 +199,8 @@ services:
     networks:
       - cartrita-network
     depends_on:
-      - fastify-backend
-      - fastapi-backend
+      - node-backend
+      - python-backend
 
   # Nginx Load Balancer and API Gateway
   nginx:
@@ -213,8 +215,8 @@ services:
     networks:
       - cartrita-network
     depends_on:
-      - fastify-backend
-      - fastapi-backend
+      - node-backend
+      - python-backend
       - frontend
     healthcheck:
       test: ["CMD", "nginx", "-t"]

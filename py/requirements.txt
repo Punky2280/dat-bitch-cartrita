@@ -86,8 +86,8 @@ black>=23.12.0
 python-dotenv>=1.0.0
 pyyaml>=6.0.1
 
-# Optional: Computer vision and audio
-opencv-python>=4.8.0
+# Optional: Computer vision and audio (headless versions)
+opencv-python-headless>=4.8.0
 Pillow>=10.0.0
 librosa>=0.10.0
 soundfile>=0.12.0

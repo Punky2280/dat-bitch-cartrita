@@ -24,9 +24,11 @@ class Settings(BaseSettings):
     redis_db: int = 0
     redis_password: Optional[str] = None
     
-    # API Keys
+    # API Keys - OpenAI for paid API calls, LangChain for tracing
     openai_api_key: str = "sk-proj-bF1fvxRLlkLJYpN6Yld6gWjr1Z4lH2e8kxXSBvKjdPLJA_hgTpz1rVHLe8YqpHGpJ8K6Lz0-2F_9bR5dN3pE6wJ8YlT3-vU7Q2sW8z"
     openai_org_id: Optional[str] = "org-5WLVJZ4pLv5pGzpTzKfVQv6K"
+    # LangChain key for tracing/monitoring (free), OpenAI key used for actual API calls
+    langchain_api_key: str = "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"
     anthropic_api_key: str = "sk-ant-api03-8n5YUmHb75lNPbqhJXdIWwOgV2nqL6m7qzE-0YxkJl3mvzsN1SrKe6zBGpPJQn3xqH"
     huggingface_api_key: str = "hf_SdJhqRmbNXKQvzOLfG3RpK7xYcpVZq2C8K"
     
