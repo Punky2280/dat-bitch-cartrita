@@ -1,33 +1,78 @@
+# Python Backend Requirements for Cartrita Hybrid Architecture
+# AI/ML, Data Science, and Vector Search capabilities
+
+# Core FastAPI and async
+fastapi>=0.105.0
+uvicorn[standard]>=0.25.0
+python-multipart>=0.0.6
+
+# Database and caching
+asyncpg>=0.29.0
+redis[hiredis]>=5.0.1
+sqlalchemy>=2.0.0
+alembic>=1.12.0
+
+# AI/ML Core
+torch>=2.0.0
+transformers>=4.35.0
+sentence-transformers>=2.2.2
+huggingface-hub>=0.17.0
+tokenizers>=0.14.0
+
+# Vector search and embeddings
+faiss-cpu>=1.7.4  # Use faiss-gpu for GPU support
+numpy>=1.24.0
+scipy>=1.11.0
+
+# Data analysis and science
+pandas>=2.1.0
+scikit-learn>=1.3.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+statsmodels>=0.14.0
+
+# NLP specific
+spacy>=3.7.0
+nltk>=3.8.1
+textblob>=0.17.1
+
+# HTTP and networking
+httpx>=0.26.0
+aiohttp>=3.8.0
+requests>=2.31.0
+websockets>=12.0
+uvloop>=0.19.0
+
 # MCP Core Requirements
 pydantic>=2.5.0,<3.0.0
 pydantic[email]>=2.5.0,<3.0.0
-
-# Async and networking
-asyncio-mqtt>=0.14.0
+pydantic-settings>=2.1.0
 aiofiles>=23.2.1
 anyio>=4.2.0
-httpx>=0.26.0
-websockets>=12.0
-uvloop>=0.19.0
 
 # Transport and serialization
 msgpack>=1.0.7
 grpcio>=1.60.0
 grpcio-tools>=1.60.0
 protobuf>=4.25.0
+orjson>=3.9.0
 
 # OpenTelemetry
 opentelemetry-api>=1.21.0
 opentelemetry-sdk>=1.21.0
 opentelemetry-exporter-otlp-proto-grpc>=1.21.0
+opentelemetry-exporter-jaeger-thrift>=1.20.0
 opentelemetry-instrumentation-asyncio>=0.42b0
 opentelemetry-instrumentation-grpc>=0.42b0
 opentelemetry-semantic-conventions>=0.42b0
+prometheus-client>=0.17.0
 
 # Logging and utilities
 structlog>=23.2.0
 tenacity>=8.2.3
-python-multipart>=0.0.6
+click>=8.1.0
+rich>=13.6.0
+tqdm>=4.66.0
 
 # Development and testing
 pytest>=7.4.3
@@ -37,9 +82,16 @@ mypy>=1.8.0
 ruff>=0.1.8
 black>=23.12.0
 
-# FastAPI for health endpoints and metrics
-fastapi>=0.105.0
-uvicorn[standard]>=0.25.0
+# Environment and configuration
+python-dotenv>=1.0.0
+pyyaml>=6.0.1
 
-# Redis for caching and message broker
-redis[hiredis]>=5.0.1
+# Optional: Computer vision and audio
+opencv-python>=4.8.0
+Pillow>=10.0.0
+librosa>=0.10.0
+soundfile>=0.12.0
+
+# Optional: Jupyter for development
+jupyter>=1.0.0
+ipywidgets>=8.1.0

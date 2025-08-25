@@ -1,0 +1,18 @@
+{
+  "produceSourceMap": false,
+  "extension": [".ts"],
+  "reporter": ["text", "json"],
+  "exclude": [
+    "**/*.d.ts",
+    "build/**/*.*",
+    "src/index.ts",
+    "src/platform/**/index.ts",
+    "src/version.ts",
+    "test/**/*.*",
+    ".eslintrc.js",
+    "karma.conf.js",
+    "webpack/*.js",
+    "src/generated/**"
+  ],
+  "all": true
+}

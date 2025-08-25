@@ -5,20 +5,13 @@ WORKDIR /usr/src/app
 # Install git and other necessary packages
 RUN apk add --no-cache git python3 make g++
 
-# Copy package manifests for workspaces
+# Copy package manifests
 COPY package*.json ./
-COPY packages/backend/package*.json ./packages/backend/
 
-# Install dependencies without running prepare scripts (to avoid husky issues)
-RUN npm install --workspaces=false --ignore-scripts
+RUN npm install --ignore-scripts --legacy-peer-deps
 
-# Change to backend directory and install backend-specific dependencies
-WORKDIR /usr/src/app/packages/backend
-COPY packages/backend/package*.json ./
-RUN npm install --ignore-scripts
-
-# Copy the backend source code
-COPY packages/backend/ ./
+# Copy the cartrita-v2 source code
+COPY packages/cartrita-v2/ ./
 
 # Create necessary directories
 RUN mkdir -p uploads logs

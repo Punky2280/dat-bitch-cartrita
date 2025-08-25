@@ -1,0 +1,3 @@
+{
+  "entryPoints": ["src/index.ts", "src/experimental/index.ts"]
+}

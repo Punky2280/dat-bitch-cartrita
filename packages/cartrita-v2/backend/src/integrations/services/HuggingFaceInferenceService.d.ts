@@ -1,0 +1,241 @@
+export default class HuggingFaceInferenceService {
+  hf: HfInference;
+  modelCache: Map<any, any>;
+  taskModelMap: {
+    'audio-text-to-text': string[];
+    'image-text-to-text': string[];
+    'visual-question-answering': string[];
+    'document-question-answering': string[];
+    'video-text-to-text': string[];
+    'visual-document-retrieval': string[];
+    'depth-estimation': string[];
+    'image-classification': string[];
+    'object-detection': string[];
+    'image-segmentation': string[];
+    'text-to-image': string[];
+    'image-to-text': string[];
+    'image-to-image': string[];
+    'image-to-video': string[];
+    'unconditional-image-generation': string[];
+    'video-classification': string[];
+    'text-to-video': string[];
+    'zero-shot-image-classification': string[];
+    'mask-generation': string[];
+    'zero-shot-object-detection': string[];
+    'text-to-3d': string[];
+    'image-to-3d': string[];
+    'image-feature-extraction': string[];
+    'keypoint-detection': string[];
+    'video-to-video': string[];
+    'text-classification': string[];
+    'token-classification': string[];
+    'table-question-answering': string[];
+    'question-answering': string[];
+    'zero-shot-classification': string[];
+    translation: string[];
+    summarization: string[];
+    'feature-extraction': string[];
+    'text-generation': string[];
+    'fill-mask': string[];
+    'sentence-similarity': string[];
+    'text-ranking': string[];
+    'text-to-speech': string[];
+    'text-to-audio': string[];
+    'automatic-speech-recognition': string[];
+    'audio-to-audio': string[];
+    'audio-classification': string[];
+    'voice-activity-detection': string[];
+    'tabular-classification': string[];
+    'tabular-regression': string[];
+    'time-series-forecasting': string[];
+    'reinforcement-learning': string[];
+    robotics: string[];
+    'graph-machine-learning': string[];
+  };
+  initializeTaskModelMap(): {
+    'audio-text-to-text': string[];
+    'image-text-to-text': string[];
+    'visual-question-answering': string[];
+    'document-question-answering': string[];
+    'video-text-to-text': string[];
+    'visual-document-retrieval': string[];
+    'depth-estimation': string[];
+    'image-classification': string[];
+    'object-detection': string[];
+    'image-segmentation': string[];
+    'text-to-image': string[];
+    'image-to-text': string[];
+    'image-to-image': string[];
+    'image-to-video': string[];
+    'unconditional-image-generation': string[];
+    'video-classification': string[];
+    'text-to-video': string[];
+    'zero-shot-image-classification': string[];
+    'mask-generation': string[];
+    'zero-shot-object-detection': string[];
+    'text-to-3d': string[];
+    'image-to-3d': string[];
+    'image-feature-extraction': string[];
+    'keypoint-detection': string[];
+    'video-to-video': string[];
+    'text-classification': string[];
+    'token-classification': string[];
+    'table-question-answering': string[];
+    'question-answering': string[];
+    'zero-shot-classification': string[];
+    translation: string[];
+    summarization: string[];
+    'feature-extraction': string[];
+    'text-generation': string[];
+    'fill-mask': string[];
+    'sentence-similarity': string[];
+    'text-ranking': string[];
+    'text-to-speech': string[];
+    'text-to-audio': string[];
+    'automatic-speech-recognition': string[];
+    'audio-to-audio': string[];
+    'audio-classification': string[];
+    'voice-activity-detection': string[];
+    'tabular-classification': string[];
+    'tabular-regression': string[];
+    'time-series-forecasting': string[];
+    'reinforcement-learning': string[];
+    robotics: string[];
+    'graph-machine-learning': string[];
+  };
+  getRecommendedModel(task: any, options?: {}): any;
+  audioTextToText(
+    audioData: any,
+    options?: {}
+  ): Promise<import('@huggingface/inference').AutomaticSpeechRecognitionOutput>;
+  imageTextToText(
+    imageData: any,
+    text: any,
+    options?: {}
+  ): Promise<import('@huggingface/inference').ImageToTextOutput>;
+  visualQuestionAnswering(
+    imageData: any,
+    question: any,
+    options?: {}
+  ): Promise<import('@huggingface/inference').VisualQuestionAnsweringOutput>;
+  documentQuestionAnswering(
+    imageData: any,
+    question: any,
+    options?: {}
+  ): Promise<import('@huggingface/inference').DocumentQuestionAnsweringOutput>;
+  depthEstimation(imageData: any, options?: {}): Promise<any>;
+  imageClassification(
+    imageData: any,
+    options?: {}
+  ): Promise<import('@huggingface/inference').ImageClassificationOutput>;
+  objectDetection(
+    imageData: any,
+    options?: {}
+  ): Promise<import('@huggingface/inference').ObjectDetectionOutput>;
+  imageSegmentation(
+    imageData: any,
+    options?: {}
+  ): Promise<import('@huggingface/inference').ImageSegmentationOutput>;
+  textToImage(text: any, options?: {}): Promise<Blob>;
+  imageToText(
+    imageData: any,
+    options?: {}
+  ): Promise<import('@huggingface/inference').ImageToTextOutput>;
+  zeroShotImageClassification(
+    imageData: any,
+    labels: any,
+    options?: {}
+  ): Promise<
+    import('@huggingface/inference').ZeroShotImageClassificationOutput
+  >;
+  textClassification(
+    text: any,
+    options?: {}
+  ): Promise<import('@huggingface/inference').TextClassificationOutput>;
+  tokenClassification(
+    text: any,
+    options?: {}
+  ): Promise<import('@huggingface/inference').TokenClassificationOutput>;
+  questionAnswering(
+    question: any,
+    context: any,
+    options?: {}
+  ): Promise<import('@huggingface/inference').QuestionAnsweringOutput>;
+  zeroShotClassification(
+    text: any,
+    labels: any,
+    options?: {}
+  ): Promise<import('@huggingface/inference').ZeroShotClassificationOutput>;
+  translation(
+    text: any,
+    options?: {}
+  ): Promise<import('@huggingface/inference').TranslationOutput>;
+  summarization(
+    text: any,
+    options?: {}
+  ): Promise<import('@huggingface/inference').SummarizationOutput>;
+  textGeneration(
+    prompt: any,
+    options?: {}
+  ): Promise<import('@huggingface/inference').TextGenerationOutput>;
+  fillMask(
+    text: any,
+    options?: {}
+  ): Promise<import('@huggingface/inference').FillMaskOutput>;
+  sentenceSimilarity(
+    sentences: any,
+    options?: {}
+  ): Promise<import('@huggingface/inference').SentenceSimilarityOutput>;
+  textToSpeech(text: any, options?: {}): Promise<Blob>;
+  automaticSpeechRecognition(
+    audioData: any,
+    options?: {}
+  ): Promise<import('@huggingface/inference').AutomaticSpeechRecognitionOutput>;
+  audioClassification(
+    audioData: any,
+    options?: {}
+  ): Promise<import('@huggingface/inference').AudioClassificationReturn>;
+  featureExtraction(
+    text: any,
+    options?: {}
+  ): Promise<import('@huggingface/inference').FeatureExtractionOutput>;
+  listAvailableModels(task: any): Promise<any>;
+  getModelInfo(modelId: any): Promise<{
+    modelId: any;
+    cached: boolean;
+    lastUsed: any;
+  }>;
+  healthCheck(): Promise<
+    | {
+        status: string;
+        message: string;
+        testResult: import('@huggingface/inference').TextClassificationOutput;
+        error?: undefined;
+      }
+    | {
+        status: string;
+        message: any;
+        error: any;
+        testResult?: undefined;
+      }
+  >;
+  batchProcess(tasks: any): Promise<
+    (
+      | {
+          success: boolean;
+          result:
+            | import('@huggingface/inference').ImageClassificationOutput
+            | import('@huggingface/inference').TextGenerationOutput;
+          task: any;
+          error?: undefined;
+        }
+      | {
+          success: boolean;
+          error: any;
+          task: any;
+          result?: undefined;
+        }
+    )[]
+  >;
+}
+import { HfInference } from '@huggingface/inference';

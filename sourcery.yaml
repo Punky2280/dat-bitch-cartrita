@@ -1,6 +1,0 @@
-# Sourcery Configuration for Cartrita V2
-# Token: user_jgWWmo1BwazNufvKZEmx6k3P3rAPFQQdZykTooF2ZEg9gJyrnrjQBO25GGw
-
-# GitHub integration settings
-github:
-  sourcery_branch: sourcery/{base_branch}

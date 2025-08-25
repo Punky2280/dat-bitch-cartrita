@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "strict": true
+  },
+  "include": ["src/**/*", "tests/**/*"],
+  "exclude": [
+    "node_modules",
+    "src/opentelemetry/upstream/**",
+    "src/opentelemetry/upstream-source/**",
+    "src/opentelemetry/contrib/**",
+    "dist",
+    "build"
+  ]
+}

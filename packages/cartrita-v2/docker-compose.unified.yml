@@ -1,0 +1,199 @@
+
+
+services:
+  # PostgreSQL Database with pgvector extension
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: cartrita-v2-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: robert
+      POSTGRES_PASSWORD: punky1
+      POSTGRES_DB: dat-bitch-cartrita
+      POSTGRES_INITDB_ARGS: '--encoding=UTF-8'
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../../db-init:/docker-entrypoint-initdb.d
+    networks:
+      - cartrita-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U robert -d dat-bitch-cartrita']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: cartrita-v2-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - cartrita-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Python Backend Service (AI Agents + FastAPI)
+  python-backend:
+    build:
+      context: ./py
+      dockerfile: Dockerfile
+    container_name: cartrita-v2-python
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: development
+      PORT: 8002
+      
+      # Database Configuration
+      DATABASE_URL: postgresql://robert:punky1@postgres:5432/dat-bitch-cartrita
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: robert
+      POSTGRES_PASSWORD: punky1
+      POSTGRES_DB: dat-bitch-cartrita
+      
+      # Redis Configuration
+      REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      
+      # Cross-service communication
+      NODE_SERVICE_URL: http://node-backend:8001
+      
+      # ML/AI Cache directories
+      TORCH_HOME: /app/.cache/torch
+      TRANSFORMERS_CACHE: /app/.cache/transformers
+      
+      # Computer use settings (headless)
+      DISPLAY: ':99'
+      
+    env_file:
+      - .env
+    ports:
+      - '8002:8002'
+    volumes:
+      - ./py:/app
+      - ml_cache:/app/.cache
+    networks:
+      - cartrita-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8002/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Node.js Backend Service (API Gateway + MCP Integration)
+  node-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cartrita-v2-node
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 8001
+      
+      # Database Configuration
+      DATABASE_URL: postgresql://robert:punky1@postgres:5432/dat-bitch-cartrita
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: robert
+      POSTGRES_PASSWORD: punky1
+      POSTGRES_DB: dat-bitch-cartrita
+      
+      # Redis Configuration
+      REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      
+      # Cross-service communication
+      PYTHON_SERVICE_URL: http://python-backend:8002
+      
+      # Features
+      ENABLE_VECTOR_SEARCH: 'true'
+      ENABLE_MCP_INTEGRATION: 'true'
+      ENABLE_TELEMETRY: 'false'
+      
+    env_file:
+      - .env
+    ports:
+      - '8001:8001'
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    networks:
+      - cartrita-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      python-backend:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget --no-verbose --tries=1 --spider http://localhost:8001/health || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cartrita-v2-frontend
+    restart: unless-stopped
+    command: npm run dev
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8001
+      NEXT_PUBLIC_WS_URL: ws://localhost:8001
+      NEXT_PUBLIC_PYTHON_API_URL: http://localhost:8002
+      TURBOPACK: 1
+      NEXT_TELEMETRY_DISABLED: 1
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - cartrita-network
+    depends_on:
+      - node-backend
+      - python-backend
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  ml_cache:
+    driver: local
+
+networks:
+  cartrita-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16

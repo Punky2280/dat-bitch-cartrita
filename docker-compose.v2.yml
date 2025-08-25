@@ -1,363 +1,327 @@
-# Cartrita V2 Multi-Agent OS - Enhanced Architecture
-# Docker Compose configuration for full monorepo setup
-version: '3.8'
-
-networks:
-  cartrita-v2:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
-
-volumes:
-  postgres_data_v2:
-  redis_data_v2:
-  elasticsearch_data:
-  faiss_data:
-  prometheus_data:
-  grafana_data:
-  uploads_data:
 
 services:
-  # Database Services
+  # PostgreSQL Database with pgvector extension
   postgres:
-    image: pgvector/pgvector:pg15
-    container_name: cartrita-postgres-v2
+    image: ankane/pgvector
+    container_name: cartrita-postgres
     environment:
-      POSTGRES_DB: cartrita_v2
-      POSTGRES_USER: cartrita
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cartrita_secure_pass}
+      POSTGRES_DB: dat-bitch-cartrita
+      POSTGRES_USER: robert
+      POSTGRES_PASSWORD: punky1
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
-    volumes:
-      - postgres_data_v2:/var/lib/postgresql/data
-      - ./db-init:/docker-entrypoint-initdb.d
     ports:
-      - "5433:5432"
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./packages/cartrita-v2/db-init:/docker-entrypoint-initdb.d
     networks:
-      cartrita-v2:
-        ipv4_address: 172.20.0.10
+      - cartrita-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cartrita -d cartrita_v2"]
+      test: ["CMD-SHELL", "pg_isready -U robert -d dat-bitch-cartrita"]
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
 
+  # Redis Cache for cross-language state management
   redis:
     image: redis:7-alpine
-    container_name: cartrita-redis-v2
-    command: >
-      redis-server 
-      --appendonly yes 
-      --requirepass ${REDIS_PASSWORD:-cartrita_redis_pass}
-      --maxmemory 512mb
-      --maxmemory-policy allkeys-lru
-    volumes:
-      - redis_data_v2:/data
+    container_name: cartrita-redis
+    command: redis-server --appendonly yes --requirepass ""
     ports:
-      - "6380:6379"
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
     networks:
-      cartrita-v2:
-        ipv4_address: 172.20.0.11
+      - cartrita-network
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
-      timeout: 3s
-      retries: 5
-    restart: unless-stopped
+      timeout: 5s
+      retries: 3
 
-  # Search & Vector Database
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
-    container_name: cartrita-elasticsearch
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
-    ports:
-      - "9201:9200"
-      - "9301:9300"
-    networks:
-      cartrita-v2:
-        ipv4_address: 172.20.0.12
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    restart: unless-stopped
-
-  # Python FAISS Service
-  faiss-service:
+  # Fastify Backend Service (MCP Orchestrator + V2 API)
+  fastify-backend:
     build:
-      context: ./py/faiss-service
-      dockerfile: Dockerfile
-    container_name: cartrita-faiss
+      context: ./packages/cartrita-v2
+      dockerfile: Dockerfile.fastify
+    container_name: cartrita-fastify-backend
     environment:
-      - PORT=8002
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-cartrita_redis_pass}@redis:6379/2
-      - FAISS_MODEL_NAME=all-MiniLM-L6-v2
-      - FAISS_EMBEDDING_DIM=384
-      - FAISS_INDEX_PATH=/data/faiss_index
-      - ENVIRONMENT=production
-    volumes:
-      - faiss_data:/data
+      NODE_ENV: development
+      PORT: 8001
+      DATABASE_URL: postgresql://robert:punky1@postgres:5432/dat-bitch-cartrita
+      REDIS_URL: redis://redis:6379
+      
+      # OpenAI Configuration
+      OPENAI_API_KEY: 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
+      OPENAI_MODEL: gpt-4o
+      OPENAI_EMBEDDING_MODEL: text-embedding-3-small
+      OPENAI_RPM_LIMIT: 60
+      OPENAI_TPM_LIMIT: 90000
+      OPENAI_CONCURRENT_LIMIT: 10
+      
+      # LangChain Configuration
+      LANGCHAIN_TRACING_V2: "false"
+      LANGCHAIN_API_KEY: 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
+      
+      # Security
+      JWT_SECRET: cartrita-super-secret-jwt-key-that-should-be-changed-in-production-2024
+      JWT_EXPIRY: 72h
+      ENCRYPTION_MASTER_KEY: cartrita-master-encryption-key-change-in-production
+      
+      # External APIs
+      GITHUB_TOKEN: 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
+      HUGGINGFACE_API_KEY: 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
+      HF_TOKEN: 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
+      DEEPGRAM_API_KEY: 101b0f4a2a1a2b50fbc09efd7d10ee73a18ad398
+      
+      # Feature Flags
+      ENABLE_VECTOR_SEARCH: "true"
+      ENABLE_MCP_INTEGRATION: "true"
+      
+      # Observability
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:14268
+      OTEL_SERVICE_NAME: cartrita-nodejs-backend
+      LOG_LEVEL: info
+      
+      # Vector Configuration
+      VECTOR_DIMENSION: 1536
+      EMBEDDING_MODEL: text-embedding-3-large
+      EMBEDDING_DIMENSION: 1536
+      VECTOR_INDEX_TYPE: hnsw
+      
+      # Cross-language communication
+      PYTHON_SERVICE_URL: http://fastapi-backend:8002
+      MCP_SOCKET_PATH: /tmp/cartrita_mcp.sock
+      
     ports:
-      - "8002:8002"
-      - "8003:8001"  # Prometheus metrics
+      - "8001:8001"
+    volumes:
+      - ./packages/cartrita-v2/backend:/app
+      - /app/node_modules
+      - mcp_socket:/tmp
+      - upload_data:/app/uploads
+    networks:
+      - cartrita-network
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # FastAPI Backend Service (AI/ML + MCP Copilot Delegation)
+  fastapi-backend:
+    build:
+      context: ./packages/cartrita-v2
+      dockerfile: Dockerfile.fastapi
+    container_name: cartrita-python-backend
+    environment:
+      ENVIRONMENT: development
+      PORT: 8002
+      DATABASE_URL: postgresql://robert:punky1@postgres:5432/dat-bitch-cartrita
+      REDIS_URL: redis://redis:6379
+      
+      # OpenAI Configuration (shared with Node.js)
+      OPENAI_API_KEY: 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
+      
+      # HuggingFace Configuration
+      HUGGINGFACE_API_KEY: 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
+      HF_TOKEN: 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
+      
+      # FAISS Configuration
+      FAISS_MODEL_NAME: all-MiniLM-L6-v2
+      FAISS_EMBEDDING_DIM: 384
+      FAISS_INDEX_PATH: /data/faiss_index
+      
+      # MCP Configuration
+      MCP_SOCKET_PATH: /tmp/cartrita_mcp.sock
+      NODE_SERVICE_URL: http://fastify-backend:8001
+      PYTHON_SERVICE_PORT: 8002
+      
+      # Observability
+      JAEGER_ENDPOINT: http://jaeger:14268
+      JAEGER_HOST: jaeger
+      JAEGER_PORT: 6831
+      
+      # ML/AI Configuration
+      TORCH_HOME: /app/.cache/torch
+      TRANSFORMERS_CACHE: /app/.cache/transformers
+      
+    ports:
+      - "8002:8002"
+      - "8001:8001"  # Prometheus metrics
+    volumes:
+      - ./packages/cartrita-v2/py:/app
+      - ./packages/cartrita-v2/copilot-instructions.md:/app/copilot-instructions.md
+      - mcp_socket:/tmp
+      - faiss_data:/data
+      - ml_cache:/app/.cache
     networks:
-      cartrita-v2:
-        ipv4_address: 172.20.0.13
+      - cartrita-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
 
-  # Core Application Services
-  backend-v2:
+  # V2 Frontend (React + Vite)
+  frontend:
     build:
-      context: .
-      dockerfile: Dockerfile.backend-v2
-      target: production
-    container_name: cartrita-backend-v2
+      context: ./packages/cartrita-v2
+      dockerfile: frontend/Dockerfile
+    container_name: cartrita-frontend
     environment:
-      - NODE_ENV=production
-      - PORT=8001
-      - DATABASE_URL=postgresql://cartrita:${POSTGRES_PASSWORD:-cartrita_secure_pass}@postgres:5432/cartrita_v2
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-cartrita_redis_pass}@redis:6379/0
-      - ELASTICSEARCH_URL=http://elasticsearch:9200
-      - FAISS_SERVICE_URL=http://faiss-service:8002
-      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
-      - SESSION_SECRET=${SESSION_SECRET:-your-super-secret-session-key}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
-      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-      - OTEL_SERVICE_NAME=cartrita-backend-v2
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:14268/api/traces
+      VITE_BACKEND_URL: http://localhost:8001
+      VITE_PYTHON_BACKEND_URL: http://localhost:8002
+      VITE_NODE_ENV: development
+    ports:
+      - "3000:3000"
     volumes:
-      - uploads_data:/app/uploads
-      - ./logs:/app/logs
-    ports:
-      - "8001:8001"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      elasticsearch:
-        condition: service_healthy
-      faiss-service:
-        condition: service_healthy
+      - ./packages/cartrita-v2/frontend:/app
+      - /app/node_modules
     networks:
-      cartrita-v2:
-        ipv4_address: 172.20.0.20
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    restart: unless-stopped
+      - cartrita-network
+    depends_on:
+      - fastify-backend
+      - fastapi-backend
 
-  frontend-v2:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend-v2
-      target: production
-    container_name: cartrita-frontend-v2
-    environment:
-      - NODE_ENV=production
-      - VITE_API_URL=http://localhost:8001
-      - VITE_WS_URL=ws://localhost:8001
-      - VITE_APP_VERSION=2.0.0
-      - VITE_ENVIRONMENT=production
+  # Nginx Load Balancer and API Gateway
+  nginx:
+    image: nginx:alpine
+    container_name: cartrita-nginx
     ports:
-      - "3001:80"
-    depends_on:
-      - backend-v2
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx-hybrid.conf:/etc/nginx/nginx.conf:ro
+      - ./config/ssl:/etc/nginx/ssl:ro
     networks:
-      cartrita-v2:
-        ipv4_address: 172.20.0.21
+      - cartrita-network
+    depends_on:
+      - fastify-backend
+      - fastapi-backend
+      - frontend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      test: ["CMD", "nginx", "-t"]
       interval: 30s
       timeout: 10s
       retries: 3
-    restart: unless-stopped
 
-  # Worker Services
-  worker:
-    build:
-      context: ./apps/worker
-      dockerfile: Dockerfile
-    container_name: cartrita-worker
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://cartrita:${POSTGRES_PASSWORD:-cartrita_secure_pass}@postgres:5432/cartrita_v2
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-cartrita_redis_pass}@redis:6379/1
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
-      - OTEL_SERVICE_NAME=cartrita-worker
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      cartrita-v2:
-        ipv4_address: 172.20.0.22
-    restart: unless-stopped
-
-  # RAG Service
-  rag-service:
-    build:
-      context: ./apps/rag-service
-      dockerfile: Dockerfile
-    container_name: cartrita-rag
-    environment:
-      - NODE_ENV=production
-      - PORT=8004
-      - DATABASE_URL=postgresql://cartrita:${POSTGRES_PASSWORD:-cartrita_secure_pass}@postgres:5432/cartrita_v2
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-cartrita_redis_pass}@redis:6379/3
-      - ELASTICSEARCH_URL=http://elasticsearch:9200
-      - FAISS_SERVICE_URL=http://faiss-service:8002
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OTEL_SERVICE_NAME=cartrita-rag
-    ports:
-      - "8004:8004"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      elasticsearch:
-        condition: service_healthy
-      faiss-service:
-        condition: service_healthy
-    networks:
-      cartrita-v2:
-        ipv4_address: 172.20.0.23
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
-
-  # Monitoring & Observability
+  # Jaeger for Distributed Tracing
   jaeger:
-    image: jaegertracing/all-in-one:1.50
+    image: jaegertracing/all-in-one:latest
     container_name: cartrita-jaeger
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
-      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
     ports:
       - "16686:16686"  # Jaeger UI
-      - "14250:14250"  # gRPC
-      - "14268:14268"  # HTTP
-      - "6831:6831/udp"  # UDP
-      - "6832:6832/udp"  # UDP
+      - "14268:14268"  # HTTP collector
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
     networks:
-      cartrita-v2:
-        ipv4_address: 172.20.0.30
-    restart: unless-stopped
+      - cartrita-network
 
+  # Prometheus for Metrics Collection
   prometheus:
     image: prom/prometheus:latest
     container_name: cartrita-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--web.enable-lifecycle'
-      - '--web.enable-admin-api'
-    volumes:
-      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    ports:
-      - "9090:9090"
     networks:
-      cartrita-v2:
-        ipv4_address: 172.20.0.31
-    restart: unless-stopped
+      - cartrita-network
 
+  # Grafana for Monitoring Dashboard
   grafana:
     image: grafana/grafana:latest
     container_name: cartrita-grafana
+    ports:
+      - "3001:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
-      - GF_INSTALL_PLUGINS=redis-datasource,elasticsearch-datasource
+      GF_SECURITY_ADMIN_PASSWORD: admin123
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./config/grafana:/etc/grafana/provisioning
-    ports:
-      - "3000:3000"
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - cartrita-network
     depends_on:
       - prometheus
-    networks:
-      cartrita-v2:
-        ipv4_address: 172.20.0.32
-    restart: unless-stopped
 
-  # Development & Testing Services (only in development)
-  mailhog:
-    image: mailhog/mailhog:latest
-    container_name: cartrita-mailhog
-    ports:
-      - "8025:8025"  # Web UI
-      - "1025:1025"  # SMTP
-    networks:
-      cartrita-v2:
-        ipv4_address: 172.20.0.40
-    profiles: ["development"]
-
-  # Load Balancer (for production scaling)
-  nginx:
-    image: nginx:alpine
-    container_name: cartrita-nginx
-    volumes:
-      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./config/ssl:/etc/nginx/ssl:ro
-    ports:
-      - "80:80"
-      - "443:443"
-    depends_on:
-      - backend-v2
-      - frontend-v2
-    networks:
-      cartrita-v2:
-        ipv4_address: 172.20.0.50
-    profiles: ["production"]
-    restart: unless-stopped
-
-  # Backup Service
-  backup:
-    image: prodrigestivill/postgres-backup-local
-    container_name: cartrita-backup
+  # PgAdmin for Database Management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: cartrita-pgadmin
     environment:
-      - POSTGRES_HOST=postgres
-      - POSTGRES_DB=cartrita_v2
-      - POSTGRES_USER=cartrita
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-cartrita_secure_pass}
-      - POSTGRES_EXTRA_OPTS=-Z9 --schema=public --blobs
-      - SCHEDULE=@daily
-      - BACKUP_KEEP_DAYS=7
-      - BACKUP_KEEP_WEEKS=4
-      - BACKUP_KEEP_MONTHS=6
+      PGADMIN_DEFAULT_EMAIL: admin@cartrita.dev
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
     volumes:
-      - ./backups:/backups
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - cartrita-network
     depends_on:
       - postgres
+
+  # Redis Commander for Redis Management
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: cartrita-redis-commander
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8081:8081"
     networks:
-      - cartrita-v2
-    profiles: ["production"]
-    restart: unless-stopped
+      - cartrita-network
+    depends_on:
+      - redis
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  faiss_data:
+    driver: local
+  ml_cache:
+    driver: local
+  mcp_socket:
+    driver: local
+  upload_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  cartrita-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

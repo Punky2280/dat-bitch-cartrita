@@ -452,9 +452,9 @@ export declare const MCPMessageSchema: z.ZodObject<{
     recipient: string;
     message_type: "TASK_REQUEST" | "TASK_RESPONSE" | "STREAM_START" | "STREAM_CHUNK" | "STREAM_END" | "EVENT" | "ERROR";
     created_at: string;
-    correlation_id?: string | undefined;
     trace_id?: string | undefined;
     span_id?: string | undefined;
+    correlation_id?: string | undefined;
     payload?: any;
     tags?: string[] | undefined;
     context?: {
@@ -496,10 +496,10 @@ export declare const MCPMessageSchema: z.ZodObject<{
     sender: string;
     recipient: string;
     message_type: "TASK_REQUEST" | "TASK_RESPONSE" | "STREAM_START" | "STREAM_CHUNK" | "STREAM_END" | "EVENT" | "ERROR";
-    id?: string | undefined;
-    correlation_id?: string | undefined;
     trace_id?: string | undefined;
     span_id?: string | undefined;
+    id?: string | undefined;
+    correlation_id?: string | undefined;
     payload?: any;
     tags?: string[] | undefined;
     context?: {

@@ -1,0 +1,5 @@
+winston:
+  versions:
+    include: '>=2.0.0 <4'
+    mode: max-7
+  commands: npm run test

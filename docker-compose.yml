@@ -66,17 +66,14 @@ services:
 
   backend:
     build:
-      context: .
+      context: ./packages/cartrita-v2
       dockerfile: Dockerfile
-    container_name: cartrita-backend
+    container_name: cartrita-v2-backend
     restart: unless-stopped
     environment:
       - NODE_ENV=development
       - PORT=8001
       - ENABLE_TELEMETRY=false
-      - ENABLE_WORKFLOW_ENGINE=false
-      - ENABLE_MULTIMODAL_FUSION=false
-      - ENABLE_SECURITY_AUDIT=false
       - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
       - POSTGRES_USER=robert
       - POSTGRES_PASSWORD=punky1
@@ -88,14 +85,14 @@ services:
       - DATABASE_URL=postgresql://robert:punky1@postgres:5432/dat-bitch-cartrita
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
     env_file:
-      - packages/backend/.env
+      - packages/cartrita-v2/.env
     ports:
       - '8001:8001'
     volumes:
-      - ./packages/backend:/usr/src/app/packages/backend
-      - ./packages/backend/uploads:/usr/src/app/packages/backend/uploads
-      - ./packages/backend/logs:/usr/src/app/packages/backend/logs
-      - /usr/src/app/packages/backend/node_modules
+      - ./packages/cartrita-v2:/usr/src/app
+      - ./packages/cartrita-v2/uploads:/usr/src/app/uploads
+      - ./packages/cartrita-v2/logs:/usr/src/app/logs
+      - /usr/src/app/node_modules
     networks:
       - cartrita-network
     depends_on:
@@ -110,31 +107,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-    container_name: cartrita-frontend
-    restart: unless-stopped
-    environment:
-      - NODE_ENV=development
-      - VITE_BACKEND_URL=http://localhost:8001
-    ports:
-      - '3001:3000'
-    volumes:
-      - ./packages/frontend/src:/app/src
-      - ./packages/frontend/public:/app/public
-      - ./packages/frontend/index.html:/app/index.html
-      - ./packages/frontend/vite.config.ts:/app/vite.config.ts
-      - ./packages/frontend/tailwind.config.js:/app/tailwind.config.js
-      - ./packages/frontend/postcss.config.js:/app/postcss.config.js
-      - ./packages/frontend/tsconfig.json:/app/tsconfig.json
-      - /app/node_modules
-    networks:
-      - cartrita-network
-    depends_on:
-      - backend
 
 volumes:
   postgres_data:

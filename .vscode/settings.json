@@ -28,11 +28,38 @@
   ],
   "cSpell.words": [
     "cartrita",
+    "faiss",
+    "fastapi",
+    "FINETUNING",
     "hsts",
+    "jscodeshift",
     "linkify",
     "Millis",
+    "psql",
     "sess",
     "setex",
     "sourcery"
+  ],
+  "python.testing.pytestArgs": [
+    "py"
+  ],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "git.ignoreLimitWarning": true,
+  "chat.mcp.discovery.enabled": {
+    "claude-desktop": true
+  },
+  "chat.mcp.autostart": "onlyNew",
+  "chat.todoListTool.enabled": true,
+  "inlineChat.enableV2": true,
+  "inlineChat.lineEmptyHint": true,
+  "inlineChat.notebookAgent": true,
+  "chat.agent.maxRequests": 500,
+  "chat.agent.showThinking": true,
+  "chat.agentSessionsViewLocation": "showChatsMenu",
+  "chat.checkpoints.showFileChanges": true,
+  "chat.mcp.assisted.nuget.enabled": true,
+  "python.analysis.extraPaths": [
+    "./packages/cartrita-v2"
   ]
 }
