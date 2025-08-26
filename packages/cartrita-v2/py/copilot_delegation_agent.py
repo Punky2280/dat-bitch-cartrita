@@ -34,14 +34,15 @@ class GitHubCopilotDelegationAgent:
     4. Delegates tasks to GitHub Copilot as if it were the user
     """
     
-    def __init__(self, openai_api_key: str = None, headless: bool = False):
+    def __init__(self, openai_api_key: Optional[str] = None, headless: bool = False):
         self.client = AsyncOpenAI(api_key=openai_api_key)
         self.is_active = False
         self.project_analysis = {}
         self.gui_enabled = GUI_AVAILABLE and not headless
         
         # Mouse and keyboard control settings (only if GUI available)
-        if self.gui_enabled:
+        if self.gui_enabled and GUI_AVAILABLE:
+            import pyautogui
             pyautogui.FAILSAFE = True  # Move mouse to top-left to stop
             pyautogui.PAUSE = 0.5      # Pause between actions
             print("🖱️ GUI automation enabled")
@@ -183,7 +184,7 @@ class GitHubCopilotDelegationAgent:
         
         print("✅ Codebase analysis completed")
     
-    async def create_delegation_plan(self, task_description: str, copilot_procedures: Dict = None):
+    async def create_delegation_plan(self, task_description: str, copilot_procedures: Optional[Dict[str, Any]] = None):
         """Phase 3: Create intelligent delegation plan for Copilot"""
         print("🎯 Phase 3: Creating Delegation Plan")
         
@@ -269,6 +270,7 @@ class GitHubCopilotDelegationAgent:
         print(f"📂 Opening file: {file_path}")
         
         if self.gui_enabled:
+            import pyautogui
             # Use Ctrl+P to open quick file search
             pyautogui.hotkey('ctrl', 'p')
             await asyncio.sleep(0.5)
@@ -288,6 +290,7 @@ class GitHubCopilotDelegationAgent:
         print(f"💭 Triggering Copilot with: {prompt}")
         
         if self.gui_enabled:
+            import pyautogui
             # Add comment to trigger Copilot
             pyautogui.typewrite(f"// {prompt}")
             pyautogui.press('enter')
@@ -302,6 +305,7 @@ class GitHubCopilotDelegationAgent:
         print("✅ Accepting Copilot suggestion")
         
         if self.gui_enabled:
+            import pyautogui
             pyautogui.press('tab')
             await asyncio.sleep(0.5)
         else:
@@ -311,40 +315,52 @@ class GitHubCopilotDelegationAgent:
         """Navigate to specific code location using Ctrl+G"""
         print(f"🧭 Navigating to: {location}")
         
-        # Use Ctrl+G for "Go to Line"
-        pyautogui.hotkey('ctrl', 'g')
-        await asyncio.sleep(0.5)
-        
-        pyautogui.typewrite(location)
-        pyautogui.press('enter')
-        await asyncio.sleep(0.5)
+        if self.gui_enabled:
+            import pyautogui
+            # Use Ctrl+G for "Go to Line"
+            pyautogui.hotkey('ctrl', 'g')
+            await asyncio.sleep(0.5)
+            
+            pyautogui.typewrite(location)
+            pyautogui.press('enter')
+            await asyncio.sleep(0.5)
+        else:
+            print("   🔧 Simulation: Would navigate to code location")
     
     async def create_copilot_comment(self, comment: str):
         """Create a comment to guide Copilot"""
         print(f"💬 Creating comment: {comment}")
         
-        pyautogui.typewrite(f"// {comment}")
-        pyautogui.press('enter')
-        await asyncio.sleep(1)
+        if self.gui_enabled:
+            import pyautogui
+            pyautogui.typewrite(f"// {comment}")
+            pyautogui.press('enter')
+            await asyncio.sleep(1)
+        else:
+            print("   🔧 Simulation: Would create comment")
     
     async def run_tests_via_terminal(self):
         """Run tests using terminal"""
         print("🧪 Running tests")
         
-        # Open terminal with Ctrl+` (backtick)
-        pyautogui.hotkey('ctrl', '`')
-        await asyncio.sleep(1)
-        
-        # Run npm test or pytest depending on project
-        if "javascript" in self.analysis_results.get("technologies_used", []):
-            pyautogui.typewrite("npm test")
-        elif "python" in self.analysis_results.get("technologies_used", []):
-            pyautogui.typewrite("pytest")
+        if self.gui_enabled:
+            import pyautogui
+            # Open terminal with Ctrl+` (backtick)
+            pyautogui.hotkey('ctrl', '`')
+            await asyncio.sleep(1)
+            
+            # Run npm test or pytest depending on project
+            if "javascript" in self.analysis_results.get("technologies_used", []):
+                pyautogui.typewrite("npm test")
+            elif "python" in self.analysis_results.get("technologies_used", []):
+                pyautogui.typewrite("pytest")
+            else:
+                pyautogui.typewrite("echo 'No test command detected'")
+            
+            pyautogui.press('enter')
+            await asyncio.sleep(3)
         else:
-            pyautogui.typewrite("echo 'No test command detected'")
-        
-        pyautogui.press('enter')
-        await asyncio.sleep(3)
+            print("   🔧 Simulation: Would run tests via terminal")
     
     # Analysis and Detection Methods
     
@@ -427,6 +443,7 @@ class GitHubCopilotDelegationAgent:
         screenshot_path = self.screenshot_dir / f"{step_name}_{timestamp}.png"
         
         if self.gui_enabled:
+            import pyautogui
             try:
                 screenshot = pyautogui.screenshot()
                 screenshot.save(screenshot_path)
@@ -452,12 +469,12 @@ class GitHubCopilotDelegationAgent:
                 ],
                 max_tokens=500
             )
-            return response.choices[0].message.content
+            return response.choices[0].message.content or "Documentation analysis unavailable"
         except Exception as e:
             print(f"⚠️ AI analysis failed: {e}")
             return "Documentation analysis unavailable"
     
-    async def generate_delegation_strategy(self, context: Dict) -> Dict:
+    async def generate_delegation_strategy(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Generate delegation strategy using AI"""
         try:
             # Include copilot procedures in the prompt
@@ -501,7 +518,7 @@ class GitHubCopilotDelegationAgent:
             )
             
             # Parse JSON response
-            strategy_text = response.choices[0].message.content
+            strategy_text = response.choices[0].message.content or ""
             # Extract JSON from response if wrapped in markdown
             if "```json" in strategy_text:
                 strategy_text = strategy_text.split("```json")[1].split("```")[0]
@@ -520,7 +537,7 @@ class GitHubCopilotDelegationAgent:
                 ]
             }
     
-    async def parse_copilot_instructions_with_ai(self, instructions_content: str) -> Dict:
+    async def parse_copilot_instructions_with_ai(self, instructions_content: str) -> Dict[str, Any]:
         """Parse copilot instructions using OpenAI"""
         try:
             response = await self.client.chat.completions.create(
@@ -533,7 +550,7 @@ class GitHubCopilotDelegationAgent:
             )
             
             # Parse JSON response
-            instructions_text = response.choices[0].message.content
+            instructions_text = response.choices[0].message.content or ""
             if "```json" in instructions_text:
                 instructions_text = instructions_text.split("```json")[1].split("```")[0]
             
@@ -543,7 +560,7 @@ class GitHubCopilotDelegationAgent:
             print(f"⚠️ AI parsing failed: {e}")
             return self.get_default_copilot_procedures()
     
-    def get_default_copilot_procedures(self) -> Dict:
+    def get_default_copilot_procedures(self) -> Dict[str, Any]:
         """Get default copilot delegation procedures"""
         return {
             "workflow": "standard",

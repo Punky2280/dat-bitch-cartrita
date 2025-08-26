@@ -9,41 +9,61 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     XAUTHORITY=/tmp/.X99-auth \
     MPLBACKEND=Agg
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install system dependencies with better compatibility
+RUN apt-get update && apt-get install -y --no-install-recommends \
     # Build tools
     build-essential \
     gcc \
     g++ \
     cmake \
     pkg-config \
-    # Python development
+    # Python development (essential for GUI libraries)
     python3-dev \
     python3-tk \
-    # Graphics and GUI libraries  
-    libgl1-mesa-glx \
+    # Graphics and GUI libraries (modern alternatives to obsolete packages)
+    libgl1-mesa-dev \
+    libegl1-mesa-dev \
+    libgles2-mesa-dev \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
     libxrender-dev \
+    libxrandr2 \
+    libxss1 \
+    libxcursor1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxi6 \
+    libxinerama1 \
+    libxkbcommon0 \
     libgomp1 \
     # X11 and virtual display
     xvfb \
     x11-utils \
+    x11-xserver-utils \
     xauth \
     # System utilities
     curl \
     wget \
     git \
-    vim \
+    nano \
     # Audio/video processing
     ffmpeg \
     libsndfile1 \
     # Database clients
     postgresql-client \
+    # Additional dependencies for headless automation
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxdamage1 \
+    libxss1 \
+    libasound2 \
     # Cleanup
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Create app directory
 WORKDIR /app
@@ -55,10 +75,11 @@ RUN useradd --create-home --shell /bin/bash --user-group cartrita
 COPY py/requirements.txt /app/requirements.txt
 COPY py/constraints.txt /app/constraints.txt
 
-# Install Python dependencies
+# Install Python dependencies with better error handling
 RUN pip install --upgrade pip setuptools wheel && \
-    pip install --constraint constraints.txt -r requirements.txt && \
-    pip install --no-deps gunicorn[gthread] uvloop
+    pip install --constraint constraints.txt -r requirements.txt --no-deps || \
+    pip install -r requirements.txt && \
+    pip install gunicorn[gthread] uvloop uvicorn[standard]
 
 # Copy application code
 COPY py/ /app/

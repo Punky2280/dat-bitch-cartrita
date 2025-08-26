@@ -458,8 +458,8 @@ async def stream_chat_response(
             model=agent_config.model,
             messages=messages,
             stream=True,
-            max_tokens=2000,
-            temperature=0.7
+            max_completion_tokens=2000,
+            temperature=1
         )
         
         async for chunk in stream:
@@ -731,8 +731,8 @@ async def analyze_vision_file(request: VisionAnalysisRequest):
                     "content": analysis_prompt
                 }
             ],
-            max_tokens=1000,
-            temperature=0.3
+            max_completion_tokens=1000,
+            temperature=1
         )
 
         analysis_content = response.choices[0].message.content or ""
@@ -977,21 +977,21 @@ async def create_quantum_job(request: QuantumJobRequest):
         # Validate algorithm
         try:
             algorithm = QuantumAlgorithm(request.algorithm)
-        except ValueError:
+        except ValueError as e:
             raise HTTPException(
-                status_code=400, 
-                detail=f"Unsupported algorithm: {request.algorithm}"
-            )
-        
+                status_code=400,
+                detail=f"Unsupported algorithm: {request.algorithm}",
+            ) from e
+
         # Create job
         job_id = await quantum_engine.create_quantum_job(algorithm, request.parameters)
-        
+
         return QuantumJobResponse(
             job_id=job_id,
             status=QuantumJobStatus.PENDING.value,
             message=f"Quantum job created for {algorithm.value}"
         )
-        
+
     except Exception as e:
         logger.error(f"Error creating quantum job: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
