@@ -36,6 +36,8 @@ class AdvancedAudioAnalyticsService {
             chunkDuration: 10, // seconds
             maxFileSize: 50 * 1024 * 1024, // 50MB
             supportedFormats: ['.wav', '.mp3', '.m4a', '.flac', '.ogg'],
+            pythonAnalysisEnabled: true, // Will be set based on environment
+            pythonTimeout: parseInt(process.env.PYTHON_TIMEOUT_MS) || 300000, // 5 minutes default
             // Cloud processing preferences
             cloudProcessing: {
                 enabled: true,
@@ -57,11 +59,24 @@ class AdvancedAudioAnalyticsService {
             
             // Check if HuggingFace token is available
             if (!process.env.HF_TOKEN) {
-                throw new Error('HF_TOKEN required for pyannote.audio models');
+                console.warn('[AudioAnalytics] ⚠️ HF_TOKEN not found - Python audio analysis will be limited');
+                // Don't throw error, allow service to start in degraded mode
+                this.config.pythonAnalysisEnabled = false;
+            } else {
+                this.config.pythonAnalysisEnabled = true;
             }
 
-            // Create Python environment and install dependencies
-            await this.setupPythonEnvironment();
+            // Try to create Python environment and install dependencies (non-blocking)
+            if (this.config.pythonAnalysisEnabled) {
+                try {
+                    console.log('[AudioAnalytics] 🐍 Setting up Python environment...');
+                    await this.setupPythonEnvironment();
+                    console.log('[AudioAnalytics] ✅ Python environment setup completed');
+                } catch (pythonError) {
+                    console.warn('[AudioAnalytics] ⚠️ Python environment setup failed, continuing in degraded mode:', pythonError.message);
+                    this.config.pythonAnalysisEnabled = false;
+                }
+            }
             
             // Initialize database tables for audio analytics
             await this.initializeDatabase();
@@ -72,6 +87,7 @@ class AdvancedAudioAnalyticsService {
             // Initialize HF Jobs service for cloud processing
             if (this.config.cloudProcessing.enabled) {
                 try {
+                    console.log('[AudioAnalytics] ☁️ Initializing cloud processing...');
                     await this.hfJobsService.initialize();
                     console.log('[AudioAnalytics] ✅ Cloud processing enabled');
                 } catch (error) {
@@ -83,11 +99,21 @@ class AdvancedAudioAnalyticsService {
             // Start processing queue
             this.startQueueProcessor();
 
+            // Test Python environment in background (non-blocking)
+            if (this.config.pythonAnalysisEnabled) {
+                this.testPythonEnvironment();
+            }
+
             this.isInitialized = true;
-            console.log('[AudioAnalytics] ✅ Advanced Audio Analytics Service initialized');
+            const mode = this.config.pythonAnalysisEnabled ? 'full' : 'cloud-only';
+            console.log(`[AudioAnalytics] ✅ Advanced Audio Analytics Service initialized (${mode} mode)`);
         } catch (error) {
             console.error('[AudioAnalytics] ❌ Failed to initialize:', error);
-            throw error;
+            // Don't throw error to prevent server startup failure
+            console.log('[AudioAnalytics] 🔄 Service will start in minimal mode');
+            this.isInitialized = true;
+            this.config.pythonAnalysisEnabled = false;
+            this.config.cloudProcessing.enabled = false;
         }
     }
 
@@ -361,10 +387,36 @@ if __name__ == "__main__":
             let results;
             if (this.shouldUseCloudProcessing(audioInfo, analysisType, options)) {
                 console.log(`[AudioAnalytics] Using cloud processing for ${audioFilePath}`);
-                results = await this.runCloudAnalysis(audioFilePath, analysisType, options);
-            } else {
+                try {
+                    results = await this.runCloudAnalysis(audioFilePath, analysisType, options);
+                } catch (cloudError) {
+                    console.warn(`[AudioAnalytics] Cloud processing failed: ${cloudError.message}`);
+                    
+                    // Fallback to local processing if cloud fails and Python is available
+                    if (this.config.pythonAnalysisEnabled && this.config.cloudProcessing.fallbackToLocal) {
+                        console.log(`[AudioAnalytics] Falling back to local processing for ${audioFilePath}`);
+                        results = await this.runPythonAnalysis(audioFilePath, analysisType);
+                    } else {
+                        throw new Error(`Cloud processing failed and no local fallback available: ${cloudError.message}`);
+                    }
+                }
+            } else if (this.config.pythonAnalysisEnabled) {
                 console.log(`[AudioAnalytics] Using local processing for ${audioFilePath}`);
-                results = await this.runPythonAnalysis(audioFilePath, analysisType);
+                try {
+                    results = await this.runPythonAnalysis(audioFilePath, analysisType);
+                } catch (pythonError) {
+                    console.warn(`[AudioAnalytics] Local Python processing failed: ${pythonError.message}`);
+                    
+                    // Fallback to cloud processing if Python fails and cloud is available
+                    if (this.config.cloudProcessing.enabled) {
+                        console.log(`[AudioAnalytics] Falling back to cloud processing for ${audioFilePath}`);
+                        results = await this.runCloudAnalysis(audioFilePath, analysisType, options);
+                    } else {
+                        throw pythonError;
+                    }
+                }
+            } else {
+                throw new Error('No audio processing capability available. Both Python and cloud processing are disabled.');
             }
             
             const processingTime = Date.now() - startTime;
@@ -430,7 +482,120 @@ if __name__ == "__main__":
         }
     }
 
+    // Test Python environment in background (non-blocking)
+    async testPythonEnvironment() {
+        try {
+            console.log('[AudioAnalytics] 🐍 Testing Python environment...');
+            
+            // Quick test to see if python3 is available and can import basic modules
+            const testCode = `
+import sys
+import json
+print(json.dumps({
+    "python_version": sys.version,
+    "python_executable": sys.executable,
+    "status": "available"
+}))
+            `.trim();
+
+            const testResult = await this.runQuickPythonTest(testCode);
+            
+            if (testResult.status === 'available') {
+                console.log('[AudioAnalytics] ✅ Python environment test passed');
+                
+                // Test if pyannote.audio modules are available (with timeout)
+                if (process.env.HF_TOKEN) {
+                    setTimeout(() => this.testPyannoteModules(), 1000); // Test in background
+                }
+            } else {
+                throw new Error('Python environment test failed');
+            }
+        } catch (error) {
+            console.warn('[AudioAnalytics] ⚠️ Python environment test failed:', error.message);
+            this.config.pythonAnalysisEnabled = false;
+        }
+    }
+
+    async runQuickPythonTest(code) {
+        return new Promise((resolve) => {
+            const python = spawn('python3', ['-c', code], {
+                stdio: ['pipe', 'pipe', 'pipe'],
+                timeout: 10000 // 10 second timeout for quick test
+            });
+
+            let stdout = '';
+            let stderr = '';
+
+            python.stdout.on('data', (data) => {
+                stdout += data.toString();
+            });
+
+            python.stderr.on('data', (data) => {
+                stderr += data.toString();
+            });
+
+            python.on('close', (code) => {
+                if (code !== 0) {
+                    resolve({ status: 'error', error: stderr });
+                    return;
+                }
+
+                try {
+                    const result = JSON.parse(stdout);
+                    resolve(result);
+                } catch (error) {
+                    resolve({ status: 'error', error: 'Failed to parse Python output' });
+                }
+            });
+
+            python.on('error', (error) => {
+                resolve({ status: 'error', error: `Failed to start Python: ${error.message}` });
+            });
+
+            // Set a timeout to prevent hanging
+            setTimeout(() => {
+                python.kill('SIGTERM');
+                resolve({ status: 'error', error: 'Python test timed out' });
+            }, 10000);
+        });
+    }
+
+    async testPyannoteModules() {
+        try {
+            console.log('[AudioAnalytics] 🐍 Testing pyannote.audio availability...');
+            
+            const testCode = `
+try:
+    import torch
+    import pyannote.audio
+    print("PYANNOTE_AVAILABLE")
+except ImportError as e:
+    print(f"PYANNOTE_MISSING: {str(e)}")
+except Exception as e:
+    print(f"PYANNOTE_ERROR: {str(e)}")
+            `.trim();
+
+            const result = await this.runQuickPythonTest(testCode);
+            
+            if (result.includes && result.includes('PYANNOTE_AVAILABLE')) {
+                console.log('[AudioAnalytics] ✅ pyannote.audio modules available');
+            } else {
+                console.warn('[AudioAnalytics] ⚠️ pyannote.audio modules not available, only cloud processing will work');
+                this.config.pythonAnalysisEnabled = false;
+            }
+        } catch (error) {
+            console.warn('[AudioAnalytics] ⚠️ pyannote.audio test failed:', error.message);
+            this.config.pythonAnalysisEnabled = false;
+        }
+    }
+
     async runPythonAnalysis(audioPath, analysisType, startTime = null, endTime = null) {
+        if (!this.config.pythonAnalysisEnabled) {
+            throw new Error('Python analysis is disabled. Use cloud processing instead or check Python environment.');
+        }
+
+        console.log(`[AudioAnalytics] 🐍 Running Python analysis: ${analysisType} for ${audioPath}`);
+        
         return new Promise((resolve, reject) => {
             const scriptPath = path.join(__dirname, '../../scripts/audio_analyzer.py');
             
@@ -445,13 +610,37 @@ if __name__ == "__main__":
                 args.push(startTime.toString(), endTime.toString());
             }
 
+            const startTime_ms = Date.now();
             const pythonProcess = spawn('python3', args, {
-                stdio: ['pipe', 'pipe', 'pipe'],
-                timeout: 300000 // 5 minutes timeout
+                stdio: ['pipe', 'pipe', 'pipe']
             });
 
             let stdout = '';
             let stderr = '';
+            let resolved = false;
+            let timeoutHandle;
+
+            const resolveOnce = (result) => {
+                if (!resolved) {
+                    resolved = true;
+                    if (timeoutHandle) {
+                        clearTimeout(timeoutHandle);
+                    }
+                    result.isSuccess ? resolve(result.data) : reject(result.error);
+                }
+            };
+
+            // Manual timeout handling
+            timeoutHandle = setTimeout(() => {
+                if (!resolved) {
+                    console.warn(`[AudioAnalytics] 🐍 Python process timeout after ${this.config.pythonTimeout}ms, assuming ready`);
+                    pythonProcess.kill('SIGTERM');
+                    resolveOnce({
+                        isSuccess: false,
+                        error: new Error(`🐍 Python server startup timeout, assuming ready - Process exceeded ${this.config.pythonTimeout}ms limit`)
+                    });
+                }
+            }, this.config.pythonTimeout);
 
             pythonProcess.stdout.on('data', (data) => {
                 stdout += data.toString();
@@ -462,25 +651,47 @@ if __name__ == "__main__":
             });
 
             pythonProcess.on('close', (code) => {
+                const duration = Date.now() - startTime_ms;
+                console.log(`[AudioAnalytics] 🐍 Python process completed in ${duration}ms with code ${code}`);
+                
                 if (code !== 0) {
-                    reject(new Error(`Python process failed with code ${code}: ${stderr}`));
+                    console.error(`[AudioAnalytics] 🐍 Python process stderr: ${stderr}`);
+                    resolveOnce({
+                        isSuccess: false,
+                        error: new Error(`Python process failed with code ${code}: ${stderr}`)
+                    });
                     return;
                 }
 
                 try {
                     const results = JSON.parse(stdout);
                     if (results.error) {
-                        reject(new Error(`Python analysis error: ${results.error}`));
+                        resolveOnce({
+                            isSuccess: false,
+                            error: new Error(`Python analysis error: ${results.error}`)
+                        });
                     } else {
-                        resolve(results);
+                        console.log(`[AudioAnalytics] ✅ Python analysis completed successfully`);
+                        resolveOnce({
+                            isSuccess: true,
+                            data: results
+                        });
                     }
                 } catch (error) {
-                    reject(new Error(`Failed to parse Python output: ${error.message}`));
+                    console.error(`[AudioAnalytics] 🐍 Failed to parse Python output: ${stdout}`);
+                    resolveOnce({
+                        isSuccess: false,
+                        error: new Error(`Failed to parse Python output: ${error.message}`)
+                    });
                 }
             });
 
             pythonProcess.on('error', (error) => {
-                reject(new Error(`Failed to start Python process: ${error.message}`));
+                console.error(`[AudioAnalytics] 🐍 Python process error: ${error.message}`);
+                resolveOnce({
+                    isSuccess: false,
+                    error: new Error(`Failed to start Python process: ${error.message}`)
+                });
             });
         });
     }
@@ -762,6 +973,12 @@ if __name__ == "__main__":
         if (options.forceLocal) return false;
         if (options.forceCloud) return true;
         
+        // Force cloud processing if Python analysis is disabled
+        if (!this.config.pythonAnalysisEnabled) {
+            console.log('[AudioAnalytics] Using cloud processing (Python analysis disabled)');
+            return true;
+        }
+        
         // Use cloud for large files
         if (audioInfo.size >= this.config.cloudProcessing.minFileSizeForCloud) {
             return true;
@@ -913,8 +1130,15 @@ if __name__ == "__main__":
     // Enhanced Health Check
     async healthCheck() {
         try {
-            // Test local Python environment
-            const localTest = await this.runPythonAnalysis('/dev/null', 'test').catch(() => null);
+            // Check local Python environment status (don't actually run analysis)
+            let pythonStatus = 'unavailable';
+            if (this.config.pythonAnalysisEnabled) {
+                pythonStatus = 'available';
+            } else if (process.env.HF_TOKEN) {
+                pythonStatus = 'token_available_but_disabled';
+            } else {
+                pythonStatus = 'no_token';
+            }
             
             // Test cloud processing if enabled
             let cloudHealth = { available: false };
@@ -922,10 +1146,14 @@ if __name__ == "__main__":
                 cloudHealth = await this.hfJobsService.healthCheck();
             }
             
+            const hasProcessingCapability = this.config.pythonAnalysisEnabled || this.config.cloudProcessing.enabled;
+            
             return {
-                status: 'healthy',
+                status: hasProcessingCapability ? 'healthy' : 'degraded',
                 local_processing: {
-                    python_environment: localTest ? 'available' : 'unavailable',
+                    python_environment: pythonStatus,
+                    enabled: this.config.pythonAnalysisEnabled,
+                    timeout_ms: this.config.pythonTimeout,
                     queue_size: this.analysisQueue.length,
                     cache_size: this.audioCache.size
                 },
@@ -934,12 +1162,14 @@ if __name__ == "__main__":
                     health: cloudHealth,
                     active_jobs: this.cloudJobs.size
                 },
+                initialized: this.isInitialized,
                 last_check: new Date()
             };
         } catch (error) {
             return {
                 status: 'unhealthy',
                 error: error.message,
+                initialized: this.isInitialized,
                 last_check: new Date()
             };
         }
