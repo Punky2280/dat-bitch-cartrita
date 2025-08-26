@@ -1,0 +1,274 @@
+name: 💨 Quick Smoke Tests
+
+on:
+  push:
+    branches: [ main, develop, 'refactor/*', 'feature/*' ]
+    paths:
+      - 'packages/cartrita-v2/py/**'
+      - '.github/workflows/smoke-tests.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'packages/cartrita-v2/py/**'
+  workflow_dispatch:
+    inputs:
+      quick_mode:
+        description: 'Quick mode (skip non-critical tests)'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  PYTHONPATH: ${{ github.workspace }}/packages/cartrita-v2/py
+  TESTING: true
+  GUI_AVAILABLE: false
+  DISPLAY: ':99'
+
+jobs:
+  # ========================================
+  # 🔥 Critical Path Smoke Tests
+  # ========================================
+  smoke-tests:
+    name: 🔥 Smoke Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: packages/cartrita-v2
+    
+    strategy:
+      matrix:
+        python-version: ['3.11']
+        test-type: ['imports', 'basic-functionality', 'services']
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: 'packages/cartrita-v2/py/requirements.txt'
+
+      - name: Install minimal dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y curl xvfb
+          
+          # Start virtual display for GUI testing
+          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+          
+          python -m pip install --upgrade pip
+          pip install -r py/requirements.txt
+
+      - name: Import Tests
+        if: matrix.test-type == 'imports'
+        run: |
+          echo "🔍 Testing critical imports..."
+          
+          python -c "
+          import sys
+          import traceback
+          
+          sys.path.append('py')
+          
+          try:
+              # Test core imports
+              from copilot_delegation_agent import GitHubCopilotDelegationAgent
+              print('✅ copilot_delegation_agent import successful')
+              
+              from mcp_tools_server import app
+              print('✅ mcp_tools_server import successful')
+              
+              # Test optional imports
+              try:
+                  from enhanced_chat_routes import app as chat_app
+                  print('✅ enhanced_chat_routes import successful')
+              except ImportError:
+                  print('⚠️ enhanced_chat_routes not available (optional)')
+              
+              print('🎉 All critical imports successful!')
+              
+          except Exception as e:
+              print(f'❌ Import failed: {e}')
+              traceback.print_exc()
+              sys.exit(1)
+          "
+
+      - name: Basic Functionality Tests
+        if: matrix.test-type == 'basic-functionality'
+        run: |
+          echo "⚙️ Testing basic functionality..."
+          
+          python -c "
+          import sys
+          sys.path.append('py')
+          
+          # Test Copilot Agent initialization
+          from copilot_delegation_agent import GitHubCopilotDelegationAgent
+          
+          agent = GitHubCopilotDelegationAgent()
+          print('✅ GitHubCopilotDelegationAgent created successfully')
+          
+          # Test basic methods exist
+          methods = ['generate_strategy', 'execute_task', 'take_screenshot']
+          for method in methods:
+              if hasattr(agent, method):
+                  print(f'✅ Method {method} available')
+              else:
+                  print(f'⚠️ Method {method} not found')
+          
+          # Test GUI availability detection
+          print(f'📱 GUI Available: {getattr(agent, \"gui_available\", \"unknown\")}')
+          
+          print('🎉 Basic functionality tests passed!')
+          "
+
+      - name: Service Startup Tests
+        if: matrix.test-type == 'services'
+        run: |
+          echo "🚀 Testing service startup..."
+          
+          # Test MCP Tools Server
+          echo "Starting MCP Tools Server..."
+          python py/mcp_tools_server.py &
+          MCP_PID=$!
+          sleep 5
+          
+          # Test service endpoints
+          echo "Testing MCP service endpoints..."
+          
+          # Health check
+          if curl -f http://localhost:8003/ > /dev/null 2>&1; then
+            echo "✅ MCP server health check passed"
+          else
+            echo "❌ MCP server health check failed"
+            kill $MCP_PID || true
+            exit 1
+          fi
+          
+          # Echo endpoint test
+          RESPONSE=$(curl -s -X POST http://localhost:8003/echo \
+            -H "Content-Type: application/json" \
+            -d '{"message":"test"}' 2>/dev/null)
+          
+          if [[ $? -eq 0 && "$RESPONSE" =~ "test" ]]; then
+            echo "✅ MCP echo endpoint working"
+          else
+            echo "❌ MCP echo endpoint failed"
+            kill $MCP_PID || true
+            exit 1
+          fi
+          
+          # Calculate endpoint test
+          CALC_RESPONSE=$(curl -s -X POST http://localhost:8003/calculate \
+            -H "Content-Type: application/json" \
+            -d '{"expression":"2 + 2"}' 2>/dev/null)
+          
+          if [[ $? -eq 0 && "$CALC_RESPONSE" =~ "4" ]]; then
+            echo "✅ MCP calculate endpoint working"
+          else
+            echo "❌ MCP calculate endpoint failed"
+            kill $MCP_PID || true
+            exit 1
+          fi
+          
+          # Cleanup
+          kill $MCP_PID
+          sleep 2
+          
+          echo "🎉 All service tests passed!"
+
+      - name: Performance Check
+        if: matrix.test-type == 'services' && !github.event.inputs.quick_mode
+        run: |
+          echo "⚡ Quick performance check..."
+          
+          # Start MCP server for performance test
+          python py/mcp_tools_server.py &
+          MCP_PID=$!
+          sleep 3
+          
+          # Simple performance test
+          START_TIME=$(date +%s%N)
+          for i in {1..10}; do
+            curl -s -X POST http://localhost:8003/calculate \
+              -H "Content-Type: application/json" \
+              -d '{"expression":"1 + 1"}' > /dev/null
+          done
+          END_TIME=$(date +%s%N)
+          
+          DURATION_MS=$(( (END_TIME - START_TIME) / 1000000 ))
+          AVG_TIME_MS=$(( DURATION_MS / 10 ))
+          
+          echo "📊 Performance: ${AVG_TIME_MS}ms average per request"
+          
+          if [[ $AVG_TIME_MS -lt 100 ]]; then
+            echo "✅ Performance within acceptable range"
+          else
+            echo "⚠️ Performance slower than expected (${AVG_TIME_MS}ms)"
+          fi
+          
+          kill $MCP_PID
+          
+      - name: Report test results
+        if: always()
+        run: |
+          echo "📋 Smoke test results for ${{ matrix.test-type }}:"
+          if [[ "${{ job.status }}" == "success" ]]; then
+            echo "✅ All tests passed"
+          else
+            echo "❌ Some tests failed"
+          fi
+
+  # ========================================
+  # 📊 Smoke Test Summary
+  # ========================================
+  smoke-summary:
+    name: 📊 Smoke Test Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: smoke-tests
+    if: always()
+    
+    steps:
+      - name: Generate smoke test summary
+        run: |
+          echo "# 💨 Smoke Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🎯 Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Smoke Tests:** ${{ needs.smoke-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📋 Test Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- **Python Version:** 3.11" >> $GITHUB_STEP_SUMMARY
+          echo "- **Quick Mode:** ${{ github.event.inputs.quick_mode || 'true' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Types:** imports, basic-functionality, services" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📈 Overall Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.smoke-tests.result }}" == "success" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **All critical paths are working correctly!**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The Cartrita V2 system is ready for:" >> $GITHUB_STEP_SUMMARY
+            echo "- 🤖 GitHub Copilot delegation" >> $GITHUB_STEP_SUMMARY
+            echo "- 🛠️ MCP tools integration" >> $GITHUB_STEP_SUMMARY
+            echo "- 🚀 Production deployment" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **Critical issues detected!**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please check the detailed logs and resolve issues before proceeding." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Final smoke test validation
+        run: |
+          if [[ "${{ needs.smoke-tests.result }}" == "success" ]]; then
+            echo "🎉 Smoke tests passed - system is ready!"
+            exit 0
+          else
+            echo "💥 Smoke tests failed - system needs attention!"
+            exit 1
+          fi

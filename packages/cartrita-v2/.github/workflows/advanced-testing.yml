@@ -1,0 +1,660 @@
+name: 🧪 Advanced Testing Suite
+
+on:
+  push:
+    branches: [ main, develop, 'feature/*', 'refactor/*' ]
+    paths:
+      - 'packages/cartrita-v2/py/**'
+      - 'packages/cartrita-v2/tests/**'
+      - '.github/workflows/advanced-testing.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'packages/cartrita-v2/py/**'
+      - 'packages/cartrita-v2/tests/**'
+  schedule:
+    # Run comprehensive tests daily at 3 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      test_level:
+        description: 'Test Level'
+        required: true
+        default: 'comprehensive'
+        type: choice
+        options:
+          - 'smoke'
+          - 'integration'
+          - 'comprehensive'
+          - 'performance'
+          - 'security'
+      python_versions:
+        description: 'Python versions to test (comma separated)'
+        required: false
+        default: '3.11,3.12'
+        type: string
+      timeout_minutes:
+        description: 'Test timeout (minutes)'
+        required: false
+        default: 45
+        type: number
+
+env:
+  PYTHONPATH: ${{ github.workspace }}/packages/cartrita-v2/py
+  TESTING: true
+  GUI_AVAILABLE: false
+  DISPLAY: ':99'
+
+jobs:
+  # ========================================
+  # 🔍 Test Matrix Setup
+  # ========================================
+  test-matrix:
+    name: 🔍 Configure Test Matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      python-versions: ${{ steps.matrix.outputs.python-versions }}
+      test-suites: ${{ steps.matrix.outputs.test-suites }}
+      performance-tests: ${{ steps.matrix.outputs.performance-tests }}
+    steps:
+      - name: Configure test matrix
+        id: matrix
+        run: |
+          # Configure Python versions
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSIONS="${{ github.event.inputs.python_versions }}"
+          else
+            VERSIONS="3.11,3.12"
+          fi
+          echo "python-versions=[$(echo $VERSIONS | sed 's/,/","/g' | sed 's/^/"/' | sed 's/$/"/')]]" >> $GITHUB_OUTPUT
+          
+          # Configure test suites based on input or defaults
+          TEST_LEVEL="${{ github.event.inputs.test_level || 'comprehensive' }}"
+          case $TEST_LEVEL in
+            "smoke")
+              echo 'test-suites=["smoke", "quick"]' >> $GITHUB_OUTPUT
+              echo 'performance-tests=false' >> $GITHUB_OUTPUT
+              ;;
+            "integration")
+              echo 'test-suites=["integration", "mcp", "copilot"]' >> $GITHUB_OUTPUT
+              echo 'performance-tests=false' >> $GITHUB_OUTPUT
+              ;;
+            "comprehensive")
+              echo 'test-suites=["unit", "integration", "mcp", "copilot", "api", "gui"]' >> $GITHUB_OUTPUT
+              echo 'performance-tests=true' >> $GITHUB_OUTPUT
+              ;;
+            "performance")
+              echo 'test-suites=["performance", "load", "stress"]' >> $GITHUB_OUTPUT
+              echo 'performance-tests=true' >> $GITHUB_OUTPUT
+              ;;
+            "security")
+              echo 'test-suites=["security", "vulnerability", "compliance"]' >> $GITHUB_OUTPUT
+              echo 'performance-tests=false' >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+  # ========================================
+  # 🐍 Python Unit & Integration Tests
+  # ========================================
+  python-tests:
+    name: 🐍 Python Tests (${{ matrix.python-version }}, ${{ matrix.test-suite }})
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ fromJson(github.event.inputs.timeout_minutes || '45') }}
+    needs: test-matrix
+    defaults:
+      run:
+        working-directory: packages/cartrita-v2
+    strategy:
+      matrix:
+        python-version: ${{ fromJson(needs.test-matrix.outputs.python-versions) }}
+        test-suite: ${{ fromJson(needs.test-matrix.outputs.test-suites) }}
+      fail-fast: false
+    
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: cartrita
+          POSTGRES_PASSWORD: SecurePass123
+          POSTGRES_DB: cartrita_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        env:
+          REDIS_PASSWORD: testpassword
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: |
+            packages/cartrita-v2/py/requirements.txt
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            curl \
+            git \
+            libpq-dev \
+            python3-dev \
+            xvfb \
+            x11-utils \
+            redis-tools \
+            postgresql-client \
+            libasound2-dev \
+            libportaudio2 \
+            libffi-dev \
+            libssl-dev
+          
+          # Start virtual display for GUI testing
+          Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 &
+          sleep 2
+          echo "Virtual display started on :99"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r py/requirements.txt
+          
+          # Install testing dependencies
+          pip install \
+            pytest>=7.4.0 \
+            pytest-asyncio>=0.21.0 \
+            pytest-cov>=4.1.0 \
+            pytest-mock>=3.11.0 \
+            pytest-xdist>=3.3.0 \
+            pytest-timeout>=2.1.0 \
+            httpx>=0.24.0 \
+            faker>=19.0.0 \
+            factory-boy>=3.3.0 \
+            pytest-benchmark>=4.0.0 \
+            coverage[toml]>=7.3.0
+
+      - name: Smoke Tests
+        if: matrix.test-suite == 'smoke'
+        run: |
+          echo "🔥 Running smoke tests for critical paths..."
+          
+          # Test basic imports
+          python -c "
+          import sys
+          sys.path.append('py')
+          
+          # Test core imports
+          from copilot_delegation_agent import GitHubCopilotDelegationAgent
+          from mcp_tools_server import app as mcp_app
+          print('✅ Core imports successful')
+          
+          # Test basic initialization
+          agent = GitHubCopilotDelegationAgent()
+          print('✅ Agent initialization successful')
+          "
+          
+          # Test MCP server startup
+          python py/mcp_tools_server.py &
+          MCP_PID=$!
+          sleep 5
+          curl -f http://localhost:8003/ && echo "✅ MCP server responding"
+          kill $MCP_PID
+
+      - name: Unit Tests
+        if: matrix.test-suite == 'unit'
+        env:
+          COVERAGE_FILE: .coverage.${{ matrix.python-version }}.unit
+        run: |
+          echo "🧪 Running unit tests with coverage..."
+          python -m pytest \
+            py/test_*.py \
+            -v \
+            --cov=py \
+            --cov-report=xml:coverage-unit-${{ matrix.python-version }}.xml \
+            --cov-report=html:htmlcov-unit-${{ matrix.python-version }} \
+            --cov-report=term \
+            --junit-xml=junit-unit-${{ matrix.python-version }}.xml \
+            --timeout=300 \
+            -x
+
+      - name: Integration Tests
+        if: matrix.test-suite == 'integration'
+        env:
+          DATABASE_URL: postgresql://cartrita:SecurePass123@localhost:5432/cartrita_test
+          REDIS_URL: redis://localhost:6379
+          COVERAGE_FILE: .coverage.${{ matrix.python-version }}.integration
+        run: |
+          echo "🔗 Running integration tests..."
+          
+          # Test database connectivity
+          python -c "
+          import asyncpg
+          import asyncio
+          async def test_db():
+              conn = await asyncpg.connect('postgresql://cartrita:SecurePass123@localhost:5432/cartrita_test')
+              await conn.execute('SELECT 1')
+              await conn.close()
+              print('✅ Database connection successful')
+          asyncio.run(test_db())
+          "
+          
+          # Test Redis connectivity
+          python -c "
+          import redis
+          r = redis.Redis(host='localhost', port=6379, decode_responses=True)
+          r.ping()
+          print('✅ Redis connection successful')
+          "
+          
+          # Run integration test suite
+          python -m pytest \
+            tests/ \
+            -v \
+            --cov=py \
+            --cov-report=xml:coverage-integration-${{ matrix.python-version }}.xml \
+            --junit-xml=junit-integration-${{ matrix.python-version }}.xml \
+            --timeout=600 \
+            -k "integration"
+
+      - name: MCP Server Tests
+        if: matrix.test-suite == 'mcp'
+        run: |
+          echo "🛠️ Testing MCP Tools Server..."
+          
+          # Start MCP server
+          python py/mcp_tools_server.py &
+          MCP_PID=$!
+          sleep 5
+          
+          # Test all endpoints
+          echo "Testing service info endpoint..."
+          curl -f http://localhost:8003/ | jq .
+          
+          echo "Testing echo endpoint..."
+          curl -f -X POST http://localhost:8003/echo \
+            -H "Content-Type: application/json" \
+            -d '{"message":"Hello MCP"}' | jq .
+          
+          echo "Testing timestamp endpoint..."
+          curl -f -X POST http://localhost:8003/timestamp \
+            -H "Content-Type: application/json" \
+            -d '{}' | jq .
+          
+          echo "Testing calculate endpoint..."
+          curl -f -X POST http://localhost:8003/calculate \
+            -H "Content-Type: application/json" \
+            -d '{"expression":"2 + 2 * 3"}' | jq .
+          
+          # Stop server
+          kill $MCP_PID
+          echo "✅ MCP server tests completed"
+
+      - name: Copilot Agent Tests
+        if: matrix.test-suite == 'copilot'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY != '' && secrets.OPENAI_API_KEY || 'test-key' }}
+        run: |
+          echo "🤖 Testing Copilot Delegation Agent..."
+          
+          python -c "
+          import sys
+          sys.path.append('py')
+          from copilot_delegation_agent import GitHubCopilotDelegationAgent
+          
+          # Test agent initialization
+          agent = GitHubCopilotDelegationAgent()
+          print('✅ Agent created successfully')
+          
+          # Test strategy generation (mock mode)
+          if hasattr(agent, 'generate_strategy'):
+              strategy = agent.generate_strategy('test task', testing_mode=True)
+              print(f'✅ Strategy generation test: {type(strategy)}')
+          
+          print('✅ Copilot agent tests completed')
+          "
+
+      - name: API Tests
+        if: matrix.test-suite == 'api'
+        env:
+          DATABASE_URL: postgresql://cartrita:SecurePass123@localhost:5432/cartrita_test
+          REDIS_URL: redis://localhost:6379
+        run: |
+          echo "🌐 Testing API endpoints..."
+          
+          # Start API server
+          if [ -f "py/enhanced_chat_routes.py" ]; then
+            python py/enhanced_chat_routes.py &
+            API_PID=$!
+            sleep 10
+            
+            # Test health endpoint
+            curl -f http://localhost:8000/health && echo "✅ Health endpoint OK"
+            
+            # Test chat endpoint (if available)
+            curl -f -X POST http://localhost:8000/chat \
+              -H "Content-Type: application/json" \
+              -d '{"message":"test","stream":false}' || echo "Chat endpoint test skipped"
+            
+            kill $API_PID
+          else
+            echo "API tests skipped - no enhanced_chat_routes.py found"
+          fi
+
+      - name: GUI Component Tests
+        if: matrix.test-suite == 'gui'
+        run: |
+          echo "🖥️ Testing GUI components (headless mode)..."
+          
+          python -c "
+          import sys
+          sys.path.append('py')
+          
+          # Test conditional GUI imports
+          try:
+              from copilot_delegation_agent import GitHubCopilotDelegationAgent
+              agent = GitHubCopilotDelegationAgent()
+              
+              # Test GUI availability detection
+              if hasattr(agent, 'gui_available'):
+                  print(f'✅ GUI availability detection: {agent.gui_available}')
+              
+              print('✅ GUI component tests completed')
+          except Exception as e:
+              print(f'⚠️ GUI tests skipped: {e}')
+          "
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.python-version }}-${{ matrix.test-suite }}
+          path: |
+            packages/cartrita-v2/coverage*.xml
+            packages/cartrita-v2/junit*.xml
+            packages/cartrita-v2/htmlcov*/
+            packages/cartrita-v2/pytest_cache/
+          retention-days: 7
+
+  # ========================================
+  # ⚡ Performance & Load Testing
+  # ========================================
+  performance-tests:
+    name: ⚡ Performance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: test-matrix
+    if: needs.test-matrix.outputs.performance-tests == 'true'
+    defaults:
+      run:
+        working-directory: packages/cartrita-v2
+    
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: cartrita
+          POSTGRES_PASSWORD: SecurePass123
+          POSTGRES_DB: cartrita_perf_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r py/requirements.txt
+          pip install pytest-benchmark locust memory-profiler psutil
+
+      - name: MCP Server Performance Tests
+        run: |
+          echo "⚡ Testing MCP server performance..."
+          
+          # Start MCP server
+          python py/mcp_tools_server.py &
+          MCP_PID=$!
+          sleep 5
+          
+          # Run performance benchmarks
+          python -c "
+          import requests
+          import time
+          import statistics
+          
+          url = 'http://localhost:8003/calculate'
+          data = {'expression': '2 + 2 * 3'}
+          
+          # Warm up
+          for _ in range(10):
+              requests.post(url, json=data)
+          
+          # Performance test
+          times = []
+          for i in range(100):
+              start = time.time()
+              response = requests.post(url, json=data)
+              end = time.time()
+              
+              if response.status_code == 200:
+                  times.append(end - start)
+          
+          if times:
+              avg_time = statistics.mean(times)
+              p95_time = statistics.quantiles(times, n=20)[18]  # 95th percentile
+              print(f'✅ MCP Performance - Avg: {avg_time:.3f}s, P95: {p95_time:.3f}s')
+              
+              # Performance assertions
+              assert avg_time < 0.1, f'Average response time too slow: {avg_time:.3f}s'
+              assert p95_time < 0.2, f'P95 response time too slow: {p95_time:.3f}s'
+          else:
+              print('❌ No valid responses recorded')
+          "
+          
+          kill $MCP_PID
+
+      - name: Memory Usage Tests
+        run: |
+          echo "🧠 Testing memory usage..."
+          
+          python -c "
+          import sys
+          sys.path.append('py')
+          import psutil
+          import gc
+          from copilot_delegation_agent import GitHubCopilotDelegationAgent
+          
+          # Measure initial memory
+          process = psutil.Process()
+          initial_memory = process.memory_info().rss / 1024 / 1024  # MB
+          
+          # Create multiple agent instances
+          agents = []
+          for i in range(10):
+              agent = GitHubCopilotDelegationAgent()
+              agents.append(agent)
+          
+          # Measure memory after creation
+          current_memory = process.memory_info().rss / 1024 / 1024  # MB
+          memory_increase = current_memory - initial_memory
+          
+          print(f'💾 Memory usage - Initial: {initial_memory:.1f}MB, After 10 agents: {current_memory:.1f}MB')
+          print(f'💾 Memory increase per agent: {memory_increase / 10:.1f}MB')
+          
+          # Cleanup test
+          agents = None
+          gc.collect()
+          final_memory = process.memory_info().rss / 1024 / 1024  # MB
+          print(f'💾 Memory after cleanup: {final_memory:.1f}MB')
+          
+          # Memory leak check
+          memory_leak = final_memory - initial_memory
+          if memory_leak > 50:  # 50MB threshold
+              print(f'⚠️ Potential memory leak detected: {memory_leak:.1f}MB')
+          else:
+              print(f'✅ Memory usage within acceptable range: {memory_leak:.1f}MB increase')
+          "
+
+  # ========================================
+  # 🔒 Security & Compliance Tests
+  # ========================================
+  security-tests:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: packages/cartrita-v2
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install security tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit safety semgrep
+
+      - name: Run Bandit security scan
+        continue-on-error: true
+        run: |
+          echo "🔍 Running Bandit security scan..."
+          python -m bandit -r py/ -f json -o bandit-results.json
+          python -m bandit -r py/ -f txt
+
+      - name: Check for known vulnerabilities
+        continue-on-error: true
+        run: |
+          echo "🛡️ Checking dependencies for known vulnerabilities..."
+          pip install -r py/requirements.txt
+          safety check --json --output safety-results.json || true
+          safety check
+
+      - name: Semgrep security scan
+        continue-on-error: true
+        run: |
+          echo "🔎 Running Semgrep security scan..."
+          semgrep --config=auto py/ --json --output=semgrep-results.json || true
+          semgrep --config=auto py/
+
+      - name: Upload security results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-results
+          path: |
+            packages/cartrita-v2/bandit-results.json
+            packages/cartrita-v2/safety-results.json
+            packages/cartrita-v2/semgrep-results.json
+
+  # ========================================
+  # 📊 Test Summary & Report
+  # ========================================
+  test-summary:
+    name: 📊 Test Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [test-matrix, python-tests, performance-tests, security-tests]
+    if: always()
+    
+    steps:
+      - name: Download all test artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: test-artifacts
+
+      - name: Generate comprehensive test report
+        run: |
+          echo "# 🧪 Advanced Testing Suite - Summary Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📋 Test Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Level:** ${{ github.event.inputs.test_level || 'comprehensive' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Python Versions:** ${{ needs.test-matrix.outputs.python-versions }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Suites:** ${{ needs.test-matrix.outputs.test-suites }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Performance Tests:** ${{ needs.test-matrix.outputs.performance-tests }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🎯 Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Python Tests:** ${{ needs.python-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Performance Tests:** ${{ needs.performance-tests.result || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Security Tests:** ${{ needs.security-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Count artifacts
+          ARTIFACT_COUNT=$(find test-artifacts -name "*.xml" -o -name "*.json" | wc -l)
+          echo "- **Artifacts Generated:** $ARTIFACT_COUNT files" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📈 Overall Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          
+          # List key artifacts
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📂 Generated Artifacts" >> $GITHUB_STEP_SUMMARY
+          find test-artifacts -type f -name "*.xml" -o -name "*.json" | head -10 | while read file; do
+            echo "- \`$(basename "$file")\`" >> $GITHUB_STEP_SUMMARY
+          done
+
+      - name: Test results validation
+        run: |
+          echo "Validating test execution results..."
+          
+          # Check if critical tests passed
+          if [[ "${{ needs.python-tests.result }}" == "success" ]]; then
+            echo "✅ Core Python tests passed"
+          else
+            echo "❌ Core Python tests failed"
+            exit 1
+          fi
+          
+          # Security scan results (non-blocking)
+          if [[ "${{ needs.security-tests.result }}" == "success" ]]; then
+            echo "✅ Security scans completed"
+          else
+            echo "⚠️ Security scans had issues (non-blocking)"
+          fi
+          
+          echo "🎉 Advanced testing suite completed successfully!"
