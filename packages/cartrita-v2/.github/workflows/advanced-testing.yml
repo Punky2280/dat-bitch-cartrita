@@ -310,9 +310,9 @@ jobs:
 
       - name: Copilot Agent Tests
         if: matrix.test-suite == 'copilot'
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY != '' && secrets.OPENAI_API_KEY || 'test-key' }}
         run: |
+          # Fallback if secret is not available (e.g., PR from fork)
+          export OPENAI_API_KEY="${OPENAI_API_KEY:-test-key}"
           echo "🤖 Testing Copilot Delegation Agent..."
           
           python -c "
