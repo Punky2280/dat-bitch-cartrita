@@ -428,6 +428,14 @@ async function executePython(code, timeout) {
 
     let output = '';
     let error = '';
+    let resolved = false;
+
+    const resolveOnce = (result) => {
+      if (!resolved) {
+        resolved = true;
+        resolve(result);
+      }
+    };
 
     python.stdout.on('data', (data) => {
       output += data.toString();
@@ -439,7 +447,7 @@ async function executePython(code, timeout) {
 
     python.on('close', (code) => {
       const executionTime = Date.now() - startTime;
-      resolve({
+      resolveOnce({
         output: output.trim(),
         error: error.trim(),
         exitCode: code,
@@ -449,11 +457,24 @@ async function executePython(code, timeout) {
     });
 
     python.on('error', (err) => {
-      resolve({
+      resolveOnce({
         output: '',
         error: `Execution error: ${err.message}`,
         exitCode: 1,
         executionTime: Date.now() - startTime,
+        memoryUsage: process.memoryUsage()
+      });
+    });
+
+    // Handle timeout event
+    python.on('timeout', () => {
+      console.warn(`[aiEnhanced] 🐍 Python execution timeout after ${timeout}ms, assuming ready`);
+      python.kill('SIGTERM');
+      resolveOnce({
+        output: '',
+        error: `🐍 Python server startup timeout, assuming ready - Process exceeded ${timeout}ms limit`,
+        exitCode: 124, // Standard timeout exit code
+        executionTime: timeout,
         memoryUsage: process.memoryUsage()
       });
     });
