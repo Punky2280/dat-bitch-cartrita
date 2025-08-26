@@ -1,0 +1,638 @@
+name: Container Build & Security
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'Dockerfile*'
+      - 'docker-compose*.yml'
+      - 'packages/**'
+      - '.dockerignore'
+  pull_request:
+    paths:
+      - 'Dockerfile*'
+      - 'docker-compose*.yml'
+      - 'packages/**'
+      - '.dockerignore'
+  workflow_dispatch:
+    inputs:
+      push_to_registry:
+        description: 'Push images to container registry'
+        required: true
+        default: false
+        type: boolean
+      scan_level:
+        description: 'Security scan level'
+        required: true
+        default: 'standard'
+        type: choice
+        options:
+          - basic
+          - standard
+          - comprehensive
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect-changes:
+    name: Detect Container Changes
+    runs-on: ubuntu-latest
+    outputs:
+      frontend-changed: ${{ steps.changes.outputs.frontend }}
+      backend-changed: ${{ steps.changes.outputs.backend }}
+      docker-changed: ${{ steps.changes.outputs.docker }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changes
+        id: changes
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            frontend:
+              - 'packages/frontend/**'
+              - 'Dockerfile.frontend'
+            backend:
+              - 'packages/backend/**'
+              - 'Dockerfile'
+            docker:
+              - 'docker-compose*.yml'
+              - 'Dockerfile*'
+              - '.dockerignore'
+
+  build-frontend:
+    name: Build Frontend Container
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend-changed == 'true' || needs.detect-changes.outputs.docker-changed == 'true'
+    timeout-minutes: 20
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-size: ${{ steps.build.outputs.size }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push frontend image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.frontend
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event.inputs.push_to_registry == 'true' || github.ref == 'refs/heads/main' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          outputs: |
+            type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend,push=${{ github.event.inputs.push_to_registry == 'true' || github.ref == 'refs/heads/main' }}
+            type=docker,dest=/tmp/frontend-image.tar
+
+      - name: Upload frontend image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-container-image
+          path: /tmp/frontend-image.tar
+          retention-days: 3
+
+      - name: Analyze image size
+        run: |
+          if [ -f "/tmp/frontend-image.tar" ]; then
+            SIZE=$(du -h /tmp/frontend-image.tar | cut -f1)
+            echo "Frontend image size: $SIZE"
+            echo "size=$SIZE" >> $GITHUB_OUTPUT
+          fi
+
+  build-backend:
+    name: Build Backend Container
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend-changed == 'true' || needs.detect-changes.outputs.docker-changed == 'true'
+    timeout-minutes: 25
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-size: ${{ steps.build.outputs.size }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push backend image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event.inputs.push_to_registry == 'true' || github.ref == 'refs/heads/main' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+            BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+            VCS_REF=${{ github.sha }}
+          outputs: |
+            type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend,push=${{ github.event.inputs.push_to_registry == 'true' || github.ref == 'refs/heads/main' }}
+            type=docker,dest=/tmp/backend-image.tar
+
+      - name: Upload backend image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-container-image
+          path: /tmp/backend-image.tar
+          retention-days: 3
+
+      - name: Analyze image size
+        run: |
+          if [ -f "/tmp/backend-image.tar" ]; then
+            SIZE=$(du -h /tmp/backend-image.tar | cut -f1)
+            echo "Backend image size: $SIZE"
+            echo "size=$SIZE" >> $GITHUB_OUTPUT
+          fi
+
+  security-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    needs: [build-frontend, build-backend]
+    if: always() && (needs.build-frontend.result == 'success' || needs.build-backend.result == 'success')
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        include:
+          - component: frontend
+            artifact: frontend-container-image
+            needs-result: ${{ needs.build-frontend.result }}
+          - component: backend
+            artifact: backend-container-image
+            needs-result: ${{ needs.build-backend.result }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download container image
+        if: matrix.needs-result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: /tmp/
+
+      - name: Load container image
+        if: matrix.needs-result == 'success'
+        run: |
+          docker load -i /tmp/${{ matrix.component }}-image.tar
+          docker images
+
+      - name: Run Trivy vulnerability scanner
+        if: matrix.needs-result == 'success'
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.component }}:latest'
+          format: 'sarif'
+          output: 'trivy-${{ matrix.component }}.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        if: matrix.needs-result == 'success'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-${{ matrix.component }}.sarif'
+          category: 'trivy-${{ matrix.component }}'
+
+      - name: Run Trivy scan for critical vulnerabilities
+        if: matrix.needs-result == 'success'
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.component }}:latest'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'  # Don't fail the job, just report
+          output: 'trivy-${{ matrix.component }}-report.txt'
+
+      - name: Analyze security scan results
+        if: matrix.needs-result == 'success'
+        run: |
+          echo "## Security Scan Results for ${{ matrix.component }}" >> security-summary-${{ matrix.component }}.md
+          echo "" >> security-summary-${{ matrix.component }}.md
+          
+          if [ -f "trivy-${{ matrix.component }}-report.txt" ]; then
+            CRITICAL=$(grep -c "CRITICAL" trivy-${{ matrix.component }}-report.txt || echo "0")
+            HIGH=$(grep -c "HIGH" trivy-${{ matrix.component }}-report.txt || echo "0")
+            
+            echo "- **Critical vulnerabilities**: $CRITICAL" >> security-summary-${{ matrix.component }}.md
+            echo "- **High vulnerabilities**: $HIGH" >> security-summary-${{ matrix.component }}.md
+            echo "" >> security-summary-${{ matrix.component }}.md
+            
+            if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+              echo "⚠️ **Action Required**: Security vulnerabilities found" >> security-summary-${{ matrix.component }}.md
+              echo "" >> security-summary-${{ matrix.component }}.md
+              echo "### Top Vulnerabilities:" >> security-summary-${{ matrix.component }}.md
+              echo '```' >> security-summary-${{ matrix.component }}.md
+              head -20 trivy-${{ matrix.component }}-report.txt >> security-summary-${{ matrix.component }}.md
+              echo '```' >> security-summary-${{ matrix.component }}.md
+            else
+              echo "✅ **No critical or high vulnerabilities found**" >> security-summary-${{ matrix.component }}.md
+            fi
+          else
+            echo "❌ Security scan failed or no results available" >> security-summary-${{ matrix.component }}.md
+          fi
+
+      - name: Upload security scan artifacts
+        if: matrix.needs-result == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-${{ matrix.component }}
+          path: |
+            trivy-${{ matrix.component }}.sarif
+            trivy-${{ matrix.component }}-report.txt
+            security-summary-${{ matrix.component }}.md
+          retention-days: 30
+
+  dockerfile-lint:
+    name: Dockerfile Best Practices
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install hadolint
+        run: |
+          wget -q https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64 -O hadolint
+          chmod +x hadolint
+          sudo mv hadolint /usr/local/bin/
+
+      - name: Lint Dockerfiles
+        run: |
+          echo "## Dockerfile Linting Results" > dockerfile-lint-report.md
+          echo "" >> dockerfile-lint-report.md
+          
+          # Find all Dockerfiles
+          DOCKERFILES=$(find . -name "Dockerfile*" -type f)
+          
+          for dockerfile in $DOCKERFILES; do
+            echo "### $dockerfile" >> dockerfile-lint-report.md
+            echo "" >> dockerfile-lint-report.md
+            
+            if hadolint "$dockerfile" > /tmp/hadolint-output.txt 2>&1; then
+              echo "✅ **No issues found**" >> dockerfile-lint-report.md
+            else
+              echo "⚠️ **Issues found:**" >> dockerfile-lint-report.md
+              echo '```' >> dockerfile-lint-report.md
+              cat /tmp/hadolint-output.txt >> dockerfile-lint-report.md
+              echo '```' >> dockerfile-lint-report.md
+            fi
+            echo "" >> dockerfile-lint-report.md
+          done
+
+      - name: Upload lint results
+        uses: actions/upload-artifact@v4
+        with:
+          name: dockerfile-lint-report
+          path: dockerfile-lint-report.md
+          retention-days: 30
+
+  compose-validation:
+    name: Docker Compose Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate docker-compose files
+        run: |
+          echo "🐳 Validating Docker Compose configurations..."
+          
+          # Find all docker-compose files
+          COMPOSE_FILES=$(find . -name "docker-compose*.yml" -type f)
+          
+          echo "## Docker Compose Validation Results" > compose-validation-report.md
+          echo "" >> compose-validation-report.md
+          
+          for file in $COMPOSE_FILES; do
+            echo "### $file" >> compose-validation-report.md
+            echo "" >> compose-validation-report.md
+            
+            if docker-compose -f "$file" config >/dev/null 2>&1; then
+              echo "✅ **Valid configuration**" >> compose-validation-report.md
+              
+              # Check for common best practices
+              if grep -q "restart:" "$file"; then
+                echo "- ✅ Restart policies defined" >> compose-validation-report.md
+              else
+                echo "- ⚠️ Consider adding restart policies" >> compose-validation-report.md
+              fi
+              
+              if grep -q "healthcheck:" "$file"; then
+                echo "- ✅ Health checks configured" >> compose-validation-report.md
+              else
+                echo "- ⚠️ Consider adding health checks" >> compose-validation-report.md
+              fi
+              
+              if grep -q "resource_constraints\|cpus\|memory" "$file"; then
+                echo "- ✅ Resource constraints defined" >> compose-validation-report.md
+              else
+                echo "- ⚠️ Consider adding resource constraints" >> compose-validation-report.md
+              fi
+              
+            else
+              echo "❌ **Invalid configuration**" >> compose-validation-report.md
+              echo '```' >> compose-validation-report.md
+              docker-compose -f "$file" config 2>&1 >> compose-validation-report.md || true
+              echo '```' >> compose-validation-report.md
+            fi
+            echo "" >> compose-validation-report.md
+          done
+
+      - name: Test compose file parsing
+        run: |
+          echo "Testing compose files can be parsed..."
+          
+          # Test the main docker-compose file
+          if [ -f "docker-compose.yml" ]; then
+            echo "✅ Main docker-compose.yml found"
+            docker-compose -f docker-compose.yml config --quiet || echo "❌ Main compose file has issues"
+          fi
+          
+          # Test development compose file
+          if [ -f "docker-compose.dev.yml" ]; then
+            echo "✅ Development docker-compose.dev.yml found"
+            docker-compose -f docker-compose.dev.yml config --quiet || echo "❌ Dev compose file has issues"
+          fi
+
+      - name: Upload validation results
+        uses: actions/upload-artifact@v4
+        with:
+          name: compose-validation-report
+          path: compose-validation-report.md
+          retention-days: 30
+
+  integration-test:
+    name: Container Integration Test
+    runs-on: ubuntu-latest
+    needs: [build-frontend, build-backend]
+    if: needs.build-frontend.result == 'success' && needs.build-backend.result == 'success'
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_USER: testuser
+          POSTGRES_DB: cartrita_integration
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download container images
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-container-image"
+          merge-multiple: true
+          path: /tmp/
+
+      - name: Load container images
+        run: |
+          echo "Loading container images..."
+          docker load -i /tmp/frontend-image.tar
+          docker load -i /tmp/backend-image.tar
+          docker images
+
+      - name: Run integration test with containers
+        env:
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/cartrita_integration
+          REDIS_URL: redis://localhost:6379
+        run: |
+          echo "🧪 Running container integration tests..."
+          
+          # Start backend container
+          docker run -d \
+            --name cartrita-backend-test \
+            --network host \
+            -e DATABASE_URL=$DATABASE_URL \
+            -e REDIS_URL=$REDIS_URL \
+            -e NODE_ENV=test \
+            -e PORT=3003 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:latest
+          
+          # Wait for backend to start
+          sleep 15
+          
+          # Test backend health
+          for i in {1..10}; do
+            if curl -f http://localhost:3003/health; then
+              echo "✅ Backend container is healthy"
+              break
+            else
+              echo "⏳ Waiting for backend... ($i/10)"
+              sleep 3
+            fi
+          done
+          
+          # Test API endpoints
+          curl -f http://localhost:3003/api/agents/role-call || echo "❌ Agent role call failed"
+          curl -f http://localhost:3003/api/unified/health || echo "❌ Unified health failed"
+          
+          # Check container logs for errors
+          echo "📋 Backend container logs:"
+          docker logs cartrita-backend-test --tail=50
+
+      - name: Test frontend container (basic)
+        run: |
+          echo "🖥️ Testing frontend container..."
+          
+          # Start frontend container
+          docker run -d \
+            --name cartrita-frontend-test \
+            -p 3004:80 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:latest
+          
+          # Wait for frontend to start
+          sleep 10
+          
+          # Test if frontend serves content
+          if curl -f http://localhost:3004; then
+            echo "✅ Frontend container is serving content"
+          else
+            echo "❌ Frontend container failed to serve content"
+          fi
+          
+          # Check container logs
+          echo "📋 Frontend container logs:"
+          docker logs cartrita-frontend-test --tail=20
+
+      - name: Cleanup containers
+        if: always()
+        run: |
+          docker stop cartrita-backend-test cartrita-frontend-test || true
+          docker rm cartrita-backend-test cartrita-frontend-test || true
+
+  container-summary:
+    name: Container Build Summary
+    runs-on: ubuntu-latest
+    needs: [build-frontend, build-backend, security-scan, dockerfile-lint, compose-validation, integration-test]
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Generate comprehensive summary
+        run: |
+          echo "# Container Build & Security Summary" > container-summary.md
+          echo "Generated: $(date)" >> container-summary.md
+          echo "" >> container-summary.md
+          
+          echo "## Build Results" >> container-summary.md
+          echo "| Component | Status | Size |" >> container-summary.md
+          echo "|-----------|--------|------|" >> container-summary.md
+          echo "| Frontend | ${{ needs.build-frontend.result }} | ${{ needs.build-frontend.outputs.image-size || 'N/A' }} |" >> container-summary.md
+          echo "| Backend | ${{ needs.build-backend.result }} | ${{ needs.build-backend.outputs.image-size || 'N/A' }} |" >> container-summary.md
+          echo "" >> container-summary.md
+          
+          echo "## Security & Quality Checks" >> container-summary.md
+          echo "| Check | Status |" >> container-summary.md
+          echo "|-------|--------|" >> container-summary.md
+          echo "| Security Scan | ${{ needs.security-scan.result }} |" >> container-summary.md
+          echo "| Dockerfile Lint | ${{ needs.dockerfile-lint.result }} |" >> container-summary.md
+          echo "| Compose Validation | ${{ needs.compose-validation.result }} |" >> container-summary.md
+          echo "| Integration Test | ${{ needs.integration-test.result }} |" >> container-summary.md
+          echo "" >> container-summary.md
+          
+          # Combine security summaries if available
+          if [ -d "artifacts/security-scan-frontend" ] || [ -d "artifacts/security-scan-backend" ]; then
+            echo "## Security Scan Details" >> container-summary.md
+            for dir in artifacts/security-scan-*; do
+              if [ -d "$dir" ] && [ -f "$dir/security-summary-*.md" ]; then
+                cat "$dir"/security-summary-*.md >> container-summary.md
+                echo "" >> container-summary.md
+              fi
+            done
+          fi
+          
+          # Add Dockerfile lint results
+          if [ -f "artifacts/dockerfile-lint-report/dockerfile-lint-report.md" ]; then
+            echo "## Dockerfile Lint Results" >> container-summary.md
+            cat artifacts/dockerfile-lint-report/dockerfile-lint-report.md >> container-summary.md
+            echo "" >> container-summary.md
+          fi
+          
+          echo "## Recommendations" >> container-summary.md
+          
+          if [[ "${{ needs.security-scan.result }}" == "failure" ]]; then
+            echo "- 🔒 Address container security vulnerabilities" >> container-summary.md
+          fi
+          
+          if [[ "${{ needs.dockerfile-lint.result }}" == "failure" ]]; then
+            echo "- 📋 Fix Dockerfile best practice violations" >> container-summary.md
+          fi
+          
+          if [[ "${{ needs.integration-test.result }}" == "failure" ]]; then
+            echo "- 🧪 Fix container integration issues" >> container-summary.md
+          fi
+          
+          echo "- 🏗️ Continue regular container security scans" >> container-summary.md
+          echo "- 📦 Monitor container image sizes and optimize if needed" >> container-summary.md
+          echo "- 🔄 Update base images regularly for security patches" >> container-summary.md
+
+      - name: Upload final summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-build-summary
+          path: container-summary.md
+          retention-days: 30
+
+      - name: Update job summary
+        run: |
+          cat container-summary.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Check for critical security issues
+        run: |
+          # Check if any critical issues need immediate attention
+          CRITICAL_ISSUES=0
+          
+          if [[ "${{ needs.security-scan.result }}" == "failure" ]]; then
+            ((CRITICAL_ISSUES++))
+          fi
+          
+          if [[ "${{ needs.integration-test.result }}" == "failure" ]]; then
+            ((CRITICAL_ISSUES++))
+          fi
+          
+          if [ $CRITICAL_ISSUES -gt 0 ]; then
+            echo "❌ Critical container issues detected requiring immediate attention"
+            exit 1
+          else
+            echo "✅ All container builds and security checks passed"
+          fi

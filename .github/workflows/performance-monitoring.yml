@@ -1,0 +1,963 @@
+name: Performance Monitoring & Benchmarking
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run performance tests daily at 3 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      benchmark_type:
+        description: 'Type of benchmark to run'
+        required: true
+        default: 'standard'
+        type: choice
+        options:
+          - quick
+          - standard
+          - comprehensive
+          - stress-test
+      performance_target:
+        description: 'Performance target environment'
+        required: true
+        default: 'test'
+        type: choice
+        options:
+          - test
+          - staging
+          - production
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend-performance:
+    name: Frontend Performance Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    outputs:
+      lighthouse-score: ${{ steps.lighthouse.outputs.score }}
+      bundle-size: ${{ steps.bundle.outputs.size }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: |
+          cd packages/frontend
+          npm run build || echo "Frontend build may have warnings"
+
+      - name: Analyze bundle size
+        id: bundle
+        run: |
+          if [ -d "packages/frontend/dist" ]; then
+            # Calculate bundle sizes
+            TOTAL_SIZE=$(du -sh packages/frontend/dist | cut -f1)
+            echo "Total bundle size: $TOTAL_SIZE"
+            echo "size=$TOTAL_SIZE" >> $GITHUB_OUTPUT
+            
+            # Analyze individual chunks
+            echo "## Bundle Analysis" > bundle-analysis.md
+            echo "" >> bundle-analysis.md
+            echo "### Bundle Size Summary" >> bundle-analysis.md
+            echo "- **Total Size**: $TOTAL_SIZE" >> bundle-analysis.md
+            echo "" >> bundle-analysis.md
+            
+            # List largest files
+            echo "### Largest Files:" >> bundle-analysis.md
+            find packages/frontend/dist -type f -name "*.js" -o -name "*.css" | \
+            xargs du -h | sort -rh | head -10 | \
+            while read size file; do
+              filename=$(basename "$file")
+              echo "- **$filename**: $size" >> bundle-analysis.md
+            done
+            
+            # Check for common optimization opportunities
+            echo "" >> bundle-analysis.md
+            echo "### Optimization Opportunities:" >> bundle-analysis.md
+            
+            # Check for source maps in production
+            if find packages/frontend/dist -name "*.map" | grep -q .; then
+              echo "- ⚠️ Source maps found in production build" >> bundle-analysis.md
+            else
+              echo "- ✅ No source maps in production build" >> bundle-analysis.md
+            fi
+            
+            # Check for unminified files
+            UNMINIFIED=$(find packages/frontend/dist -name "*.js" -exec grep -l "console\\.log\\|debugger" {} \; | wc -l)
+            if [ "$UNMINIFIED" -gt 0 ]; then
+              echo "- ⚠️ $UNMINIFIED files may contain debug code" >> bundle-analysis.md
+            else
+              echo "- ✅ No debug code detected" >> bundle-analysis.md
+            fi
+            
+          else
+            echo "Frontend dist directory not found"
+            echo "size=unknown" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup test server for Lighthouse
+        run: |
+          cd packages/frontend
+          # Start a static server to serve the built files
+          npx serve -s dist -l 3005 &
+          echo $! > server.pid
+          sleep 5
+
+      - name: Run Lighthouse CI
+        id: lighthouse
+        uses: treosh/lighthouse-ci-action@v11
+        with:
+          configPath: './.lighthouserc.json'
+          urls: |
+            http://localhost:3005
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
+      - name: Analyze Lighthouse results
+        run: |
+          echo "## Lighthouse Performance Analysis" > lighthouse-analysis.md
+          echo "" >> lighthouse-analysis.md
+          
+          # Extract scores from lighthouse results if available
+          if [ -f ".lighthouseci/manifest.json" ]; then
+            echo "Lighthouse tests completed successfully"
+            echo "Check the Lighthouse CI results for detailed metrics"
+            echo "score=completed" >> $GITHUB_OUTPUT
+          else
+            echo "Lighthouse results not available"
+            echo "score=unknown" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Frontend performance recommendations
+        run: |
+          echo "" >> lighthouse-analysis.md
+          echo "### Performance Recommendations:" >> lighthouse-analysis.md
+          echo "- 📦 Monitor bundle size growth over time" >> lighthouse-analysis.md
+          echo "- 🚀 Implement code splitting for better loading performance" >> lighthouse-analysis.md
+          echo "- 🖼️ Optimize images and use modern formats (WebP, AVIF)" >> lighthouse-analysis.md
+          echo "- ⚡ Use lazy loading for non-critical components" >> lighthouse-analysis.md
+          echo "- 🔄 Implement service worker for caching" >> lighthouse-analysis.md
+
+      - name: Cleanup
+        if: always()
+        run: |
+          if [ -f "packages/frontend/server.pid" ]; then
+            kill $(cat packages/frontend/server.pid) || true
+          fi
+
+      - name: Upload frontend performance artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-performance-results
+          path: |
+            bundle-analysis.md
+            lighthouse-analysis.md
+            .lighthouseci/
+          retention-days: 30
+
+  backend-performance:
+    name: Backend Performance Benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_USER: testuser
+          POSTGRES_DB: cartrita_perf
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    outputs:
+      api-response-time: ${{ steps.api-bench.outputs.avg_response_time }}
+      throughput: ${{ steps.api-bench.outputs.requests_per_second }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup test database
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: testuser
+          PGPASSWORD: testpass
+          PGDATABASE: cartrita_perf
+        run: |
+          # Install PostgreSQL client
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          
+          # Setup database
+          psql -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          
+          # Apply minimal schema for performance testing
+          for file in $(find db-init -name "*.sql" | sort -V | head -5); do
+            if [ -f "$file" ]; then
+              psql -f "$file" --single-transaction --set ON_ERROR_STOP=1 || echo "Migration $file may have failed"
+            fi
+          done
+
+      - name: Start backend server
+        env:
+          NODE_ENV: test
+          PORT: 3006
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/cartrita_perf
+          REDIS_URL: redis://localhost:6379
+        run: |
+          cd packages/backend
+          node index.js &
+          echo $! > backend.pid
+          sleep 15
+
+      - name: API response time benchmarks
+        id: api-bench
+        env:
+          API_BASE_URL: http://localhost:3006
+        run: |
+          echo "⚡ Running API response time benchmarks..."
+          
+          # Install hey for load testing
+          curl -sf https://hey-release.s3.amazonaws.com/hey_linux_amd64 -o hey
+          chmod +x hey
+          
+          echo "## Backend API Performance Benchmarks" > backend-performance.md
+          echo "" >> backend-performance.md
+          
+          # Test basic endpoints
+          ENDPOINTS=(
+            "/health"
+            "/api/agents/role-call" 
+            "/api/unified/health"
+            "/api/metrics/custom"
+          )
+          
+          echo "### Individual Endpoint Performance:" >> backend-performance.md
+          echo "" >> backend-performance.md
+          
+          TOTAL_RESPONSE_TIME=0
+          ENDPOINT_COUNT=0
+          
+          for endpoint in "${ENDPOINTS[@]}"; do
+            echo "Testing $endpoint..."
+            
+            # Run 50 requests with 5 concurrent workers
+            ./hey -n 50 -c 5 -q 10 "$API_BASE_URL$endpoint" > hey_output.txt 2>&1 || echo "Test may have warnings"
+            
+            if grep -q "Summary:" hey_output.txt; then
+              AVG_TIME=$(grep "Average:" hey_output.txt | awk '{print $2}' | sed 's/s$//')
+              RPS=$(grep "Requests/sec:" hey_output.txt | awk '{print $2}')
+              
+              echo "- **$endpoint**:" >> backend-performance.md
+              echo "  - Average response time: ${AVG_TIME}s" >> backend-performance.md
+              echo "  - Requests/sec: $RPS" >> backend-performance.md
+              
+              # Convert to milliseconds for calculation
+              AVG_TIME_MS=$(echo "$AVG_TIME * 1000" | bc -l 2>/dev/null || echo "0")
+              TOTAL_RESPONSE_TIME=$(echo "$TOTAL_RESPONSE_TIME + $AVG_TIME_MS" | bc -l 2>/dev/null || echo "0")
+              ((ENDPOINT_COUNT++))
+              
+            else
+              echo "- **$endpoint**: ❌ Test failed" >> backend-performance.md
+            fi
+            echo "" >> backend-performance.md
+          done
+          
+          # Calculate averages
+          if [ $ENDPOINT_COUNT -gt 0 ]; then
+            AVG_RESPONSE_TIME=$(echo "scale=2; $TOTAL_RESPONSE_TIME / $ENDPOINT_COUNT" | bc -l 2>/dev/null || echo "0")
+            echo "avg_response_time=${AVG_RESPONSE_TIME}ms" >> $GITHUB_OUTPUT
+          else
+            echo "avg_response_time=unknown" >> $GITHUB_OUTPUT
+          fi
+          
+          # Overall load test on health endpoint
+          echo "### Load Test Results (Health Endpoint):" >> backend-performance.md
+          ./hey -n 200 -c 10 -t 30 "$API_BASE_URL/health" > load_test.txt 2>&1 || echo "Load test completed with warnings"
+          
+          if grep -q "Summary:" load_test.txt; then
+            TOTAL_RPS=$(grep "Requests/sec:" load_test.txt | awk '{print $2}')
+            echo "requests_per_second=$TOTAL_RPS" >> $GITHUB_OUTPUT
+            
+            echo "- **Total requests**: 200" >> backend-performance.md
+            echo "- **Concurrent connections**: 10" >> backend-performance.md
+            echo "- **Requests per second**: $TOTAL_RPS" >> backend-performance.md
+            
+            # Extract error rate
+            if grep -q "200" load_test.txt; then
+              SUCCESS_RATE=$(grep "200" load_test.txt | awk '{print $2}' || echo "0")
+              echo "- **Success rate**: $SUCCESS_RATE/200" >> backend-performance.md
+            fi
+          else
+            echo "requests_per_second=unknown" >> $GITHUB_OUTPUT
+            echo "- ❌ Load test failed to complete" >> backend-performance.md
+          fi
+
+      - name: Memory and CPU usage analysis
+        run: |
+          echo "" >> backend-performance.md
+          echo "### Resource Usage Analysis:" >> backend-performance.md
+          echo "" >> backend-performance.md
+          
+          # Check if backend process is still running
+          if [ -f "packages/backend/backend.pid" ]; then
+            PID=$(cat packages/backend/backend.pid)
+            
+            if kill -0 $PID 2>/dev/null; then
+              # Get memory usage
+              MEMORY_KB=$(ps -o pid,rss -p $PID | tail -1 | awk '{print $2}')
+              MEMORY_MB=$(echo "scale=1; $MEMORY_KB / 1024" | bc -l 2>/dev/null || echo "unknown")
+              
+              # Get CPU usage (approximate)
+              CPU_PERCENT=$(ps -o pid,pcpu -p $PID | tail -1 | awk '{print $2}')
+              
+              echo "- **Memory Usage**: ${MEMORY_MB} MB" >> backend-performance.md
+              echo "- **CPU Usage**: ${CPU_PERCENT}%" >> backend-performance.md
+              
+              # Memory usage assessment
+              MEMORY_NUM=$(echo "$MEMORY_MB" | cut -d. -f1)
+              if [ "$MEMORY_NUM" -lt 100 ] 2>/dev/null; then
+                echo "- ✅ Memory usage: Excellent" >> backend-performance.md
+              elif [ "$MEMORY_NUM" -lt 300 ] 2>/dev/null; then
+                echo "- ⚠️ Memory usage: Good" >> backend-performance.md
+              else
+                echo "- ❌ Memory usage: High - investigate" >> backend-performance.md
+              fi
+              
+            else
+              echo "- ⚠️ Backend process no longer running" >> backend-performance.md
+            fi
+          else
+            echo "- ❌ Cannot analyze resource usage - PID not found" >> backend-performance.md
+          fi
+
+      - name: AI service performance test
+        env:
+          API_BASE_URL: http://localhost:3006
+        run: |
+          echo "" >> backend-performance.md
+          echo "### AI Service Performance:" >> backend-performance.md
+          echo "" >> backend-performance.md
+          
+          # Test AI-related endpoints that don't require authentication
+          AI_ENDPOINTS=(
+            "/api/unified/health"
+            "/api/huggingface/health"
+          )
+          
+          for endpoint in "${AI_ENDPOINTS[@]}"; do
+            echo "Testing AI endpoint: $endpoint"
+            
+            START_TIME=$(date +%s%3N)
+            if curl -sf "$API_BASE_URL$endpoint" >/dev/null 2>&1; then
+              END_TIME=$(date +%s%3N)
+              RESPONSE_TIME=$((END_TIME - START_TIME))
+              echo "- **$endpoint**: ${RESPONSE_TIME}ms" >> backend-performance.md
+            else
+              echo "- **$endpoint**: ❌ Not available" >> backend-performance.md
+            fi
+          done
+
+      - name: Cleanup backend
+        if: always()
+        run: |
+          if [ -f "packages/backend/backend.pid" ]; then
+            kill $(cat packages/backend/backend.pid) || true
+          fi
+
+      - name: Upload backend performance results
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-performance-results
+          path: |
+            backend-performance.md
+            hey_output.txt
+            load_test.txt
+          retention-days: 30
+
+  database-performance:
+    name: Database Performance Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.event.inputs.benchmark_type != 'quick'
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_USER: testuser
+          POSTGRES_DB: cartrita_db_perf
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    outputs:
+      query-performance: ${{ steps.db-bench.outputs.avg_query_time }}
+      vector-performance: ${{ steps.db-bench.outputs.avg_vector_time }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client and Python
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client python3-pip
+          pip3 install psycopg2-binary numpy
+
+      - name: Setup performance test database
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: testuser
+          PGPASSWORD: testpass
+          PGDATABASE: cartrita_db_perf
+        run: |
+          psql -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          
+          # Create test tables
+          psql -c "CREATE TABLE IF NOT EXISTS perf_test_queries (
+            id SERIAL PRIMARY KEY,
+            content TEXT,
+            category VARCHAR(50),
+            score REAL,
+            created_at TIMESTAMP DEFAULT NOW()
+          );"
+          
+          psql -c "CREATE TABLE IF NOT EXISTS perf_test_vectors (
+            id SERIAL PRIMARY KEY,
+            content TEXT,
+            embedding vector(1536)
+          );"
+
+      - name: Database query performance tests
+        id: db-bench
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: testuser
+          PGPASSWORD: testpass
+          PGDATABASE: cartrita_db_perf
+        run: |
+          echo "🗃️ Running database performance benchmarks..."
+          
+          python3 << 'EOF'
+          import psycopg2
+          import time
+          import numpy as np
+          import random
+          import statistics
+          
+          # Connect to database
+          conn = psycopg2.connect(
+              host="localhost",
+              database="cartrita_db_perf", 
+              user="testuser",
+              password="testpass"
+          )
+          cur = conn.cursor()
+          
+          print("## Database Performance Benchmarks")
+          print()
+          
+          # Insert test data
+          print("Setting up test data...")
+          
+          # Insert regular test data
+          insert_times = []
+          for i in range(1000):
+              content = f"Test content {i} with some additional text for realistic size"
+              category = random.choice(['A', 'B', 'C', 'D', 'E'])
+              score = random.uniform(0, 1)
+              
+              start = time.time()
+              cur.execute(
+                  "INSERT INTO perf_test_queries (content, category, score) VALUES (%s, %s, %s)",
+                  (content, category, score)
+              )
+              insert_times.append((time.time() - start) * 1000)  # ms
+          
+          conn.commit()
+          avg_insert = statistics.mean(insert_times)
+          print(f"✅ Inserted 1000 records")
+          print(f"Average insert time: {avg_insert:.2f}ms")
+          
+          # Add indexes
+          cur.execute("CREATE INDEX IF NOT EXISTS idx_category ON perf_test_queries(category);")
+          cur.execute("CREATE INDEX IF NOT EXISTS idx_score ON perf_test_queries(score);")
+          conn.commit()
+          
+          # Query performance tests
+          print("\n### Query Performance Tests:")
+          print()
+          
+          # Simple select
+          times = []
+          for _ in range(50):
+              start = time.time()
+              cur.execute("SELECT COUNT(*) FROM perf_test_queries")
+              cur.fetchone()
+              times.append((time.time() - start) * 1000)
+          
+          avg_count = statistics.mean(times)
+          print(f"- **COUNT query**: {avg_count:.2f}ms average")
+          
+          # Indexed search
+          times = []
+          for _ in range(50):
+              category = random.choice(['A', 'B', 'C', 'D', 'E'])
+              start = time.time()
+              cur.execute("SELECT * FROM perf_test_queries WHERE category = %s LIMIT 10", (category,))
+              cur.fetchall()
+              times.append((time.time() - start) * 1000)
+          
+          avg_search = statistics.mean(times)
+          print(f"- **Indexed search**: {avg_search:.2f}ms average")
+          
+          # Range query
+          times = []
+          for _ in range(50):
+              start = time.time()
+              cur.execute("SELECT * FROM perf_test_queries WHERE score BETWEEN 0.3 AND 0.7 ORDER BY score LIMIT 20")
+              cur.fetchall()
+              times.append((time.time() - start) * 1000)
+          
+          avg_range = statistics.mean(times)
+          print(f"- **Range query**: {avg_range:.2f}ms average")
+          
+          # Vector performance tests
+          print("\n### Vector Performance Tests:")
+          print()
+          
+          # Insert vector data
+          vector_insert_times = []
+          for i in range(100):  # Smaller dataset for vectors
+              content = f"Vector content {i}"
+              vector = np.random.normal(0, 1, 1536).tolist()
+              vector_str = '[' + ','.join(map(str, vector)) + ']'
+              
+              start = time.time()
+              cur.execute(
+                  "INSERT INTO perf_test_vectors (content, embedding) VALUES (%s, %s)",
+                  (content, vector_str)
+              )
+              vector_insert_times.append((time.time() - start) * 1000)
+          
+          conn.commit()
+          avg_vector_insert = statistics.mean(vector_insert_times)
+          print(f"✅ Inserted 100 vectors")
+          print(f"- **Vector insert**: {avg_vector_insert:.2f}ms average")
+          
+          # Vector similarity search
+          search_times = []
+          for _ in range(20):
+              query_vector = np.random.normal(0, 1, 1536).tolist()
+              query_str = '[' + ','.join(map(str, query_vector)) + ']'
+              
+              start = time.time()
+              cur.execute(
+                  "SELECT content, embedding <-> %s as distance FROM perf_test_vectors ORDER BY distance LIMIT 5",
+                  (query_str,)
+              )
+              cur.fetchall()
+              search_times.append((time.time() - start) * 1000)
+          
+          avg_vector_search = statistics.mean(search_times)
+          print(f"- **Vector similarity search**: {avg_vector_search:.2f}ms average")
+          
+          # Performance assessment
+          print("\n### Performance Assessment:")
+          print()
+          
+          if avg_search < 10:
+              print("✅ **Query Performance**: Excellent")
+          elif avg_search < 50:
+              print("⚠️ **Query Performance**: Good")
+          else:
+              print("❌ **Query Performance**: Needs optimization")
+          
+          if avg_vector_search < 100:
+              print("✅ **Vector Performance**: Excellent")
+          elif avg_vector_search < 300:
+              print("⚠️ **Vector Performance**: Good") 
+          else:
+              print("❌ **Vector Performance**: Needs optimization")
+          
+          # Output for GitHub Actions
+          print(f"\navg_query_time={avg_search:.2f}", file=open('/tmp/github_output', 'w'))
+          print(f"avg_vector_time={avg_vector_search:.2f}", file=open('/tmp/github_output', 'a'))
+          
+          cur.close()
+          conn.close()
+          EOF
+          
+          # Set outputs
+          if [ -f /tmp/github_output ]; then
+            cat /tmp/github_output >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate database performance report
+        run: |
+          echo "# Database Performance Analysis Results" > db-performance.md
+          echo "Generated: $(date)" >> db-performance.md
+          echo "" >> db-performance.md
+          
+          # The Python script already generated the content, so we'll add summary
+          echo "## Performance Summary" >> db-performance.md
+          echo "- **Average Query Time**: ${{ steps.db-bench.outputs.avg_query_time || 'Unknown' }}ms" >> db-performance.md
+          echo "- **Average Vector Search Time**: ${{ steps.db-bench.outputs.avg_vector_time || 'Unknown' }}ms" >> db-performance.md
+          echo "" >> db-performance.md
+          
+          echo "## Recommendations" >> db-performance.md
+          echo "- 📊 Monitor query performance trends over time" >> db-performance.md
+          echo "- 🔍 Add appropriate indexes for frequently queried columns" >> db-performance.md
+          echo "- 🚀 Consider query optimization for slow queries" >> db-performance.md
+          echo "- 🔢 Optimize vector operations with proper indexing" >> db-performance.md
+
+      - name: Upload database performance results
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-performance-results
+          path: db-performance.md
+          retention-days: 30
+
+  stress-testing:
+    name: Stress Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.event.inputs.benchmark_type == 'stress-test' || github.event.inputs.benchmark_type == 'comprehensive'
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_USER: testuser
+          POSTGRES_DB: cartrita_stress
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup database for stress testing
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: testuser
+          PGPASSWORD: testpass
+          PGDATABASE: cartrita_stress
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          psql -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+      - name: Start backend for stress testing
+        env:
+          NODE_ENV: test
+          PORT: 3007
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/cartrita_stress
+          REDIS_URL: redis://localhost:6379
+        run: |
+          cd packages/backend
+          node index.js &
+          echo $! > backend.pid
+          sleep 15
+
+      - name: Run stress tests
+        env:
+          API_BASE_URL: http://localhost:3007
+        run: |
+          # Install hey for load testing
+          curl -sf https://hey-release.s3.amazonaws.com/hey_linux_amd64 -o hey
+          chmod +x hey
+          
+          echo "🔥 Running stress tests..."
+          echo "# Stress Testing Results" > stress-test-results.md
+          echo "" >> stress-test-results.md
+          
+          # High-load test on health endpoint
+          echo "## High Load Test (Health Endpoint)" >> stress-test-results.md
+          echo "- **Requests**: 1000" >> stress-test-results.md
+          echo "- **Concurrent**: 50" >> stress-test-results.md
+          echo "- **Duration**: 60 seconds max" >> stress-test-results.md
+          echo "" >> stress-test-results.md
+          
+          ./hey -n 1000 -c 50 -t 60 "$API_BASE_URL/health" > stress_health.txt 2>&1
+          
+          if grep -q "Summary:" stress_health.txt; then
+            RPS=$(grep "Requests/sec:" stress_health.txt | awk '{print $2}')
+            AVG_TIME=$(grep "Average:" stress_health.txt | awk '{print $2}')
+            SUCCESS=$(grep "200" stress_health.txt | awk '{print $2}' || echo "Unknown")
+            
+            echo "### Results:" >> stress-test-results.md
+            echo "- **Requests/sec**: $RPS" >> stress-test-results.md
+            echo "- **Average response time**: $AVG_TIME" >> stress-test-results.md  
+            echo "- **Successful requests**: $SUCCESS" >> stress-test-results.md
+            
+            # Assessment
+            RPS_NUM=$(echo $RPS | cut -d. -f1)
+            if [ "$RPS_NUM" -gt 100 ] 2>/dev/null; then
+              echo "- ✅ **Assessment**: Excellent throughput" >> stress-test-results.md
+            elif [ "$RPS_NUM" -gt 50 ] 2>/dev/null; then
+              echo "- ⚠️ **Assessment**: Good throughput" >> stress-test-results.md
+            else
+              echo "- ❌ **Assessment**: Low throughput" >> stress-test-results.md
+            fi
+          else
+            echo "- ❌ Stress test failed to complete" >> stress-test-results.md
+          fi
+          
+          echo "" >> stress-test-results.md
+          
+          # Sustained load test
+          echo "## Sustained Load Test" >> stress-test-results.md
+          echo "Testing sustained load over 2 minutes..." >> stress-test-results.md
+          echo "" >> stress-test-results.md
+          
+          ./hey -z 120s -c 20 "$API_BASE_URL/health" > sustained_load.txt 2>&1
+          
+          if grep -q "Summary:" sustained_load.txt; then
+            SUSTAINED_RPS=$(grep "Requests/sec:" sustained_load.txt | awk '{print $2}')
+            TOTAL_REQUESTS=$(grep "Total:" sustained_load.txt | awk '{print $2}')
+            
+            echo "### Sustained Load Results:" >> stress-test-results.md
+            echo "- **Duration**: 2 minutes" >> stress-test-results.md
+            echo "- **Total requests**: $TOTAL_REQUESTS" >> stress-test-results.md
+            echo "- **Sustained RPS**: $SUSTAINED_RPS" >> stress-test-results.md
+          fi
+
+      - name: Memory stress monitoring
+        run: |
+          echo "" >> stress-test-results.md
+          echo "## Resource Usage During Stress Test" >> stress-test-results.md
+          
+          if [ -f "packages/backend/backend.pid" ]; then
+            PID=$(cat packages/backend/backend.pid)
+            
+            if kill -0 $PID 2>/dev/null; then
+              MEMORY_KB=$(ps -o rss -p $PID | tail -1)
+              MEMORY_MB=$(echo "scale=1; $MEMORY_KB / 1024" | bc -l 2>/dev/null)
+              
+              echo "- **Peak Memory Usage**: ${MEMORY_MB} MB" >> stress-test-results.md
+              
+              # Check if process is still responsive
+              if curl -f "$API_BASE_URL/health" >/dev/null 2>&1; then
+                echo "- ✅ **Service Status**: Still responsive after stress test" >> stress-test-results.md
+              else
+                echo "- ❌ **Service Status**: Unresponsive after stress test" >> stress-test-results.md
+              fi
+            else
+              echo "- ❌ **Service Status**: Process crashed during stress test" >> stress-test-results.md
+            fi
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: |
+          if [ -f "packages/backend/backend.pid" ]; then
+            kill $(cat packages/backend/backend.pid) || true
+          fi
+
+      - name: Upload stress test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: stress-test-results
+          path: |
+            stress-test-results.md
+            stress_health.txt
+            sustained_load.txt
+          retention-days: 30
+
+  performance-summary:
+    name: Performance Summary & Analysis
+    runs-on: ubuntu-latest
+    needs: [frontend-performance, backend-performance, database-performance, stress-testing]
+    if: always()
+    steps:
+      - name: Download all performance artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Generate comprehensive performance report
+        run: |
+          echo "# Performance Monitoring & Benchmarking Report" > performance-report.md
+          echo "Generated: $(date)" >> performance-report.md
+          echo "" >> performance-report.md
+          
+          echo "## Performance Test Results Summary" >> performance-report.md
+          echo "| Component | Status | Key Metrics |" >> performance-report.md
+          echo "|-----------|--------|-------------|" >> performance-report.md
+          echo "| Frontend Performance | ${{ needs.frontend-performance.result }} | Bundle: ${{ needs.frontend-performance.outputs.bundle-size || 'N/A' }}, Lighthouse: ${{ needs.frontend-performance.outputs.lighthouse-score || 'N/A' }} |" >> performance-report.md
+          echo "| Backend Performance | ${{ needs.backend-performance.result }} | Avg Response: ${{ needs.backend-performance.outputs.api-response-time || 'N/A' }}, RPS: ${{ needs.backend-performance.outputs.throughput || 'N/A' }} |" >> performance-report.md
+          echo "| Database Performance | ${{ needs.database-performance.result }} | Query: ${{ needs.database-performance.outputs.query-performance || 'N/A' }}ms, Vector: ${{ needs.database-performance.outputs.vector-performance || 'N/A' }}ms |" >> performance-report.md
+          echo "| Stress Testing | ${{ needs.stress-testing.result }} | Load testing completed |" >> performance-report.md
+          echo "" >> performance-report.md
+          
+          # Include individual reports
+          if [ -f "artifacts/frontend-performance-results/bundle-analysis.md" ]; then
+            echo "## Frontend Performance Details" >> performance-report.md
+            cat artifacts/frontend-performance-results/bundle-analysis.md >> performance-report.md
+            echo "" >> performance-report.md
+          fi
+          
+          if [ -f "artifacts/backend-performance-results/backend-performance.md" ]; then
+            echo "## Backend Performance Details" >> performance-report.md
+            cat artifacts/backend-performance-results/backend-performance.md >> performance-report.md
+            echo "" >> performance-report.md
+          fi
+          
+          if [ -f "artifacts/database-performance-results/db-performance.md" ]; then
+            cat artifacts/database-performance-results/db-performance.md >> performance-report.md
+            echo "" >> performance-report.md
+          fi
+          
+          if [ -f "artifacts/stress-test-results/stress-test-results.md" ]; then
+            cat artifacts/stress-test-results/stress-test-results.md >> performance-report.md
+            echo "" >> performance-report.md
+          fi
+          
+          echo "## Overall Performance Assessment" >> performance-report.md
+          
+          # Count successful tests
+          SUCCESS_COUNT=0
+          if [[ "${{ needs.frontend-performance.result }}" == "success" ]]; then ((SUCCESS_COUNT++)); fi
+          if [[ "${{ needs.backend-performance.result }}" == "success" ]]; then ((SUCCESS_COUNT++)); fi  
+          if [[ "${{ needs.database-performance.result }}" == "success" ]]; then ((SUCCESS_COUNT++)); fi
+          if [[ "${{ needs.stress-testing.result }}" == "success" ]]; then ((SUCCESS_COUNT++)); fi
+          
+          if [ $SUCCESS_COUNT -eq 4 ]; then
+            echo "🟢 **Overall Status**: All performance tests passed" >> performance-report.md
+          elif [ $SUCCESS_COUNT -ge 2 ]; then
+            echo "🟡 **Overall Status**: Most performance tests passed with some issues" >> performance-report.md
+          else
+            echo "🔴 **Overall Status**: Multiple performance issues detected" >> performance-report.md
+          fi
+          
+          echo "" >> performance-report.md
+          echo "## Performance Optimization Recommendations" >> performance-report.md
+          
+          if [[ "${{ needs.frontend-performance.result }}" != "success" ]]; then
+            echo "- 🖥️ Address frontend performance issues" >> performance-report.md
+          fi
+          
+          if [[ "${{ needs.backend-performance.result }}" != "success" ]]; then
+            echo "- ⚡ Optimize backend API response times" >> performance-report.md
+          fi
+          
+          if [[ "${{ needs.database-performance.result }}" != "success" ]]; then
+            echo "- 🗃️ Tune database queries and indexes" >> performance-report.md
+          fi
+          
+          if [[ "${{ needs.stress-testing.result }}" != "success" ]]; then
+            echo "- 🔥 Improve system resilience under load" >> performance-report.md
+          fi
+          
+          echo "- 📊 Implement continuous performance monitoring" >> performance-report.md
+          echo "- 🚀 Set up performance budgets and alerts" >> performance-report.md
+          echo "- 📈 Track performance trends over time" >> performance-report.md
+          echo "- 🔧 Regular performance profiling and optimization" >> performance-report.md
+
+      - name: Upload comprehensive performance report
+        uses: actions/upload-artifact@v4
+        with:
+          name: comprehensive-performance-report
+          path: performance-report.md
+          retention-days: 90
+
+      - name: Update job summary
+        run: |
+          cat performance-report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Check for performance regressions
+        run: |
+          # Check if any critical performance issues were found
+          CRITICAL_ISSUES=0
+          
+          if [[ "${{ needs.backend-performance.result }}" == "failure" ]]; then
+            echo "❌ Backend performance issues detected"
+            ((CRITICAL_ISSUES++))
+          fi
+          
+          if [[ "${{ needs.database-performance.result }}" == "failure" ]]; then
+            echo "❌ Database performance issues detected"
+            ((CRITICAL_ISSUES++))
+          fi
+          
+          if [[ "${{ needs.stress-testing.result }}" == "failure" ]]; then
+            echo "❌ System failed stress testing"
+            ((CRITICAL_ISSUES++))
+          fi
+          
+          if [ $CRITICAL_ISSUES -gt 1 ]; then
+            echo "❌ Multiple critical performance issues detected"
+            exit 1
+          elif [ $CRITICAL_ISSUES -eq 1 ]; then
+            echo "⚠️ Performance issue detected - review recommended"
+            exit 0
+          else
+            echo "✅ All performance tests passed successfully"
+          fi

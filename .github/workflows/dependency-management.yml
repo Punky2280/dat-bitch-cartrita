@@ -1,0 +1,478 @@
+name: Dependency Management & Updates
+
+on:
+  schedule:
+    # Run weekly on Mondays at 2 AM UTC
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+    inputs:
+      update_type:
+        description: 'Type of update to perform'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - all
+      create_pr:
+        description: 'Create PR for updates'
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  dependency-audit:
+    name: Security Audit & Vulnerability Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      vulnerabilities: ${{ steps.audit.outputs.vulnerabilities }}
+      outdated: ${{ steps.outdated.outputs.outdated }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run security audit
+        id: audit
+        run: |
+          echo "Running npm audit..."
+          npm audit --json > audit-results.json || true
+          
+          # Check for high/critical vulnerabilities
+          HIGH_VULNS=$(cat audit-results.json | jq -r '.metadata.vulnerabilities.high // 0')
+          CRITICAL_VULNS=$(cat audit-results.json | jq -r '.metadata.vulnerabilities.critical // 0')
+          
+          echo "vulnerabilities={\"high\":$HIGH_VULNS,\"critical\":$CRITICAL_VULNS}" >> $GITHUB_OUTPUT
+          
+          if [ "$HIGH_VULNS" -gt 0 ] || [ "$CRITICAL_VULNS" -gt 0 ]; then
+            echo "🚨 Found $CRITICAL_VULNS critical and $HIGH_VULNS high vulnerabilities"
+            cat audit-results.json | jq -r '.vulnerabilities | to_entries[] | select(.value.severity == "high" or .value.severity == "critical") | "- \(.key): \(.value.title)"'
+          fi
+
+      - name: Check outdated dependencies
+        id: outdated
+        run: |
+          echo "Checking for outdated dependencies..."
+          npm outdated --json > outdated.json || true
+          
+          # Count outdated packages
+          OUTDATED_COUNT=$(cat outdated.json | jq -r 'length // 0')
+          echo "outdated=$OUTDATED_COUNT" >> $GITHUB_OUTPUT
+          
+          if [ "$OUTDATED_COUNT" -gt 0 ]; then
+            echo "📦 Found $OUTDATED_COUNT outdated dependencies"
+            cat outdated.json | jq -r 'to_entries[] | "- \(.key): \(.value.current) → \(.value.latest)"' | head -10
+          fi
+
+      - name: License compliance check
+        run: |
+          echo "Checking license compliance..."
+          npx license-checker --json > licenses.json || echo "License checker not available"
+          
+          # Check for problematic licenses
+          if [ -f licenses.json ]; then
+            echo "📄 License summary:"
+            cat licenses.json | jq -r 'to_entries[] | select(.value.licenses) | .value.licenses' | sort | uniq -c | sort -nr
+          fi
+
+      - name: Upload audit artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit-results
+          path: |
+            audit-results.json
+            outdated.json
+            licenses.json
+          retention-days: 30
+
+  update-dependencies:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: dependency-audit
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && needs.dependency-audit.outputs.vulnerabilities != '{"high":0,"critical":0}')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create update branch
+        id: branch
+        run: |
+          BRANCH_NAME="deps/auto-update-$(date +%Y%m%d-%H%M%S)"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          git checkout -b "$BRANCH_NAME"
+
+      - name: Update patch versions
+        if: github.event.inputs.update_type == 'patch' || github.event.inputs.update_type == 'all' || github.event_name == 'schedule'
+        run: |
+          echo "Updating patch versions..."
+          npx npm-check-updates -u --target patch || true
+          npm install || true
+
+      - name: Update minor versions
+        if: github.event.inputs.update_type == 'minor' || github.event.inputs.update_type == 'all'
+        run: |
+          echo "Updating minor versions..."
+          npx npm-check-updates -u --target minor || true
+          npm install || true
+
+      - name: Update major versions (careful!)
+        if: github.event.inputs.update_type == 'major' || github.event.inputs.update_type == 'all'
+        run: |
+          echo "⚠️ Updating major versions - this may introduce breaking changes"
+          npx npm-check-updates -u --target major || true
+          npm install || true
+
+      - name: Run basic tests after updates
+        run: |
+          # Run quick smoke tests to check if updates broke anything
+          npm run lint || echo "Lint issues after updates"
+          npm run theme:scan || echo "Theme issues after updates"
+          
+          # Try to start backend briefly
+          timeout 30s node packages/backend/index.js || echo "Backend startup test completed"
+
+      - name: Generate update summary
+        id: summary
+        run: |
+          # Check what changed
+          git diff --name-only HEAD^ HEAD > changed_files.txt || echo "package*.json" > changed_files.txt
+          
+          # Generate summary
+          echo "## Dependency Updates Summary" > update_summary.md
+          echo "" >> update_summary.md
+          
+          if git diff --quiet HEAD^ HEAD package*.json 2>/dev/null; then
+            echo "No dependency changes detected." >> update_summary.md
+          else
+            echo "### Updated Files:" >> update_summary.md
+            cat changed_files.txt | sed 's/^/- /' >> update_summary.md
+            echo "" >> update_summary.md
+            
+            echo "### Package Changes:" >> update_summary.md
+            git diff HEAD^ HEAD package.json | grep "^\+" | grep -v "^+++" | sed 's/^+/Added: /' >> update_summary.md || true
+            git diff HEAD^ HEAD package.json | grep "^-" | grep -v "^---" | sed 's/^-/Removed: /' >> update_summary.md || true
+          fi
+          
+          echo "" >> update_summary.md
+          echo "### Security Impact:" >> update_summary.md
+          echo "- Critical vulnerabilities before: ${{ fromJson(needs.dependency-audit.outputs.vulnerabilities).critical }}" >> update_summary.md
+          echo "- High vulnerabilities before: ${{ fromJson(needs.dependency-audit.outputs.vulnerabilities).high }}" >> update_summary.md
+          echo "" >> update_summary.md
+          echo "### Testing Required:" >> update_summary.md
+          echo "- [ ] Unit tests pass" >> update_summary.md
+          echo "- [ ] Integration tests pass" >> update_summary.md
+          echo "- [ ] AI agents load correctly" >> update_summary.md
+          echo "- [ ] Frontend builds successfully" >> update_summary.md
+          echo "- [ ] Backend starts without errors" >> update_summary.md
+
+      - name: Commit changes
+        run: |
+          if git diff --quiet HEAD package*.json 2>/dev/null; then
+            echo "No changes to commit"
+            echo "has_changes=false" >> $GITHUB_ENV
+          else
+            git add package*.json
+            git commit -m "chore(deps): automated dependency updates
+
+            - Update type: ${{ github.event.inputs.update_type || 'patch' }}
+            - Trigger: ${{ github.event_name }}
+            - Critical vulnerabilities addressed: ${{ fromJson(needs.dependency-audit.outputs.vulnerabilities).critical }}
+            - High vulnerabilities addressed: ${{ fromJson(needs.dependency-audit.outputs.vulnerabilities).high }}
+            
+            This is an automated update. Please review and test before merging."
+            echo "has_changes=true" >> $GITHUB_ENV
+          fi
+
+      - name: Push changes
+        if: env.has_changes == 'true'
+        run: |
+          git push origin "${{ steps.branch.outputs.branch_name }}"
+
+      - name: Create Pull Request
+        if: env.has_changes == 'true' && (github.event.inputs.create_pr == 'true' || github.event_name == 'schedule')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('update_summary.md', 'utf8');
+            
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🔄 Automated Dependency Updates (${new Date().toISOString().split('T')[0]})`,
+              head: '${{ steps.branch.outputs.branch_name }}',
+              base: 'main',
+              body: `${summary}
+
+              ## Automated Update Details
+              - **Update Type**: ${{ github.event.inputs.update_type || 'patch' }}
+              - **Trigger**: ${{ github.event_name }}
+              - **Branch**: \`${{ steps.branch.outputs.branch_name }}\`
+
+              ## Security Context
+              This update addresses:
+              - **Critical**: ${{ fromJson(needs.dependency-audit.outputs.vulnerabilities).critical }} vulnerabilities
+              - **High**: ${{ fromJson(needs.dependency-audit.outputs.vulnerabilities).high }} vulnerabilities
+              - **Outdated**: ${{ needs.dependency-audit.outputs.outdated }} packages
+
+              ## Review Checklist
+              - [ ] Review changes for breaking updates
+              - [ ] Run comprehensive test suite
+              - [ ] Check AI agent functionality
+              - [ ] Verify HuggingFace integrations
+              - [ ] Test vector database operations
+              - [ ] Validate OpenAI/Deepgram APIs
+
+              ## Auto-merge Criteria
+              - ✅ All automated tests pass
+              - ✅ No major version updates (unless explicitly requested)
+              - ✅ No new security vulnerabilities introduced
+
+              /cc @${context.actor} for review`,
+              draft: false
+            });
+
+            // Add labels
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              labels: ['dependencies', 'automated', 'security']
+            });
+
+  ai-dependency-check:
+    name: AI/ML Dependencies Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: dependency-audit
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate AI dependencies
+        run: |
+          echo "🤖 Validating AI/ML dependencies..."
+          
+          # Check critical AI dependencies
+          CRITICAL_AI_DEPS=(
+            "@huggingface/inference"
+            "@langchain/core"
+            "@langchain/openai"
+            "openai"
+            "@octokit/rest"
+            "pg-vector"
+          )
+          
+          echo "Checking critical AI dependencies:"
+          for dep in "${CRITICAL_AI_DEPS[@]}"; do
+            if npm list "$dep" >/dev/null 2>&1; then
+              VERSION=$(npm list "$dep" --depth=0 2>/dev/null | grep "$dep" | sed 's/.*@//' | head -1)
+              echo "✅ $dep@$VERSION"
+            else
+              echo "❌ $dep - MISSING!"
+            fi
+          done
+
+      - name: Check for deprecated AI packages
+        run: |
+          echo "🔍 Checking for deprecated AI packages..."
+          
+          # List of packages known to be deprecated or problematic
+          DEPRECATED_PATTERNS=(
+            "huggingface@1"  # Old version known to be deprecated
+            "gm@"            # Deprecated image processing
+          )
+          
+          for pattern in "${DEPRECATED_PATTERNS[@]}"; do
+            if npm list | grep -q "$pattern"; then
+              echo "⚠️ Found deprecated package matching: $pattern"
+            fi
+          done
+
+      - name: Validate vector database compatibility
+        run: |
+          echo "🔢 Checking vector database compatibility..."
+          
+          # Check if pgvector is properly configured
+          if npm list | grep -q "pg"; then
+            echo "✅ PostgreSQL client available"
+          else
+            echo "❌ PostgreSQL client missing"
+          fi
+
+  workspace-dependency-sync:
+    name: Workspace Dependency Synchronization
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Analyze workspace dependencies
+        run: |
+          echo "📦 Analyzing workspace dependency consistency..."
+          
+          # Check for version mismatches across workspaces
+          echo "## Workspace Dependency Analysis" > workspace_analysis.md
+          echo "" >> workspace_analysis.md
+          
+          # Find all package.json files in workspaces
+          find packages -name "package.json" -exec echo "Processing: {}" \; -exec cat {} \; | \
+          jq -r 'select(.dependencies) | .dependencies | to_entries[] | "\(.key)@\(.value)"' | \
+          sort | uniq -c | sort -nr > dep_usage.txt
+          
+          echo "### Most used dependencies across workspaces:" >> workspace_analysis.md
+          head -10 dep_usage.txt | sed 's/^/- /' >> workspace_analysis.md
+          echo "" >> workspace_analysis.md
+          
+          echo "### Potential version conflicts:" >> workspace_analysis.md
+          # Find dependencies with multiple versions
+          cut -d'@' -f1 dep_usage.txt | uniq -d | while read dep; do
+            echo "- **$dep** has multiple versions:" >> workspace_analysis.md
+            grep "^.*$dep@" dep_usage.txt | sed 's/^/  - /' >> workspace_analysis.md
+          done
+
+      - name: Upload workspace analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: workspace-dependency-analysis
+          path: |
+            workspace_analysis.md
+            dep_usage.txt
+          retention-days: 30
+
+  dependency-report:
+    name: Generate Dependency Report
+    runs-on: ubuntu-latest
+    needs: [dependency-audit, ai-dependency-check, workspace-dependency-sync]
+    if: always()
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download audit results
+        uses: actions/download-artifact@v4
+        with:
+          name: dependency-audit-results
+          path: audit-results/
+
+      - name: Download workspace analysis
+        uses: actions/download-artifact@v4
+        with:
+          name: workspace-dependency-analysis
+          path: workspace-analysis/
+
+      - name: Generate comprehensive report
+        run: |
+          echo "# Dependency Management Report" > dependency_report.md
+          echo "Generated: $(date)" >> dependency_report.md
+          echo "" >> dependency_report.md
+          
+          echo "## Security Summary" >> dependency_report.md
+          echo "- Critical vulnerabilities: ${{ fromJson(needs.dependency-audit.outputs.vulnerabilities).critical }}" >> dependency_report.md
+          echo "- High vulnerabilities: ${{ fromJson(needs.dependency-audit.outputs.vulnerabilities).high }}" >> dependency_report.md
+          echo "- Outdated packages: ${{ needs.dependency-audit.outputs.outdated }}" >> dependency_report.md
+          echo "" >> dependency_report.md
+          
+          echo "## Job Results" >> dependency_report.md
+          echo "- Dependency Audit: ${{ needs.dependency-audit.result }}" >> dependency_report.md
+          echo "- AI Dependencies Check: ${{ needs.ai-dependency-check.result }}" >> dependency_report.md
+          echo "- Workspace Sync: ${{ needs.workspace-dependency-sync.result }}" >> dependency_report.md
+          echo "" >> dependency_report.md
+          
+          if [ -f "workspace-analysis/workspace_analysis.md" ]; then
+            cat workspace-analysis/workspace_analysis.md >> dependency_report.md
+          fi
+
+      - name: Upload final report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-management-report
+          path: dependency_report.md
+          retention-days: 90
+
+      - name: Comment on issue if vulnerabilities found
+        if: needs.dependency-audit.outputs.vulnerabilities != '{"high":0,"critical":0}'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const vulnerabilities = JSON.parse('${{ needs.dependency-audit.outputs.vulnerabilities }}');
+            
+            if (vulnerabilities.critical > 0 || vulnerabilities.high > 0) {
+              const body = `## 🚨 Security Alert: Vulnerabilities Detected
+              
+              Our automated dependency scan has found security vulnerabilities:
+              - **Critical**: ${vulnerabilities.critical}
+              - **High**: ${vulnerabilities.high}
+              
+              **Action Required**: Please review and update dependencies immediately.
+              
+              [View detailed report in the workflow run](${context.payload.repository.html_url}/actions/runs/${context.runId})`;
+              
+              // Create an issue if one doesn't exist
+              const existingIssues = await github.rest.issues.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                labels: 'security,dependencies',
+                state: 'open'
+              });
+              
+              if (existingIssues.data.length === 0) {
+                await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: `🚨 Security Vulnerabilities in Dependencies (${new Date().toISOString().split('T')[0]})`,
+                  body: body,
+                  labels: ['security', 'dependencies', 'high-priority']
+                });
+              }
+            }

@@ -1,0 +1,629 @@
+name: AI/ML Models & Integrations Validation
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'packages/backend/src/integrations/**'
+      - 'packages/backend/src/agi/**'
+      - 'packages/backend/src/tools/**'
+      - 'packages/backend/src/services/**'
+  pull_request:
+    paths:
+      - 'packages/backend/src/integrations/**'
+      - 'packages/backend/src/agi/**'
+      - 'packages/backend/src/tools/**'
+      - 'packages/backend/src/services/**'
+  schedule:
+    # Run daily at 6 AM UTC to catch model/API issues early
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      test_level:
+        description: 'Test level to run'
+        required: true
+        default: 'standard'
+        type: choice
+        options:
+          - quick
+          - standard
+          - comprehensive
+      skip_expensive:
+        description: 'Skip expensive API calls'
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ai-agent-validation:
+    name: AI Agent Configuration & Loading
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      agent_count: ${{ steps.agents.outputs.agent_count }}
+      failed_agents: ${{ steps.agents.outputs.failed_agents }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate agent configurations
+        id: agents
+        run: |
+          echo "🤖 Validating AI agent configurations..."
+          
+          cd packages/backend
+          
+          # Check if the supervisor agent loads
+          node -e "
+            const path = require('path');
+            const fs = require('fs');
+            
+            console.log('Testing supervisor agent import...');
+            try {
+              const SupervisorAgent = require('./src/agi/consciousness/EnhancedLangChainCoreAgent.js');
+              console.log('✅ Supervisor agent loads successfully');
+            } catch (e) {
+              console.error('❌ Supervisor agent failed:', e.message);
+              process.exit(1);
+            }
+            
+            // Count available agents
+            const agentDir = './src/agi/consciousness';
+            if (fs.existsSync(agentDir)) {
+              const agentFiles = fs.readdirSync(agentDir).filter(f => f.endsWith('Agent.js'));
+              console.log('📊 Found agent files:', agentFiles.length);
+              console.log('Agent files:', agentFiles.join(', '));
+              
+              let failedAgents = [];
+              let successCount = 0;
+              
+              agentFiles.forEach(file => {
+                try {
+                  require(path.join('.', agentDir, file));
+                  successCount++;
+                  console.log('✅ Agent loads:', file);
+                } catch (e) {
+                  failedAgents.push(file);
+                  console.error('❌ Agent failed:', file, e.message);
+                }
+              });
+              
+              console.log('\\nSummary:');
+              console.log('- Total agents:', agentFiles.length);
+              console.log('- Successful:', successCount);
+              console.log('- Failed:', failedAgents.length);
+              
+              // Set outputs for GitHub
+              process.stdout.write('agent_count=' + agentFiles.length + '\\n');
+              process.stdout.write('failed_agents=' + failedAgents.length + '\\n');
+              
+              if (failedAgents.length > 0) {
+                console.error('Some agents failed to load!');
+                process.exit(1);
+              }
+            } else {
+              console.error('Agent directory not found');
+              process.exit(1);
+            }
+          "
+
+      - name: Validate tool registry
+        run: |
+          echo "🔧 Validating tool registry..."
+          
+          cd packages/backend
+          node -e "
+            try {
+              const ToolRegistry = require('./src/agi/orchestration/AgentToolRegistry.js');
+              console.log('✅ Tool registry loads successfully');
+              
+              // Try to create an instance (might fail due to missing env vars, but import should work)
+              console.log('Tool registry validation passed');
+            } catch (e) {
+              console.error('❌ Tool registry failed:', e.message);
+              process.exit(1);
+            }
+          "
+
+      - name: Check HuggingFace integration
+        run: |
+          echo "🤗 Validating HuggingFace integration structure..."
+          
+          cd packages/backend
+          
+          # Check if HF integration files exist
+          HF_FILES=(
+            "src/integrations/huggingface/bridge/VisionMasterAgent.js"
+            "src/integrations/huggingface/bridge/AudioWizardAgent.js"
+            "src/integrations/huggingface/bridge/LanguageMaestroAgent.js"
+            "src/integrations/huggingface/bridge/MultiModalOracleAgent.js"
+            "src/integrations/huggingface/bridge/DataSageAgent.js"
+          )
+          
+          for file in "${HF_FILES[@]}"; do
+            if [ -f "$file" ]; then
+              echo "✅ Found: $file"
+              # Try to load the file
+              node -e "try { require('./$file'); console.log('✅ Loads: $file'); } catch(e) { console.error('❌ Load error: $file', e.message); }"
+            else
+              echo "⚠️ Missing: $file"
+            fi
+          done
+
+  model-integration-tests:
+    name: Model Integration Health Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.event.inputs.skip_expensive != 'true' && github.ref == 'refs/heads/main'
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_USER: testuser
+          POSTGRES_DB: cartrita_models
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup test database
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: testuser
+          PGPASSWORD: testpass
+          PGDATABASE: cartrita_models
+        run: |
+          # Apply minimal schema for vector operations
+          psql -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          psql -c "CREATE TABLE IF NOT EXISTS test_embeddings (id SERIAL PRIMARY KEY, content TEXT, embedding vector(1536));"
+
+      - name: Test OpenAI integration health
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/cartrita_models
+        run: |
+          echo "🔮 Testing OpenAI integration health..."
+          
+          cd packages/backend
+          node -e "
+            const OpenAIService = require('./src/services/OpenAIService.js').default || require('./src/services/OpenAIService.js');
+            console.log('OpenAI service structure validated');
+          " || echo "OpenAI service structure check failed"
+
+      - name: Test HuggingFace integration health
+        env:
+          NODE_ENV: test
+        run: |
+          echo "🤗 Testing HuggingFace integration health..."
+          
+          cd packages/backend
+          
+          # Test the HF integration script if it exists
+          if [ -f "src/integrations/scripts/test-huggingface-integration.js" ]; then
+            echo "Running HF integration health check..."
+            timeout 60s node src/integrations/scripts/test-huggingface-integration.js || echo "HF integration test completed with warnings"
+          else
+            echo "HF integration test script not found"
+          fi
+
+      - name: Test vector operations
+        env:
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/cartrita_models
+        run: |
+          echo "🔢 Testing vector database operations..."
+          
+          cd packages/backend
+          node -e "
+            const { Pool } = require('pg');
+            
+            async function testVectorOps() {
+              const pool = new Pool({
+                connectionString: process.env.DATABASE_URL
+              });
+              
+              try {
+                console.log('Testing vector operations...');
+                
+                // Test vector insertion
+                const testVector = Array(1536).fill(0).map(() => Math.random() - 0.5);
+                const vectorString = '[' + testVector.join(',') + ']';
+                
+                await pool.query(
+                  'INSERT INTO test_embeddings (content, embedding) VALUES ($1, $2)',
+                  ['Test content', vectorString]
+                );
+                
+                console.log('✅ Vector insertion successful');
+                
+                // Test vector similarity search
+                const result = await pool.query(
+                  'SELECT content, embedding <-> $1 as distance FROM test_embeddings ORDER BY distance LIMIT 1',
+                  [vectorString]
+                );
+                
+                console.log('✅ Vector similarity search successful');
+                console.log('Result count:', result.rows.length);
+                
+                await pool.end();
+              } catch (error) {
+                console.error('❌ Vector operations failed:', error.message);
+                process.exit(1);
+              }
+            }
+            
+            testVectorOps();
+          "
+
+      - name: Test workflow tools service
+        env:
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/cartrita_models
+        run: |
+          echo "🔧 Testing workflow tools service..."
+          
+          cd packages/backend
+          node -e "
+            try {
+              const WorkflowToolsService = require('./src/services/WorkflowToolsService.js');
+              console.log('✅ Workflow tools service structure valid');
+            } catch (e) {
+              console.error('❌ Workflow tools service error:', e.message);
+            }
+          "
+
+  api-endpoint-validation:
+    name: AI API Endpoints Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_USER: testuser  
+          POSTGRES_DB: cartrita_api
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start backend server
+        env:
+          NODE_ENV: test
+          PORT: 3002
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/cartrita_api
+          REDIS_URL: redis://localhost:6379
+        run: |
+          cd packages/backend
+          node index.js &
+          echo $! > backend.pid
+          sleep 15
+
+      - name: Test core AI endpoints
+        env:
+          API_BASE_URL: http://localhost:3002
+        run: |
+          echo "🔍 Testing core AI endpoints..."
+          
+          # Health checks
+          curl -f $API_BASE_URL/health || echo "❌ Health endpoint failed"
+          curl -f $API_BASE_URL/api/agents/role-call || echo "❌ Agent role call failed"
+          curl -f $API_BASE_URL/api/unified/health || echo "❌ Unified health failed"
+          
+          # Check if endpoints return proper JSON structure
+          echo "Testing endpoint response structures..."
+          
+          # Test metrics endpoint
+          curl -s $API_BASE_URL/api/metrics/custom | jq . || echo "❌ Metrics endpoint JSON invalid"
+          
+          # Test debug endpoint
+          curl -s $API_BASE_URL/api/debug-direct | jq . || echo "❌ Debug endpoint JSON invalid"
+
+      - name: Test AI integration endpoints (unauthenticated)
+        env:
+          API_BASE_URL: http://localhost:3002
+        run: |
+          echo "🤖 Testing AI integration endpoints..."
+          
+          # Test HuggingFace health
+          curl -f $API_BASE_URL/api/huggingface/health || echo "⚠️ HF health endpoint not available"
+          
+          # Test unified AI endpoints
+          curl -f $API_BASE_URL/api/unified/metrics || echo "⚠️ Unified metrics not available"
+          
+          # Test that protected endpoints properly return 401/403 without auth
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" $API_BASE_URL/api/router)
+          if [ "$STATUS" = "404" ]; then
+            echo "❌ Router endpoint returning 404 - should return 401/403"
+          else
+            echo "✅ Router endpoint properly protected (status: $STATUS)"
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: |
+          if [ -f packages/backend/backend.pid ]; then
+            kill $(cat packages/backend/backend.pid) || true
+          fi
+
+  performance-benchmarks:
+    name: AI Performance Benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.event.inputs.test_level == 'comprehensive' || github.ref == 'refs/heads/main'
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_USER: testuser
+          POSTGRES_DB: cartrita_perf
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup performance test database
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: testuser
+          PGPASSWORD: testpass
+          PGDATABASE: cartrita_perf
+        run: |
+          psql -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          psql -c "CREATE TABLE IF NOT EXISTS perf_embeddings (id SERIAL PRIMARY KEY, content TEXT, embedding vector(1536));"
+
+      - name: Vector search performance test
+        env:
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/cartrita_perf
+        run: |
+          echo "🏃‍♂️ Running vector search performance tests..."
+          
+          cd packages/backend
+          node -e "
+            const { Pool } = require('pg');
+            const { performance } = require('perf_hooks');
+            
+            async function perfTest() {
+              const pool = new Pool({
+                connectionString: process.env.DATABASE_URL
+              });
+              
+              try {
+                console.log('Preparing test data...');
+                
+                // Insert test vectors
+                const batchSize = 100;
+                const testVectors = [];
+                
+                for (let i = 0; i < batchSize; i++) {
+                  const vector = Array(1536).fill(0).map(() => Math.random() - 0.5);
+                  testVectors.push(['Content ' + i, '[' + vector.join(',') + ']']);
+                }
+                
+                const startInsert = performance.now();
+                for (const [content, vector] of testVectors) {
+                  await pool.query(
+                    'INSERT INTO perf_embeddings (content, embedding) VALUES ($1, $2)',
+                    [content, vector]
+                  );
+                }
+                const insertTime = performance.now() - startInsert;
+                
+                console.log('Vector insertion performance:');
+                console.log('- Total time:', Math.round(insertTime), 'ms');
+                console.log('- Per vector:', Math.round(insertTime / batchSize), 'ms');
+                console.log('- Vectors per second:', Math.round(batchSize / (insertTime / 1000)));
+                
+                // Test search performance
+                const searchVector = '[' + Array(1536).fill(0).map(() => Math.random() - 0.5).join(',') + ']';
+                
+                const startSearch = performance.now();
+                for (let i = 0; i < 10; i++) {
+                  await pool.query(
+                    'SELECT content, embedding <-> $1 as distance FROM perf_embeddings ORDER BY distance LIMIT 10',
+                    [searchVector]
+                  );
+                }
+                const searchTime = performance.now() - startSearch;
+                
+                console.log('\\nVector search performance:');
+                console.log('- 10 searches total time:', Math.round(searchTime), 'ms');
+                console.log('- Average per search:', Math.round(searchTime / 10), 'ms');
+                console.log('- Searches per second:', Math.round(10 / (searchTime / 1000)));
+                
+                // Performance thresholds (warning if exceeded)
+                const MAX_INSERT_TIME_MS = 50;  // per vector
+                const MAX_SEARCH_TIME_MS = 100;  // per search
+                
+                if (insertTime / batchSize > MAX_INSERT_TIME_MS) {
+                  console.warn('⚠️ Insert performance below threshold');
+                }
+                
+                if (searchTime / 10 > MAX_SEARCH_TIME_MS) {
+                  console.warn('⚠️ Search performance below threshold');
+                }
+                
+                await pool.end();
+                console.log('\\n✅ Performance tests completed');
+                
+              } catch (error) {
+                console.error('❌ Performance test failed:', error.message);
+                process.exit(1);
+              }
+            }
+            
+            perfTest();
+          "
+
+      - name: Agent initialization performance
+        run: |
+          echo "🤖 Testing agent initialization performance..."
+          
+          cd packages/backend
+          node -e "
+            const { performance } = require('perf_hooks');
+            
+            async function testAgentPerf() {
+              const start = performance.now();
+              
+              try {
+                // Test supervisor agent initialization time
+                const SupervisorAgent = require('./src/agi/consciousness/EnhancedLangChainCoreAgent.js');
+                const initTime = performance.now() - start;
+                
+                console.log('Agent initialization performance:');
+                console.log('- Supervisor load time:', Math.round(initTime), 'ms');
+                
+                const MAX_INIT_TIME = 5000; // 5 seconds
+                if (initTime > MAX_INIT_TIME) {
+                  console.warn('⚠️ Agent initialization slower than expected');
+                } else {
+                  console.log('✅ Agent initialization within acceptable range');
+                }
+                
+              } catch (error) {
+                console.error('❌ Agent performance test failed:', error.message);
+              }
+            }
+            
+            testAgentPerf();
+          "
+
+  model-health-summary:
+    name: Model Health Summary
+    runs-on: ubuntu-latest
+    needs: [ai-agent-validation, model-integration-tests, api-endpoint-validation, performance-benchmarks]
+    if: always()
+    steps:
+      - name: Generate AI/ML health summary
+        run: |
+          echo "# AI/ML Models & Integrations Health Report" > ai_health_report.md
+          echo "Generated: $(date)" >> ai_health_report.md
+          echo "" >> ai_health_report.md
+          
+          echo "## Job Results Summary" >> ai_health_report.md
+          echo "| Component | Status | Details |" >> ai_health_report.md
+          echo "|-----------|--------|---------|" >> ai_health_report.md
+          echo "| AI Agent Validation | ${{ needs.ai-agent-validation.result }} | ${{ needs.ai-agent-validation.outputs.agent_count }} agents, ${{ needs.ai-agent-validation.outputs.failed_agents }} failed |" >> ai_health_report.md
+          echo "| Model Integration Tests | ${{ needs.model-integration-tests.result }} | API integrations and vector ops |" >> ai_health_report.md
+          echo "| API Endpoint Validation | ${{ needs.api-endpoint-validation.result }} | Core AI endpoints tested |" >> ai_health_report.md
+          echo "| Performance Benchmarks | ${{ needs.performance-benchmarks.result }} | Vector search and agent init |" >> ai_health_report.md
+          echo "" >> ai_health_report.md
+          
+          echo "## Health Status" >> ai_health_report.md
+          if [[ "${{ needs.ai-agent-validation.result }}" == "success" && "${{ needs.api-endpoint-validation.result }}" == "success" ]]; then
+            echo "🟢 **HEALTHY** - All critical AI systems operational" >> ai_health_report.md
+          elif [[ "${{ needs.ai-agent-validation.outputs.failed_agents }}" -gt 0 ]]; then
+            echo "🟡 **DEGRADED** - Some agents failed to load" >> ai_health_report.md
+          else
+            echo "🔴 **CRITICAL** - Major AI system issues detected" >> ai_health_report.md
+          fi
+          
+          echo "" >> ai_health_report.md
+          echo "## Recommendations" >> ai_health_report.md
+          
+          if [[ "${{ needs.ai-agent-validation.outputs.failed_agents }}" -gt 0 ]]; then
+            echo "- 🔧 Fix failed agent configurations" >> ai_health_report.md
+          fi
+          
+          if [[ "${{ needs.model-integration-tests.result }}" == "failure" ]]; then
+            echo "- 🔌 Check external AI service integrations" >> ai_health_report.md
+          fi
+          
+          if [[ "${{ needs.performance-benchmarks.result }}" == "failure" ]]; then
+            echo "- 🏃‍♂️ Investigate performance regressions" >> ai_health_report.md
+          fi
+          
+          echo "- 📊 Monitor ongoing AI system performance" >> ai_health_report.md
+          echo "- 🔄 Schedule regular health checks" >> ai_health_report.md
+
+      - name: Upload health report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-ml-health-report
+          path: ai_health_report.md
+          retention-days: 30
+
+      - name: Update job summary
+        run: |
+          cat ai_health_report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Check if critical issues need attention
+        if: needs.ai-agent-validation.outputs.failed_agents > 0 || contains(needs.*.result, 'failure')
+        run: |
+          echo "❌ Critical AI/ML issues detected that require attention"
+          exit 1

@@ -1,0 +1,793 @@
+name: Database & Infrastructure Management
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'db-init/**'
+      - 'config/**'
+      - 'docker-compose*.yml'
+      - 'scripts/**'
+  pull_request:
+    paths:
+      - 'db-init/**'
+      - 'config/**'
+      - 'docker-compose*.yml'
+      - 'scripts/**'
+  schedule:
+    # Run database health checks daily at 4 AM UTC
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Database operation to perform'
+        required: true
+        default: 'health-check'
+        type: choice
+        options:
+          - health-check
+          - migration-test
+          - backup-test
+          - performance-test
+          - full-validation
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  migration-validation:
+    name: Database Migration Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_USER: testuser
+          POSTGRES_DB: cartrita_migration_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    outputs:
+      migration-count: ${{ steps.migrations.outputs.count }}
+      schema-version: ${{ steps.migrations.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Validate migration files
+        id: migrations
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: testuser
+          PGPASSWORD: testpass
+          PGDATABASE: cartrita_migration_test
+        run: |
+          echo "🗃️ Validating database migration files..."
+          
+          # Count migration files
+          MIGRATION_COUNT=$(find db-init -name "*.sql" | wc -l)
+          echo "Found $MIGRATION_COUNT migration files"
+          echo "count=$MIGRATION_COUNT" >> $GITHUB_OUTPUT
+          
+          # Validate SQL syntax in each migration file
+          echo "## Migration File Validation" > migration-validation.md
+          echo "" >> migration-validation.md
+          
+          FAILED_MIGRATIONS=0
+          
+          for file in db-init/*.sql; do
+            if [ -f "$file" ]; then
+              echo "Validating: $file"
+              filename=$(basename "$file")
+              
+              # Check for basic SQL syntax issues
+              if psql -f "$file" --single-transaction --set ON_ERROR_STOP=1 >/dev/null 2>error.log; then
+                echo "- ✅ $filename - Valid" >> migration-validation.md
+              else
+                echo "- ❌ $filename - Failed" >> migration-validation.md
+                echo "  Error: $(cat error.log | head -1)" >> migration-validation.md
+                ((FAILED_MIGRATIONS++))
+              fi
+            fi
+          done
+          
+          echo "" >> migration-validation.md
+          echo "**Summary**: $((MIGRATION_COUNT - FAILED_MIGRATIONS))/$MIGRATION_COUNT migrations passed" >> migration-validation.md
+          
+          if [ $FAILED_MIGRATIONS -gt 0 ]; then
+            echo "❌ $FAILED_MIGRATIONS migration(s) failed"
+            exit 1
+          fi
+
+      - name: Test migration sequence
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: testuser
+          PGPASSWORD: testpass
+          PGDATABASE: cartrita_migration_test
+        run: |
+          echo "🔄 Testing migration sequence..."
+          
+          # Apply migrations in order
+          echo "## Migration Sequence Test" >> migration-test.md
+          echo "" >> migration-test.md
+          
+          # First, check if we need pgvector
+          if grep -r "CREATE EXTENSION.*vector" db-init/ >/dev/null 2>&1; then
+            echo "Installing pgvector extension..."
+            psql -c "CREATE EXTENSION IF NOT EXISTS vector;" || echo "pgvector extension creation failed"
+          fi
+          
+          # Apply migrations in numerical order
+          for file in $(find db-init -name "*.sql" | sort -V); do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              echo "Applying: $filename"
+              
+              if psql -f "$file" --single-transaction --set ON_ERROR_STOP=1 2>error.log; then
+                echo "- ✅ Applied: $filename" >> migration-test.md
+              else
+                echo "- ❌ Failed: $filename" >> migration-test.md
+                echo "  Error: $(cat error.log | head -1)" >> migration-test.md
+                echo "Migration sequence failed at $filename"
+                exit 1
+              fi
+            fi
+          done
+          
+          echo "✅ All migrations applied successfully"
+
+      - name: Validate final schema
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: testuser
+          PGPASSWORD: testpass
+          PGDATABASE: cartrita_migration_test
+        run: |
+          echo "📋 Validating final database schema..."
+          
+          # Generate schema summary
+          echo "## Final Schema Validation" > schema-validation.md
+          echo "" >> schema-validation.md
+          
+          # Count tables
+          TABLE_COUNT=$(psql -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';" | tr -d ' ')
+          echo "- **Tables**: $TABLE_COUNT" >> schema-validation.md
+          
+          # Count indexes
+          INDEX_COUNT=$(psql -t -c "SELECT COUNT(*) FROM pg_indexes WHERE schemaname = 'public';" | tr -d ' ')
+          echo "- **Indexes**: $INDEX_COUNT" >> schema-validation.md
+          
+          # Check for pgvector extension
+          if psql -t -c "SELECT 1 FROM pg_extension WHERE extname = 'vector';" | grep -q 1; then
+            echo "- ✅ **pgvector extension**: Installed" >> schema-validation.md
+          else
+            echo "- ❌ **pgvector extension**: Not found" >> schema-validation.md
+          fi
+          
+          # List key tables that should exist
+          KEY_TABLES=(
+            "users"
+            "agents"
+            "workflow_tools"
+            "user_api_keys"
+            "conversation_messages"
+          )
+          
+          echo "" >> schema-validation.md
+          echo "### Key Tables:" >> schema-validation.md
+          
+          for table in "${KEY_TABLES[@]}"; do
+            if psql -t -c "SELECT 1 FROM information_schema.tables WHERE table_name = '$table';" | grep -q 1; then
+              echo "- ✅ $table" >> schema-validation.md
+            else
+              echo "- ⚠️ $table (missing)" >> schema-validation.md
+            fi
+          done
+          
+          # Check for common columns in users table
+          if psql -t -c "SELECT column_name FROM information_schema.columns WHERE table_name = 'users';" | grep -q email; then
+            echo "- ✅ Users table has email column" >> schema-validation.md
+          fi
+          
+          # Save final schema version (highest numbered migration)
+          LATEST_MIGRATION=$(find db-init -name "*.sql" | sort -V | tail -1 | sed 's/.*\///; s/_.*//')
+          echo "version=$LATEST_MIGRATION" >> $GITHUB_OUTPUT
+          echo "- **Latest migration**: $LATEST_MIGRATION" >> schema-validation.md
+
+      - name: Upload migration artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-validation-results
+          path: |
+            migration-validation.md
+            migration-test.md
+            schema-validation.md
+          retention-days: 30
+
+  database-performance:
+    name: Database Performance Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    if: github.event.inputs.operation == 'performance-test' || github.event.inputs.operation == 'full-validation'
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_USER: testuser
+          POSTGRES_DB: cartrita_perf_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Setup test database
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: testuser
+          PGPASSWORD: testpass
+          PGDATABASE: cartrita_perf_test
+        run: |
+          echo "🏗️ Setting up performance test database..."
+          
+          # Apply core migrations needed for testing
+          psql -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          
+          # Apply migrations
+          for file in $(find db-init -name "*.sql" | sort -V); do
+            if [ -f "$file" ]; then
+              psql -f "$file" --single-transaction --set ON_ERROR_STOP=1 || echo "Migration $file failed"
+            fi
+          done
+
+      - name: Vector search performance tests
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: testuser
+          PGPASSWORD: testpass
+          PGDATABASE: cartrita_perf_test
+        run: |
+          echo "🔍 Running vector search performance tests..."
+          
+          # Create a test table if workflow_tools doesn't exist
+          psql -c "CREATE TABLE IF NOT EXISTS perf_test_embeddings (
+            id SERIAL PRIMARY KEY,
+            content TEXT,
+            embedding vector(1536)
+          );"
+          
+          # Generate test data
+          echo "Generating test data..."
+          
+          python3 << 'EOF'
+          import psycopg2
+          import numpy as np
+          import time
+          import sys
+          
+          try:
+              conn = psycopg2.connect(
+                  host="localhost",
+                  database="cartrita_perf_test",
+                  user="testuser",
+                  password="testpass"
+              )
+              cur = conn.cursor()
+              
+              # Insert test vectors
+              print("Inserting test vectors...")
+              insert_times = []
+              
+              for i in range(100):  # 100 test vectors
+                  vector = np.random.normal(0, 1, 1536).tolist()
+                  vector_str = '[' + ','.join(map(str, vector)) + ']'
+                  
+                  start = time.time()
+                  cur.execute(
+                      "INSERT INTO perf_test_embeddings (content, embedding) VALUES (%s, %s)",
+                      (f"Test content {i}", vector_str)
+                  )
+                  insert_times.append((time.time() - start) * 1000)  # ms
+              
+              conn.commit()
+              
+              avg_insert = sum(insert_times) / len(insert_times)
+              print(f"Average insert time: {avg_insert:.2f} ms")
+              
+              # Test similarity searches
+              print("Testing similarity searches...")
+              search_times = []
+              
+              query_vector = np.random.normal(0, 1, 1536).tolist()
+              query_str = '[' + ','.join(map(str, query_vector)) + ']'
+              
+              for _ in range(20):  # 20 search queries
+                  start = time.time()
+                  cur.execute(
+                      "SELECT content, embedding <-> %s as distance FROM perf_test_embeddings ORDER BY distance LIMIT 10",
+                      (query_str,)
+                  )
+                  results = cur.fetchall()
+                  search_times.append((time.time() - start) * 1000)  # ms
+              
+              avg_search = sum(search_times) / len(search_times)
+              print(f"Average search time: {avg_search:.2f} ms")
+              
+              # Performance benchmarks
+              print("\n## Performance Results")
+              print(f"- Insert performance: {avg_insert:.2f} ms per vector")
+              print(f"- Search performance: {avg_search:.2f} ms per query")
+              print(f"- Vectors per second (insert): {1000/avg_insert:.1f}")
+              print(f"- Queries per second (search): {1000/avg_search:.1f}")
+              
+              # Write results to file
+              with open("performance-results.md", "w") as f:
+                  f.write("# Database Performance Test Results\n\n")
+                  f.write(f"## Vector Operations Performance\n\n")
+                  f.write(f"- **Insert Performance**: {avg_insert:.2f} ms per vector\n")
+                  f.write(f"- **Search Performance**: {avg_search:.2f} ms per query\n")
+                  f.write(f"- **Insert Throughput**: {1000/avg_insert:.1f} vectors/second\n")
+                  f.write(f"- **Search Throughput**: {1000/avg_search:.1f} queries/second\n\n")
+                  
+                  # Performance assessment
+                  if avg_insert < 50:
+                      f.write("✅ **Insert Performance**: Excellent\n")
+                  elif avg_insert < 100:
+                      f.write("⚠️ **Insert Performance**: Good\n")
+                  else:
+                      f.write("❌ **Insert Performance**: Needs optimization\n")
+                      
+                  if avg_search < 100:
+                      f.write("✅ **Search Performance**: Excellent\n")
+                  elif avg_search < 200:
+                      f.write("⚠️ **Search Performance**: Good\n")
+                  else:
+                      f.write("❌ **Search Performance**: Needs optimization\n")
+              
+              cur.close()
+              conn.close()
+              
+          except Exception as e:
+              print(f"Performance test failed: {e}")
+              sys.exit(1)
+          EOF
+
+      - name: Database query performance tests
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: testuser
+          PGPASSWORD: testpass
+          PGDATABASE: cartrita_perf_test
+        run: |
+          echo "📊 Testing general database query performance..."
+          
+          # Create test data for general queries
+          psql -c "CREATE TABLE IF NOT EXISTS perf_test_data AS 
+            SELECT 
+              generate_series(1, 10000) as id,
+              'test_data_' || generate_series(1, 10000) as content,
+              random() as score
+          ;"
+          
+          # Add index for testing
+          psql -c "CREATE INDEX IF NOT EXISTS idx_perf_test_score ON perf_test_data(score);"
+          
+          # Run performance queries and measure time
+          echo "## Query Performance Tests" >> performance-results.md
+          echo "" >> performance-results.md
+          
+          # Test simple select
+          START_TIME=$(date +%s%3N)
+          psql -c "SELECT COUNT(*) FROM perf_test_data;" >/dev/null
+          END_TIME=$(date +%s%3N)
+          COUNT_TIME=$((END_TIME - START_TIME))
+          echo "- **Count query**: ${COUNT_TIME}ms" >> performance-results.md
+          
+          # Test indexed search
+          START_TIME=$(date +%s%3N)
+          psql -c "SELECT * FROM perf_test_data WHERE score > 0.5 ORDER BY score DESC LIMIT 100;" >/dev/null
+          END_TIME=$(date +%s%3N)
+          SEARCH_TIME=$((END_TIME - START_TIME))
+          echo "- **Indexed search**: ${SEARCH_TIME}ms" >> performance-results.md
+          
+          # Test join performance if users table exists
+          if psql -t -c "SELECT 1 FROM information_schema.tables WHERE table_name = 'users';" | grep -q 1; then
+            START_TIME=$(date +%s%3N)
+            psql -c "SELECT u.id FROM users u LIMIT 10;" >/dev/null 2>&1
+            END_TIME=$(date +%s%3N)
+            JOIN_TIME=$((END_TIME - START_TIME))
+            echo "- **Users table query**: ${JOIN_TIME}ms" >> performance-results.md
+          fi
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-performance-results
+          path: performance-results.md
+          retention-days: 30
+
+  backup-restore-test:
+    name: Backup & Restore Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.event.inputs.operation == 'backup-test' || github.event.inputs.operation == 'full-validation'
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_USER: testuser
+          POSTGRES_DB: cartrita_backup_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Setup test database
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: testuser
+          PGPASSWORD: testpass
+          PGDATABASE: cartrita_backup_test
+        run: |
+          echo "🗃️ Setting up backup test database..."
+          
+          # Apply migrations
+          psql -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          
+          for file in $(find db-init -name "*.sql" | sort -V); do
+            if [ -f "$file" ]; then
+              psql -f "$file" --single-transaction --set ON_ERROR_STOP=1 || echo "Migration $file failed"
+            fi
+          done
+          
+          # Insert test data
+          psql -c "INSERT INTO users (username, email, password_hash) VALUES ('testuser', 'test@example.com', 'hash123') ON CONFLICT DO NOTHING;" 2>/dev/null || echo "Users table may not exist"
+
+      - name: Test database backup
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: testuser
+          PGPASSWORD: testpass
+          PGDATABASE: cartrita_backup_test
+        run: |
+          echo "💾 Testing database backup..."
+          
+          # Create backup
+          pg_dump > backup_test.sql
+          
+          BACKUP_SIZE=$(du -h backup_test.sql | cut -f1)
+          echo "Backup created: $BACKUP_SIZE"
+          
+          # Validate backup file
+          if [ -s backup_test.sql ]; then
+            echo "✅ Backup file created and has content"
+            
+            # Check for key components in backup
+            if grep -q "CREATE TABLE" backup_test.sql; then
+              echo "✅ Backup contains table definitions"
+            else
+              echo "⚠️ No table definitions found in backup"
+            fi
+            
+            if grep -q "COPY\|INSERT" backup_test.sql; then
+              echo "✅ Backup contains data"
+            else
+              echo "⚠️ No data found in backup"
+            fi
+            
+            if grep -q "CREATE EXTENSION.*vector" backup_test.sql; then
+              echo "✅ Backup includes vector extension"
+            else
+              echo "⚠️ Vector extension not in backup"
+            fi
+            
+          else
+            echo "❌ Backup file is empty or creation failed"
+            exit 1
+          fi
+
+      - name: Test database restore
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: testuser
+          PGPASSWORD: testpass
+        run: |
+          echo "🔄 Testing database restore..."
+          
+          # Create a new database for restore test
+          psql -c "CREATE DATABASE cartrita_restore_test;" postgres
+          
+          # Restore from backup
+          export PGDATABASE=cartrita_restore_test
+          if psql < backup_test.sql; then
+            echo "✅ Database restore completed successfully"
+            
+            # Verify restored data
+            TABLE_COUNT=$(psql -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';" | tr -d ' ')
+            echo "Restored tables: $TABLE_COUNT"
+            
+            # Check if test data was restored
+            if psql -t -c "SELECT 1 FROM users WHERE username = 'testuser';" 2>/dev/null | grep -q 1; then
+              echo "✅ Test data successfully restored"
+            else
+              echo "⚠️ Test data not found (users table may not exist)"
+            fi
+            
+          else
+            echo "❌ Database restore failed"
+            exit 1
+          fi
+
+      - name: Generate backup test report
+        run: |
+          echo "# Backup & Restore Test Results" > backup-test-results.md
+          echo "" >> backup-test-results.md
+          
+          BACKUP_SIZE=$(du -h backup_test.sql | cut -f1 2>/dev/null || echo "unknown")
+          
+          echo "## Backup Test Results" >> backup-test-results.md
+          echo "- **Backup Size**: $BACKUP_SIZE" >> backup-test-results.md
+          echo "- **Backup Status**: ✅ Created successfully" >> backup-test-results.md
+          echo "- **Restore Status**: ✅ Restored successfully" >> backup-test-results.md
+          echo "" >> backup-test-results.md
+          
+          echo "## Backup Contents Verification" >> backup-test-results.md
+          echo "- Tables: $(grep -c "CREATE TABLE" backup_test.sql 2>/dev/null || echo "0")" >> backup-test-results.md
+          echo "- Indexes: $(grep -c "CREATE.*INDEX" backup_test.sql 2>/dev/null || echo "0")" >> backup-test-results.md
+          echo "- Extensions: $(grep -c "CREATE EXTENSION" backup_test.sql 2>/dev/null || echo "0")" >> backup-test-results.md
+
+      - name: Upload backup test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-restore-test-results
+          path: |
+            backup-test-results.md
+            backup_test.sql
+          retention-days: 30
+
+  infrastructure-health:
+    name: Infrastructure Health Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check configuration files
+        run: |
+          echo "🔧 Checking infrastructure configuration files..."
+          
+          echo "# Infrastructure Health Check" > infra-health.md
+          echo "" >> infra-health.md
+          
+          # Check Docker Compose files
+          echo "## Docker Compose Configuration" >> infra-health.md
+          
+          COMPOSE_FILES=$(find . -name "docker-compose*.yml" -type f)
+          if [ -n "$COMPOSE_FILES" ]; then
+            for file in $COMPOSE_FILES; do
+              if docker-compose -f "$file" config >/dev/null 2>&1; then
+                echo "- ✅ $file - Valid" >> infra-health.md
+              else
+                echo "- ❌ $file - Invalid" >> infra-health.md
+              fi
+            done
+          else
+            echo "- ⚠️ No docker-compose files found" >> infra-health.md
+          fi
+          
+          # Check environment template
+          echo "" >> infra-health.md
+          echo "## Environment Configuration" >> infra-health.md
+          
+          if [ -f ".env.template" ] || [ -f ".env.example" ]; then
+            echo "- ✅ Environment template found" >> infra-health.md
+            
+            # Check for common required variables
+            ENV_FILE=$(find . -name ".env.*" | head -1)
+            if [ -n "$ENV_FILE" ]; then
+              REQUIRED_VARS=("DATABASE_URL" "REDIS_URL" "NODE_ENV" "PORT")
+              for var in "${REQUIRED_VARS[@]}"; do
+                if grep -q "^$var=" "$ENV_FILE" 2>/dev/null || grep -q "^#.*$var=" "$ENV_FILE" 2>/dev/null; then
+                  echo "- ✅ $var - Documented" >> infra-health.md
+                else
+                  echo "- ⚠️ $var - Not documented" >> infra-health.md
+                fi
+              done
+            fi
+          else
+            echo "- ⚠️ No environment template found" >> infra-health.md
+          fi
+          
+          # Check scripts directory
+          echo "" >> infra-health.md
+          echo "## Infrastructure Scripts" >> infra-health.md
+          
+          if [ -d "scripts" ]; then
+            SCRIPT_COUNT=$(find scripts -name "*.sh" -type f | wc -l)
+            echo "- **Shell scripts**: $SCRIPT_COUNT" >> infra-health.md
+            
+            # Check for executable scripts
+            EXECUTABLE_COUNT=$(find scripts -name "*.sh" -type f -executable | wc -l)
+            echo "- **Executable scripts**: $EXECUTABLE_COUNT" >> infra-health.md
+          else
+            echo "- ⚠️ No scripts directory found" >> infra-health.md
+          fi
+
+      - name: Check database initialization
+        run: |
+          echo "🗃️ Checking database initialization files..."
+          
+          echo "" >> infra-health.md
+          echo "## Database Initialization" >> infra-health.md
+          
+          if [ -d "db-init" ]; then
+            SQL_COUNT=$(find db-init -name "*.sql" -type f | wc -l)
+            echo "- **SQL files**: $SQL_COUNT" >> infra-health.md
+            
+            # Check for numbered migrations
+            NUMBERED=$(find db-init -name "[0-9][0-9]_*.sql" -type f | wc -l)
+            echo "- **Numbered migrations**: $NUMBERED" >> infra-health.md
+            
+            # Check for setup script
+            if find db-init -name "*setup*" -o -name "*init*" | grep -q .; then
+              echo "- ✅ Setup/init scripts found" >> infra-health.md
+            else
+              echo "- ⚠️ No setup scripts found" >> infra-health.md
+            fi
+          else
+            echo "- ❌ No db-init directory found" >> infra-health.md
+          fi
+
+      - name: Upload infrastructure health report
+        uses: actions/upload-artifact@v4
+        with:
+          name: infrastructure-health-report
+          path: infra-health.md
+          retention-days: 30
+
+  database-summary:
+    name: Database & Infrastructure Summary
+    runs-on: ubuntu-latest
+    needs: [migration-validation, database-performance, backup-restore-test, infrastructure-health]
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Generate comprehensive database report
+        run: |
+          echo "# Database & Infrastructure Management Report" > database-report.md
+          echo "Generated: $(date)" >> database-report.md
+          echo "" >> database-report.md
+          
+          echo "## Job Results Summary" >> database-report.md
+          echo "| Component | Status | Details |" >> database-report.md
+          echo "|-----------|--------|---------|" >> database-report.md
+          echo "| Migration Validation | ${{ needs.migration-validation.result }} | ${{ needs.migration-validation.outputs.migration-count || 'N/A' }} migrations |" >> database-report.md
+          echo "| Database Performance | ${{ needs.database-performance.result }} | Vector & query performance |" >> database-report.md
+          echo "| Backup/Restore Test | ${{ needs.backup-restore-test.result }} | Backup integrity validation |" >> database-report.md
+          echo "| Infrastructure Health | ${{ needs.infrastructure-health.result }} | Config file validation |" >> database-report.md
+          echo "" >> database-report.md
+          
+          echo "## Migration Status" >> database-report.md
+          echo "- **Migration files**: ${{ needs.migration-validation.outputs.migration-count || 'Unknown' }}" >> database-report.md
+          echo "- **Latest schema version**: ${{ needs.migration-validation.outputs.schema-version || 'Unknown' }}" >> database-report.md
+          echo "" >> database-report.md
+          
+          # Include performance results if available
+          if [ -f "artifacts/database-performance-results/performance-results.md" ]; then
+            echo "## Performance Test Results" >> database-report.md
+            cat artifacts/database-performance-results/performance-results.md >> database-report.md
+            echo "" >> database-report.md
+          fi
+          
+          # Include backup test results if available
+          if [ -f "artifacts/backup-restore-test-results/backup-test-results.md" ]; then
+            cat artifacts/backup-restore-test-results/backup-test-results.md >> database-report.md
+            echo "" >> database-report.md
+          fi
+          
+          # Include infrastructure health if available
+          if [ -f "artifacts/infrastructure-health-report/infra-health.md" ]; then
+            cat artifacts/infrastructure-health-report/infra-health.md >> database-report.md
+            echo "" >> database-report.md
+          fi
+          
+          echo "## Recommendations" >> database-report.md
+          
+          if [[ "${{ needs.migration-validation.result }}" == "failure" ]]; then
+            echo "- 🔧 Fix migration file issues before deployment" >> database-report.md
+          fi
+          
+          if [[ "${{ needs.database-performance.result }}" == "failure" ]]; then
+            echo "- ⚡ Investigate database performance issues" >> database-report.md
+          fi
+          
+          if [[ "${{ needs.backup-restore-test.result }}" == "failure" ]]; then
+            echo "- 💾 Fix backup/restore procedures" >> database-report.md
+          fi
+          
+          echo "- 📊 Monitor database performance regularly" >> database-report.md
+          echo "- 🔄 Test migration rollback procedures" >> database-report.md
+          echo "- 💾 Implement automated backup scheduling" >> database-report.md
+          echo "- 📈 Set up database monitoring and alerting" >> database-report.md
+
+      - name: Upload final database report
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-infrastructure-report
+          path: database-report.md
+          retention-days: 60
+
+      - name: Update job summary
+        run: |
+          cat database-report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Check for critical database issues
+        run: |
+          CRITICAL_ISSUES=0
+          
+          if [[ "${{ needs.migration-validation.result }}" == "failure" ]]; then
+            echo "❌ Migration validation failed"
+            ((CRITICAL_ISSUES++))
+          fi
+          
+          if [[ "${{ needs.backup-restore-test.result }}" == "failure" ]]; then
+            echo "❌ Backup/restore test failed"
+            ((CRITICAL_ISSUES++))
+          fi
+          
+          if [ $CRITICAL_ISSUES -gt 0 ]; then
+            echo "❌ Critical database issues detected requiring immediate attention"
+            exit 1
+          else
+            echo "✅ All database and infrastructure checks passed"
+          fi
