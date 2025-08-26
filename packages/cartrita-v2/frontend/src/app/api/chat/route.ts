@@ -15,8 +15,9 @@ export async function POST(request: NextRequest) {
 
     console.log('Chat API: Sending to Python backend:', pythonRequest);
 
-    // Direct call to Python FastAPI backend simple chat endpoint (port 8002)
-    const response = await fetch('http://localhost:8002/api/v2/simple-chat', {
+    // Direct call to Python FastAPI backend simple chat endpoint
+    const apiUrl = process.env.PYTHON_API_BASE_URL || 'http://python-backend:8002';
+    const response = await fetch(`${apiUrl}/api/v2/simple-chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

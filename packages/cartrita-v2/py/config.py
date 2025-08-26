@@ -6,6 +6,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from typing import Optional, Dict, Any
+from pathlib import Path
 
 
 def _read_secret(env_key: str, file_key: Optional[str] = None) -> Optional[str]:
@@ -103,3 +104,27 @@ def get_settings() -> Dict[str, Any]:
             },
         },
     }
+
+
+def load_system_prompt() -> Optional[str]:
+    """Load the Cartrita system prompt from file, configurable via env.
+    Defaults to `prompts/cartrita_system_prompt.md` next to this module.
+    """
+    # Environment override
+    env_path = os.getenv("CARTRITA_SYSTEM_PROMPT_PATH")
+    if env_path:
+        try:
+            p = Path(env_path)
+            if p.is_file():
+                return p.read_text(encoding="utf-8").strip()
+        except Exception:
+            return None
+
+    # Default bundled prompt
+    default_path = Path(__file__).parent / "prompts" / "cartrita_system_prompt.md"
+    try:
+        if default_path.is_file():
+            return default_path.read_text(encoding="utf-8").strip()
+    except Exception:
+        return None
+    return None

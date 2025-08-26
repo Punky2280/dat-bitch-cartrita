@@ -1,113 +1,113 @@
-# Cartrita Core Hygiene & Development Automation
-# Aligned with Copilot Instructions v1.0.0
+# Cartrita V2 - Python-Only Build System Integration
+# Comprehensive development and deployment automation
 
-.PHONY: hygiene hygiene-quick commit-hygiene dev-backend dev-frontend start-backend start-frontend docker-up docker-down clean install py-setup py-start py-health
+.PHONY: setup dev prod test docker clean install lint build start health help
+.DEFAULT_GOAL := help
 
-PY_DIR := packages/cartrita-v2/py
+# Python build system integration
+PYTHON_BUILD := python3 build.py
+CLI_WRAPPER := ./cartrita
 
-# Full hygiene pass with all checks
-hygiene:
-	bash packages/cartrita_core/scripts/run_full_hygiene.sh
+# Environment setup
+setup-env: ## Setup development environment
+	@echo "🔧 Setting up Cartrita V2 environment..."
+	@chmod +x setup-environment.sh
+	@./setup-environment.sh
 
-# Quick hygiene (skip heavy tests)
-hygiene-quick:
-	QUICK_MODE=1 bash packages/cartrita_core/scripts/run_full_hygiene.sh
+# Core build commands
+setup: ## Complete initial setup
+	@echo "📋 Running complete setup..."
+	@$(PYTHON_BUILD) setup
 
-# Run hygiene and commit changes
-commit-hygiene:
-	$(MAKE) hygiene
-	git add .
-	git commit -S -m "chore(cartrita): full hygiene pass, branding audit clean"
-	git push
+dev: ## Start development environment
+	@echo "🚀 Starting development mode..."
+	@$(PYTHON_BUILD) dev
 
-# Development server commands
-dev-backend:
-	cd packages/backend && npm run dev
+prod: ## Deploy to production
+	@echo "🏭 Deploying to production..."
+	@$(PYTHON_BUILD) prod
 
-dev-frontend:
-	cd packages/frontend && npm run dev
+test: ## Run comprehensive test suite
+	@echo "🧪 Running tests..."
+	@$(PYTHON_BUILD) test
 
-start-backend:
-	cd packages/backend && npm start
+docker: ## Docker-only build and deployment
+	@echo "🐳 Docker deployment..."
+	@$(PYTHON_BUILD) docker
 
-start-frontend:
-	cd packages/frontend && npm start
+clean: ## Clean build artifacts and caches
+	@echo "🧹 Cleaning build artifacts..."
+	@$(PYTHON_BUILD) clean
 
-# Docker orchestration
-docker-up:
-	docker-compose up -d
+# Development commands
+install: ## Install dependencies only
+	@echo "📦 Installing dependencies..."
+	@$(PYTHON_BUILD) install
 
-docker-down:
-	docker-compose down
+lint: ## Run code linting
+	@echo "🔍 Linting code..."
+	@$(PYTHON_BUILD) lint
 
-docker-rebuild:
-	docker-compose up --build -d
+build: ## Build frontend assets
+	@echo "🏗️ Building frontend..."
+	@$(PYTHON_BUILD) build
+
+start: ## Start services in development mode
+	@echo "▶️ Starting services..."
+	@$(PYTHON_BUILD) start
+
+start-prod: ## Start services in production mode
+	@echo "▶️ Starting production services..."
+	@$(PYTHON_BUILD) start-prod
+
+health: ## Run health checks
+	@echo "🏥 Running health checks..."
+	@$(PYTHON_BUILD) health
+
+# Complete pipeline
+all: ## Run complete build pipeline
+	@echo "🎯 Running complete build pipeline..."
+	@$(PYTHON_BUILD) all
 
 # Database operations
-db-migrate:
-	psql postgresql://localhost/cartrita -f db-init/28_v2_gpt5_features.sql
+db-setup: ## Setup database with migrations
+	@echo "🗃️ Setting up database..."
+	@docker-compose up -d postgres redis
+	@sleep 10
+	@$(PYTHON_BUILD) setup
 
-db-status:
-	psql postgresql://localhost/cartrita -c "SELECT COUNT(*) as total_users FROM users;"
-
-# Installation and setup
-install:
-	cd packages/backend && npm install
-	cd packages/frontend && npm install
-	if [ -f py/mcp_core/requirements.txt ]; then cd py/mcp_core && pip install -r requirements.txt; fi
-
-# Clean build artifacts
-clean:
-	cd packages/backend && rm -rf node_modules dist
-	cd packages/frontend && rm -rf node_modules dist build
-	docker system prune -f
-
-# Audit commands
-audit-v1:
-	bash packages/cartrita_core/scripts/scan_v1_references.sh
-
-audit-branding:
-	bash packages/cartrita_core/scripts/rename_audit.sh
-
-# Health checks
-health-backend:
-	curl -sf http://localhost:8001/health || echo "Backend not running"
-	@echo "Python FastAPI health:"
-	-@curl -sf http://localhost:8003/health | jq . || curl -sf http://localhost:8003/health || true
-	-@curl -sf http://localhost:8003/healthz/details | jq . || curl -sf http://localhost:8003/healthz/details || true
-
-health-frontend:
-	curl -sf http://localhost:3001 || echo "Frontend not running"
-
-health-db:
-	psql postgresql://localhost/cartrita -c "SELECT 1;" >/dev/null 2>&1 && echo "Database OK" || echo "Database unavailable"
-
-# Complete health check
-health: health-db health-backend health-frontend
-	echo "System health check complete"
-
-# Development workflow
-dev: install hygiene-quick dev-backend
-
-py-setup:
-	cd $(PY_DIR) && bash ./setup.sh
-
-py-start:
-	cd $(PY_DIR) && nohup python3 main.py >/dev/null 2>&1 & echo $$! > .fastapi.pid ; sleep 2 ; curl -sf http://localhost:8003/health || true
-
-py-health:
-	-@curl -sf http://localhost:8003/healthz/details | jq . || curl -sf http://localhost:8003/healthz/details || true
-
-# Production readiness check
-prod-ready: hygiene audit-v1 audit-branding health
-	echo "Production readiness verified"
-
-# Legacy documentation build (preserved)
-pdf:
-	@if [ -f docs/Cartrita_Hierarchical_MCP_Transformation_Whitepaper.md ]; then \
-		mkdir -p docs/output; \
-		pandoc --from markdown --to pdf --toc docs/Cartrita_Hierarchical_MCP_Transformation_Whitepaper.md -o docs/output/Cartrita_MCP_Whitepaper.pdf; \
-		echo "PDF generated"; \
-	else \
-		echo "Whitepaper not found"; \
+db-migrate: ## Run database migrations only
+	@echo "🗃️ Running database migrations..."
+	@if [ -f "db-init/init.sql" ]; then \
+		psql postgresql://robert:secure_password@localhost:5432/dat-bitch-cartrita -f db-init/init.sql || true; \
 	fi
+	@for file in db-init/*.sql; do \
+		if [ -f "$$file" ]; then \
+			echo "Running migration: $$file"; \
+			psql postgresql://robert:secure_password@localhost:5432/dat-bitch-cartrita -f "$$file" || true; \
+		fi \
+	done
+
+# Help system
+help: ## Show this help message
+	@echo "🎯 Cartrita V2 - Python-Only Build System"
+	@echo "=========================================="
+	@echo ""
+	@echo "🚀 Quick Start:"
+	@echo "  make setup-env     # First-time environment setup"
+	@echo "  make setup         # Complete project setup"
+	@echo "  make dev           # Start development environment"
+	@echo ""
+	@echo "📋 Available Commands:"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
+	@echo ""
+	@echo "🔧 Build System:"
+	@echo "  You can also use the Python build system directly:"
+	@echo "    python3 build.py --help"
+	@echo "    ./cartrita --help"
+	@echo ""
+	@echo "📊 Service URLs (when running):"
+	@echo "  • Python API: http://localhost:8002"
+	@echo "  • Frontend:   http://localhost:3000"
+	@echo "  • Database:   localhost:5432"
+	@echo "  • Redis:      localhost:6379"

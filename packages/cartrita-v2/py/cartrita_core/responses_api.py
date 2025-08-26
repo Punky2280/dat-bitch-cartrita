@@ -14,7 +14,7 @@ from pathlib import Path
 import base64
 
 from openai import AsyncOpenAI
-from config import OpenAISettings, get_settings
+from config import OpenAISettings, get_settings, load_system_prompt
 from .computer_use_agent import ComputerUseAgent
 
 
@@ -114,6 +114,10 @@ class CartritaResponsesClient:
 
             # Convert input items to messages format
             messages = []
+            # Prepend system persona if available
+            system_prompt = load_system_prompt()
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
             messages.extend(
                 {"role": "user", "content": item["text"]}
                 for item in request.input_items

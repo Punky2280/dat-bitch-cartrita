@@ -24,7 +24,7 @@ from cartrita_core.agent_manager import CartritaAgentManager, TaskPriority
 from cartrita_core.cartrita_agent import AgentContext
 from cartrita_core.tools import CartritaToolRegistry
 from cartrita_core.responses_api import CartritaResponsesClient
-from config import get_settings
+from config import get_settings, load_system_prompt
 # from enhanced_chat_routes import router as enhanced_chat_router
 from startup_checks import run_startup_checks
 
@@ -486,41 +486,23 @@ async def simple_chat_endpoint(request: ChatRequest):
         
         # Check if we have a valid API key
         api_key = os.getenv("OPENAI_FINETUNING_API_KEY") or os.getenv("OPENAI_API_KEY")
-        
         if not api_key or len(api_key.strip()) < 10:
-            # Return a mock response if no API key
-            return {
-                "success": True,
-                "content": f"Hello! I'm Cartrita, your AI assistant. I'm currently running in demo mode. You said: '{request.message}' \n\nI'm a multi-agent AI system with capabilities including research, writing, computer automation, vision analysis, and code generation. How can I help you today?",
-                "agent_id": "demo_chat",
-                "task_id": f"demo-{datetime.now().timestamp()}",
-                "reasoning": "Demo response - OpenAI API key not configured",
-                "tools_used": [],
-                "iterations_completed": 1,
-                "execution_time_ms": 50,
-                "computer_actions": [],
-                "metadata": {"model": "demo_mode", "note": "Configure OPENAI_API_KEY for full functionality"},
-                "error": None,
-                "timestamp": datetime.now().isoformat()
-            }
+            raise HTTPException(status_code=503, detail="OpenAI API key not configured")
         
         # Initialize OpenAI client
         client = openai.AsyncOpenAI(api_key=api_key)
         
         # Create simple chat completion with model-appropriate parameters
         model_name = "gpt-5"
+        system_prompt = load_system_prompt() or (
+            "You are a helpful AI assistant called Cartrita. You are part of a multi-agent system designed to help users with various tasks including research, writing, computer automation, vision analysis, and code generation."
+        )
         chat_params = {
             "model": model_name,
             "messages": [
-                {
-                    "role": "system",
-                    "content": "You are a helpful AI assistant called Cartrita. You are part of a multi-agent system designed to help users with various tasks including research, writing, computer automation, vision analysis, and code generation."
-                },
-                {
-                    "role": "user",
-                    "content": request.message
-                }
-            ]
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": request.message},
+            ],
         }
         
         # GPT-5 models use max_completion_tokens and don't support custom temperature
@@ -550,20 +532,7 @@ async def simple_chat_endpoint(request: ChatRequest):
         
     except Exception as e:
         logger.error(f"❌ Simple chat request failed: {e}")
-        return {
-            "success": True,  # Return success with error explanation for better UX
-            "content": f"I apologize, but I'm currently having technical difficulties connecting to my AI models. This is usually due to API configuration issues. \n\nIn the meantime, I can tell you that I'm Cartrita, a multi-agent AI system with the following capabilities:\n\n• 🔍 Research and fact-checking\n• ✍️ Content writing and editing\n• 💻 Code generation and debugging\n• 👁️ Image and visual analysis\n• 🖥️ Computer automation tasks\n\nYour message was: '{request.message}'\n\nPlease try again later or contact the administrator to resolve the API configuration.",
-            "agent_id": "error_handler",
-            "task_id": f"error-{datetime.now().timestamp()}",
-            "reasoning": f"Error handled gracefully: {str(e)}",
-            "tools_used": [],
-            "iterations_completed": 0,
-            "execution_time_ms": 0,
-            "computer_actions": [],
-            "metadata": {"error_type": "api_configuration"},
-            "error": None,  # Don't expose technical errors to users
-            "timestamp": datetime.now().isoformat()
-        }
+        raise HTTPException(status_code=500, detail="Simple chat processing failed") from e
 
 
 @app.on_event("shutdown")

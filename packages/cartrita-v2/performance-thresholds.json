@@ -1,0 +1,240 @@
+{
+  "name": "Cartrita V2 Performance Thresholds Configuration",
+  "version": "2.0.0",
+  "environment": "development",
+  "last_updated": "2025-08-26",
+  
+  "api_rate_limits": {
+    "openai": {
+      "requests_per_minute": 60,
+      "tokens_per_minute": 90000,
+      "concurrent_requests": 10,
+      "retry_delays": [1000, 2000, 4000, 8000, 16000],
+      "max_retries": 5
+    },
+    "anthropic": {
+      "requests_per_minute": 50,
+      "tokens_per_minute": 40000,
+      "concurrent_requests": 5
+    },
+    "huggingface": {
+      "requests_per_minute": 100,
+      "concurrent_requests": 8,
+      "timeout": 30000
+    }
+  },
+  
+  "response_time_thresholds": {
+    "api_endpoints": {
+      "health_check": {
+        "target": 50,
+        "warning": 100,
+        "critical": 500,
+        "unit": "ms"
+      },
+      "chat_message": {
+        "target": 2000,
+        "warning": 5000,
+        "critical": 15000,
+        "unit": "ms"
+      },
+      "agent_delegation": {
+        "target": 1000,
+        "warning": 3000,
+        "critical": 10000,
+        "unit": "ms"
+      },
+      "workflow_execution": {
+        "target": 5000,
+        "warning": 15000,
+        "critical": 60000,
+        "unit": "ms"
+      },
+      "database_query": {
+        "target": 100,
+        "warning": 500,
+        "critical": 2000,
+        "unit": "ms"
+      },
+      "vector_search": {
+        "target": 200,
+        "warning": 1000,
+        "critical": 5000,
+        "unit": "ms"
+      }
+    },
+    
+    "agent_operations": {
+      "supervisor_routing": {
+        "target": 500,
+        "warning": 1000,
+        "critical": 3000,
+        "unit": "ms"
+      },
+      "research_agent": {
+        "target": 10000,
+        "warning": 30000,
+        "critical": 120000,
+        "unit": "ms"
+      },
+      "code_generation": {
+        "target": 15000,
+        "warning": 45000,
+        "critical": 180000,
+        "unit": "ms"
+      },
+      "vision_analysis": {
+        "target": 8000,
+        "warning": 20000,
+        "critical": 60000,
+        "unit": "ms"
+      },
+      "computer_use": {
+        "target": 5000,
+        "warning": 15000,
+        "critical": 60000,
+        "unit": "ms"
+      }
+    }
+  },
+  
+  "resource_limits": {
+    "memory": {
+      "node_backend": {
+        "target": 512,
+        "warning": 1024,
+        "critical": 2048,
+        "unit": "MB"
+      },
+      "python_backend": {
+        "target": 1024,
+        "warning": 2048,
+        "critical": 4096,
+        "unit": "MB"
+      },
+      "frontend": {
+        "target": 256,
+        "warning": 512,
+        "critical": 1024,
+        "unit": "MB"
+      }
+    },
+    
+    "cpu": {
+      "average_usage": {
+        "target": 30,
+        "warning": 60,
+        "critical": 85,
+        "unit": "%"
+      },
+      "peak_usage": {
+        "target": 70,
+        "warning": 90,
+        "critical": 95,
+        "unit": "%"
+      }
+    },
+    
+    "database": {
+      "connections": {
+        "target": 10,
+        "warning": 50,
+        "critical": 100,
+        "unit": "connections"
+      },
+      "pool_size": {
+        "min": 2,
+        "max": 20,
+        "idle_timeout": 30000
+      },
+      "query_timeout": 30000
+    },
+    
+    "redis": {
+      "memory_usage": {
+        "target": 100,
+        "warning": 500,
+        "critical": 1000,
+        "unit": "MB"
+      },
+      "connection_timeout": 5000,
+      "command_timeout": 3000
+    }
+  },
+  
+  "workflow_thresholds": {
+    "execution_time": {
+      "simple_workflow": {
+        "target": 30000,
+        "warning": 120000,
+        "critical": 300000,
+        "unit": "ms"
+      },
+      "complex_workflow": {
+        "target": 300000,
+        "warning": 900000,
+        "critical": 1800000,
+        "unit": "ms"
+      }
+    },
+    
+    "queue_limits": {
+      "pending_workflows": {
+        "target": 10,
+        "warning": 50,
+        "critical": 100
+      },
+      "concurrent_executions": {
+        "target": 5,
+        "warning": 15,
+        "critical": 25
+      }
+    }
+  },
+  
+  "monitoring_intervals": {
+    "health_check": 30000,
+    "performance_metrics": 60000,
+    "resource_monitoring": 10000,
+    "log_rotation": 3600000
+  },
+  
+  "alerting_rules": {
+    "performance_degradation": {
+      "trigger": "response_time > warning_threshold",
+      "duration": 300000,
+      "action": "scale_up"
+    },
+    "high_error_rate": {
+      "trigger": "error_rate > 5%",
+      "duration": 60000,
+      "action": "alert_admin"
+    },
+    "resource_exhaustion": {
+      "trigger": "memory_usage > critical_threshold",
+      "duration": 30000,
+      "action": "emergency_scale"
+    }
+  },
+  
+  "optimization_settings": {
+    "caching": {
+      "ttl_short": 300,
+      "ttl_medium": 3600,
+      "ttl_long": 86400,
+      "max_cache_size": "500MB"
+    },
+    
+    "compression": {
+      "enabled": true,
+      "threshold": 1024,
+      "level": 6
+    },
+    
+    "batch_processing": {
+      "enabled": true,
+      "batch_size": 10,
+      "timeout": 5000
+    }
+  }
+}

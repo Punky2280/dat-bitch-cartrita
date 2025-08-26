@@ -1,0 +1,174 @@
+{
+  "name": "Cartrita V2 Monitoring Integration Configuration",
+  "version": "2.0.0",
+  "environment": "development",
+  "last_updated": "2025-08-26",
+  
+  "notification_preferences": {
+    "channels": {
+      "desktop": {
+        "enabled": true,
+        "priority_filter": ["medium", "high", "critical"]
+      },
+      "email": {
+        "enabled": true,
+        "smtp_config": {
+          "host": "smtp.gmail.com",
+          "port": 587,
+          "secure": false,
+          "auth": {
+            "user": "${EMAIL_USER}",
+            "pass": "${EMAIL_PASS}"
+          }
+        },
+        "recipients": {
+          "admin": "admin@cartrita.ai",
+          "dev_team": "dev@cartrita.ai",
+          "security": "security@cartrita.ai"
+        },
+        "priority_filter": ["high", "critical"]
+      },
+      "webhook": {
+        "enabled": true,
+        "endpoints": {
+          "slack": {
+            "url": "${SLACK_WEBHOOK_URL}",
+            "priority_filter": ["medium", "high", "critical"],
+            "categories": ["system", "security", "agent"]
+          },
+          "discord": {
+            "url": "${DISCORD_WEBHOOK_URL}",
+            "priority_filter": ["high", "critical"],
+            "categories": ["security", "system"]
+          },
+          "teams": {
+            "url": "${TEAMS_WEBHOOK_URL}",
+            "priority_filter": ["critical"],
+            "categories": ["security"]
+          }
+        }
+      },
+      "sms": {
+        "enabled": false,
+        "service": "twilio",
+        "account_sid": "${TWILIO_ACCOUNT_SID}",
+        "auth_token": "${TWILIO_AUTH_TOKEN}",
+        "from_number": "${TWILIO_FROM_NUMBER}",
+        "recipients": [
+          {
+            "name": "Admin",
+            "number": "${ADMIN_PHONE}",
+            "priority_filter": ["critical"]
+          }
+        ]
+      }
+    },
+    
+    "routing_rules": {
+      "system": {
+        "low": ["desktop"],
+        "medium": ["desktop", "webhook.slack"],
+        "high": ["desktop", "webhook.slack", "email"],
+        "critical": ["desktop", "webhook.slack", "webhook.discord", "email", "sms"]
+      },
+      "security": {
+        "low": ["desktop"],
+        "medium": ["desktop", "webhook.slack"],
+        "high": ["desktop", "webhook.slack", "webhook.discord", "email"],
+        "critical": ["desktop", "webhook.slack", "webhook.discord", "webhook.teams", "email", "sms"]
+      },
+      "agent": {
+        "low": ["desktop"],
+        "medium": ["desktop"],
+        "high": ["desktop", "webhook.slack"],
+        "critical": ["desktop", "webhook.slack", "email"]
+      }
+    }
+  },
+  
+  "monitoring_integrations": {
+    "health_checks": {
+      "enabled": true,
+      "interval": 30000,
+      "endpoints": [
+        {
+          "name": "Node.js Backend",
+          "url": "http://localhost:8001/health",
+          "timeout": 5000,
+          "expected_status": 200,
+          "critical_failure_count": 3
+        },
+        {
+          "name": "Python Backend", 
+          "url": "http://localhost:8002/health",
+          "timeout": 5000,
+          "expected_status": 200,
+          "critical_failure_count": 3
+        }
+      ]
+    },
+    
+    "performance_monitoring": {
+      "enabled": true,
+      "metrics": {
+        "response_time": {
+          "warning_threshold": 5000,
+          "critical_threshold": 15000,
+          "check_interval": 60000
+        },
+        "memory_usage": {
+          "warning_threshold": 80,
+          "critical_threshold": 95,
+          "check_interval": 30000
+        },
+        "error_rate": {
+          "warning_threshold": 5,
+          "critical_threshold": 10,
+          "check_interval": 60000
+        }
+      }
+    },
+    
+    "external_monitoring": {
+      "prometheus": {
+        "enabled": true,
+        "endpoint": "http://localhost:9090",
+        "metrics_path": "/metrics",
+        "scrape_interval": 15000
+      },
+      "grafana": {
+        "enabled": true,
+        "endpoint": "http://localhost:3001",
+        "dashboard_configs": [
+          {
+            "name": "Cartrita System Overview",
+            "file": "config/grafana/cartrita-overview.json"
+          }
+        ]
+      }
+    }
+  },
+  
+  "alerting_rules": {
+    "service_down": {
+      "condition": "health_check_failure >= critical_failure_count",
+      "severity": "critical",
+      "cooldown": 300000,
+      "message": "Service {{service_name}} is down. Please investigate immediately."
+    },
+    
+    "high_response_time": {
+      "condition": "avg_response_time > critical_threshold for 5min",
+      "severity": "high", 
+      "cooldown": 600000,
+      "message": "High response times detected. Average: {{avg_response_time}}ms"
+    },
+    
+    "memory_exhaustion": {
+      "condition": "memory_usage > critical_threshold for 2min",
+      "severity": "critical",
+      "cooldown": 180000,
+      "message": "Memory usage critical: {{memory_usage}}%. Immediate action required."
+    }
+  }
+}

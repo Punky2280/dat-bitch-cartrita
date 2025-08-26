@@ -2,25 +2,23 @@
 
 ## Project Structure (2025)
 
-- **/backend**: Node.js backend (Express/Fastify, agents, API)
+- **/py**: Python backend (FastAPI, agents, AI services, MCP integration)
 - **/frontend**: React 18 + TypeScript UI/UX (hybrid GPT/Claude chat)
 - **/docs/project-manuals**: All project documentation and guides
 - **/db-init**: Database migration scripts (pgvector, vault, workflow, agents)
 - **docker-compose.yml**: Main orchestration file for all services
-- **Dockerfile (backend/frontend)**: Main Dockerfiles for each service
 
 ## Setup & Deployment
 
 ### 1. Environment
 
 - Copy `.env.example` to `.env` and configure all required API keys
-- PostgreSQL 14+ with pgvector, Redis, Node.js 18+, Docker
+- PostgreSQL 14+ with pgvector, Redis, Python 3.11+, Docker
 
 ### 2. Install Dependencies
 
 ```bash
-npm install
-cd backend && npm install
+cd py && pip install -r requirements.txt
 cd frontend && npm install
 ```
 
@@ -42,9 +40,8 @@ docker-compose up --build -d
 
 ### 5. Access
 
-- **Frontend**: http://localhost:3001
-- **Backend**: http://localhost:8001
-- **MCP Orchestrator**: http://localhost:8002
+- **Frontend**: http://localhost:3000
+- **Python Backend**: http://localhost:8002
 - **Grafana**: http://localhost:3002
 - **Jaeger**: http://localhost:16686
 
@@ -86,34 +83,31 @@ npm run test:copilot
 cd py && python3 copilot_delegation_agent.py
 ```
 
-### 🌉 Hybrid Backend Services
-- **Node.js/Fastify**: Port 8001 - Main orchestration layer
-- **Python/FastAPI**: Port 8003 - AI agent services  
-- **MCP Integration**: Standardized tool communication
+### 🌉 Python Backend Services
+
+- **Python/FastAPI**: Port 8002 - AI agent services, MCP integration, all APIs
+- **PostgreSQL**: Database with pgvector for embeddings
+- **Redis**: Caching and session management
 
 ```bash
-# Start individual services
-npm run dev          # Fastify backend only
-npm run dev:fastapi  # FastAPI backend only
-npm run dev:both     # Both services (recommended)
+# Start Python backend only
+cd py && python3 main.py
+
+# Or use Docker
+docker-compose up python-backend
 ```
 
 ### 📊 API Endpoints
 
-#### Fastify Backend (Port 8001)
-- `GET /` - Service status
-- `GET /health` - Health check
-- `POST /api/chat` - Main chat interface
-- `POST /api/computer` - Computer use agent
-- `GET /api/agents/status` - Agent status
+#### Python Backend (Port 8002)
 
-#### FastAPI Backend (Port 8003)  
 - `GET /health` - Python service health
 - `POST /api/v2/chat` - AI chat with intelligent routing
 - `POST /api/v2/computer-use` - Computer automation
 - `GET /api/v2/agents/status` - Python agent status
 
 #### MCP Copilot Endpoints
+
 - `POST /api/mcp/copilot/start-session` - Start delegation session
 - `POST /api/mcp/copilot/analyze-project` - Analyze project structure
 - `POST /api/mcp/copilot/create-instructions` - Create instruction templates
@@ -142,23 +136,21 @@ npm run copilot:demo
 
 ```
 cartrita-v2/                    # Master directory
-├── src/                       # Fastify (Node.js) backend
-│   ├── index.js              # Main server entry point
-│   ├── mcp-copilot-integration.js  # MCP bridge
-│   └── services/             # Service layer
-├── py/                       # FastAPI (Python) backend  
+├── py/                        # Python backend (FastAPI)
+│   ├── main.py               # Main server entry point
+│   ├── fastapi_mcp_copilot.py        # FastAPI MCP integration
 │   ├── copilot_delegation_agent.py    # GUI copilot automation
 │   ├── headless_copilot_delegation.py # Headless version
-│   ├── fastapi_mcp_copilot.py        # FastAPI MCP integration
-│   ├── headless_fastapi_server.py    # Headless FastAPI server
 │   └── requirements.txt              # Python dependencies
+├── frontend/                  # Next.js React frontend
+│   ├── src/                  # React components and pages
+│   ├── public/               # Static assets
+│   └── package.json          # Frontend dependencies
 ├── db-init/                  # Database initialization scripts
 ├── docs/                     # Documentation
-├── scripts/                  # Utility scripts
 ├── copilot-instructions.md   # Copilot delegation procedures
 ├── docker-compose.yml        # Docker configuration
-├── package.json             # Node.js configuration
-└── start.sh                 # Quick startup script
+└── Makefile                 # Build and development commands
 ```
 
 ## ⚙️ Configuration
@@ -174,20 +166,29 @@ POSTGRES_URL=postgresql://...
 NODE_ENV=development|production
 ```
 
+### Prompt Config
+- Default persona file: `py/prompts/cartrita_system_prompt.md`
+- Override with env: set `CARTRITA_SYSTEM_PROMPT_PATH=/absolute/or/relative/path.md`
+- `.env` auto-load: `build.py` loads `.env` at repo root; no extra step
+- Scope: Persona is injected into all chat and agent flows by default
+- Tip: After updating the persona file or override, restart the backend
+
 ### Copilot Instructions
 Customize `copilot-instructions.md` to define project-specific delegation workflows.
 
 ## 🔧 Development
 
 ### Adding New Features
-1. **Fastify Routes**: Add to `src/` directory
-2. **FastAPI Endpoints**: Add to `py/` directory  
-3. **MCP Tools**: Extend `mcp_copilot_delegation.py`
-4. **Database**: Add migration to `db-init/`
+
+1. **Python API Routes**: Add to `py/` directory  
+2. **MCP Tools**: Extend `mcp_copilot_delegation.py`
+3. **Database**: Add migration to `db-init/`
+4. **Frontend**: Add React components to `frontend/src/`
 
 ### Code Style
-- **Node.js**: ESLint configuration in `.eslintrc.json`
-- **Python**: Follow PEP 8 standards
+
+- **Python**: Follow PEP 8 standards, use Black formatter
+- **TypeScript/React**: ESLint configuration in `frontend/`
 - **Commits**: Conventional commit messages
 
 ## 📚 Documentation

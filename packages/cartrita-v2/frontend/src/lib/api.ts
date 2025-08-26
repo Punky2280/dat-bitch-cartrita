@@ -19,8 +19,8 @@ import {
 } from '@/types';
 
 // API Configuration - Updated for Cartrita V2 Backend
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8003';
-const PYTHON_API_BASE_URL = process.env.NEXT_PUBLIC_PYTHON_API_BASE_URL || 'http://localhost:8003';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8002';
+const PYTHON_API_BASE_URL = process.env.NEXT_PUBLIC_PYTHON_API_BASE_URL || 'http://localhost:8002';
 const API_TIMEOUT = 30000; // 30 seconds
 
 class APIClient {
@@ -585,10 +585,10 @@ class APIClient {
     task_id?: string;
     reasoning?: string;
   }> {
-    return this._pythonRequest('POST', '/chat/chat', {
+    return this._pythonRequest('POST', '/simple-chat', {
       message,
       session_id: options?.session_id || 'default',
-      agent_id: options?.agent_id || 'supervisor_agent',
+      agent_id: options?.agent_id || 'supervisor_cartrita_v2',
       stream: options?.stream || false,
       context: options?.context || {}
     });
@@ -806,9 +806,9 @@ class APIClient {
 
   // Research Hub Operations (Python Backend)
   async searchAcademicPapers(query: string, limit = 10): Promise<any[]> {
-    const response = await this._pythonRequest<any>('POST', '/chat/chat', {
+    const response = await this._pythonRequest<any>('POST', '/simple-chat', {
       message: `Search for academic papers about: ${query}. Return ${limit} structured results with titles, authors, abstracts, and URLs.`,
-      agent_id: 'research_agent',
+      agent_id: 'research_agent_v2',
       session_id: 'research_session'
     });
     
@@ -830,9 +830,9 @@ class APIClient {
   }
 
   async analyzeDocument(documentId: string): Promise<any> {
-    return this._pythonRequest('POST', '/chat/chat', {
+    return this._pythonRequest('POST', '/simple-chat', {
       message: `Perform comprehensive analysis of document with ID: ${documentId}`,
-      agent_id: 'research_agent',
+      agent_id: 'research_agent_v2',
       session_id: 'document_analysis_session'
     });
   }

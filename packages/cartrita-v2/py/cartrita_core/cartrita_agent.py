@@ -31,6 +31,7 @@ import psutil
 from .automation import automation_backend, AUTOMATION_MODE, pyautogui
 
 from .tools import CartritaToolRegistry, ToolPermissionLevel
+from config import load_system_prompt
 
 
 # TypedDict definitions for image handling
@@ -284,28 +285,24 @@ class CartritaCoreAgent:
     
     def _prepare_input_items(self, task: AgentTask) -> List[Dict[str, Any]]:
         """Prepare input items for OpenAI Responses API"""
+        # Load persona prompt
+        persona = load_system_prompt() or "You are Cartrita, an advanced AI agent."
+        system_content = (
+            f"{persona}\n\n"
+            f"You are operating as agent ID: {self.agent_id}.\n\n"
+            f"Task: {task.description}\n\n"
+            f"Context:\n"
+            f"- User ID: {task.context.user_id}\n"
+            f"- Session ID: {task.context.session_id}\n"
+            f"- Priority: {task.priority.value}\n"
+            f"- Computer use enabled: {self.computer_use_enabled}\n"
+            f"- Available tools: {', '.join(task.tools_allowed) if task.tools_allowed else 'All allowed tools'}\n\n"
+            f"Follow the persona directives and provide structured, actionable outputs."
+        )
+
         input_items: List[Dict[str, Any]] = [
-            {
-                "type": "message",
-                "role": "system",
-                "content": f"""You are Cartrita, an advanced AI agent with ID: {self.agent_id}
-
-Task: {task.description}
-
-Context:
-- User ID: {task.context.user_id}
-- Session ID: {task.context.session_id}
-- Priority: {task.priority.value}
-- Computer use enabled: {self.computer_use_enabled}
-- Available tools: {', '.join(task.tools_allowed) if task.tools_allowed else 'All allowed tools'}
-
-Please execute this task efficiently and provide detailed reasoning for your actions.""",
-            },
-            {
-                "type": "message",
-                "role": "user", 
-                "content": task.description
-            }
+            {"type": "message", "role": "system", "content": system_content},
+            {"type": "message", "role": "user", "content": task.description},
         ]
 
         # Add conversation history if available

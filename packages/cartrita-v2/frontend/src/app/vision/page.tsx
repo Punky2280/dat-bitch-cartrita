@@ -525,7 +525,7 @@ export default function VisionLabPage() {
                               {analysis.status}
                             </span>
                             <span>•</span>
-                            <span>{analysis.analysis_types.length} analysis types</span>
+                            <span>{analysis.analysis_types?.length || 0} analysis types</span>
                             <span>•</span>
                             <span>{new Date(analysis.created_at).toLocaleDateString()}</span>
                           </div>

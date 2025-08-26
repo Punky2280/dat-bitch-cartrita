@@ -1,0 +1,35 @@
+#!/bin/bash
+"""
+Cartrita V2 - Command Line Interface
+===================================
+
+Convenient wrapper for the Python build system.
+
+Usage:
+    ./cartrita setup         # Initial setup
+    ./cartrita dev           # Development mode
+    ./cartrita prod          # Production deployment
+    ./cartrita test          # Run tests
+    ./cartrita docker        # Docker deployment
+    ./cartrita clean         # Clean build artifacts
+    ./cartrita --help        # Show full help
+"""
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BUILD_SCRIPT="$SCRIPT_DIR/build.py"
+
+# Check if Python build script exists
+if [[ ! -f "$BUILD_SCRIPT" ]]; then
+    echo "❌ Build script not found: $BUILD_SCRIPT"
+    exit 1
+fi
+
+# Check if Python 3 is available
+if ! command -v python3 &> /dev/null; then
+    echo "❌ Python 3 not found. Please install Python 3.8+"
+    exit 1
+fi
+
+# Execute the Python build script with all arguments
+exec python3 "$BUILD_SCRIPT" "$@"

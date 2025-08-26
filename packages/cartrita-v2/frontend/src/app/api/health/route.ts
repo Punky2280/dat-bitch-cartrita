@@ -33,7 +33,7 @@ export async function GET() {
 // Check API backend health
 async function checkAPIHealth(): Promise<string> {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8002';
+    const apiUrl = process.env.PYTHON_API_BASE_URL || 'http://python-backend:8002';
     
     // Create AbortController for timeout
     const controller = new AbortController();

@@ -1,10 +1,10 @@
 #!/bin/bash
-# Cartrita V2 Master - Hybrid Fastify + FastAPI Startup Script
+# Cartrita V2 Master - Python Backend Startup Script
 
-echo "🚀 Starting Cartrita V2 - Hybrid Architecture"
+echo "🚀 Starting Cartrita V2 - Python Architecture"
 echo "============================================="
 echo ""
-echo "🔧 Architecture: Fastify (Node.js) + FastAPI (Python) + MCP Copilot"
+echo "🔧 Architecture: Python FastAPI + MCP Copilot + Next.js Frontend"
 echo ""
 
 # Check if .env exists
@@ -13,14 +13,16 @@ if [ ! -f .env ]; then
     cp .env.v2.template .env 2>/dev/null || cp .env.example .env 2>/dev/null
 fi
 
-# Install Node.js dependencies
-echo "📦 Installing Node.js dependencies..."
-npm install
-
 # Install Python dependencies  
-echo "🐍 Installing Python dependencies..."
+echo "� Installing Python dependencies..."
 cd py && pip install -r requirements.txt && cd ..
 
-# Start both services
-echo "🌉 Starting hybrid backend services..."
-npm run dev:both
+# Install Frontend dependencies (if frontend directory exists)
+if [ -d "frontend" ]; then
+    echo "� Installing Frontend dependencies..."
+    cd frontend && npm install && cd ..
+fi
+
+# Start Python backend
+echo "🐍 Starting Python backend service..."
+cd py && python3 main.py
