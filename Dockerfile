@@ -1,31 +1,38 @@
-FROM node:20-alpine
+FROM node:22
 
 WORKDIR /usr/src/app
 
-# Install git and other necessary packages
-RUN apk add --no-cache git python3 make g++
+# Update package index and install necessary packages
+RUN apt-get update && apt-get install -y git python3 make g++ wget && rm -rf /var/lib/apt/lists/*
 
 # Copy package manifests for workspaces
 COPY package*.json ./
 COPY packages/backend/package*.json ./packages/backend/
+COPY packages/frontend/package*.json ./packages/frontend/
+COPY packages/robotics/package*.json ./packages/robotics/
+COPY packages/shared/package*.json ./packages/shared/
 
-# Install dependencies without running prepare scripts (to avoid husky issues)
-RUN npm install --workspaces=false --ignore-scripts
+# Install all dependencies at workspace level
+RUN npm install --workspaces --ignore-scripts
 
-# Change to backend directory and install backend-specific dependencies
+# Copy all application source code
+COPY . .
+
+# Change to backend directory
 WORKDIR /usr/src/app/packages/backend
-COPY packages/backend/package*.json ./
-RUN npm install --ignore-scripts
-
-# Copy the backend source code
-COPY packages/backend/ ./
 
 # Create necessary directories
 RUN mkdir -p uploads logs
 
 # Set environment to production
 ENV NODE_ENV=production
+ENV PORT=8001
+
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8001/health || exit 1
 
 EXPOSE 8001
 
+# Use the npm start script
 CMD ["npm", "start"]
