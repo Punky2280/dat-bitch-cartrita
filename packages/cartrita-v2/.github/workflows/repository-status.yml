@@ -148,8 +148,10 @@ jobs:
           echo "🔒 Checking dependencies for security issues..."
           
           if [[ -f "py/requirements.txt" ]]; then
-            # Install safety for security checking
+            # Install safety for security checking and jq CLI
             pip install safety
+            sudo apt-get update -qq
+            sudo apt-get install -y jq
             
             # Check for known vulnerabilities
             if safety check -r py/requirements.txt --json > safety-report.json; then

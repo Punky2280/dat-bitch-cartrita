@@ -68,7 +68,7 @@ jobs:
 
       - name: Load .env variables
         run: |
-          if [ -f packages/cartrita-v2/.env ]; then
+          if [ -f .env ]; then
             echo "Loading .env into GITHUB_ENV"
             while IFS= read -r line; do
               if [ -n "$line" ] && [ "${line#\#}" = "$line" ] && [[ "$line" == *"="* ]]; then
@@ -78,7 +78,7 @@ jobs:
                 value="${value%\'}"; value="${value#\'}"
                 echo "$key=$value" >> "$GITHUB_ENV"
               fi
-            done < packages/cartrita-v2/.env
+            done < .env
           else
             echo ".env not found; skipping"
           fi
@@ -91,6 +91,8 @@ jobs:
       - name: Determine version and tag
         id: version
         run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y jq
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             # Manual release - determine next version
             CURRENT_VERSION=$(jq -r '.version' package.json)

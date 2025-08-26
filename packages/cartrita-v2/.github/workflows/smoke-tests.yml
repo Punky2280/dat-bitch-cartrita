@@ -200,7 +200,7 @@ jobs:
           echo "🎉 All service tests passed!"
 
       - name: Performance Check
-        if: matrix.test-type == 'services' && !github.event.inputs.quick_mode
+        if: matrix.test-type == 'services' && (github.event.inputs.quick_mode != 'true')
         run: |
           echo "⚡ Quick performance check..."
           
