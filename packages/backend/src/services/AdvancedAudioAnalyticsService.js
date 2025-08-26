@@ -612,12 +612,35 @@ except Exception as e:
 
             const startTime_ms = Date.now();
             const pythonProcess = spawn('python3', args, {
-                stdio: ['pipe', 'pipe', 'pipe'],
-                timeout: this.config.pythonTimeout
+                stdio: ['pipe', 'pipe', 'pipe']
             });
 
             let stdout = '';
             let stderr = '';
+            let resolved = false;
+            let timeoutHandle;
+
+            const resolveOnce = (result) => {
+                if (!resolved) {
+                    resolved = true;
+                    if (timeoutHandle) {
+                        clearTimeout(timeoutHandle);
+                    }
+                    result.isSuccess ? resolve(result.data) : reject(result.error);
+                }
+            };
+
+            // Manual timeout handling
+            timeoutHandle = setTimeout(() => {
+                if (!resolved) {
+                    console.warn(`[AudioAnalytics] 🐍 Python process timeout after ${this.config.pythonTimeout}ms, assuming ready`);
+                    pythonProcess.kill('SIGTERM');
+                    resolveOnce({
+                        isSuccess: false,
+                        error: new Error(`🐍 Python server startup timeout, assuming ready - Process exceeded ${this.config.pythonTimeout}ms limit`)
+                    });
+                }
+            }, this.config.pythonTimeout);
 
             pythonProcess.stdout.on('data', (data) => {
                 stdout += data.toString();
@@ -633,34 +656,42 @@ except Exception as e:
                 
                 if (code !== 0) {
                     console.error(`[AudioAnalytics] 🐍 Python process stderr: ${stderr}`);
-                    reject(new Error(`Python process failed with code ${code}: ${stderr}`));
+                    resolveOnce({
+                        isSuccess: false,
+                        error: new Error(`Python process failed with code ${code}: ${stderr}`)
+                    });
                     return;
                 }
 
                 try {
                     const results = JSON.parse(stdout);
                     if (results.error) {
-                        reject(new Error(`Python analysis error: ${results.error}`));
+                        resolveOnce({
+                            isSuccess: false,
+                            error: new Error(`Python analysis error: ${results.error}`)
+                        });
                     } else {
                         console.log(`[AudioAnalytics] ✅ Python analysis completed successfully`);
-                        resolve(results);
+                        resolveOnce({
+                            isSuccess: true,
+                            data: results
+                        });
                     }
                 } catch (error) {
                     console.error(`[AudioAnalytics] 🐍 Failed to parse Python output: ${stdout}`);
-                    reject(new Error(`Failed to parse Python output: ${error.message}`));
+                    resolveOnce({
+                        isSuccess: false,
+                        error: new Error(`Failed to parse Python output: ${error.message}`)
+                    });
                 }
             });
 
             pythonProcess.on('error', (error) => {
                 console.error(`[AudioAnalytics] 🐍 Python process error: ${error.message}`);
-                reject(new Error(`Failed to start Python process: ${error.message}`));
-            });
-
-            // Handle timeout gracefully
-            pythonProcess.on('timeout', () => {
-                console.warn(`[AudioAnalytics] 🐍 Python process timeout after ${this.config.pythonTimeout}ms, assuming ready`);
-                pythonProcess.kill('SIGTERM');
-                reject(new Error(`🐍 Python server startup timeout, assuming ready - Process exceeded ${this.config.pythonTimeout}ms limit`));
+                resolveOnce({
+                    isSuccess: false,
+                    error: new Error(`Failed to start Python process: ${error.message}`)
+                });
             });
         });
     }
