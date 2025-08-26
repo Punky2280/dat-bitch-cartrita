@@ -66,6 +66,23 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Load .env variables
+        run: |
+          if [ -f packages/cartrita-v2/.env ]; then
+            echo "Loading .env into GITHUB_ENV"
+            while IFS= read -r line; do
+              if [ -n "$line" ] && [ "${line#\#}" = "$line" ] && [[ "$line" == *"="* ]]; then
+                key="${line%%=*}"
+                value="${line#*=}"
+                value="${value%\"}"; value="${value#\"}"
+                value="${value%\'}"; value="${value#\'}"
+                echo "$key=$value" >> "$GITHUB_ENV"
+              fi
+            done < packages/cartrita-v2/.env
+          else
+            echo ".env not found; skipping"
+          fi
+
       - name: Set up Node.js for versioning
         uses: actions/setup-node@v4
         with:

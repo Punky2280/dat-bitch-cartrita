@@ -55,6 +55,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Load .env variables
+        run: |
+          if [ -f .env ]; then
+            echo "Loading .env into GITHUB_ENV"
+            while IFS= read -r line; do
+              if [ -n "$line" ] && [ "${line#\#}" = "$line" ] && [[ "$line" == *"="* ]]; then
+                key="${line%%=*}"
+                value="${line#*=}"
+                value="${value%\"}"; value="${value#\"}"
+                value="${value%\'}"; value="${value#\'}"
+                echo "$key=$value" >> "$GITHUB_ENV"
+              fi
+            done < .env
+          else
+            echo ".env not found; skipping"
+          fi
+
       - name: Environment configuration
         id: setup
         run: |
@@ -162,6 +179,8 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}/packages/cartrita-v2/py
           TESTING: true
         run: |
+          # Ensure OPENAI_API_KEY is present (fallback for CI)
+          export OPENAI_API_KEY="${OPENAI_API_KEY:-test-key}"
           # Test MCP Tools Server
           python py/mcp_tools_server.py &
           MCP_PID=$!
@@ -207,6 +226,23 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Load .env variables
+        run: |
+          if [ -f .env ]; then
+            echo "Loading .env into GITHUB_ENV"
+            while IFS= read -r line; do
+              if [ -n "$line" ] && [ "${line#\#}" = "$line" ] && [[ "$line" == *"="* ]]; then
+                key="${line%%=*}"
+                value="${line#*=}"
+                value="${value%\"}"; value="${value#\"}"
+                value="${value%\'}"; value="${value#\'}"
+                echo "$key=$value" >> "$GITHUB_ENV"
+              fi
+            done < .env
+          else
+            echo ".env not found; skipping"
+          fi
 
       - name: Setup Node.js ${{ needs.setup.outputs.node-version }}
         uses: actions/setup-node@v4
