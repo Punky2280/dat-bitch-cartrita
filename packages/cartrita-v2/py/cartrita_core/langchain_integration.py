@@ -6,9 +6,16 @@ import asyncio
 import json
 import logging
 import os
-from typing import Dict, List, Optional, Any, Union, Callable
+from typing import Dict, List, Optional, Any, Union, Callable, cast
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from the backend .env file
+env_path = Path(__file__).parent.parent.parent / "backend" / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
 
 from langchain.agents import AgentType, initialize_agent
 from langchain.memory import ConversationBufferMemory, ConversationSummaryMemory
@@ -17,12 +24,123 @@ from langchain.chains import LLMChain, ConversationChain
 from langchain.prompts import PromptTemplate, ChatPromptTemplate
 from langchain.schema import BaseOutputParser
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain.vectorstores import Chroma
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, BaseMessage
+from langchain_community.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.document_loaders import TextLoader
+from langchain_community.document_loaders import TextLoader
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import LLMChainExtractor
 from pydantic import BaseModel, Field
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class ChainType(str, Enum):
+    """Available chain types"""
+    CONVERSATION = "conversation"
+    RESEARCH = "research"
+    CODE_ASSISTANT = "code_assistant"
+    DATA_ANALYSIS = "data_analysis"
+    CREATIVE_WRITING = "creative_writing"
+    QUANTUM_COMPUTING = "quantum_computing"
+
+class MemoryType(str, Enum):
+    """Available memory types"""
+    BUFFER = "buffer"
+    SUMMARY = "summary"
+    ENTITY = "entity"
+
+class LangChainTool(BaseTool):
+    """Base class for custom LangChain tools"""
+    name: str = Field(...)
+    description: str = Field(...)
+    
+    async def _arun(self, query: str) -> str:
+        """Async implementation"""
+        return await asyncio.get_event_loop().run_in_executor(None, self._run, query)
+    
+    def _run(self, query: str) -> str:
+        """Sync implementation - to be overridden"""
+        raise NotImplementedError("Tool must implement _run method")
+
+class LangChainConfig:
+    """LangChain configuration manager with environment variable loading"""
+    
+    def __init__(self):
+        """Initialize configuration with environment variables"""
+        self.openai_api_key = os.getenv("OPENAI_API_KEY")
+        if not self.openai_api_key:
+            raise ValueError("OPENAI_API_KEY environment variable is required")
+        
+        self.model_name = os.getenv("OPENAI_MODEL", "gpt-4")
+        self.temperature = float(os.getenv("OPENAI_TEMPERATURE", "0.3"))
+        self.max_tokens = int(os.getenv("OPENAI_MAX_TOKENS", "2000"))
+        self.chunk_size = int(os.getenv("LANGCHAIN_CHUNK_SIZE", "1000"))
+        self.chunk_overlap = int(os.getenv("LANGCHAIN_CHUNK_OVERLAP", "200"))
+        
+        # Vector store configuration
+        self.vector_store_path = os.getenv("VECTOR_STORE_PATH", "./data/vectorstore")
+        
+        # Memory configuration
+        self.memory_type = os.getenv("LANGCHAIN_MEMORY_TYPE", "buffer")
+        self.max_memory_length = int(os.getenv("LANGCHAIN_MAX_MEMORY", "10"))
+        
+        # Initialize containers
+        self.tools: Dict[str, LangChainTool] = {}
+        self.chains: Dict[str, Any] = {}
+        self.memories: Dict[str, Any] = {}
+        self.llm: Optional[ChatOpenAI] = None
+        self.embeddings: Optional[OpenAIEmbeddings] = None
+        
+        logger.info(f"LangChain configuration loaded - Model: {self.model_name}, Temperature: {self.temperature}")
+    
+    def get_llm(self) -> ChatOpenAI:
+        """Get configured LLM instance"""
+        if not self.llm:
+            self.llm = ChatOpenAI(
+                openai_api_key=self.openai_api_key,
+                model_name=self.model_name,
+                temperature=self.temperature,
+            )
+        return self.llm
+    
+    def get_embeddings(self) -> OpenAIEmbeddings:
+        """Get configured embeddings instance"""
+        if not self.embeddings:
+            self.embeddings = OpenAIEmbeddings(
+                openai_api_key=self.openai_api_key
+            )
+        return self.embeddings
+import asyncio
+import json
+import logging
+import os
+from typing import Dict, List, Optional, Any, Union, Callable, cast
+from datetime import datetime
+from enum import Enum
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from the backend .env file
+env_path = Path(__file__).parent.parent.parent / "backend" / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
+
+from langchain.agents import AgentType, initialize_agent
+from langchain.memory import ConversationBufferMemory, ConversationSummaryMemory
+from langchain.tools import BaseTool, Tool
+from langchain.chains import LLMChain, ConversationChain
+from langchain.prompts import PromptTemplate, ChatPromptTemplate
+from langchain.schema import BaseOutputParser
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, BaseMessage
+from langchain_community.vectorstores import Chroma
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.document_loaders import TextLoader
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import LLMChainExtractor
+from pydantic import BaseModel, Field, SecretStr
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -47,7 +165,7 @@ class ChainConfiguration(BaseModel):
     description: str
     chain_type: ChainType
     memory_type: Optional[MemoryType] = None
-    model_name: str = "gpt-4o"
+    model_name: str = "gpt-5"
     temperature: float = 0.7
     max_tokens: int = 2048
     prompt_template: Optional[str] = None
@@ -57,7 +175,7 @@ class ChainConfiguration(BaseModel):
 class LangChainTool(BaseTool):
     """Custom LangChain tool wrapper for Cartrita"""
     
-    name: str
+    name: str = Field(default="default_tool")
     description: str
     func: Callable
     
@@ -80,22 +198,45 @@ class LangChainTool(BaseTool):
         except Exception as e:
             return f"Error executing tool: {str(e)}"
 
-class LangChainManager:
-    """Manages LangChain integrations, chains, and tools"""
+class LangChainConfig:
+    """LangChain configuration manager with environment variable loading"""
     
     def __init__(self):
+        """Initialize configuration with environment variables"""
+        self.openai_api_key = os.getenv("OPENAI_API_KEY")
+        if not self.openai_api_key:
+            raise ValueError("OPENAI_API_KEY environment variable is required")
+        
+        self.model_name = os.getenv("OPENAI_MODEL", "gpt-4")
+        self.temperature = float(os.getenv("OPENAI_TEMPERATURE", "0.3"))
+        self.max_tokens = int(os.getenv("OPENAI_MAX_TOKENS", "2000"))
+        self.chunk_size = int(os.getenv("LANGCHAIN_CHUNK_SIZE", "1000"))
+        self.chunk_overlap = int(os.getenv("LANGCHAIN_CHUNK_OVERLAP", "200"))
+        
+        # Vector store configuration
+        self.vector_store_path = os.getenv("VECTOR_STORE_PATH", "./data/vectorstore")
+        
+        # Memory configuration
+        self.memory_type = os.getenv("LANGCHAIN_MEMORY_TYPE", "buffer")
+        self.max_memory_length = int(os.getenv("LANGCHAIN_MAX_MEMORY", "10"))
+        
+        # Initialize containers
+        self.tools: Dict[str, Tool] = {}
         self.chains: Dict[str, Any] = {}
-        self.tools: Dict[str, LangChainTool] = {}
-        self.memories: Dict[str, Any] = {}
-        self.llm = ChatOpenAI(
-            model="gpt-4o",
-            temperature=0.7,
-            openai_api_key=os.getenv("OPENAI_API_KEY")
-        )
-        self.embeddings = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
-        self.vectorstore = None
-        self._initialize_default_tools()
-        self._initialize_default_chains()
+        self.llm: Optional[ChatOpenAI] = None
+        
+        logger.info(f"LangChain configuration loaded - Model: {self.model_name}, Temperature: {self.temperature}")
+    
+    def get_llm(self) -> ChatOpenAI:
+        """Get configured LLM instance"""
+        if not self.llm:
+            self.llm = ChatOpenAI(
+                api_key=self.openai_api_key,
+                model=self.model_name,
+                temperature=self.temperature,
+                streaming=True
+            )
+        return self.llm
     
     def _initialize_default_tools(self):
         """Initialize default LangChain tools"""
@@ -144,6 +285,10 @@ class LangChainManager:
     
     def _initialize_default_chains(self):
         """Initialize default LangChain chains"""
+        
+        if not self.llm:
+            logger.warning("Skipping chain initialization - LLM not available")
+            return
         
         # Simple conversation chain
         conversation_chain = ConversationChain(
@@ -212,7 +357,7 @@ class LangChainManager:
                 "timestamp": datetime.now().isoformat()
             }
     
-    async def _file_operations_func(self, operation: str, path: str, content: str = None) -> Dict:
+    async def _file_operations_func(self, operation: str, path: str, content: Optional[str] = None) -> Dict:
         """File operations function"""
         try:
             if operation == "read":
@@ -300,11 +445,13 @@ class LangChainManager:
             chain_id = config.id
             
             # Create LLM with specific configuration
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key:
+                raise ValueError("OpenAI API key not found")
+            
             llm = ChatOpenAI(
                 model=config.model_name,
-                temperature=config.temperature,
-                max_tokens=config.max_tokens,
-                openai_api_key=os.getenv("OPENAI_API_KEY")
+                temperature=config.temperature
             )
             
             # Create memory if specified
@@ -454,6 +601,12 @@ class LangChainManager:
                     "error": "No vectorstore available. Create one first."
                 }
             
+            if not self.llm:
+                return {
+                    "success": False,
+                    "error": "LLM not available - OpenAI API key may be missing."
+                }
+            
             # Create retriever
             retriever = self.vectorstore.as_retriever(search_kwargs={"k": k})
             
@@ -482,8 +635,9 @@ class LangChainManager:
             Answer:
             """
             
-            # Get answer from LLM
-            response = await self.llm.agenerate([[{"role": "user", "content": qa_prompt}]])
+            # Get answer from LLM using proper message objects
+            messages: List[BaseMessage] = [HumanMessage(content=qa_prompt)]
+            response = await self.llm.agenerate([messages])
             answer = response.generations[0][0].text
             
             return {
@@ -523,5 +677,16 @@ class LangChainManager:
             "timestamp": datetime.now().isoformat()
         }
 
-# Global instance
-langchain_manager = LangChainManager()
+# Global configuration instance will be initialized by the agent manager
+langchain_config = None
+
+def initialize_langchain() -> LangChainConfig:
+    """Initialize the global LangChain configuration"""
+    global langchain_config
+    if not langchain_config:
+        langchain_config = LangChainConfig()
+    return langchain_config
+
+def get_langchain_config() -> Optional[LangChainConfig]:
+    """Get the global LangChain configuration"""
+    return langchain_config

@@ -195,11 +195,9 @@ Remember: You're not just delivering messages - you're building bridges and crea
       context.urgency = 'high';
     } else if (lastMessage.includes('negotiate') || lastMessage.includes('deal')) {
       context.type = 'negotiation';
-    } else /* The code is checking if a certain condition is met and if the last message includes
-    either the word 'team' or 'meeting'. */
-    if (____________ && (lastMessage.includes('team') || lastMessage.includes('meeting'))) {
-                 context.type = 'team_collaboration';
-           }
+    } else if (lastMessage.includes('team') || lastMessage.includes('meeting')) {
+      context.type = 'team_collaboration';
+    }
 
     // Detect audience
     if (lastMessage.includes('executive') || lastMessage.includes('leadership')) {

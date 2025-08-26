@@ -24,7 +24,9 @@ from cartrita_core.agent_manager import CartritaAgentManager, TaskPriority
 from cartrita_core.cartrita_agent import AgentContext
 from cartrita_core.tools import CartritaToolRegistry
 from cartrita_core.responses_api import CartritaResponsesClient
+from config import get_settings
 # from enhanced_chat_routes import router as enhanced_chat_router
+from startup_checks import run_startup_checks
 
 
 # Request/Response Models
@@ -81,6 +83,7 @@ agent_manager: Optional[CartritaAgentManager] = None
 tools_registry: Optional[CartritaToolRegistry] = None
 responses_client: Optional[CartritaResponsesClient] = None
 server_start_time = datetime.now()
+startup_checks_report = None
 
 # Logging setup
 logging.basicConfig(
@@ -98,13 +101,21 @@ async def startup_event():
     logger.info("🚀 Starting Cartrita V2 Python Backend")
     
     try:
+        # Run startup checks first
+        global startup_checks_report
+        startup_checks_report = run_startup_checks()
+        if not startup_checks_report.get("ok", False):
+            logger.warning("Startup checks reported issues. View via /health/details")
         # Initialize tools registry
         tools_registry = CartritaToolRegistry(logger=logger.getChild("tools"))
         logger.info("✅ Tools registry initialized")
         
-        # Initialize OpenAI Responses API client
+        # Initialize OpenAI Responses API client from centralized config
+        settings = get_settings()
+        oa = settings["openai"]
         responses_client = CartritaResponsesClient(
-            api_key=os.getenv("OPENAI_API_KEY"),
+            api_key=oa.api_key,
+            model=oa.default_model,
             logger=logger.getChild("responses_api")
         )
         logger.info("✅ OpenAI Responses API client initialized")
@@ -188,6 +199,19 @@ async def health_check():
         timestamp=datetime.now().isoformat()
     )
 
+@app.get("/health/details")
+async def health_details():
+    """Return detailed health including startup checks"""
+    from config import get_settings
+    safe = get_settings()["safe"]
+    return {
+        "status": "ok" if (startup_checks_report or {}).get("ok") else "degraded",
+        "uptime": (datetime.now() - server_start_time).total_seconds(),
+        "checks": startup_checks_report or {},
+        "config": safe,
+        "timestamp": datetime.now().isoformat(),
+    }
+
 
 @app.post("/api/v2/chat")
 async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks):
@@ -195,10 +219,10 @@ async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks)
     
     if not agent_manager:
         raise HTTPException(status_code=503, detail="Agent manager not initialized")
-    
+
     try:
         logger.info(f"💬 Chat request from {request.user_id}: {request.message[:100]}...")
-        
+
         # Convert priority string to enum
         priority_map = {
             "low": TaskPriority.LOW,
@@ -207,14 +231,14 @@ async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks)
             "urgent": TaskPriority.URGENT
         }
         priority = priority_map.get(request.priority, TaskPriority.MEDIUM)
-        
+
         # Create agent context
         context = AgentContext(
             user_id=request.user_id,
             session_id=request.session_id,
             metadata=request.context
         )
-        
+
         # Execute task through agent manager
         response = await agent_manager.execute_task(
             task_description=request.message,
@@ -222,7 +246,7 @@ async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks)
             priority=priority,
             preferred_agent=request.preferred_agent
         )
-        
+
         return {
             "success": response.success,
             "content": response.content,
@@ -237,10 +261,10 @@ async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks)
             "error": response.error,
             "timestamp": datetime.now().isoformat()
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Chat request failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/api/v2/computer-use")
@@ -249,10 +273,10 @@ async def computer_use_endpoint(request: ComputerUseRequest):
     
     if not responses_client:
         raise HTTPException(status_code=503, detail="Responses client not initialized")
-    
+
     try:
         logger.info(f"🖥️ Computer use request: {request.task_description[:100]}...")
-        
+
         # Create computer use session
         session_result = await responses_client.create_computer_use_session(
             task_description=request.task_description,
@@ -261,10 +285,10 @@ async def computer_use_endpoint(request: ComputerUseRequest):
             display_height=request.display_height,
             max_iterations=request.max_iterations
         )
-        
+
         if not session_result["success"]:
             raise HTTPException(status_code=500, detail=session_result.get("error"))
-        
+
         return {
             "success": True,
             "session_id": session_result["session_id"],
@@ -278,10 +302,10 @@ async def computer_use_endpoint(request: ComputerUseRequest):
             "max_iterations": request.max_iterations,
             "timestamp": datetime.now().isoformat()
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Computer use request failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/api/v2/computer-use/{session_id}/continue")
@@ -290,21 +314,21 @@ async def continue_computer_use(session_id: str, user_input: Optional[str] = Non
     
     if not responses_client:
         raise HTTPException(status_code=503, detail="Responses client not initialized")
-    
+
     try:
         result = await responses_client.continue_computer_use_session(
             session_id=session_id,
             user_input=user_input
         )
-        
+
         if not result["success"]:
             raise HTTPException(status_code=400, detail=result.get("error"))
-        
+
         return result
-        
+
     except Exception as e:
         logger.error(f"❌ Computer use continuation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.delete("/api/v2/computer-use/{session_id}")
@@ -313,18 +337,18 @@ async def end_computer_use_session(session_id: str):
     
     if not responses_client:
         raise HTTPException(status_code=503, detail="Responses client not initialized")
-    
+
     try:
         result = responses_client.end_computer_use_session(session_id)
-        
+
         if not result["success"]:
             raise HTTPException(status_code=404, detail=result.get("error"))
-        
+
         return result
-        
+
     except Exception as e:
         logger.error(f"❌ End computer use session failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/api/v2/agents/status")
@@ -333,30 +357,30 @@ async def get_agents_status():
     
     if not agent_manager:
         raise HTTPException(status_code=503, detail="Agent manager not initialized")
-    
+
     try:
         status = await agent_manager.get_agent_status()
-        
+
         # Add additional system info
         status["system"] = {
             "python_backend_version": "2.0.0",
             "uptime_seconds": (datetime.now() - server_start_time).total_seconds(),
             "timestamp": datetime.now().isoformat()
         }
-        
+
         # Add tools registry stats
         if tools_registry:
             status["tools"] = tools_registry.get_registry_stats()
-        
+
         # Add responses client stats
         if responses_client:
             status["responses_api"] = responses_client.get_client_stats()
-        
+
         return {"success": True, **status}
-        
+
     except Exception as e:
         logger.error(f"❌ Get agents status failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/api/v2/agents/{agent_id}/status")
@@ -365,20 +389,20 @@ async def get_agent_status(agent_id: str):
     
     if not agent_manager:
         raise HTTPException(status_code=503, detail="Agent manager not initialized")
-    
+
     try:
         status = await agent_manager.get_agent_status(agent_id)
-        
+
         if "error" in status:
             raise HTTPException(status_code=404, detail=status["error"])
-        
+
         return {"success": True, **status}
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"❌ Get agent status failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/api/v2/agents/{agent_id}/delegate")
@@ -387,7 +411,7 @@ async def delegate_to_agent(agent_id: str, request: ChatRequest):
     
     if not agent_manager:
         raise HTTPException(status_code=503, detail="Agent manager not initialized")
-    
+
     try:
         # Convert priority
         priority_map = {
@@ -397,14 +421,14 @@ async def delegate_to_agent(agent_id: str, request: ChatRequest):
             "urgent": TaskPriority.URGENT
         }
         priority = priority_map.get(request.priority, TaskPriority.MEDIUM)
-        
+
         # Create context
         context = AgentContext(
             user_id=request.user_id,
             session_id=request.session_id,
             metadata=request.context
         )
-        
+
         # Delegate to specific agent
         response = await agent_manager.delegate_to_agent(
             agent_id=agent_id,
@@ -412,7 +436,7 @@ async def delegate_to_agent(agent_id: str, request: ChatRequest):
             context=context,
             priority=priority
         )
-        
+
         return {
             "success": response.success,
             "content": response.content,
@@ -423,10 +447,10 @@ async def delegate_to_agent(agent_id: str, request: ChatRequest):
             "execution_time_ms": response.execution_time_ms,
             "error": response.error
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Agent delegation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/api/v2/stats")
@@ -483,10 +507,11 @@ async def simple_chat_endpoint(request: ChatRequest):
         # Initialize OpenAI client
         client = openai.AsyncOpenAI(api_key=api_key)
         
-        # Create simple chat completion
-        response = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
+        # Create simple chat completion with model-appropriate parameters
+        model_name = "gpt-5"
+        chat_params = {
+            "model": model_name,
+            "messages": [
                 {
                     "role": "system",
                     "content": "You are a helpful AI assistant called Cartrita. You are part of a multi-agent system designed to help users with various tasks including research, writing, computer automation, vision analysis, and code generation."
@@ -495,10 +520,18 @@ async def simple_chat_endpoint(request: ChatRequest):
                     "role": "user",
                     "content": request.message
                 }
-            ],
-            max_tokens=1000,
-            temperature=0.7
-        )
+            ]
+        }
+        
+        # GPT-5 models use max_completion_tokens and don't support custom temperature
+        if "gpt-5" in model_name.lower():
+            chat_params["max_completion_tokens"] = 1000
+            # GPT-5 only supports default temperature (1.0)
+        else:
+            chat_params["max_tokens"] = 1000
+            chat_params["temperature"] = 0.7
+            
+        response = await client.chat.completions.create(**chat_params)
         
         return {
             "success": True,
@@ -510,7 +543,7 @@ async def simple_chat_endpoint(request: ChatRequest):
             "iterations_completed": 1,
             "execution_time_ms": 0,
             "computer_actions": [],
-            "metadata": {"model": "gpt-4o-mini"},
+            "metadata": {"model": "gpt-5"},
             "error": None,
             "timestamp": datetime.now().isoformat()
         }
@@ -546,7 +579,7 @@ async def shutdown_event():
 
 if __name__ == "__main__":
     # Get configuration from environment
-    port = int(os.getenv("PORT", 8002))
+    port = int(os.getenv("FASTAPI_PORT", 8002))
     host = os.getenv("HOST", "0.0.0.0")
     reload = os.getenv("ENVIRONMENT", "development") == "development"
     

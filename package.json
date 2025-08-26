@@ -3,17 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "workspaces": [
-    "packages/shared",
-    "packages/robotics",
-    "packages/mcp-core",
-    "packages/orchestrator",
-    "packages/supervisor-intelligence",
-    "packages/mcp-testing",
-    "packages/cartrita-v2",
-    "packages/prompts",
-    "packages/ui-components",
-    "packages/config",
-    "packages/rag-evaluation"
+    "packages/cartrita-v2"
   ],
   "scripts": {
     "dev": "npm run dev --workspace=packages/cartrita-v2",

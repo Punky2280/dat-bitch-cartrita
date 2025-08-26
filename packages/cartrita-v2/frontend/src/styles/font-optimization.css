@@ -1,0 +1,64 @@
+/* Font Display Optimization */
+:root {
+  --font-geist-sans: 'GeistVF', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-geist-mono: 'GeistMonoVF', 'SF Mono', Consolas, Monaco, monospace;
+}
+
+/* Font Loading States */
+.font-loading {
+  font-display: swap;
+}
+
+/* Prevent layout shift during font loading */
+body {
+  font-family: var(--font-geist-sans);
+  font-optical-sizing: auto;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Optimize font loading for code blocks */
+code,
+pre,
+.font-mono {
+  font-family: var(--font-geist-mono);
+  font-feature-settings: 'liga' 1, 'calt' 1;
+}
+
+/* Font loading performance hints */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    font-display: swap !important;
+  }
+}
+
+/* Prevent invisible text during font swap */
+@supports (font-display: optional) {
+  /* Font display optimization is handled by Next.js font loader */
+  .font-display-optional {
+    font-display: optional;
+  }
+}
+
+/* Critical font loading optimization */
+html {
+  font-family: var(--font-geist-sans);
+}
+
+/* Ensure main content is visible during font load */
+main,
+[data-testid="main-content"] {
+  font-family: var(--font-geist-sans);
+}
+
+/* Loading state for dynamic content */
+.loading-content {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.loaded-content {
+  font-family: var(--font-geist-sans);
+  transition: font-family 0.1s ease-in-out;
+}

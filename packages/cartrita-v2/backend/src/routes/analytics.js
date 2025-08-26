@@ -48,6 +48,44 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
+// Get usage analytics
+router.get('/usage', async (req, res) => {
+  try {
+    console.log('[Analytics] Usage endpoint accessed');
+    
+    const mockUsage = {
+      totalRequests: 1250,
+      activeUsers: 23,
+      successRate: 98.5,
+      averageResponseTime: 245,
+      topEndpoints: [
+        { endpoint: '/api/chat', requests: 450, responseTime: 180 },
+        { endpoint: '/api/workflows', requests: 320, responseTime: 290 },
+        { endpoint: '/api/agent', requests: 280, responseTime: 150 },
+      ],
+      timeSeriesData: Array.from({ length: 24 }, (_, i) => ({
+        hour: i,
+        requests: Math.floor(Math.random() * 100) + 20,
+        errors: Math.floor(Math.random() * 5),
+        responseTime: Math.floor(Math.random() * 200) + 150
+      }))
+    };
+
+    res.json({
+      success: true,
+      data: mockUsage,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('[Analytics] Error fetching usage data:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch usage analytics',
+      details: process.env.NODE_ENV !== 'production' ? error.message : undefined
+    });
+  }
+});
+
 // Get performance metrics
 router.get('/performance', authenticateToken, async (req, res) => {
   try {

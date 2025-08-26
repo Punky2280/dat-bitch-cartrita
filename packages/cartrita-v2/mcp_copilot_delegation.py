@@ -4,6 +4,7 @@ MCP (Model Context Protocol) Integration for GitHub Copilot Delegation Agent
 Integrates the copilot delegation agent into the Cartrita V2 MCP roster
 """
 
+
 import asyncio
 import json
 import os
@@ -15,7 +16,7 @@ sys.path.append('py')
 try:
     from copilot_delegation_agent import GitHubCopilotDelegationAgent
     GUI_AVAILABLE = True
-except (ImportError, Exception) as e:
+except Exception as e:
     from headless_copilot_delegation import HeadlessGitHubCopilotDelegationAgent as GitHubCopilotDelegationAgent
     GUI_AVAILABLE = False
     print(f"🔧 Using headless agent (GUI not available): {e}")
@@ -26,7 +27,7 @@ class MCPCopilotDelegationService:
     Provides standardized interface for integration with Cartrita V2
     """
     
-    def __init__(self, openai_api_key: str = None):
+    def __init__(self, openai_api_key: Optional[str] = None):
         self.service_name = "copilot_delegation"
         self.version = "2.0.0"
         self.description = "GitHub Copilot delegation and automation agent"
@@ -34,8 +35,7 @@ class MCPCopilotDelegationService:
         # Initialize the delegation agent (auto-adapts to available environment)
         if GUI_AVAILABLE:
             self.agent = GitHubCopilotDelegationAgent(
-                openai_api_key=openai_api_key,
-                headless=not bool(os.getenv("DISPLAY"))  # Auto-detect GUI environment
+                openai_api_key=openai_api_key
             )
         else:
             self.agent = GitHubCopilotDelegationAgent(openai_api_key=openai_api_key)

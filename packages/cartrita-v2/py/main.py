@@ -4,6 +4,20 @@ Enhanced Cartrita FastAPI Application with AI Agents, MCP, and LangChain Integra
 import os
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from the parent directory .env file
+env_path = Path(__file__).parent.parent / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
+    logging.info(f"Loaded environment variables from {env_path}")
+    os.environ["CARTRITA_ENV_LOADED_FROM"] = str(env_path)
+else:
+    # Try loading from current directory
+    load_dotenv()
+    logging.info("Loaded environment variables from current directory")
+    os.environ.setdefault("CARTRITA_ENV_LOADED_FROM", str(Path.cwd() / ".env"))
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +26,8 @@ import uvicorn
 
 # Import routers
 from enhanced_chat_routes import router as chat_router
+from startup_checks import run_startup_checks
+from config import get_settings
 
 # Configure logging
 logging.basicConfig(
@@ -25,13 +41,24 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Application startup and shutdown events"""
     logger.info("🚀 Starting Cartrita Enhanced Backend")
+    # Run startup checks early
+    try:
+        # Prefer non-GUI backend for matplotlib in server contexts
+        if not os.getenv("XAUTHORITY"):
+            os.environ.setdefault("MPLBACKEND", "Agg")
+        checks = run_startup_checks()
+        app.state.startup_checks = checks
+        if not checks.get("ok", False):
+            logger.warning("One or more startup checks failed. See /healthz/details.")
+    except Exception as e:
+        logger.warning(f"Startup checks failed to execute: {e}")
     
     # Import services to ensure they're loaded
     try:
         from cartrita_core.enhanced_agent_manager import enhanced_agent_manager
         from cartrita_core.mcp_integration import mcp_manager  
-        from cartrita_core.langchain_integration import langchain_manager
-        from cartrita_core.backend_bridge import backend_bridge
+        from cartrita_core.langchain_integration import initialize_langchain
+        # Note: backend_bridge is obsolete in Python-only mode
         
         logger.info("✅ All services loaded successfully")
         
@@ -54,10 +81,10 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configure CORS
+# Configure CORS - Updated for Python-only backend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=["http://localhost:8000", "http://localhost:3000", "http://localhost:3001", "http://localhost:80"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -70,7 +97,10 @@ app.include_router(chat_router)
 @app.get("/", response_class=HTMLResponse)
 async def root():
     """Root endpoint with system information"""
-    return """
+    checks = getattr(app.state, "startup_checks", {"ok": False})
+    status_text = "ACTIVE" if checks.get("ok") else "DEGRADED"
+    status_class = "active" if checks.get("ok") else ""
+    html = """
     <!DOCTYPE html>
     <html>
     <head>
@@ -89,31 +119,33 @@ async def root():
         <div class="header">
             <h1>🤖 Cartrita Enhanced AI Assistant</h1>
             <p>Advanced Multi-Agent AI System with MCP & LangChain Integration</p>
+            <p>Status: <span class="status {'active' if status_badge=='active' else ''}">{'ACTIVE' if status_badge=='active' else 'DEGRADED'}</span> · <a href="/healthz/details" style="color:#fff; text-decoration: underline;">details</a></p>
+            <!--STATUS_LINE-->
         </div>
         
         <div class="feature">
             <h3>🎯 Enhanced Agent System</h3>
-            <p><span class="status active">ACTIVE</span> 13+ specialized AI agents with advanced capabilities</p>
+            <p><span class="status {'active' if status_badge=='active' else ''}">{'ACTIVE' if status_badge=='active' else 'DEGRADED'}</span> 13+ specialized AI agents with advanced capabilities</p>
             <p><strong>Agents:</strong> Supervisor, Research, Writer, Vision, Computer Use, Code Writer, Data Scientist, 
                Cybersecurity, Financial Analyst, Health Advisor, Tutor, Project Manager, Emotional Support, Comedian, API Manager</p>
         </div>
         
         <div class="feature">
             <h3>🔧 Model Context Protocol (MCP)</h3>
-            <p><span class="status active">ACTIVE</span> Advanced tool orchestration and external service integration</p>
+            <p><span class="status {'active' if status_badge=='active' else ''}">{'ACTIVE' if status_badge=='active' else 'DEGRADED'}</span> Advanced tool orchestration and external service integration</p>
             <p><strong>Servers:</strong> Cartrita Tools, Data Analysis, Computer Use</p>
         </div>
         
         <div class="feature">
             <h3>🔗 LangChain Integration</h3>
-            <p><span class="status active">ACTIVE</span> Advanced language model workflows and chain management</p>
+            <p><span class="status {'active' if status_badge=='active' else ''}">{'ACTIVE' if status_badge=='active' else 'DEGRADED'}</span> Advanced language model workflows and chain management</p>
             <p><strong>Chains:</strong> Conversation, Retrieval QA, Research, Code Analysis, Creative Writing</p>
         </div>
         
         <div class="feature">
-            <h3>🌉 Backend Bridge</h3>
-            <p><span class="status active">ACTIVE</span> Seamless communication between Node.js and Python backends</p>
-            <p><strong>Features:</strong> Service discovery, health monitoring, intelligent request routing</p>
+            <h3>🐍 Python-Only Backend</h3>
+            <p><span class="status {'active' if status_badge=='active' else ''}">{'ACTIVE' if status_badge=='active' else 'DEGRADED'}</span> Streamlined FastAPI backend with full AI capabilities</p>
+            <p><strong>Features:</strong> PostgreSQL with pgvector, Redis caching, Docker containerization</p>
         </div>
         
         <div class="feature">
@@ -153,6 +185,8 @@ async def root():
     </body>
     </html>
     """
+    status_line = f"<p>Status: <span class=\"status {status_class}\">{status_text}</span> · <a href=\"/healthz/details\">details</a></p>"
+    return html.replace("<!--STATUS_LINE-->", status_line)
 
 @app.get("/health")
 async def health_check():
@@ -163,26 +197,29 @@ async def health_check():
         "version": "2.0.0"
     }
 
+@app.get("/healthz/details")
+async def healthz_details():
+    """Detailed health including startup checks"""
+    checks = getattr(app.state, "startup_checks", {"ok": False, "checks": []})
+    return {"status": "ok" if checks.get("ok") else "degraded", **checks, "config": get_settings()["safe"]}
+
+@app.get("/config/safe")
+async def safe_config():
+    """Return sanitized runtime and provider config (no secrets)."""
+    return get_settings()["safe"]
+
 # Error handlers
 @app.exception_handler(404)
 async def not_found_handler(request, exc):
-    return {"error": "Endpoint not found", "status": 404}
+    from fastapi.responses import JSONResponse
+    return JSONResponse(content={"error": "Endpoint not found", "status": 404}, status_code=404)
 
 @app.exception_handler(500)
 async def server_error_handler(request, exc):
-    return {"error": "Internal server error", "status": 500}
+    from fastapi.responses import JSONResponse
+    return JSONResponse(content={"error": "Internal server error", "status": 500}, status_code=500)
 
 # Main entry point
 if __name__ == "__main__":
-    port = int(os.getenv("FASTAPI_PORT", "8002"))
-    host = os.getenv("FASTAPI_HOST", "0.0.0.0")
-    
-    logger.info(f"🚀 Starting Cartrita Enhanced Backend on {host}:{port}")
-    
-    uvicorn.run(
-        "main:app",
-        host=host,
-        port=port,
-        reload=os.getenv("NODE_ENV") == "development",
-        log_level="info"
-    )
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8003, reload=True)

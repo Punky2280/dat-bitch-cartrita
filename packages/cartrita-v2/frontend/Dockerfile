@@ -18,6 +18,10 @@ WORKDIR /app
 # Install curl for health checks
 RUN apk add --no-cache curl
 
+# Create user first
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
 # Copy dependencies
 COPY --from=deps /app/node_modules ./node_modules
 COPY package*.json ./
@@ -27,11 +31,15 @@ ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_ENV development
 ENV TURBOPACK 1
 
-# Create user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Copy source code and ensure proper permissions
+COPY --chown=nextjs:nodejs . .
 
-# Ensure proper permissions
+# Create .next directory with proper permissions
+RUN mkdir -p .next && chown -R nextjs:nodejs .next
+RUN mkdir -p .next/cache && chown -R nextjs:nodejs .next/cache
+RUN mkdir -p .next/static && chown -R nextjs:nodejs .next/static
+
+# Ensure all files are owned by nextjs user
 RUN chown -R nextjs:nodejs /app
 
 USER nextjs

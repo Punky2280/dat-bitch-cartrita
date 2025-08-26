@@ -33,7 +33,7 @@ class CartritaV2Server {
             nodeEnv: process.env.NODE_ENV || 'development',
             enablePythonAgents: process.env.ENABLE_PYTHON_AGENTS !== 'false',
             enableNodeAgents: process.env.ENABLE_NODE_AGENTS !== 'false',
-            pythonServerUrl: process.env.PYTHON_SERVER_URL || 'http://localhost:8002',
+            pythonServerUrl: process.env.PYTHON_SERVER_URL || 'http://localhost:9002',
             corsOrigins: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000'],
             rateLimitWindow: parseInt(process.env.RATE_LIMIT_WINDOW) || 15 * 60 * 1000, // 15 minutes
             rateLimitMax: parseInt(process.env.RATE_LIMIT_MAX) || 100
@@ -376,7 +376,9 @@ class CartritaV2Server {
      */
     setupGracefulShutdown() {
         const gracefulShutdown = async (signal) => {
-            if (this.isShuttingDown) return;
+            if (this.isShuttingDown) {
+              return;
+            }
             this.isShuttingDown = true;
             
             this.logger.info(`🛑 Received ${signal}, starting graceful shutdown`);

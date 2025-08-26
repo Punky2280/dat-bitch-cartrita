@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8001';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8002';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const wait = searchParams.get('wait') || '0';
     
-    const response = await fetch(`${BACKEND_URL}/api/agents/role-call?wait=${wait}`, {
+    const response = await fetch(`${BACKEND_URL}/api/v2/agents/status`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

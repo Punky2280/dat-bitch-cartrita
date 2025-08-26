@@ -13,7 +13,7 @@ class PythonAgentBridge extends EventEmitter {
     constructor(options = {}) {
         super();
         
-        this.pythonServerUrl = options.pythonServerUrl || 'http://localhost:8002';
+        this.pythonServerUrl = options.pythonServerUrl || 'http://localhost:9002';
         this.pythonServerProcess = null;
         this.isServerRunning = false;
         this.connectionRetries = 0;
@@ -43,12 +43,15 @@ class PythonAgentBridge extends EventEmitter {
             // Check if Python server is already running
             const isRunning = await this.checkPythonServer();
             
-            if (!isRunning) {
+            if (!isRunning && !process.env.SKIP_PYTHON_START) {
                 this.logger.info('🐍 Starting Python FastAPI server');
                 await this.startPythonServer();
-            } else {
+            } else if (isRunning) {
                 this.logger.info('✅ Python server already running');
                 this.isServerRunning = true;
+            } else {
+                this.logger.info('⏭️ Skipping Python server startup (SKIP_PYTHON_START=true)');
+                this.isServerRunning = true; // Assume it's running externally
             }
             
             // Wait for server to be ready
@@ -80,15 +83,16 @@ class PythonAgentBridge extends EventEmitter {
      */
     async startPythonServer() {
         return new Promise((resolve, reject) => {
-            const pythonScriptPath = path.join(__dirname, '../../py/fastapi_server.py');
+            const pythonDir = path.join(__dirname, '../../py');
             
-            // Start Python server process
-            this.pythonServerProcess = spawn('python3', [pythonScriptPath], {
+            // Start Python server using uvicorn with main.py
+            this.pythonServerProcess = spawn('/home/robbie/development/dat-bitch-cartrita/packages/cartrita-v2/.venv/bin/python', ['-m', 'uvicorn', 'main:app', '--reload', '--port', '9002'], {
                 stdio: ['pipe', 'pipe', 'pipe'],
+                cwd: pythonDir,
                 env: {
                     ...process.env,
-                    PYTHONPATH: path.join(__dirname, '../../py'),
-                    PORT: '8002'
+                    PYTHONPATH: pythonDir,
+                    PORT: '9002'
                 }
             });
             

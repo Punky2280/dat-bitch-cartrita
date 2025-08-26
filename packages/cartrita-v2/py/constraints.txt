@@ -1,0 +1,55 @@
+# Cartrita V2 - Dependency Constraints
+# Compatible constraints to prevent dependency conflicts
+
+# Critical compatibility constraints
+numpy>=1.24.0,<2.0.0  # Keep numpy 1.x for broad compatibility
+pydantic>=2.0.0,<3.0.0  # Consistent pydantic v2
+
+# LangChain ecosystem - force consistent versions
+langchain>=0.2.0,<0.3.0
+langchain-core>=0.2.0,<0.3.0
+langchain-openai>=0.1.0,<0.2.0
+langchain-community>=0.2.0,<0.3.0
+langchain-text-splitters>=0.2.0,<0.3.0
+langsmith>=0.1.17,<0.2.0
+
+# Networking stack
+websockets>=12.0,<13.0
+httpx>=0.26.0,<0.28.0
+urllib3>=1.26.0,<3.0.0
+requests>=2.31.0,<3.0.0
+
+# Core dependencies
+setuptools>=69.0.0,<71.0.0
+wheel>=0.42.0,<1.0.0
+pip>=24.0.0,<25.0.0
+
+# Scientific stack compatible with numpy 1.x
+scipy>=1.11.0,<2.0.0
+matplotlib>=3.7.0,<4.0.0
+
+# Exclude packages that cause numpy 2.0 conflicts
+thinc<8.0.0  # Avoid versions requiring numpy 2.0+
+qiskit-machine-learning<0.1.0  # Skip entirely due to numpy 2.0 requirement
+yfinance<0.1.0  # Skip due to websockets 13.0+ requirement
+opencv-python<4.10.0  # Use version compatible with numpy 1.x
+
+# Database and async
+asyncpg>=0.29.0,<1.0.0
+sqlalchemy>=2.0.0,<3.0.0
+greenlet>=2.0.0,<4.0.0
+
+# Development tools
+pytest>=7.4.0,<8.0.0
+black>=23.0.0,<25.0.0
+isort>=5.12.0,<6.0.0
+
+# Quantum computing - tested working versions
+qiskit>=1.1.0,<2.0.0
+qiskit-aer>=0.15.0,<1.0.0
+rustworkx>=0.14.0,<1.0.0
+sympy>=1.12.0,<2.0.0
+dill>=0.3.6,<1.0.0
+
+# Type annotations
+typing-extensions>=4.6.0,<5.0.0

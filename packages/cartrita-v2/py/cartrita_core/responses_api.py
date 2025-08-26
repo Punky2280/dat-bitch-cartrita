@@ -14,7 +14,8 @@ from pathlib import Path
 import base64
 
 from openai import AsyncOpenAI
-from openai.types.responses import Response as OpenAIResponse
+from config import OpenAISettings, get_settings
+from .computer_use_agent import ComputerUseAgent
 
 
 @dataclass
@@ -31,7 +32,7 @@ class ConversationState:
 @dataclass
 class ResponsesRequest:
     input_items: List[Dict[str, Any]]
-    model: str = "gpt-4o"
+    model: str = "gpt-5"
     tools: Optional[List[Dict]] = None
     reasoning: Optional[Dict] = None
     temperature: float = 0.7
@@ -49,14 +50,26 @@ class CartritaResponsesClient:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model: str = "gpt-4o",
+        model: str = "gpt-5",
         logger: Optional[logging.Logger] = None,
         max_conversations: int = 1000
     ):
-        self.client = AsyncOpenAI(api_key=api_key)
-        self.model = model
+        if api_key is None:
+            oa: OpenAISettings = get_settings()["openai"]  # type: ignore[assignment]
+            client_kwargs = oa.client_kwargs()
+            self.client = AsyncOpenAI(**client_kwargs)
+            self.model = oa.default_model if model == "gpt-5" else model
+        else:
+            self.client = AsyncOpenAI(api_key=api_key)
+            self.model = model
         self.logger = logger or logging.getLogger("cartrita.responses_api")
         self.max_conversations = max_conversations
+        
+        # Initialize computer use agent
+        self.computer_use_agent = ComputerUseAgent(
+            api_key=api_key,
+            logger=self.logger
+        )
         
         # Conversation management
         self.conversations: Dict[str, ConversationState] = {}
@@ -89,27 +102,49 @@ class CartritaResponsesClient:
         """Create a response using OpenAI Responses API"""
         start_time = time.time()
         self.stats["total_requests"] += 1
-        
+
         try:
             # Manage conversation state
             if conversation_id:
                 conv_state = self._get_or_create_conversation(conversation_id, user_id)
                 # Add conversation context to request
                 request = self._add_conversation_context(request, conv_state)
-            
+
             self.logger.info(f"Creating response with model {request.model}")
-            
-            # Call OpenAI Responses API
-            response = await self.client.responses.create(
-                model=request.model,
-                input=request.input_items,
-                tools=request.tools,
-                reasoning=request.reasoning,
-                temperature=request.temperature,
-                max_tokens=request.max_tokens,
-                truncation=request.truncation
+
+            # Convert input items to messages format
+            messages = []
+            messages.extend(
+                {"role": "user", "content": item["text"]}
+                for item in request.input_items
+                if item["type"] == "text"
             )
-            
+            # Prepare parameters for GPT-5 compatibility
+            if request.model == "gpt-5":
+                # GPT-5 specific parameters
+                params = {
+                    "model": request.model,
+                    "messages": messages,
+                    "tools": request.tools or None,
+                    "max_completion_tokens": request.max_tokens,
+                    "temperature": 1.0  # GPT-5 only supports temperature=1.0
+                }
+            else:
+                # Standard parameters for other models
+                params = {
+                    "model": request.model,
+                    "messages": messages,
+                    "tools": request.tools or None,
+                    "temperature": request.temperature,
+                    "max_tokens": request.max_tokens,
+                }
+
+            # Remove None values
+            params = {k: v for k, v in params.items() if v is not None}
+
+            # Call OpenAI Chat Completions API
+            response = await self.client.chat.completions.create(**params)
+
             # Process response
             processed_response = await self._process_response(
                 response, 
@@ -117,17 +152,17 @@ class CartritaResponsesClient:
                 conversation_id, 
                 user_id
             )
-            
+
             # Update stats
             response_time = time.time() - start_time
             self._update_stats(processed_response, response_time)
-            
+
             return processed_response
-            
+
         except Exception as e:
             self.logger.error(f"Response creation failed: {e}")
             self.stats["failed_requests"] += 1
-            
+
             return {
                 "success": False,
                 "error": str(e),
@@ -143,79 +178,40 @@ class CartritaResponsesClient:
         display_height: int = 768,
         max_iterations: int = 10
     ) -> Dict[str, Any]:
-        """Create a computer use session with OpenAI computer-use-preview model"""
-        
-        session_id = f"computer_use_{int(time.time())}_{user_id}"
-        
-        self.active_sessions[session_id] = {
-            "task_description": task_description,
-            "user_id": user_id,
-            "display_width": display_width,
-            "display_height": display_height,
-            "max_iterations": max_iterations,
-            "current_iteration": 0,
-            "created_at": datetime.now().isoformat(),
-            "status": "active"
-        }
-        
-        self.stats["computer_use_sessions"] += 1
+        """Create a computer use session using the new ComputerUseAgent"""
         
         try:
-            # Prepare initial request with computer use tool
-            request = ResponsesRequest(
-                input_items=[
-                    {
-                        "type": "text",
-                        "text": f"""You are an AI assistant with computer use capabilities. 
-                        
-Task: {task_description}
-
-You can interact with the desktop by taking screenshots, clicking, typing, and scrolling.
-First, take a screenshot to see the current state of the desktop, then proceed with the task.
-
-Available actions:
-- screenshot: Take a screenshot to see the current state
-- click: Click at specific coordinates
-- type: Type text
-- scroll: Scroll up or down
-
-Please complete this task step by step."""
-                    }
-                ],
-                model="gpt-4o-mini",  # Better for computer use
-                tools=[
-                    {
-                        "type": "computer_20241022",
-                        "computer_20241022": {
-                            "display_width_px": display_width,
-                            "display_height_px": display_height,
-                            "display_number": 0
-                        }
-                    }
-                ],
-                reasoning={"summary": "detailed"}
+            # Use the new computer use agent
+            result = await self.computer_use_agent.create_session(
+                task_description=task_description,
+                user_id=user_id,
+                display_width=display_width,
+                display_height=display_height
             )
             
-            # Execute initial request
-            response = await self.create_response(
-                request=request,
-                conversation_id=session_id,
-                user_id=user_id
-            )
+            if result["success"]:
+                self.stats["computer_use_sessions"] += 1
+                
+                # Store session reference for tracking
+                session_id = result["session_id"]
+                self.active_sessions[session_id] = {
+                    "task_description": task_description,
+                    "user_id": user_id,
+                    "display_width": display_width,
+                    "display_height": display_height,
+                    "max_iterations": max_iterations,
+                    "created_at": datetime.now().isoformat(),
+                    "status": "active"
+                }
             
-            return {
-                "success": True,
-                "session_id": session_id,
-                "initial_response": response,
-                "status": "initialized"
-            }
+            return result
             
         except Exception as e:
             self.logger.error(f"Computer use session creation failed: {e}")
             return {
                 "success": False,
                 "error": str(e),
-                "session_id": session_id
+                "session_id": f"failed_{int(time.time())}"
             }
     
     async def continue_computer_use_session(
@@ -230,63 +226,11 @@ Please complete this task step by step."""
                 "success": False,
                 "error": f"Session {session_id} not found"
             }
-        
-        session = self.active_sessions[session_id]
-        
-        if session["current_iteration"] >= session["max_iterations"]:
-            return {
-                "success": False,
-                "error": "Maximum iterations reached",
-                "session_id": session_id
-            }
-        
+
         try:
-            # Prepare continuation request
-            input_items = []
-            
-            if user_input:
-                input_items.append({
-                    "type": "text",
-                    "text": f"User feedback: {user_input}"
-                })
-            
-            # Add screenshot to continue with current state
-            input_items.append({
-                "type": "text",
-                "text": "Please continue with the task based on the current state."
-            })
-            
-            request = ResponsesRequest(
-                input_items=input_items,
-                model="gpt-4o-mini",
-                tools=[
-                    {
-                        "type": "computer_20241022",
-                        "computer_20241022": {
-                            "display_width_px": session["display_width"],
-                            "display_height_px": session["display_height"],
-                            "display_number": 0
-                        }
-                    }
-                ]
+            return await self.computer_use_agent.continue_session(
+                session_id=session_id, user_input=user_input
             )
-            
-            response = await self.create_response(
-                request=request,
-                conversation_id=session_id,
-                user_id=session["user_id"]
-            )
-            
-            # Update session
-            session["current_iteration"] += 1
-            
-            return {
-                "success": True,
-                "session_id": session_id,
-                "iteration": session["current_iteration"],
-                "response": response
-            }
-            
         except Exception as e:
             self.logger.error(f"Computer use session continuation failed: {e}")
             return {
@@ -329,14 +273,10 @@ Please complete this task step by step."""
         
         # Add recent conversation history
         if conv_state.messages:
-            context_items = []
-            
-            # Add last few messages for context
-            for msg in conv_state.messages[-5:]:
-                context_items.append({
-                    "type": "text",
-                    "text": f"Previous {msg['role']}: {msg['content']}"
-                })
+            context_items = [{
+                "type": "text",
+                "text": f"Previous {msg['role']}: {msg['content']}"
+            } for msg in conv_state.messages[-5:]]
             
             # Prepend context to input items
             request.input_items = context_items + request.input_items
@@ -345,11 +285,11 @@ Please complete this task step by step."""
     
     async def _process_response(
         self,
-        response: OpenAIResponse,
+        response: Any,  # OpenAI response object
         request: ResponsesRequest,
         conversation_id: Optional[str],
         user_id: str
-    ) -> Dict[str, Any]:
+    ) -> Dict[str, Any]:  # sourcery skip: low-code-quality
         """Process and format OpenAI Responses API response"""
         
         processed = {
@@ -360,7 +300,7 @@ Please complete this task step by step."""
             "timestamp": datetime.now().isoformat()
         }
         
-        # Extract response content
+        # Extract response content from ChatCompletion response
         if hasattr(response, 'choices') and response.choices:
             choice = response.choices[0]
             
@@ -451,20 +391,18 @@ Please complete this task step by step."""
         
         if len(self.conversations) <= self.max_conversations:
             return
-        
+
         # Sort by last activity and remove oldest
         sorted_convs = sorted(
             self.conversations.items(),
             key=lambda x: x[1].last_activity
         )
-        
+
         # Keep only the most recent conversations
         to_keep = sorted_convs[-self.max_conversations:]
-        
-        self.conversations = {
-            conv_id: conv_state for conv_id, conv_state in to_keep
-        }
-        
+
+        self.conversations = dict(to_keep)
+
         self.logger.info(f"Cleaned up conversations, kept {len(self.conversations)}")
     
     def get_conversation_history(self, conversation_id: str) -> Optional[ConversationState]:

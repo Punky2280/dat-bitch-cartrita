@@ -1,0 +1,134 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database with pgvector extension
+  cartrita-db:
+    image: pgvector/pgvector:pg16
+    container_name: cartrita-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cartrita
+      POSTGRES_PASSWORD: SecurePass123
+      POSTGRES_DB: cartrita_production
+      POSTGRES_INITDB_ARGS: '--encoding=UTF-8'
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d
+    networks:
+      - cartrita-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U cartrita -d cartrita_production']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache with authentication
+  cartrita-redis:
+    image: redis:7-alpine
+    container_name: cartrita-redis
+    restart: unless-stopped
+    command: redis-server --requirepass CartritaRedis2024
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - cartrita-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', '--no-auth-warning', '-a', 'CartritaRedis2024', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Python-Only Backend Service (FastAPI + AI Agents)
+  cartrita-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.python
+    container_name: cartrita-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"  # Standard FastAPI port
+    environment:
+      # Database Configuration
+      DATABASE_URL: postgresql://cartrita:SecurePass123@cartrita-db:5432/cartrita_production
+      POSTGRES_HOST: cartrita-db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: cartrita
+      POSTGRES_PASSWORD: SecurePass123
+      POSTGRES_DB: cartrita_production
+      
+      # Redis Configuration
+      REDIS_URL: redis://:CartritaRedis2024@cartrita-redis:6379
+      REDIS_HOST: cartrita-redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: CartritaRedis2024
+      
+      # GUI Support
+      DISPLAY: ':99'
+      MPLBACKEND: Agg
+      
+      # OpenAI Configuration
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: gpt-4o
+      
+      # Features
+      ENABLE_VECTOR_SEARCH: 'true'
+      ENABLE_MCP_INTEGRATION: 'true'
+      ENABLE_TELEMETRY: 'false'
+      
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ml_cache:/app/.cache
+    networks:
+      - cartrita-network
+    depends_on:
+      cartrita-db:
+        condition: service_healthy
+      cartrita-redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Nginx Reverse Proxy (Optional)
+  nginx:
+    image: nginx:alpine
+    container_name: cartrita-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - cartrita-network
+    depends_on:
+      - cartrita-backend
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  ml_cache:
+    driver: local
+
+networks:
+  cartrita-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16

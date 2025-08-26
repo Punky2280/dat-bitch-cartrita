@@ -9,13 +9,21 @@ import os
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Union
 from enum import Enum
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from the backend .env file
+env_path = Path(__file__).parent.parent.parent / "backend" / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
 
 import openai
+from openai.types.chat import ChatCompletionSystemMessageParam, ChatCompletionUserMessageParam
 from langchain.agents import AgentType, initialize_agent
-from langchain.memory import ConversationBufferMemory
 from langchain.tools import BaseTool
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
+from langchain_core.memory import BaseMemory
 from pydantic import BaseModel, Field
 
 # Configure logging
@@ -47,6 +55,11 @@ class AgentCapability(Enum):
     PROJECT_MANAGER = "project_manager"
     BUSINESS_STRATEGY = "business_strategy"
     
+    # Automation capabilities
+    WEB_AUTOMATION = "web_automation"
+    GUI_AUTOMATION = "gui_automation"
+    BROWSER_AUTOMATION = "browser_automation"
+    
     # Specialized capabilities
     EMOTIONAL_SUPPORT = "emotional_support"
     COMEDIAN = "comedian"
@@ -59,7 +72,7 @@ class AgentConfiguration(BaseModel):
     name: str
     description: str
     capabilities: List[AgentCapability]
-    model: str = "gpt-4o"
+    model: str = "gpt-5"
     temperature: float = 0.7
     max_tokens: int = 2048
     system_prompt: str
@@ -74,11 +87,15 @@ class EnhancedAgentManager:
     
     def __init__(self):
         self.agents: Dict[str, AgentConfiguration] = {}
-        self.agent_memories: Dict[str, ConversationBufferMemory] = {}
+        self.agent_conversations: Dict[str, List[BaseMessage]] = {}
         self.active_tasks: Dict[str, Dict] = {}
-        self.openai_client = openai.AsyncOpenAI(
-            api_key=os.getenv("OPENAI_API_KEY")
-        )
+
+        if api_key := os.getenv("OPENAI_API_KEY"):
+            self.openai_client = openai.AsyncOpenAI(api_key=api_key)
+        else:
+            logger.warning("OpenAI API key not found. Some agent functionality may be limited.")
+            self.openai_client = None
+
         self._initialize_agents()
     
     def _initialize_agents(self):
@@ -135,7 +152,7 @@ class EnhancedAgentManager:
                 "name": "Computer Use Agent",
                 "description": "Helps with digital tasks and automation",
                 "capabilities": [AgentCapability.COMPUTER_USE, AgentCapability.SYSTEM_ADMIN],
-                "model": "gpt-4o-mini",
+                "model": "gpt-5",
                 "system_prompt": """You are the Computer Use Agent for Cartrita. You help users with computer tasks, 
                 automation, file management, system operations, and digital workflows. You can interact with 
                 applications, manage files, and automate repetitive tasks.""",
@@ -263,12 +280,9 @@ class EnhancedAgentManager:
             agent_id = config["id"]
             self.agents[agent_id] = AgentConfiguration(**config)
             
-            # Initialize memory for each agent
+            # Initialize conversation history for each agent
             if config.get("memory_enabled", True):
-                self.agent_memories[agent_id] = ConversationBufferMemory(
-                    memory_key="chat_history",
-                    return_messages=True
-                )
+                self.agent_conversations[agent_id] = []
         
         logger.info(f"Initialized {len(self.agents)} specialized agents")
     
@@ -290,17 +304,25 @@ class EnhancedAgentManager:
             self.agents[agent_id].status = status
             self.agents[agent_id].last_activity = datetime.now()
     
-    async def execute_with_agent(self, agent_id: str, message: str, context: Dict = None) -> Dict:
+    async def execute_with_agent(self, agent_id: str, message: str, context: Optional[Dict] = None) -> Dict:
         """Execute a task with a specific agent"""
         if agent_id not in self.agents:
             raise ValueError(f"Agent {agent_id} not found")
+        
+        if not self.openai_client:
+            return {
+                "success": False,
+                "agent_id": agent_id,
+                "error": "OpenAI client not available - missing API key",
+                "timestamp": datetime.now().isoformat()
+            }
         
         agent = self.agents[agent_id]
         await self.update_agent_status(agent_id, AgentStatus.ACTIVE)
         
         try:
-            # Build conversation context
-            messages = [
+            # Build conversation context using proper message types
+            messages: List[Union[ChatCompletionSystemMessageParam, ChatCompletionUserMessageParam]] = [
                 {"role": "system", "content": agent.system_prompt}
             ]
             
@@ -312,13 +334,21 @@ class EnhancedAgentManager:
             # Add user message
             messages.append({"role": "user", "content": message})
             
-            # Execute with OpenAI
-            response = await self.openai_client.chat.completions.create(
-                model=agent.model,
-                messages=messages,
-                temperature=agent.temperature,
-                max_tokens=agent.max_tokens
-            )
+            # Execute with OpenAI using model-appropriate parameters
+            chat_params = {
+                "model": agent.model,
+                "messages": messages,
+            }
+            
+            # GPT-5 models use max_completion_tokens and don't support custom temperature
+            if "gpt-5" in agent.model.lower():
+                chat_params["max_completion_tokens"] = agent.max_tokens
+                # GPT-5 only supports default temperature (1.0)
+            else:
+                chat_params["max_tokens"] = agent.max_tokens
+                chat_params["temperature"] = agent.temperature
+            
+            response = await self.openai_client.chat.completions.create(**chat_params)
             
             result = {
                 "success": True,
@@ -430,10 +460,8 @@ class EnhancedAgentManager:
             
             Provide your recommendation with reasoning.
             """
-            
-            recommendation = await self.execute_with_agent("supervisor_agent", analysis_prompt)
-            return recommendation
-            
+
+            return await self.execute_with_agent("supervisor_agent", analysis_prompt)
         except Exception as e:
             logger.error(f"Error recommending agent: {e}")
             return {

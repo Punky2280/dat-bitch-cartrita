@@ -1,16 +1,13 @@
+import path from 'path';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Enable standalone output for Docker production builds only
   output: process.env.NODE_ENV === 'production' ? 'standalone' : undefined,
   
-  // Turbopack configuration (replaces experimental.turbo)
+  // Turbopack root set to this package to use its lockfile
   turbopack: {
-    rules: {
-      '*.svg': {
-        loaders: ['@svgr/webpack'],
-        as: '*.js',
-      },
-    },
+    root: path.resolve('.'),
   },
   
   // External packages for server components
@@ -64,6 +61,11 @@ const nextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     formats: ['image/webp'],
+  },
+
+  // Font optimization
+  experimental: {
+    optimizePackageImports: ['@geist/font'],
   },
 
   // Webpack configuration
@@ -128,4 +130,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;

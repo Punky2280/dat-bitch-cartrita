@@ -7,7 +7,10 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "dev:python": "cd py && python3 -m uvicorn main:app --reload --port 8003",
+    "dev:python": "cd py && PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg python3 -m uvicorn main:app --reload --port 8003",
+    "py:install": "cd py && pip install -r requirements.txt",
+    "py:install:fast": "cd py && pip install --constraint constraints.txt -r requirements.txt --upgrade --quiet",
+    "py:install:clean": "cd py && ./clean_install.sh",
     "dev:fastapi": "cd py && PORT=8002 OPENAI_API_KEY=$OPENAI_API_KEY python3 fastapi_mcp_copilot.py",
     "dev:both": "concurrently \"npm run dev\" \"npm run dev:fastapi\"",
     "dev:mcp": "concurrently \"npm run dev\" \"npm run dev:fastapi\"",
@@ -37,17 +40,18 @@
   "author": "Robbie Allen",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "fastify": "^4.21.0",
-    "cors": "^2.8.5",
-    "helmet": "^7.0.0",
-    "compression": "^1.7.4",
-    "express-rate-limit": "^6.8.1",
-    "socket.io": "^4.7.2",
     "axios": "^1.4.0",
+    "compression": "^1.7.4",
+    "concurrently": "^8.2.0",
+    "cors": "^2.8.5",
     "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.8.1",
+    "fastify": "^4.21.0",
+    "form-data": "^4.0.4",
+    "helmet": "^7.0.0",
     "nodemon": "^3.0.1",
-    "concurrently": "^8.2.0"
+    "socket.io": "^4.7.2"
   },
   "devDependencies": {
     "eslint": "^8.45.0",

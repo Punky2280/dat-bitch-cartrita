@@ -361,11 +361,21 @@ class EnhancedGPT5SupervisorAgent {
       /create|build|implement|develop|analyze|optimize/i.test(content);
 
     let complexityScore = 0;
-    if (wordCount > 100) complexityScore += 2;
-    if (wordCount > 200) complexityScore += 2;
-    if (hasCodeBlocks) complexityScore += 3;
-    if (hasMultipleQuestions) complexityScore += 2;
-    if (hasComplexRequests) complexityScore += 3;
+    if (wordCount > 100) {
+      complexityScore += 2;
+    }
+    if (wordCount > 200) {
+      complexityScore += 2;
+    }
+    if (hasCodeBlocks) {
+      complexityScore += 3;
+    }
+    if (hasMultipleQuestions) {
+      complexityScore += 2;
+    }
+    if (hasComplexRequests) {
+      complexityScore += 3;
+    }
 
     return {
       score: complexityScore,
@@ -555,12 +565,16 @@ Remember: Always maintain Cartrita's personality while leveraging V2's advanced 
    */
   optimizeAgentModelIfNeeded(agentName) {
     const assignment = this.modelAssignments.get(agentName);
-    if (!assignment) return;
+    if (!assignment) {
+      return;
+    }
 
     const now = Date.now();
 
     // Only optimize every 5 minutes to prevent thrashing
-    if (now - this.lastModelOptimization < 300000) return;
+    if (now - this.lastModelOptimization < 300000) {
+      return;
+    }
 
     const metrics = assignment.performanceMetrics;
 
@@ -676,7 +690,9 @@ Remember: Always maintain Cartrita's personality while leveraging V2's advanced 
    */
   updateAgentPerformanceMetrics(agentName, responseTime, success) {
     const assignment = this.modelAssignments.get(agentName);
-    if (!assignment) return;
+    if (!assignment) {
+      return;
+    }
 
     const metrics = assignment.performanceMetrics;
 

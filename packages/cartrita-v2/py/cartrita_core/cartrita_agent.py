@@ -106,7 +106,7 @@ class CartritaCoreAgent:
     def __init__(
         self,
         agent_id: str,
-        model: str = "gpt-4o",
+        model: str = "gpt-5",
         tools_registry: Optional[CartritaToolRegistry] = None,
         openai_client: Optional[AsyncOpenAI] = None,
         logger: Optional[logging.Logger] = None,
@@ -204,22 +204,52 @@ class CartritaCoreAgent:
             # Get available tools for this task
             tools = self._get_available_tools(task)
             
-            # Execute using OpenAI Responses API
-            # Only include tools if we have valid ones
-            api_params = {
-                "model": self.model,
-                "input": input_items,
-                "truncation": "auto"
-            }
+            # Execute using OpenAI Chat Completions API
+            # Convert input items to messages format
+            messages = []
+            for item in input_items:
+                if isinstance(item, dict):
+                    if item.get("type") == "message":
+                        # Already in correct format from _prepare_input_items
+                        messages.append({
+                            "role": item.get("role", "user"), 
+                            "content": item.get("content", "")
+                        })
+                    elif "text" in item:
+                        messages.append({"role": "user", "content": item["text"]})
+                elif isinstance(item, str):
+                    messages.append({"role": "user", "content": item})
             
-            # Add reasoning only for models that support it
-            if "o1" in self.model.lower():
-                api_params["reasoning"] = {"summary": "detailed"}
+            # Ensure we have at least one message
+            if not messages:
+                messages.append({
+                    "role": "user", 
+                    "content": task.description
+                })
             
-            if tools and len(tools) > 0:
-                api_params["tools"] = tools
-                
-            response = await self.client.responses.create(**api_params)
+            # Prepare parameters for GPT-5 compatibility
+            if self.model == "gpt-5":
+                # GPT-5 specific parameters
+                api_params = {
+                    "model": self.model,
+                    "messages": messages,
+                    "max_completion_tokens": 2048,
+                    "temperature": 1.0  # GPT-5 only supports temperature=1.0
+                }
+                # Skip tools for GPT-5 for now due to schema compatibility issues
+            else:
+                # Standard parameters for other models
+                api_params = {
+                    "model": self.model,
+                    "messages": messages,
+                    "max_tokens": 2048,
+                    "temperature": 0.7
+                }
+                # Add tools for non-GPT-5 models if available and valid
+                if tools and len(tools) > 0:
+                    api_params["tools"] = tools
+            
+            response = await self.client.chat.completions.create(**api_params)
             
             # Process the response
             result = await self._process_response(response, task)

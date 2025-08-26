@@ -1,0 +1,105 @@
+```mermaid
+graph TD
+    %% Frontend Layer
+    subgraph "Frontend (Next.js 15)"
+        UI[ChatInterface.tsx]
+        INPUT[ChatInput.tsx] 
+        SIMPLE[SimpleChatInterface.tsx]
+        STORE[useAppStore]
+        WS[useWebSocket]
+    end
+
+    %% Node.js Backend Layer  
+    subgraph "Node.js Backend (Express)"
+        EXPRESS[Express Server :8001]
+        ROUTES[API Routes]
+        BASE[BaseAgent.js]
+        COMM[CommunicationExpertAgent.js]
+        TOOLS[AgentToolRegistry.js]
+        HF[HuggingFaceRouterService.js]
+        MSGBUS[MessageBus]
+        OTEL[OpenTelemetryTracing.js]
+    end
+
+    %% Python Backend Layer
+    subgraph "Python Backend (FastAPI)"
+        FASTAPI[FastAPI Server :8008]
+        ENHANCED[EnhancedAgentManager]
+        LANGCHAIN[LangChainManager] 
+        MCP[MCPCopilotFastAPIIntegration]
+        CHAT_ROUTES[enhanced_chat_routes.py]
+        AGENTS[15 Specialized Agents]
+    end
+
+    %% External Services
+    subgraph "External APIs"
+        OPENAI[OpenAI API gpt-4o]
+        HUGGINGFACE[HuggingFace API]
+        DEEPGRAM[Deepgram Speech]
+    end
+
+    %% Database Layer
+    subgraph "Database"
+        PG[(PostgreSQL + pgvector)]
+        REDIS[(Redis Cache)]
+    end
+
+    %% Frontend Dependencies
+    UI --> INPUT
+    UI --> STORE
+    INPUT --> WS
+    SIMPLE --> WS
+    WS --> EXPRESS
+
+    %% Node.js Backend Dependencies  
+    EXPRESS --> ROUTES
+    ROUTES --> BASE
+    BASE --> COMM
+    BASE --> TOOLS
+    COMM --> MSGBUS
+    COMM --> HF
+    TOOLS --> MSGBUS
+    HF --> HUGGINGFACE
+    EXPRESS --> OTEL
+    EXPRESS --> PG
+    EXPRESS --> REDIS
+
+    %% Cross-Service Communication
+    EXPRESS --> FASTAPI
+    ROUTES --> CHAT_ROUTES
+
+    %% Python Backend Dependencies
+    FASTAPI --> ENHANCED
+    FASTAPI --> CHAT_ROUTES
+    ENHANCED --> AGENTS
+    ENHANCED --> LANGCHAIN
+    ENHANCED --> OPENAI
+    LANGCHAIN --> OPENAI
+    MCP --> ENHANCED
+    CHAT_ROUTES --> PG
+
+    %% Database Dependencies
+    ENHANCED --> PG
+    LANGCHAIN --> PG
+    ROUTES --> PG
+    EXPRESS --> REDIS
+
+    %% Critical Data Flows
+    INPUT -.->|User Message| ENHANCED
+    ENHANCED -.->|AI Response| UI
+    AGENTS -.->|Tool Execution| TOOLS
+    LANGCHAIN -.->|Chain Processing| MSGBUS
+
+    %% Styling
+    classDef frontend fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef node fill:#f3e5f5,stroke:#4a148c,stroke-width:2px  
+    classDef python fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef external fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef database fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+
+    class UI,INPUT,SIMPLE,STORE,WS frontend
+    class EXPRESS,ROUTES,BASE,COMM,TOOLS,HF,MSGBUS,OTEL node
+    class FASTAPI,ENHANCED,LANGCHAIN,MCP,CHAT_ROUTES,AGENTS python
+    class OPENAI,HUGGINGFACE,DEEPGRAM external
+    class PG,REDIS database
+```

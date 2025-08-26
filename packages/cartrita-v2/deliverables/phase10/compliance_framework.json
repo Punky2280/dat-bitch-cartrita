@@ -1,0 +1,99 @@
+{
+  "regulatory_compliance": {
+    "overall_compliance_score": 90.0,
+    "score": 90.0,
+    "frameworks": {
+      "gdpr_compliance": {
+        "regulation": "General Data Protection Regulation (GDPR)",
+        "scope": "EU Data Protection and Privacy",
+        "implementation_score": 91,
+        "compliance_areas": [
+          "Data subject rights (access, portability, erasure)",
+          "Privacy by design and by default implementation",
+          "Data protection impact assessments (DPIA)",
+          "Consent management and tracking",
+          "Data breach notification procedures",
+          "Data processing records and documentation"
+        ],
+        "technical_measures": [
+          "Pseudonymization and data minimization",
+          "Encryption of personal data",
+          "Access controls and audit logging",
+          "Data retention and deletion policies"
+        ]
+      },
+      "sox_compliance": {
+        "regulation": "Sarbanes-Oxley Act (SOX)",
+        "scope": "Financial Reporting and Internal Controls",
+        "implementation_score": 89,
+        "compliance_areas": [
+          "Internal controls over financial reporting",
+          "IT general controls (ITGC) implementation",
+          "Change management processes",
+          "Access controls for financial systems",
+          "Data integrity and audit trails",
+          "Segregation of duties enforcement"
+        ],
+        "technical_measures": [
+          "Automated control testing",
+          "Continuous monitoring systems",
+          "Audit trail preservation",
+          "Role-based access controls"
+        ]
+      },
+      "hipaa_compliance": {
+        "regulation": "Health Insurance Portability and Accountability Act (HIPAA)",
+        "scope": "Healthcare Data Protection",
+        "implementation_score": 88,
+        "compliance_areas": [
+          "Administrative safeguards implementation",
+          "Physical safeguards for data centers",
+          "Technical safeguards for electronic PHI",
+          "Business associate agreements (BAA)",
+          "Risk assessment and management",
+          "Incident response and breach notification"
+        ],
+        "technical_measures": [
+          "Encryption of protected health information",
+          "Access controls and user authentication",
+          "Audit logs and monitoring",
+          "Data backup and recovery procedures"
+        ]
+      },
+      "pci_dss_compliance": {
+        "regulation": "Payment Card Industry Data Security Standard (PCI DSS)",
+        "scope": "Payment Card Data Protection",
+        "implementation_score": 92,
+        "compliance_areas": [
+          "Secure network and systems configuration",
+          "Protection of cardholder data",
+          "Vulnerability management program",
+          "Strong access control measures",
+          "Regular monitoring and testing",
+          "Information security policy maintenance"
+        ],
+        "technical_measures": [
+          "Tokenization and encryption",
+          "Network segmentation",
+          "Intrusion detection systems",
+          "Regular security testing"
+        ]
+      }
+    },
+    "compliance_automation": {
+      "automated_monitoring": "Continuous compliance monitoring with real-time alerts",
+      "policy_enforcement": "Automated policy enforcement and violation detection",
+      "audit_reporting": "Automated audit report generation and documentation",
+      "remediation": "Automated remediation workflows for compliance violations"
+    },
+    "governance_framework": {
+      "data_governance": "Comprehensive data governance with stewardship roles",
+      "risk_management": "Enterprise risk management with continuous assessment",
+      "policy_management": "Centralized policy management with version control",
+      "training_awareness": "Security awareness training and compliance education"
+    }
+  },
+  "automation_strategy": "Continuous compliance monitoring with automated remediation",
+  "audit_readiness": "Real-time audit trail generation and compliance reporting",
+  "training_program": "Security awareness and compliance education framework"
+}

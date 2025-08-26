@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8002';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8002';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const response = await fetch(`${BACKEND_URL}/api/v2/chat`, {
+    const response = await fetch(`${BACKEND_URL}/api/v2/simple-chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -26,12 +26,23 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    
+    // Transform backend response format to match frontend expectations
+    const transformedData = {
+      response: data.content || data.response || 'No response available',
+      ...data
+    };
+    
+    return NextResponse.json(transformedData);
     
   } catch (error) {
     console.error('API proxy error:', error);
     return NextResponse.json(
-      { error: 'Failed to communicate with backend' },
+      { 
+        error: 'Failed to communicate with backend',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        backend_url: `${BACKEND_URL}/api/v2/simple-chat`
+      },
       { status: 500 }
     );
   }

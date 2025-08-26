@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-# Install system dependencies including Playwright browser dependencies
+# Install system dependencies including computer use tools
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
@@ -14,6 +14,11 @@ RUN apt-get update && apt-get install -y \
     fonts-dejavu-core \
     fontconfig \
     libglib2.0-0 \
+    xdotool \
+    xvfb \
+    x11-utils \
+    imagemagick \
+    openbox \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory

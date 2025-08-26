@@ -119,14 +119,18 @@ class RedisService {
             }
             return new Promise(r => setTimeout(() => r(undefined), delay));
           });
-          if (ok) return true;
+          if (ok) {
+            return true;
+          }
         }
         return this.isConnected;
       };
 
       this.readyPromise = connectWithRetries();
       const final = await this.readyPromise;
-      if (final) return true;
+      if (final) {
+        return true;
+      }
       throw new Error('Redis connection retries exhausted');
     } catch (error) {
       if (!this.warned) {
@@ -143,8 +147,12 @@ class RedisService {
   }
 
   async waitForReady(timeoutMs = 10000) {
-    if (this.isConnected) return true;
-    if (!this.readyPromise) return false;
+    if (this.isConnected) {
+      return true;
+    }
+    if (!this.readyPromise) {
+      return false;
+    }
     let to;
     const timeout = new Promise(res => {
       to = setTimeout(() => res(false), timeoutMs);

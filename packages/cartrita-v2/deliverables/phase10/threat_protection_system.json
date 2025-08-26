@@ -1,0 +1,87 @@
+{
+  "detection_capabilities": {
+    "detection_approach": "AI-Powered + Behavioral Analytics + Threat Intelligence",
+    "response_automation": "Automated Incident Response with Human Oversight",
+    "monitoring_coverage": "24/7 Security Operations Center (SOC)",
+    "score": 91,
+    "detection_capabilities": [
+      {
+        "category": "Network Security Monitoring",
+        "technologies": [
+          "Intrusion Detection Systems (IDS)",
+          "Network Traffic Analysis",
+          "DPI"
+        ],
+        "capabilities": [
+          "Real-time traffic analysis",
+          "Anomaly detection",
+          "Threat hunting"
+        ],
+        "score": 93
+      },
+      {
+        "category": "Endpoint Detection and Response",
+        "technologies": [
+          "EDR agents",
+          "Behavioral analysis",
+          "File integrity monitoring"
+        ],
+        "capabilities": [
+          "Malware detection",
+          "Process monitoring",
+          "Memory analysis"
+        ],
+        "score": 91
+      },
+      {
+        "category": "Application Security Monitoring",
+        "technologies": [
+          "RASP",
+          "WAF",
+          "API security monitoring"
+        ],
+        "capabilities": [
+          "Code injection detection",
+          "API abuse prevention",
+          "Application-layer attacks"
+        ],
+        "score": 89
+      },
+      {
+        "category": "Cloud Security Monitoring",
+        "technologies": [
+          "CSPM",
+          "Cloud workload protection",
+          "Container security"
+        ],
+        "capabilities": [
+          "Misconfiguration detection",
+          "Cloud-native threats",
+          "Compliance monitoring"
+        ],
+        "score": 92
+      }
+    ],
+    "incident_response_framework": {
+      "preparation": "Incident response plan with defined roles and procedures",
+      "identification": "Automated threat detection with AI-powered analysis",
+      "containment": "Automated containment with manual override capabilities",
+      "eradication": "Threat removal with system hardening recommendations",
+      "recovery": "System restoration with enhanced monitoring",
+      "lessons_learned": "Post-incident analysis with process improvement"
+    },
+    "threat_intelligence": {
+      "sources": [
+        "Commercial feeds",
+        "Open source intelligence",
+        "Government feeds"
+      ],
+      "integration": "Automated IOC integration with detection systems",
+      "analysis": "Machine learning-based threat attribution and prediction",
+      "sharing": "Threat intelligence sharing with industry partners"
+    }
+  },
+  "incident_response": "Automated response with human oversight and approval",
+  "threat_intelligence": "AI-powered threat analysis and attribution",
+  "forensics": "Digital forensics and evidence preservation capabilities"
+}

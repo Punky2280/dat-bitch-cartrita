@@ -4,10 +4,8 @@ FastAPI MCP Integration for GitHub Copilot Delegation Agent
 Adds MCP copilot delegation endpoints to the existing Python backend
 """
 
-import asyncio
 import os
 from datetime import datetime
-from pathlib import Path
 from typing import Dict, Any, Optional
 
 from fastapi import FastAPI, HTTPException
@@ -41,18 +39,28 @@ class MCPCopilotFastAPIIntegration:
     Can be added to existing FastAPI applications
     """
     
-    def __init__(self, app: FastAPI, openai_api_key: str = None):
+    def __init__(self, app: FastAPI, openai_api_key: Optional[str] = None):
         self.app = app
         self.service_name = "fastapi_mcp_copilot"
         self.version = "2.0.0"
-        
-        # Initialize MCP service
-        self.mcp_service = MCPCopilotDelegationService(openai_api_key=openai_api_key)
-        
+
+        # Initialize MCP service - use provided key or fallback to environment variable
+        api_key = openai_api_key or os.getenv("OPENAI_API_KEY")
+
+        if api_key:
+            self.mcp_service = MCPCopilotDelegationService(openai_api_key=api_key)
+        else:
+            # Initialize without key, assuming the service has its own fallback mechanism
+            self.mcp_service = MCPCopilotDelegationService()
+
         # Register routes
         self.register_routes()
-        
-        print(f"🐍 FastAPI MCP Copilot Integration initialized")
+
+# The line `print("🐍 FastAPI MCP Copilot Integration initialized")` is simply printing a message to
+# the console indicating that the FastAPI integration for MCP Copilot has been successfully
+# initialized. The snake emoji "🐍" is often used to represent Python, so in this context, it's a
+# playful way to signify that the integration has been set up.
+        print("🐍 FastAPI MCP Copilot Integration initialized")
         print(f"   Service: {self.service_name} v{self.version}")
         try:
             gui_enabled = getattr(self.mcp_service.agent, 'gui_enabled', False)
@@ -229,10 +237,13 @@ class MCPCopilotFastAPIIntegration:
         
         print("✅ MCP Copilot routes registered with FastAPI")
 
-def add_mcp_copilot_to_fastapi_app(app: FastAPI, openai_api_key: str = None) -> MCPCopilotFastAPIIntegration:
+def add_mcp_copilot_to_fastapi_app(app: FastAPI, openai_api_key: Optional[str] = None) -> MCPCopilotFastAPIIntegration:
     """
     Convenience function to add MCP copilot integration to existing FastAPI app
     """
+    # Use provided key or environment variable
+    if openai_api_key is None:
+        openai_api_key = os.getenv("OPENAI_API_KEY")
     return MCPCopilotFastAPIIntegration(app, openai_api_key)
 
 # Standalone FastAPI application for testing

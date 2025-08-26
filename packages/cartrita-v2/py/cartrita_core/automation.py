@@ -10,14 +10,20 @@ from PIL import Image
 AUTOMATION_MODE = "disabled"
 automation_backend = None
 
-# Try PyAutoGUI first (best for GUI environments)
-try:
-    import pyautogui
-    automation_backend = pyautogui
-    AUTOMATION_MODE = "pyautogui"
-    print("✅ PyAutoGUI loaded - full GUI automation available")
-except Exception as e:
-    print(f"⚠️  PyAutoGUI failed: {e}")
+# Try PyAutoGUI first (only when a display is available)
+import os
+if os.getenv("DISPLAY"):
+    try:
+        import pyautogui
+        automation_backend = pyautogui
+        AUTOMATION_MODE = "pyautogui"
+        print("✅ PyAutoGUI loaded - GUI automation available (DISPLAY detected)")
+    except Exception as e:
+        print(f"⚠️  PyAutoGUI failed: {e}")
+else:
+    # Ensure headless-friendly matplotlib backend
+    os.environ.setdefault("MPLBACKEND", "Agg")
+    print("ℹ️  Headless environment detected (no DISPLAY). Skipping PyAutoGUI.")
     
     # Try Playwright for headless browser automation
     try:
@@ -32,12 +38,14 @@ except Exception as e:
                 self.PAUSE = 0.5
                 
             def _ensure_browser(self):
-                if not self.browser:
+                if not self.playwright:
                     self.playwright = sync_playwright().start()
+                if not self.browser:
                     self.browser = self.playwright.chromium.launch(headless=True)
+                if not self.page:
                     self.page = self.browser.new_page()
                     self.page.set_viewport_size({"width": 1024, "height": 768})
-                    
+            
             def size(self):
                 class Size:
                     width = 1024
@@ -46,6 +54,9 @@ except Exception as e:
             
             def click(self, x, y):
                 self._ensure_browser()
+                if not self.page:
+                    print("⚠️ Error: Page not initialized")
+                    return
                 # Real browser click at coordinates
                 self.page.mouse.click(x, y)
                 print(f"🖱️  Browser click at ({x}, {y})")
@@ -53,19 +64,29 @@ except Exception as e:
             def typewrite(self, text):
                 self._ensure_browser()
                 # Real browser text input
-                self.page.keyboard.type(text)
-                print(f"⌨️  Browser type: {text}")
+                if self.page:
+                    self.page.keyboard.type(text)
+                    print(f"⌨️  Browser type: {text}")
+                else:
+                    print("⚠️ Error: Cannot type text - page not initialized")
                 
             def scroll(self, clicks):
                 self._ensure_browser()
                 # Real browser scroll
-                self.page.mouse.wheel(0, clicks * 100)
-                print(f"🔄 Browser scroll: {clicks}")
+                if self.page:
+                    self.page.mouse.wheel(0, clicks * 100)
+                    print(f"🔄 Browser scroll: {clicks}")
+                else:
+                    print("⚠️ Error: Cannot scroll - page not initialized")
                 
             def screenshot(self):
                 self._ensure_browser()
-                screenshot_bytes = self.page.screenshot()
-                return Image.open(io.BytesIO(screenshot_bytes))
+                if self.page:
+                    screenshot_bytes = self.page.screenshot()
+                    return Image.open(io.BytesIO(screenshot_bytes))
+                else:
+                    print("⚠️ Error: Cannot take screenshot - page not initialized")
+                    return None
                 
             def __del__(self):
                 if self.browser:
@@ -111,26 +132,39 @@ except Exception as e:
                 def click(self, x, y):
                     self._ensure_driver()
                     # Real Selenium click
-                    ActionChains(self.driver).move_by_offset(x, y).click().perform()
-                    print(f"🖱️  Selenium click at ({x}, {y})")
+                    if self.driver:
+                        ActionChains(self.driver).move_by_offset(x, y).click().perform()
+                        print(f"🖱️  Selenium click at ({x}, {y})")
+                    else:
+                        print("⚠️ Error: Driver not initialized")
                     
                 def typewrite(self, text):
                     self._ensure_driver()
                     # Real Selenium text input
-                    ActionChains(self.driver).send_keys(text).perform()
-                    print(f"⌨️  Selenium type: {text}")
+                    if self.driver:
+                        ActionChains(self.driver).send_keys(text).perform()
+                        print(f"⌨️  Selenium type: {text}")
+                    else:
+                        print("⚠️ Error: Driver not initialized")
                     
                 def scroll(self, clicks):
                     self._ensure_driver()
                     # Real Selenium scroll
-                    self.driver.execute_script(f"window.scrollBy(0, {clicks * 100});")
-                    print(f"🔄 Selenium scroll: {clicks}")
+                    if self.driver:
+                        self.driver.execute_script(f"window.scrollBy(0, {clicks * 100});")
+                        print(f"🔄 Selenium scroll: {clicks}")
+                    else:
+                        print("⚠️ Error: Driver not initialized")
                     
                 def screenshot(self):
                     self._ensure_driver()
-                    screenshot_path = '/tmp/selenium_screenshot.png'
-                    self.driver.save_screenshot(screenshot_path)
-                    return Image.open(screenshot_path)
+                    if self.driver:
+                        screenshot_path = '/tmp/selenium_screenshot.png'
+                        self.driver.save_screenshot(screenshot_path)
+                        return Image.open(screenshot_path)
+                    else:
+                        print("⚠️ Error: Driver not initialized")
+                        return None
                     
                 def __del__(self):
                     if self.driver:

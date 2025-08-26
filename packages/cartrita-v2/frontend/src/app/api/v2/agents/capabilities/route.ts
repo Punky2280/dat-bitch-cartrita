@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8001';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8002';
 
 export async function GET(request: NextRequest) {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/agents/capabilities`, {
+    const response = await fetch(`${BACKEND_URL}/api/v2/agents/status`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

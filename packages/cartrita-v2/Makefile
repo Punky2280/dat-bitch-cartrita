@@ -1,7 +1,9 @@
 # Cartrita Core Hygiene & Development Automation
 # Aligned with Copilot Instructions v1.0.0
 
-.PHONY: hygiene hygiene-quick commit-hygiene dev-backend dev-frontend start-backend start-frontend docker-up docker-down clean install
+.PHONY: hygiene hygiene-quick commit-hygiene dev-backend dev-frontend start-backend start-frontend docker-up docker-down clean install py-setup py-start py-health
+
+PY_DIR := packages/cartrita-v2/py
 
 # Full hygiene pass with all checks
 hygiene:
@@ -70,6 +72,9 @@ audit-branding:
 # Health checks
 health-backend:
 	curl -sf http://localhost:8001/health || echo "Backend not running"
+	@echo "Python FastAPI health:"
+	-@curl -sf http://localhost:8003/health | jq . || curl -sf http://localhost:8003/health || true
+	-@curl -sf http://localhost:8003/healthz/details | jq . || curl -sf http://localhost:8003/healthz/details || true
 
 health-frontend:
 	curl -sf http://localhost:3001 || echo "Frontend not running"
@@ -83,6 +88,15 @@ health: health-db health-backend health-frontend
 
 # Development workflow
 dev: install hygiene-quick dev-backend
+
+py-setup:
+	cd $(PY_DIR) && bash ./setup.sh
+
+py-start:
+	cd $(PY_DIR) && nohup python3 main.py >/dev/null 2>&1 & echo $$! > .fastapi.pid ; sleep 2 ; curl -sf http://localhost:8003/health || true
+
+py-health:
+	-@curl -sf http://localhost:8003/healthz/details | jq . || curl -sf http://localhost:8003/healthz/details || true
 
 # Production readiness check
 prod-ready: hygiene audit-v1 audit-branding health
