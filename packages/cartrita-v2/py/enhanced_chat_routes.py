@@ -910,16 +910,15 @@ async def execute_mcp_tool(request: MCPRequest):
 async def get_langchain_chains():
     """Get available LangChain chains"""
     try:
-        config = get_langchain_config() or initialize_langchain()
-        if not config:
+        if config := get_langchain_config() or initialize_langchain():
+            return {"chains": list(config.chains.keys()) if hasattr(config, 'chains') else []}
+
+        else:
             return {"chains": [], "status": "not_configured"}
-            
-        return {"chains": list(config.chains.keys()) if hasattr(config, 'chains') else []}
-        
+
     except Exception as e:
         logger.error(f"Error getting LangChain chains: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
-
 
 @router.post("/langchain/chains/{chain_name}/execute")
 async def execute_langchain_chain(chain_name: str, request_data: Dict[str, Any]):
@@ -955,6 +954,7 @@ async def get_bridge_status():
         logger.error(f"Error getting bridge status: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
+# ================================
 # ================================
 # Quantum Computing Endpoints
 # ================================
@@ -1092,7 +1092,7 @@ async def get_quantum_job_results(job_id: str):
             "execution_time": result.execution_time,
             "shots": result.shots,
             "timestamp": result.timestamp.isoformat(),
-            "error_message": result.error_message
+"            "error_message": result.error_message
         }
         
     except HTTPException:

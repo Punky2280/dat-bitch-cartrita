@@ -130,7 +130,9 @@ export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketRet
   // Message handlers
   useEffect(() => {
     const ws = wsRef.current;
-    if (!ws) return;
+    if (!ws) {
+      return;
+    }
 
     // Handle incoming messages
     const handleMessage = (message: WebSocketMessage) => {

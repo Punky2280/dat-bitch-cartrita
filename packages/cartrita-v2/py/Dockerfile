@@ -53,11 +53,11 @@ COPY . .
 RUN mkdir -p /app/.cache/torch /app/.cache/transformers
 
 # Expose port
-EXPOSE 8002
+EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8002/health || exit 1
+  CMD curl -f http://localhost:8000/health || exit 1
 
 # Run the FastAPI server
 CMD ["python", "fastapi_server.py"]

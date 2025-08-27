@@ -1,18 +1,20 @@
 """
 Cartrita V2 - FastAPI Server
-Python backend implementing OpenAI Responses API agents
+Production OpenAI-powered agent system with Miami personality
+Integrated with new V2 architecture
 """
 
 import asyncio
 import logging
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any
 from pathlib import Path
+from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -20,23 +22,71 @@ from pydantic import BaseModel, Field
 # Add current directory to path for imports
 sys.path.append(str(Path(__file__).parent))
 
-from cartrita_core.agent_manager import CartritaAgentManager, TaskPriority
-from cartrita_core.cartrita_agent import AgentContext
-from cartrita_core.tools import CartritaToolRegistry
-from cartrita_core.responses_api import CartritaResponsesClient
-from config import get_settings, load_system_prompt
-# from enhanced_chat_routes import router as enhanced_chat_router
-from startup_checks import run_startup_checks
+# Import new V2 components
+from cartrita_main import CartritalV2Application, create_cartrita_v2_application
+
+# Import agent system components for legacy endpoints
+try:
+    from cartrita_agent_manager import CartritaAgentManager, AgentContext, TaskPriority
+    from cartrita_tools_registry import CartritaToolRegistry
+    from cartrita_responses_client import CartritaResponsesClient
+    from cartrita_startup_checks import run_startup_checks
+    from cartrita_config import get_settings
+except ImportError as e:
+    print(f"Warning: Legacy agent imports failed: {e}")
+    # Define minimal fallbacks
+    class TaskPriority:
+        LOW, MEDIUM, HIGH, URGENT = "low", "medium", "high", "urgent"
+    
+    class AgentContext:
+        def __init__(self, **kwargs):
+            self.__dict__.update(kwargs)
 
 
-# Request/Response Models
+# Request/Response Models for V2
 class ChatRequest(BaseModel):
     message: str
-    user_id: str = "anonymous"
+    user_id: str = "anonymous" 
     session_id: Optional[str] = None
-    priority: str = "medium"
-    preferred_agent: Optional[str] = None
     context: Dict[str, Any] = Field(default_factory=dict)
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "message": "¡Hola Cartrita! How can you help me today?",
+                "user_id": "user_123",
+                "session_id": "session_456",
+                "context": {"location": "Miami", "language": "en"}
+            }
+        }
+
+
+class ChatResponse(BaseModel):
+    success: bool
+    response: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+    miami_message: str
+    session_id: Optional[str] = None
+    agents_used: List[str] = Field(default_factory=list)
+    security_info: Optional[Dict[str, Any]] = None
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "response": {
+                    "content": "¡Hola! I'm Cartrita, your Miami AI assistant. How can I help you today?",
+                    "agent_type": "orchestrator"
+                },
+                "miami_message": "¡Dale! Message processed successfully.",
+                "session_id": "session_456",
+                "agents_used": ["orchestrator"],
+                "security_info": {
+                    "rate_limit_remaining": 95,
+                    "security_level": "public"
+                }
+            }
+        }
 
 
 class ComputerUseRequest(BaseModel):
@@ -57,13 +107,64 @@ class HealthResponse(BaseModel):
     timestamp: str
 
 
-# FastAPI Application
+# Global V2 Application
+cartrita_app: Optional[CartritalV2Application] = None
+server_start_time = datetime.now(timezone.utc)
+
+# Global components for legacy endpoints
+agent_manager = None
+tools_registry = None
+responses_client = None
+startup_checks_report = None
+
+# Logging setup with Miami style
+logging.basicConfig(
+    level=logging.INFO,
+    format='🏝️  %(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger("cartrita.fastapi")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup and shutdown"""
+    global cartrita_app
+    
+    # Startup
+    try:
+        logger.info("🚀 Starting Cartrita V2 FastAPI server...")
+        
+        # Create and initialize V2 application
+        cartrita_app = await create_cartrita_v2_application()
+        
+        # Log startup success
+        status = await cartrita_app.get_application_status()
+        logger.info("✅ Cartrita V2 initialized successfully!")
+        logger.info(f"🏝️  {status['miami_status']}")
+        logger.info(f"🔍 Health status: {status['health_status']}")
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize Cartrita V2: {e}")
+        # Don't fail the entire server, but log the error
+        cartrita_app = None
+    
+    yield
+    
+    # Shutdown
+    if cartrita_app:
+        logger.info("🛑 Shutting down Cartrita V2...")
+        await cartrita_app.shutdown()
+        logger.info("✅ Cartrita V2 shutdown complete.")
+
+
+# FastAPI Application with Miami flair
 app = FastAPI(
-    title="Cartrita V2 - Python Agent Backend",
-    description="OpenAI Responses API Multi-Agent System",
+    title="🏝️ Cartrita V2 - Miami AI Assistant API",
+    description="Production OpenAI-powered multi-agent system con sabor Miami",
     version="2.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # CORS Configuration
@@ -75,66 +176,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include Enhanced Chat Routes (commented out due to missing asyncpg)
-# app.include_router(enhanced_chat_router)
-
-# Global Components
-agent_manager: Optional[CartritaAgentManager] = None
-tools_registry: Optional[CartritaToolRegistry] = None
-responses_client: Optional[CartritaResponsesClient] = None
-server_start_time = datetime.now()
-startup_checks_report = None
-
-# Logging setup
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger("cartrita.fastapi")
 
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize the FastAPI application"""
-    global agent_manager, tools_registry, responses_client
-    
-    logger.info("🚀 Starting Cartrita V2 Python Backend")
-    
-    try:
-        # Run startup checks first
-        global startup_checks_report
-        startup_checks_report = run_startup_checks()
-        if not startup_checks_report.get("ok", False):
-            logger.warning("Startup checks reported issues. View via /health/details")
-        # Initialize tools registry
-        tools_registry = CartritaToolRegistry(logger=logger.getChild("tools"))
-        logger.info("✅ Tools registry initialized")
-        
-        # Initialize OpenAI Responses API client from centralized config
-        settings = get_settings()
-        oa = settings["openai"]
-        responses_client = CartritaResponsesClient(
-            api_key=oa.api_key,
-            model=oa.default_model,
-            logger=logger.getChild("responses_api")
+def get_cartrita_app() -> CartritalV2Application:
+    """Dependency to get Cartrita application instance"""
+    if cartrita_app is None:
+        raise HTTPException(
+            status_code=503,
+            detail="¡Ay! Cartrita V2 is not initialized. Try again in a moment."
         )
-        logger.info("✅ OpenAI Responses API client initialized")
-        
-        # Initialize agent manager
-        agent_manager = CartritaAgentManager(
-            tools_registry=tools_registry,
-            logger=logger.getChild("agent_manager")
-        )
-        logger.info("✅ Agent manager initialized")
-        
-        # Grant default permissions to agents
-        await setup_agent_permissions()
-        
-        logger.info("🎭 Cartrita V2 Python Backend ready!")
-        
-    except Exception as e:
-        logger.error(f"❌ Startup failed: {e}")
-        raise
+    return cartrita_app
 
 
 async def setup_agent_permissions():
@@ -184,7 +235,7 @@ async def setup_agent_permissions():
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint"""
-    uptime = (datetime.now() - server_start_time).total_seconds()
+    uptime = (datetime.now(timezone.utc) - server_start_time).total_seconds()
     
     agents_active = 0
     if agent_manager:
@@ -215,50 +266,33 @@ async def health_details():
 
 @app.post("/api/v2/chat")
 async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks):
-    """Main chat endpoint using agent manager"""
+    """Main chat endpoint using Cartrita V2 application"""
     
-    if not agent_manager:
-        raise HTTPException(status_code=503, detail="Agent manager not initialized")
+    if not cartrita_app:
+        raise HTTPException(status_code=503, detail="Cartrita V2 application not initialized")
 
     try:
         logger.info(f"💬 Chat request from {request.user_id}: {request.message[:100]}...")
 
-        # Convert priority string to enum
-        priority_map = {
-            "low": TaskPriority.LOW,
-            "medium": TaskPriority.MEDIUM,
-            "high": TaskPriority.HIGH,
-            "urgent": TaskPriority.URGENT
-        }
-        priority = priority_map.get(request.priority, TaskPriority.MEDIUM)
-
-        # Create agent context
-        context = AgentContext(
+        # Process message through Cartrita V2 application
+        response = await cartrita_app.process_user_message(
+            user_message=request.message,
             user_id=request.user_id,
-            session_id=request.session_id,
-            metadata=request.context
-        )
-
-        # Execute task through agent manager
-        response = await agent_manager.execute_task(
-            task_description=request.message,
-            context=context,
-            priority=priority,
-            preferred_agent=request.preferred_agent
+            session_id=request.session_id
         )
 
         return {
-            "success": response.success,
-            "content": response.content,
-            "agent_id": response.agent_id,
-            "task_id": response.task_id,
-            "reasoning": response.reasoning,
-            "tools_used": response.tools_used,
-            "iterations_completed": response.iterations_completed,
-            "execution_time_ms": response.execution_time_ms,
-            "computer_actions": response.computer_actions,
-            "metadata": response.metadata,
-            "error": response.error,
+            "success": response.get("success", True),
+            "content": response.get("response", response.get("miami_message", "")),
+            "agent_id": "cartrita_v2_orchestrator",
+            "task_id": response.get("session_id"),
+            "reasoning": response.get("reasoning", ""),
+            "tools_used": response.get("tools_used", []),
+            "iterations_completed": 1,
+            "execution_time_ms": response.get("processing_time_ms", 0),
+            "computer_actions": response.get("computer_actions", []),
+            "metadata": response.get("metadata", {}),
+            "error": response.get("error", None),
             "timestamp": datetime.now().isoformat()
         }
 
@@ -355,28 +389,26 @@ async def end_computer_use_session(session_id: str):
 async def get_agents_status():
     """Get status of all agents"""
     
-    if not agent_manager:
-        raise HTTPException(status_code=503, detail="Agent manager not initialized")
+    if not cartrita_app:
+        raise HTTPException(status_code=503, detail="Cartrita V2 application not initialized")
 
     try:
-        status = await agent_manager.get_agent_status()
-
-        # Add additional system info
-        status["system"] = {
-            "python_backend_version": "2.0.0",
-            "uptime_seconds": (datetime.now() - server_start_time).total_seconds(),
-            "timestamp": datetime.now().isoformat()
+        status = await cartrita_app.get_application_status()
+        
+        # Transform to match expected agent status format
+        return {
+            "success": True,
+            "agents": {},  # V2 uses orchestrator pattern instead of individual agents
+            "system": {
+                "python_backend_version": "2.0.0",
+                "uptime_seconds": status.get("uptime_seconds", 0),
+                "timestamp": datetime.now().isoformat(),
+                "health_status": status.get("health_status"),
+                "miami_status": status.get("miami_status")
+            },
+            "components": status.get("components", {}),
+            "initialized": status.get("initialized", False)
         }
-
-        # Add tools registry stats
-        if tools_registry:
-            status["tools"] = tools_registry.get_registry_stats()
-
-        # Add responses client stats
-        if responses_client:
-            status["responses_api"] = responses_client.get_client_stats()
-
-        return {"success": True, **status}
 
     except Exception as e:
         logger.error(f"❌ Get agents status failed: {e}")
@@ -477,6 +509,33 @@ async def get_server_stats():
     return {"success": True, **stats}
 
 
+@app.get("/api/v2/agents")
+async def list_agents():
+    """Return a simplified list of agents for UI consumption"""
+    if not agent_manager:
+        raise HTTPException(status_code=503, detail="Agent manager not initialized")
+
+    try:
+        status = await agent_manager.get_agent_status()
+        agents = []
+        agents.extend(
+            {
+                "id": agent_id,
+                "name": meta.get("name") or agent_id.replace("_", " ").title(),
+                "description": meta.get("description") or "Cartrita V2 agent",
+                "capabilities": meta.get("capabilities") or [],
+                "model": meta.get("model") or "gpt-5",
+                "status": meta.get("status") or "idle",
+            }
+            for agent_id, meta in (status.get("agents") or {}).items()
+        )
+        return {"success": True, "data": agents}
+
+    except Exception as e:
+        logger.error(f"❌ List agents failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
 @app.post("/api/v2/simple-chat")
 async def simple_chat_endpoint(request: ChatRequest):
     """Simple chat endpoint using direct OpenAI API"""
@@ -535,20 +594,12 @@ async def simple_chat_endpoint(request: ChatRequest):
         raise HTTPException(status_code=500, detail="Simple chat processing failed") from e
 
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
-    logger.info("🛑 Shutting down Cartrita V2 Python Backend")
-    
-    if agent_manager:
-        await agent_manager.shutdown_all()
-    
-    logger.info("✅ Shutdown complete")
+# Cleanup handled in lifespan context manager
 
 
 if __name__ == "__main__":
     # Get configuration from environment
-    port = int(os.getenv("FASTAPI_PORT", 8002))
+    port = int(os.getenv("PORT", 8000))  # Changed from FASTAPI_PORT to PORT and default to 8000
     host = os.getenv("HOST", "0.0.0.0")
     reload = os.getenv("ENVIRONMENT", "development") == "development"
     

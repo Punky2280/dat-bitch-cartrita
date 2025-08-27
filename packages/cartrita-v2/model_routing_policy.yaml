@@ -1,0 +1,460 @@
+version: 1.2
+last_updated: 2025-01-28
+
+# Model Configuration
+models:
+  fast_ultra: gpt-5-nano         # Ultra-fast classification and routing
+  fast_primary: gpt-5-mini       # Cost-optimized reasoning for most tasks
+  reasoning_primary: gpt-5       # Deep reasoning and complex multi-step tasks
+  voice_primary: gpt-4o-realtime-preview  # Voice and real-time interactions
+  legacy_fallback: gpt-4.1       # Optional fallback for compatibility
+
+# Global Configuration
+global:
+  default_reasoning_effort: minimal
+  max_tokens_soft_limits:
+    fast: 4096
+    reasoning: 12000
+    voice: 8192
+  cost_limits:
+    per_task_usd: 0.06
+    per_message_usd_soft: 0.02
+    escalation_threshold_usd: 0.04
+  moderation_required_categories:
+    - sexual
+    - self_harm
+    - hate
+    - extremism
+    - pii
+    - violence
+  approval_required_tools:
+    - computer_use_preview
+    - mcp
+  logging_fields:
+    - model
+    - reasoning_effort
+    - tool_calls
+    - cited_sources
+    - cost_estimate
+
+# Model Routing Rules (ordered evaluation - first match wins)
+routing_rules:
+  # Ultra-fast classification and simple routing
+  - match:
+      intents_any: [moderation_review, simple_classification]
+      complexity: low
+    model: gpt-5-nano
+    reasoning_effort: minimal
+    max_tokens: 1024
+
+  # Simple retrieval with limited sources
+  - match:
+      intents_any: [retrieval]
+      max_steps: 2
+      source_complexity: low
+    model: gpt-5-mini
+    reasoning_effort: minimal
+    max_tokens: 2048
+
+  # Standard retrieval and synthesis
+  - match:
+      intents_any: [retrieval]
+      max_steps: 4
+    model: gpt-5-mini
+    reasoning_effort: low
+    max_tokens: 4096
+
+  # Basic code tasks
+  - match:
+      intents_any: [code]
+      complexity: low
+      file_count_max: 3
+    model: gpt-5-mini
+    reasoning_effort: low
+    max_tokens: 4096
+
+  # Complex code tasks or multi-file refactoring
+  - match:
+      intents_any: [code]
+      complexity: high
+    model: gpt-5
+    reasoning_effort: medium
+    max_tokens: 8192
+
+  # Data visualization and analysis
+  - match:
+      intents_any: [dataviz]
+      dataset_size: small_to_medium
+    model: gpt-5-mini
+    reasoning_effort: low
+    max_tokens: 4096
+
+  # Complex data analysis
+  - match:
+      intents_any: [dataviz]
+      complexity: high
+      dataset_size: large
+    model: gpt-5
+    reasoning_effort: medium
+    max_tokens: 8192
+
+  # Web research and synthesis
+  - match:
+      intents_any: [web_research]
+      query_complexity: standard
+    model: gpt-5-mini
+    reasoning_effort: low
+    max_tokens: 4096
+
+  # Image generation and analysis
+  - match:
+      intents_any: [image]
+      task_type: generation
+    model: gpt-5-mini
+    reasoning_effort: minimal
+    max_tokens: 2048
+
+  # Complex image composition
+  - match:
+      intents_any: [image]
+      complexity: high
+      composition_complexity: advanced
+    model: gpt-5
+    reasoning_effort: low
+    max_tokens: 4096
+
+  # UI/DSL generation (structured outputs)
+  - match:
+      intents_any: [ui_generation]
+      output_type: structured
+    model: gpt-5-mini
+    reasoning_effort: minimal
+    max_tokens: 2048
+
+  # Computer use automation
+  - match:
+      intents_any: [automation]
+      step_count_max: 5
+    model: gpt-5-mini
+    reasoning_effort: minimal
+    max_tokens: 3072
+
+  # Complex automation workflows
+  - match:
+      intents_any: [automation]
+      step_count_min: 6
+      complexity: high
+    model: gpt-5
+    reasoning_effort: medium
+    max_tokens: 6144
+
+  # Voice and realtime interactions
+  - match:
+      intents_any: [voice, realtime]
+    model: gpt-4o-realtime-preview
+    reasoning_effort: minimal
+    max_tokens: 4096
+
+  # Orchestrator simple planning
+  - match:
+      intents_any: [orchestration]
+      max_steps: 4
+      complexity: low
+    model: gpt-5-mini
+    reasoning_effort: low
+    max_tokens: 3072
+
+  # Orchestrator complex planning
+  - match:
+      intents_any: [orchestration]
+      min_steps: 5
+      complexity: high
+    model: gpt-5
+    reasoning_effort: medium
+    max_tokens: 6144
+
+  # Escalation cases (prior failures)
+  - match:
+      prior_failures_gte: 2
+      any_intent: true
+    model: gpt-5
+    reasoning_effort: high
+    max_tokens: 8192
+
+# Fallback configuration
+fallback:
+  order: [gpt-5-mini, gpt-5, gpt-5-nano, gpt-4.1]
+  default_model: gpt-5-mini
+  default_reasoning_effort: low
+
+# Feature flags for experimentation and rollouts
+feature_flags:
+  force_reasoning_model: false
+  disable_nano: false
+  experiment_alt_reasoning: false
+  enable_model_caching: true
+  enable_prompt_caching: true
+
+# Agent-specific configuration
+agents:
+  orchestrator:
+    default_allowed_tools: []
+    step_phase_allowed_tools: []
+    forbidden_tools: [code_interpreter, image_generation, computer_use_preview]
+    conditional_tools: []
+    escalation_triggers:
+      - plan_steps_length > 6
+      - any_step_blocked > 2 attempts
+    default_model_strategy:
+      choose: fast_primary
+      escalate_on:
+        - multi_domain_complexity
+        - needs_high_precision_planning
+    reasoning_effort_baseline: low
+    max_reasoning_effort_cap: medium
+    safety_overrides:
+      on_moderation_flag: route_only_to: moderation
+
+  retrieval:
+    default_allowed_tools: [file_search]
+    step_phase_allowed_tools:
+      initial: [file_search]
+      secondary_refine: [file_search, web_search_preview]
+    conditional_tools:
+      - web_search_preview
+    forbidden_tools: [code_interpreter, image_generation, computer_use_preview]
+    escalation_triggers:
+      - zero_relevant_sources
+      - conflicting_sources_high_confidence
+    default_model_strategy:
+      choose: fast_primary
+      escalate_on:
+        - complex_cross_document_synthesis
+        - fact_checking_required
+    reasoning_effort_baseline: minimal
+    max_reasoning_effort_cap: medium
+    safety_overrides:
+      redact_pii_in_snippets: true
+
+  code:
+    default_allowed_tools: [code_interpreter]
+    step_phase_allowed_tools:
+      analyze: [code_interpreter]
+      test: [code_interpreter]
+      refactor: [code_interpreter]
+    conditional_tools:
+      - file_search
+    forbidden_tools: [image_generation, computer_use_preview]
+    escalation_triggers:
+      - repeated_test_failures >= 2
+      - ambiguous_requirements_detected
+      - security_sensitive_code_patterns
+    default_model_strategy:
+      choose: fast_primary
+      escalate_on:
+        - multi_file_refactor
+        - algorithmic_complexity_high
+        - performance_critical_code
+    reasoning_effort_baseline: low
+    max_reasoning_effort_cap: high
+    safety_overrides:
+      deny_execution_if:
+        - network_call_detected
+        - file_write_outside_container
+        - potentially_destructive_operations
+
+  dataviz:
+    default_allowed_tools: [code_interpreter]
+    step_phase_allowed_tools:
+      profiling: [code_interpreter]
+      visualization: [code_interpreter]
+    conditional_tools: []
+    forbidden_tools: [computer_use_preview, image_generation]
+    escalation_triggers:
+      - data_too_large_for_memory
+      - inconsistent_column_types
+      - statistical_significance_analysis_required
+    default_model_strategy:
+      choose: fast_primary
+      escalate_on:
+        - multi_dataset_merge_complex
+        - advanced_statistical_analysis
+    reasoning_effort_baseline: low
+    max_reasoning_effort_cap: medium
+    safety_overrides:
+      suppress_sensitive_metrics: true
+      anonymize_personal_identifiers: true
+
+  web_research:
+    default_allowed_tools: [web_search_preview]
+    step_phase_allowed_tools:
+      initial_queries: [web_search_preview]
+      fact_checking: [web_search_preview]
+      refinement: [web_search_preview]
+    conditional_tools:
+      - file_search
+    forbidden_tools: [code_interpreter, computer_use_preview]
+    escalation_triggers:
+      - contradictory_fresh_sources_detected
+      - news_topic_high_sensitivity
+      - fact_check_complexity_high
+    default_model_strategy:
+      choose: fast_primary
+      escalate_on:
+        - large_result_synthesis_required
+        - cross_source_validation_needed
+    reasoning_effort_baseline: low
+    max_reasoning_effort_cap: medium
+    safety_overrides:
+      add_disclaimer_on_medical_or_legal: true
+      verify_source_credibility: true
+
+  image_vision:
+    default_allowed_tools: [image_generation]
+    step_phase_allowed_tools:
+      generation: [image_generation]
+      iteration: [image_generation]
+      analysis: []
+    conditional_tools: []
+    forbidden_tools: [code_interpreter, computer_use_preview]
+    escalation_triggers:
+      - repeated_user_dissatisfaction >= 2
+      - ambiguous_style_requirements
+      - complex_composition_requested
+    default_model_strategy:
+      choose: fast_primary
+      escalate_on:
+        - complex_compositional_prompt_engineering
+        - artistic_style_analysis_deep
+    reasoning_effort_baseline: minimal
+    max_reasoning_effort_cap: low
+    safety_overrides:
+      block_disallowed_image_content: true
+      content_policy_strict_enforcement: true
+
+  ui_dsl:
+    default_allowed_tools: []
+    step_phase_allowed_tools: []
+    conditional_tools: []
+    forbidden_tools: [image_generation, code_interpreter, web_search_preview]
+    escalation_triggers:
+      - schema_validation_failures >= 2
+      - unclear_user_functional_requirements
+    default_model_strategy:
+      choose: fast_primary
+      escalate_on:
+        - very_large_form_complexity
+        - dynamic_schema_generation
+    reasoning_effort_baseline: minimal
+    max_reasoning_effort_cap: low
+    safety_overrides:
+      strip_user_injected_javascript: true
+      validate_schema_strict: true
+
+  automation:
+    default_allowed_tools: [computer_use_preview]
+    step_phase_allowed_tools:
+      plan: []
+      execute: [computer_use_preview]
+    conditional_tools: []
+    forbidden_tools: [code_interpreter, image_generation]
+    escalation_triggers:
+      - domain_flag_sensitive_detected
+      - untrusted_prompt_injection_suspected
+      - multi_step_workflow_complexity
+    default_model_strategy:
+      choose: fast_primary
+      escalate_on:
+        - multi_page_flow_navigation
+        - complex_form_interactions
+    reasoning_effort_baseline: minimal
+    max_reasoning_effort_cap: medium
+    safety_overrides:
+      require_user_confirmation_on_sensitive_domain: true
+      enforce_pending_safety_check_pause: true
+      screenshot_audit_logging: true
+
+  moderation:
+    default_allowed_tools: [moderation]
+    step_phase_allowed_tools: []
+    conditional_tools: []
+    forbidden_tools: [code_interpreter, web_search_preview, computer_use_preview]
+    escalation_triggers:
+      - borderline_case_uncertain
+      - policy_ambiguity_detected
+    default_model_strategy:
+      choose: fast_ultra   # Use nano for ultra-cheap classification
+    reasoning_effort_baseline: minimal
+    max_reasoning_effort_cap: low
+    safety_overrides:
+      always_strip_pii: true
+      log_all_moderation_decisions: true
+
+  voice:
+    default_allowed_tools: []
+    step_phase_allowed_tools: []
+    conditional_tools:
+      - handoff_function
+    forbidden_tools: [code_interpreter, computer_use_preview]
+    escalation_triggers:
+      - user_intent_requires_specialist_tools
+      - repeated_fact_question_no_context
+    default_model_strategy:
+      choose: voice_primary   # gpt-4o-realtime-preview
+      escalate_on:
+        - complex_planning_detected_in_speech
+    reasoning_effort_baseline: minimal
+    max_reasoning_effort_cap: low
+    safety_overrides:
+      interrupt_if_user_speaks: true
+      maintain_conversation_context: true
+
+# Escalation Policy
+escalation_policy:
+  model_escalation_rules:
+    - condition: code.repeated_test_failures >= 2
+      action: upgrade_model_to: reasoning_primary
+    - condition: orchestrator.plan_steps_length > 6
+      action: upgrade_reasoning_effort: medium
+    - condition: retrieval.zero_relevant_sources
+      action: allow_tool: web_search_preview
+    - condition: any_agent.prior_failures >= 3
+      action: upgrade_model_to: reasoning_primary
+      action2: upgrade_reasoning_effort: high
+      
+  safety_escalation:
+    - condition: moderation.is_violating
+      action: route_to_human_review: true
+    - condition: automation.domain_flag_sensitive
+      action: require_user_confirmation: true
+    - condition: any_agent.security_violation_detected
+      action: terminate_session_immediately: true
+
+# Cost Controls
+cost_controls:
+  per_task_cost_ceiling_usd:
+    fast: 0.01
+    reasoning: 0.05
+    complex_multi_step: 0.15
+  actions_on_breach:
+    - downgrade_model_tier
+    - reduce_reasoning_effort
+    - truncate_context_window
+    - disable_non_essential_tools
+  budget_allocation:
+    daily_budget_usd: 100.0
+    reserve_for_escalations_percent: 20
+
+# Logging and Audit
+logging_and_audit:
+  log_tool_arguments: true
+  redact_pii_before_log: true
+  store_reasoning_items: conditional
+  audit_chain_integrity: true
+  performance_metrics_collection: true
+
+# Validation
+validation:
+  schema_fail_retry_limit: 2
+  auto_retry_backoff_seconds: 2
+  model_fallback_on_availability_failure: true

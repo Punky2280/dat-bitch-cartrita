@@ -26,6 +26,7 @@ import {
   EyeIcon,
   EyeSlashIcon,
 } from '@heroicons/react/24/outline';
+import { CircleStackIcon } from '@heroicons/react/24/outline';
 import AppLayout from '@/components/layout/AppLayout';
 import { useSettingsStore, useAuthStore } from '@/stores';
 
@@ -763,7 +764,7 @@ export default function SettingsPage() {
                         onClick={() => document.getElementById('import-settings')?.click()}
                         className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                       >
-                        <DatabaseIcon className="w-4 h-4 mr-2" />
+                        <CircleStackIcon className="w-4 h-4 mr-2" />
                         Import Settings
                       </button>
                       <input

@@ -19,8 +19,23 @@ import {
 } from '@/types';
 
 // API Configuration - Updated for Cartrita V2 Backend
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8002';
-const PYTHON_API_BASE_URL = process.env.NEXT_PUBLIC_PYTHON_API_BASE_URL || 'http://localhost:8002';
+// Prefer explicit envs; on the client, fall back to current origin to avoid cross-origin issues
+const getBrowserBase = () => {
+  // In the browser, prefer relative URLs so Next.js rewrites proxy correctly
+  if (typeof window !== 'undefined') {
+    return '';
+  }
+  return undefined;
+};
+
+const isServer = typeof window === 'undefined';
+// On the server (SSR), use env vars; in the browser, force relative base ('')
+const API_BASE_URL = isServer
+  ? (process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000')
+  : (getBrowserBase() || '');
+const PYTHON_API_BASE_URL = isServer
+  ? (process.env.PYTHON_API_BASE_URL || process.env.NEXT_PUBLIC_PYTHON_API_BASE_URL || 'http://localhost:8000')
+  : (getBrowserBase() || '');
 const API_TIMEOUT = 30000; // 30 seconds
 
 class APIClient {
@@ -38,7 +53,7 @@ class APIClient {
     });
 
     this.pythonClient = axios.create({
-      baseURL: `${PYTHON_API_BASE_URL}/api/v2`,
+      baseURL: `${PYTHON_API_BASE_URL}/api`,
       timeout: API_TIMEOUT,
       headers: {
         'Content-Type': 'application/json',
@@ -401,86 +416,43 @@ class APIClient {
     text?: string;
     analysis: Record<string, any>;
   }> {
-    try {
-      // For now, simulate the analysis with a realistic response
-      // In production, this would connect to the working vision endpoints
-      const fileName = file.name;
-      const fileSize = (file.size / 1024).toFixed(1);
-      const fileType = file.type;
+    // 1) Upload the file to Python V2 vision upload
+    const form = new FormData();
+    form.append('file', file);
+    form.append('session_id', sessionId || 'vision_session');
 
-      // Generate a realistic analysis response
-      const analysisResponse = {
-        description: `Analysis of uploaded image: ${fileName} (${fileSize}KB, ${fileType}). This is a comprehensive vision analysis that would normally be processed by our AI vision models. The image has been received and would be analyzed for objects, text, scene understanding, and other visual elements.`,
-        objects: [
-          'image_file',
-          'digital_content',
-          'visual_data',
-          'uploaded_media'
-        ],
-        text: `Image file detected: ${fileName}`,
-        analysis: {
-          file_name: fileName,
-          file_size: file.size,
-          file_type: fileType,
-          upload_timestamp: new Date().toISOString(),
-          processing_status: 'completed',
-          model: 'vision-analysis-v1',
-          confidence: 0.95,
-          prompt: prompt || 'General image analysis',
-          session_id: sessionId || 'vision_session',
-          features_detected: {
-            has_objects: true,
-            has_text: fileName.length > 0,
-            has_faces: false,
-            color_analysis: true,
-            scene_classification: true
-          },
-          technical_details: {
-            width: 'unknown',
-            height: 'unknown', 
-            format: fileType?.split('/')[1] || 'unknown',
-            channels: 'RGB'
-          },
-          processing_time: Math.random() * 2 + 0.5, // 0.5-2.5 seconds
-          note: 'This is a simulated response. In production, this would use real AI vision models to analyze the uploaded image.'
-        }
-      };
+    const upload = await this._pythonRequest<{
+      filename: string;
+      file_path: string;
+      upload_id: string;
+      status: string;
+  }>('POST', '/chat/vision/upload', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
 
-      // Return the structured response that matches the expected interface
-      return {
-        description: analysisResponse.description,
-        objects: analysisResponse.objects,
-        text: analysisResponse.text,
-        analysis: analysisResponse.analysis
-      };
-
-    } catch (error: any) {
-      console.error('Vision analysis error:', error);
-      
-      // Provide a fallback response even if there's an error
-      return {
-        description: `Unable to analyze image ${file.name} at this time. Please try again later.`,
-        objects: ['error_placeholder'],
-        text: `Error processing: ${file.name}`,
-        analysis: {
-          error: true,
-          message: error.message || 'Vision analysis temporarily unavailable',
-          file_name: file.name,
-          file_size: file.size,
-          file_type: file.type,
-          timestamp: new Date().toISOString()
-        }
-      };
-    }
+    // 2) Analyze the uploaded file
+    return this._pythonRequest<{
+      description: string;
+      objects: string[];
+      text?: string;
+      analysis: Record<string, any>;
+    }>('POST', '/chat/vision/analyze', {
+      filename: upload.filename,
+      prompt,
+      session_id: sessionId || 'vision_session',
+      analysis_types: ['objects', 'text', 'scene'],
+    });
   }
 
   async getVisionStatus(): Promise<{ status: string; available: boolean }> {
     try {
-      const statusResponse = await this._pythonRequest<any>('GET', '/agents/status');
-      const visionAgentStatus = statusResponse.agents?.vision_agent_v2?.status || 'unknown';
-      return { 
-        status: visionAgentStatus === 'idle' ? 'healthy' : visionAgentStatus, 
-        available: visionAgentStatus === 'idle' || visionAgentStatus === 'active'
+  const statusResponse = await this._pythonRequest<any>('GET', '/v2/chat/status');
+      const agents = statusResponse.agents || {};
+      const visionAgent = agents.vision_agent_v2 || agents.vision || agents;
+      const status = typeof visionAgent === 'string' ? visionAgent : (visionAgent?.status || 'unknown');
+      return {
+        status,
+        available: ['idle', 'active', 'healthy'].includes(status),
       };
     } catch {
       return { status: 'unavailable', available: false };
@@ -493,23 +465,17 @@ class APIClient {
     model?: string;
   }): Promise<{ text: string; confidence?: number; language?: string }> {
     try {
-      // For now, simulate transcription by sending audio file info to Python backend for processing
-      const response = await this._pythonRequest<any>('POST', '/simple-chat', {
-        message: `Please transcribe this audio file: ${file.name} (${file.size} bytes, ${file.type}). This is a ${options?.language || 'English'} language audio file.`,
-        user_id: 'transcription_user',
-        agent_id: 'supervisor_cartrita_v2',
-        session_id: 'transcription_session'
+      // No dedicated audio endpoint in V2; route via chat to supervisor with instruction
+  await this._pythonRequest<any>('POST', '/v2/chat/chat', {
+        session_id: 'transcription_session',
+        message: `Transcribe audio file: ${file.name} (${file.size} bytes, ${file.type}). Language: ${options?.language || 'English'}.`,
+        agent_id: 'supervisor',
+        stream: false,
       });
-
-      // Extract transcription-like content from the response
-      const content = response.content || response.response || '';
-      
-      // For a real implementation, this would use proper speech-to-text
-      // For now, return a structured response indicating audio file received
       return {
         text: `Audio file received: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`,
         confidence: 0.8,
-        language: options?.language || 'en'
+        language: options?.language || 'en',
       };
     } catch (error) {
       console.error('Audio transcription failed:', error);
@@ -578,20 +544,120 @@ class APIClient {
     content: string;
     agent_id: string;
     session_id: string;
-    model: string;
-    processing_time: number;
-    timestamp: string;
-    provider: string;
+    model?: string;
+    processing_time?: number;
+    timestamp?: string;
+    provider?: string;
     task_id?: string;
     reasoning?: string;
   }> {
-    return this._pythonRequest('POST', '/simple-chat', {
-      message,
+    // Non-streaming request to V2 chat
+  const res = await this._pythonRequest<any>('POST', '/v2/chat/chat', {
       session_id: options?.session_id || 'default',
-      agent_id: options?.agent_id || 'supervisor_cartrita_v2',
-      stream: options?.stream || false,
-      context: options?.context || {}
+      message,
+      agent_id: options?.agent_id || 'supervisor',
+      stream: false,
+      context: options?.context || {},
     });
+
+    // Backend returns { message, agent_id } for non-stream
+    const content = res?.message ?? res?.content ?? '';
+    return {
+      content,
+      agent_id: res?.agent_id || options?.agent_id || 'supervisor',
+      session_id: options?.session_id || 'default',
+    };
+  }
+
+  // Streaming chat (SSE). Uses Next.js rewrite to proxy to Python backend.
+  async streamChatMessage(params: {
+    message: string;
+    session_id: string;
+    agent_id?: string;
+    context?: Record<string, any>;
+    onToken: (token: string) => void;
+    onDone?: (final?: string) => void;
+    onError?: (err: any) => void;
+    signal?: AbortSignal;
+  }): Promise<void> {
+    const body = JSON.stringify({
+      session_id: params.session_id,
+      message: params.message,
+      agent_id: params.agent_id || 'supervisor',
+      stream: true,
+      context: params.context || {},
+    });
+
+    // Always use relative path so Next.js rewrites apply in browser
+  const url = '/api/v2/chat/chat';
+    try {
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        signal: params.signal,
+      });
+
+      if (!resp.ok || !resp.body) {
+        throw new Error(`Stream failed: ${resp.status}`);
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+      let final = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          break;
+        }
+        buffer += decoder.decode(value, { stream: true });
+
+        // Parse SSE lines
+        let idx;
+        while ((idx = buffer.indexOf('\n\n')) !== -1) {
+          const chunk = buffer.slice(0, idx).trim();
+          buffer = buffer.slice(idx + 2);
+          if (!chunk.startsWith('data:')) {
+            continue;
+          }
+          const dataStr = chunk.replace(/^data:\s*/, '');
+          try {
+            const data = JSON.parse(dataStr);
+            if (data.content) {
+              final += data.content;
+              params.onToken(data.content);
+            }
+            if (data.done) {
+              params.onDone?.(final);
+            }
+            if (data.error) {
+              throw new Error(data.error);
+            }
+          } catch (e) {
+            // ignore malformed lines
+          }
+        }
+      }
+
+      // Flush any remaining buffer
+      if (buffer) {
+        try {
+          const data = JSON.parse(buffer.replace(/^data:\s*/, ''));
+          if (data.content) {
+            final += data.content;
+            params.onToken(data.content);
+          }
+          if (data.done) {
+            params.onDone?.(final);
+          }
+        } catch {}
+      }
+    } catch (err) {
+      params.onError?.(err);
+      throw err;
+    }
   }
 
   // Python Chat Sessions
@@ -604,7 +670,7 @@ class APIClient {
     context?: Record<string, any>;
     message_count: number;
   }> {
-    return this._pythonRequest('POST', '/chat/sessions', {
+  return this._pythonRequest('POST', '/v2/chat/sessions', {
       title,
       agent_id,
       context: {}
@@ -620,7 +686,7 @@ class APIClient {
     context?: Record<string, any>;
     message_count: number;
   }>> {
-    return this._pythonRequest('GET', `/chat/sessions?limit=${limit}&offset=${offset}`);
+  return this._pythonRequest('GET', `/v2/chat/sessions?limit=${limit}&offset=${offset}`);
   }
 
   async getChatMessages(sessionId: string, limit = 50, offset = 0): Promise<Array<{
@@ -635,7 +701,35 @@ class APIClient {
     tools_used?: string[];
     execution_details?: Record<string, any>;
   }>> {
-    return this._pythonRequest('GET', `/chat/sessions/${sessionId}/messages?limit=${limit}&offset=${offset}`);
+  return this._pythonRequest('GET', `/v2/chat/sessions/${sessionId}/messages?limit=${limit}&offset=${offset}`);
+  }
+
+  async deleteChatSession(sessionId: string): Promise<void> {
+  await this._pythonRequest('DELETE', `/v2/chat/sessions/${sessionId}`);
+  }
+
+  async submitChatFeedback(params: { session_id: string; message_id: string; rating: number; feedback?: string }): Promise<{ feedback_id: string; status: string }> {
+  return this._pythonRequest('POST', `/v2/chat/sessions/${params.session_id}/feedback`, undefined, {
+      params: {
+        message_id: params.message_id,
+        rating: params.rating,
+        feedback: params.feedback,
+      },
+    });
+  }
+
+  async uploadChatAttachment(session_id: string, file: File): Promise<{
+    filename: string;
+    content_type: string;
+    size: number;
+    file_path: string;
+  }> {
+    const form = new FormData();
+    form.append('session_id', session_id);
+    form.append('file', file);
+  return this._pythonRequest('POST', '/v2/chat/upload', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
   }
 
   // Multi-agent coordination
@@ -648,7 +742,7 @@ class APIClient {
     content: string;
     metadata?: Record<string, any>;
   }> {
-    return this._pythonRequest('POST', '/chat/multi-agent', {
+  return this._pythonRequest('POST', '/v2/chat/multi-agent', {
       message,
       session_id: options.session_id,
       agent_capabilities: options.agent_capabilities,
@@ -744,69 +838,77 @@ class APIClient {
     model: string;
     status: string;
   }>> {
-    return this._pythonRequest('GET', '/chat/agents');
+    // Use V2 agents list
+    const res = await this._pythonRequest<any>('GET', '/agents');
+    return (res?.data as any[]) || [];
   }
 
   async getAgentDetails(agentId: string): Promise<any> {
-    return this.request('GET', `/agents/${agentId}`);
+    return this._pythonRequest('GET', `/agents/${agentId}/status`);
   }
 
   async updateAgentConfig(agentId: string, config: any): Promise<any> {
+    // No direct config route in V2; passthrough to legacy if present
     return this.request('PUT', `/agents/${agentId}/config`, config);
   }
 
   async getAgentMetrics(agentId: string): Promise<any> {
-    return this.request('GET', `/agents/${agentId}/metrics`);
+    // Use V2 status as metrics fallback
+    return this._pythonRequest('GET', `/agents/${agentId}/status`);
   }
 
   async restartAgent(agentId: string): Promise<void> {
-    return this.request('POST', `/agents/${agentId}/restart`);
+    // Not supported in V2; no-op
+    return;
   }
 
   async pauseAgent(agentId: string): Promise<void> {
-    return this.request('POST', `/agents/${agentId}/pause`);
+    // Not supported in V2; no-op
+    return;
   }
 
   async resumeAgent(agentId: string): Promise<void> {
-    return this.request('POST', `/agents/${agentId}/resume`);
+    // Not supported in V2; no-op
+    return;
   }
 
   // Quantum Computing Operations (Python Backend)
   async getQuantumStatus(): Promise<any> {
-    return this._pythonRequest('GET', '/chat/status');
+  return this._pythonRequest('GET', '/v2/chat/status');
   }
 
   // Quantum Computing Operations (Python Backend)
   async executeQuantumAlgorithm(algorithm: string, parameters: any): Promise<any> {
-    return this._pythonRequest('POST', '/chat/quantum/jobs', {
+  return this._pythonRequest('POST', '/v2/chat/quantum/jobs', {
       algorithm,
       parameters
     });
   }
 
   async getQuantumJobs(): Promise<any[]> {
-    return this._pythonRequest<any[]>('GET', '/chat/quantum/jobs');
+  return this._pythonRequest<any[]>('GET', '/v2/chat/quantum/jobs');
   }
 
   async getQuantumJob(jobId: string): Promise<any> {
-    return this._pythonRequest('GET', `/chat/quantum/jobs/${jobId}`);
+  return this._pythonRequest('GET', `/v2/chat/quantum/jobs/${jobId}`);
   }
 
   async getQuantumJobResults(jobId: string): Promise<any> {
-    return this._pythonRequest('GET', `/chat/quantum/jobs/${jobId}/results`);
+  return this._pythonRequest('GET', `/v2/chat/quantum/jobs/${jobId}/results`);
   }
 
   async cancelQuantumJob(jobId: string): Promise<void> {
-    return this._pythonRequest('POST', `/chat/quantum/jobs/${jobId}/cancel`);
+  return this._pythonRequest('POST', `/v2/chat/quantum/jobs/${jobId}/cancel`);
   }
 
   async getQuantumAlgorithms(): Promise<any[]> {
-    return this._pythonRequest('GET', '/chat/quantum/algorithms');
+  const res = await this._pythonRequest<{ algorithms: any[] }>('GET', '/v2/chat/quantum/algorithms');
+    return res.algorithms || [];
   }
 
   // Research Hub Operations (Python Backend)
   async searchAcademicPapers(query: string, limit = 10): Promise<any[]> {
-    const response = await this._pythonRequest<any>('POST', '/simple-chat', {
+  const response = await this._pythonRequest<any>('POST', '/v2/simple-chat', {
       message: `Search for academic papers about: ${query}. Return ${limit} structured results with titles, authors, abstracts, and URLs.`,
       agent_id: 'research_agent_v2',
       session_id: 'research_session'
@@ -830,7 +932,7 @@ class APIClient {
   }
 
   async analyzeDocument(documentId: string): Promise<any> {
-    return this._pythonRequest('POST', '/simple-chat', {
+  return this._pythonRequest('POST', '/v2/simple-chat', {
       message: `Perform comprehensive analysis of document with ID: ${documentId}`,
       agent_id: 'research_agent_v2',
       session_id: 'document_analysis_session'

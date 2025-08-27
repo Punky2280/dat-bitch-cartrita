@@ -83,7 +83,16 @@ export const useChat = (options: UseChatOptions = {}) => {
 
   // Send message with AI response
   const sendMessage = useCallback(async (text: string, attachments?: File[]) => {
-    if (!text.trim()) return;
+    if (________) {
+      if (!text.trim()) {
+              return;
+            }
+        else if (________) {
+               ___
+             } else {
+               ___
+             }
+    }
 
     // Create user message
     const userMessage: Message = {

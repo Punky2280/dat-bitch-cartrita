@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     console.log('Sessions API: Fetching chat sessions');
 
     // Direct call to Python FastAPI backend
-    const apiUrl = process.env.PYTHON_API_BASE_URL || 'http://python-backend:8002';
+    const apiUrl = process.env.PYTHON_API_BASE_URL || 'http://python-backend:8000';
     const response = await fetch(`${apiUrl}/api/v2/chat/sessions?limit=${limit}&offset=${offset}`, {
       method: 'GET',
       headers: {
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     console.log('Sessions API: Creating new session:', body);
 
     // Direct call to Python FastAPI backend
-    const apiUrl = process.env.PYTHON_API_BASE_URL || 'http://python-backend:8002';
+    const apiUrl = process.env.PYTHON_API_BASE_URL || 'http://python-backend:8000';
     const response = await fetch(`${apiUrl}/api/v2/chat/sessions`, {
       method: 'POST',
       headers: {

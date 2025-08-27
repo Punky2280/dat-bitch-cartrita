@@ -156,6 +156,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const [darkMode, setDarkMode] = useState(false);
   const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
   const [userProfileOpen, setUserProfileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
 
   // Get notification and user data from stores
@@ -166,6 +167,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
   useEffect(() => {
     NotificationService.getInstance();
     UserService.getInstance();
+  }, []);
+
+  // Mark mounted to stabilize hydration vs client-only state
+  useEffect(() => {
+    setMounted(true);
   }, []);
 
   // Initialize dark mode from localStorage
@@ -186,6 +192,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
   };
 
   const isActiveRoute = (href: string) => {
+    // Avoid SSR/client mismatch by deferring active state until mounted
+    if (!mounted) {
+      return false;
+    }
     if (href === '/') {
       return pathname === '/';
     }
@@ -256,10 +266,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
               
               <div className="ml-4 lg:ml-0">
                 <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {navigation.find(item => isActiveRoute(item.href))?.name || 'Cartrita V2'}
+                  Cartrita V2
                 </h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
-                  {navigation.find(item => isActiveRoute(item.href))?.description || 'Advanced AI Orchestration Platform'}
+                  Advanced AI Orchestration Platform
                 </p>
               </div>
             </div>

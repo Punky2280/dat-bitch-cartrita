@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.PYTHON_API_BASE_URL || 'http://python-backend:8002';
+const BACKEND_URL = process.env.PYTHON_API_BASE_URL || 'http://python-backend:8000';
 
 export async function POST(request: NextRequest) {
   try {

@@ -19,74 +19,52 @@ setup: ## Complete initial setup
 	@echo "📋 Running complete setup..."
 	@$(PYTHON_BUILD) setup
 
-dev: ## Start development environment
-	@echo "🚀 Starting development mode..."
-	@$(PYTHON_BUILD) dev
+dev: ## Start unified development environment (Backend on 8000 + Frontend on 3000)
+	@echo "🚀 Starting Cartrita V2 development environment..."
+	@echo "   - PostgreSQL + Redis"
+	@echo "   - Python Backend (8000) with /api/v2/* routes"
+	@echo "   - Frontend (3000) → pointing to backend"
+	docker compose up --build --remove-orphans
 
-prod: ## Deploy to production
-	@echo "🏭 Deploying to production..."
-	@$(PYTHON_BUILD) prod
+start: ## Start services in detached mode
+	@echo "▶️ Starting services in background..."
+	docker compose up -d --remove-orphans
 
-test: ## Run comprehensive test suite
-	@echo "🧪 Running tests..."
-	@$(PYTHON_BUILD) test
+stop: ## Stop all services
+	@echo "� Stopping all services..."
+	docker compose down
 
-docker: ## Docker-only build and deployment
-	@echo "🐳 Docker deployment..."
-	@$(PYTHON_BUILD) docker
+restart: ## Restart all services
+	@echo "� Restarting services..."
+	docker compose down && docker compose up -d --remove-orphans
 
-clean: ## Clean build artifacts and caches
-	@echo "🧹 Cleaning build artifacts..."
-	@$(PYTHON_BUILD) clean
+clean: ## Clean up containers and volumes
+	@echo "🧹 Cleaning up containers and volumes..."
+	docker compose down -v --remove-orphans
+	docker system prune -f
 
-# Development commands
-install: ## Install dependencies only
-	@echo "📦 Installing dependencies..."
-	@$(PYTHON_BUILD) install
+logs: ## Show logs for all services
+	@echo "📄 Showing logs for all services..."
+	docker compose logs -f
 
-lint: ## Run code linting
-	@echo "🔍 Linting code..."
-	@$(PYTHON_BUILD) lint
+logs-backend: ## Show backend logs (8000)
+	@echo "📄 Backend logs (8000)..."
+	docker compose logs -f python-backend
 
-build: ## Build frontend assets
-	@echo "🏗️ Building frontend..."
-	@$(PYTHON_BUILD) build
+logs-frontend: ## Show frontend logs (3000)
+	@echo "📄 Frontend logs (3000)..."
+	docker compose logs -f frontend
 
-start: ## Start services in development mode
-	@echo "▶️ Starting services..."
-	@$(PYTHON_BUILD) start
+status: ## Show status of all services
+	@echo "📊 Service Status:"
+	docker compose ps
 
-start-prod: ## Start services in production mode
-	@echo "▶️ Starting production services..."
-	@$(PYTHON_BUILD) start-prod
-
-health: ## Run health checks
-	@echo "🏥 Running health checks..."
-	@$(PYTHON_BUILD) health
-
-# Complete pipeline
-all: ## Run complete build pipeline
-	@echo "🎯 Running complete build pipeline..."
-	@$(PYTHON_BUILD) all
-
-# Database operations
-db-setup: ## Setup database with migrations
-	@echo "🗃️ Setting up database..."
-	@docker-compose up -d postgres redis
-	@sleep 10
-	@$(PYTHON_BUILD) setup
-
-db-migrate: ## Run database migrations only
-	@echo "🗃️ Running database migrations..."
-	@if [ -f "db-init/init.sql" ]; then \
-		psql postgresql://robert:secure_password@localhost:5432/dat-bitch-cartrita -f db-init/init.sql || true; \
-	fi
-	@for file in db-init/*.sql; do \
-		if [ -f "$$file" ]; then \
-			echo "Running migration: $$file"; \
-			psql postgresql://robert:secure_password@localhost:5432/dat-bitch-cartrita -f "$$file" || true; \
-		fi \
-	done
+health-dev: ## Check health of all development services
+	@echo "🏥 Development Health Check:"
+	@echo "Frontend (3000): $$(curl -s -w '%{http_code}' -o /dev/null http://localhost:3000 2>/dev/null || echo 'DOWN')"
+	@echo "Backend (8000): $$(curl -s -w '%{http_code}' -o /dev/null http://localhost:8000/health 2>/dev/null || echo 'DOWN')"
+	@echo "PostgreSQL (5432): $$(docker compose exec -T postgres pg_isready -h localhost -p 5432 >/dev/null 2>&1 && echo '200 OK' || echo 'DOWN')"
+	@echo "Redis (6379): $$(docker compose exec -T redis redis-cli ping >/dev/null 2>&1 && echo '200 OK' || echo 'DOWN')"
 
 # Help system
 help: ## Show this help message

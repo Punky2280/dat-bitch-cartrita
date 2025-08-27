@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     console.log('Vision Analysis: Analyzing file:', filename);
 
     // Call Python backend vision agent for analysis
-    const apiUrl = process.env.PYTHON_API_BASE_URL || 'http://python-backend:8002';
+    const apiUrl = process.env.PYTHON_API_BASE_URL || 'http://python-backend:8000';
     const response = await fetch(`${apiUrl}/api/v2/simple-chat`, {
       method: 'POST',
       headers: {

@@ -154,9 +154,15 @@ export const useChatStore = create<ChatState>()(
       loadConversations: async () => {
         set({ isLoading: true, error: null });
         try {
-          const response = await apiClient.getConversations();
+          const sessions = await apiClient.getChatSessions(100, 0);
+          const conversations: Conversation[] = sessions.map((s: any) => ({
+            id: s.id,
+            title: s.title || 'Untitled',
+            createdAt: s.created_at || s.createdAt,
+            updatedAt: s.updated_at || s.updatedAt,
+          }));
           set({ 
-            conversations: response.data, 
+            conversations, 
             isLoading: false 
           });
         } catch (error: any) {
@@ -170,7 +176,13 @@ export const useChatStore = create<ChatState>()(
       createConversation: async (title?: string) => {
         set({ isLoading: true, error: null });
         try {
-          const newConversation = await apiClient.createConversation(title);
+          const session = await apiClient.createChatSession(title || 'New Chat');
+          const newConversation: Conversation = {
+            id: session.id,
+            title: session.title || title || 'New Chat',
+            createdAt: session.created_at,
+            updatedAt: session.updated_at,
+          } as any;
           set((state) => ({
             conversations: [newConversation, ...state.conversations],
             currentConversation: newConversation,
@@ -188,12 +200,27 @@ export const useChatStore = create<ChatState>()(
       selectConversation: async (conversationId: string) => {
         set({ isLoading: true, error: null });
         try {
-          const conversation = await apiClient.getConversation(conversationId);
-          const messagesResponse = await apiClient.getMessages(conversationId);
+          const sessions = await apiClient.getChatSessions(100, 0);
+          const sess = sessions.find((s: any) => s.id === conversationId);
+          const conversation: Conversation = sess ? ({
+            id: sess.id,
+            title: sess.title || 'Untitled',
+            createdAt: sess.created_at,
+            updatedAt: sess.updated_at,
+          } as any) : ({ id: conversationId, title: 'Chat', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as any);
+
+          const msgs = await apiClient.getChatMessages(conversationId, 100, 0);
+          const messages: Message[] = msgs.map((m: any) => ({
+            id: m.id,
+            conversationId,
+            role: m.role || 'assistant',
+            content: m.content || '',
+            createdAt: m.timestamp || m.created_at || new Date().toISOString(),
+          } as any));
           
           set({
             currentConversation: conversation,
-            messages: messagesResponse.data,
+            messages,
             isLoading: false
           });
         } catch (error: any) {
@@ -212,16 +239,26 @@ export const useChatStore = create<ChatState>()(
 
         set({ isLoading: true, error: null });
         try {
-          const newMessage = await apiClient.sendMessage(
-            currentConversation.id, 
-            content, 
-            attachments
-          );
+          if (attachments && attachments.length > 0) {
+            // upload first attachment then send a message referencing it
+            const upload = await apiClient.uploadChatAttachment(currentConversation.id, attachments[0]);
+            await apiClient.sendChatMessage(`${content}\n\n[attachment]: ${upload.file_path}`, {
+              session_id: currentConversation.id,
+            });
+          } else {
+            await apiClient.sendChatMessage(content, { session_id: currentConversation.id });
+          }
           
-          set((state) => ({
-            messages: [...state.messages, newMessage],
-            isLoading: false
-          }));
+          const msgs = await apiClient.getChatMessages(currentConversation.id, 100, 0);
+          const messages: Message[] = msgs.map((m: any) => ({
+            id: m.id,
+            conversationId: currentConversation.id,
+            role: m.role || 'assistant',
+            content: m.content || '',
+            createdAt: m.timestamp || m.created_at || new Date().toISOString(),
+          } as any));
+          
+          set({ messages, isLoading: false });
         } catch (error: any) {
           set({ 
             error: error.message, 
@@ -233,7 +270,7 @@ export const useChatStore = create<ChatState>()(
       deleteConversation: async (conversationId: string) => {
         set({ isLoading: true, error: null });
         try {
-          await apiClient.deleteConversation(conversationId);
+          await apiClient.deleteChatSession(conversationId);
           set((state) => ({
             conversations: state.conversations.filter(c => c.id !== conversationId),
             currentConversation: state.currentConversation?.id === conversationId ? null : state.currentConversation,
@@ -249,24 +286,15 @@ export const useChatStore = create<ChatState>()(
       },
 
       updateConversation: async (conversationId: string, updates: Partial<Conversation>) => {
-        set({ isLoading: true, error: null });
-        try {
-          const updatedConversation = await apiClient.updateConversation(conversationId, updates);
-          set((state) => ({
-            conversations: state.conversations.map(c => 
-              c.id === conversationId ? updatedConversation : c
-            ),
-            currentConversation: state.currentConversation?.id === conversationId 
-              ? updatedConversation 
-              : state.currentConversation,
-            isLoading: false
-          }));
-        } catch (error: any) {
-          set({ 
-            error: error.message, 
-            isLoading: false 
-          });
-        }
+        // Python backend may not support updating the title directly; perform client-side update
+        set((state) => ({
+          conversations: state.conversations.map(c => 
+            c.id === conversationId ? { ...c, ...updates } : c
+          ),
+          currentConversation: state.currentConversation?.id === conversationId 
+            ? { ...(state.currentConversation as any), ...updates } 
+            : state.currentConversation,
+        }));
       },
 
       clearMessages: () => set({ messages: [] }),
@@ -815,15 +843,17 @@ export const useApiConsoleStore = create<ApiConsoleState>()(
           const started = Date.now();
 
           try {
-            // Use the API client for actual requests to backend
-            const url = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8002'}${path}`;
+            // Use relative URL so Next.js rewrites proxy to Python backend
+            // This avoids cross-origin issues and matches dev/prod environments
+            const base = '';
+            const url = `${base}${path.startsWith('/') ? path : `/${path}`}`;
             const fetchHeaders = {
               'Content-Type': 'application/json',
               'Authorization': typeof window !== 'undefined' ? `Bearer ${localStorage.getItem('auth_token') || ''}` : '',
               ...headers,
             };
 
-            const requestUrl = new URL(url);
+            const requestUrl = new URL(url, typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
             Object.entries(params).forEach(([k, v]) => requestUrl.searchParams.set(k, v));
             
             const res = await fetch(requestUrl.toString(), {

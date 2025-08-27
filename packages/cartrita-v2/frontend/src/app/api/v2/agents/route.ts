@@ -5,7 +5,7 @@ export async function GET(request: NextRequest) {
     console.log('Agents API: Fetching available agents');
 
     // Use environment variable for API URL - this works correctly for server-side calls
-    const apiUrl = process.env.PYTHON_API_BASE_URL || 'http://python-backend:8002';
+    const apiUrl = process.env.PYTHON_API_BASE_URL || 'http://python-backend:8000';
     const response = await fetch(`${apiUrl}/api/v2/agents/status`, {
       method: 'GET',
       headers: {

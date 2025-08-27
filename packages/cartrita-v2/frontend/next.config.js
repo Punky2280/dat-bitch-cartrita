@@ -20,10 +20,32 @@ const nextConfig = {
 
   // API routes configuration
   async rewrites() {
+    // Use internal container URL for server-side rewrites, fallback to localhost for development
+    const pythonBase = process.env.PYTHON_API_BASE_URL || process.env.NEXT_PUBLIC_PYTHON_API_BASE_URL || 'http://localhost:8000';
+    const apiBase = process.env.PYTHON_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
     return [
+      // Legacy proxy path
       {
         source: '/api/proxy/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8002/api'}/:path*`,
+        destination: `${apiBase}/api/:path*`,
+      },
+      // Route chat endpoints to FastAPI V2 routes
+      {
+        source: '/api/chat',
+        destination: `${pythonBase}/api/v2/chat`,
+      },
+      {
+        source: '/api/chat/:path*',
+        destination: `${pythonBase}/api/v2/chat/:path*`,
+      },
+      // Route agents list/status to FastAPI V2 routes
+      {
+        source: '/api/agents',
+        destination: `${pythonBase}/api/v2/agents`,
+      },
+      {
+        source: '/api/agents/:path*',
+        destination: `${pythonBase}/api/v2/agents/:path*`,
       },
     ];
   },

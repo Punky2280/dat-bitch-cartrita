@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Initialize metaverse session with Python backend
-    const apiUrl = process.env.PYTHON_API_BASE_URL || 'http://python-backend:8002';
+    const apiUrl = process.env.PYTHON_API_BASE_URL || 'http://python-backend:8000';
     const response = await fetch(`${apiUrl}/api/v2/simple-chat`, {
       method: 'POST',
       headers: {
