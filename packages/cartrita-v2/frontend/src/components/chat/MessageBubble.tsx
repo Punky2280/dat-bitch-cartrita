@@ -1,24 +1,45 @@
 // Simple working message bubble component
 'use client';
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Copy, 
   Pin, 
   Edit2, 
+  Edit3,
   MoreVertical, 
+  MoreHorizontal,
   ThumbsUp, 
   ThumbsDown, 
   RotateCcw,
   GitBranch,
   Eye,
   EyeOff,
-  Sparkles
+  Sparkles,
+  Clock,
+  Loader2,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  ChevronDown,
+  FileText,
+  ExternalLink,
+  Zap,
+  DollarSign,
+  Flag,
+  Maximize2,
+  Minimize2,
+  Download
 } from 'lucide-react';
 import type { Message } from '../../store/chatStore';
 import { useChatStore } from '../../store/chatStore';
-import { useThemeStore } from '../../store/additionalStores';
+import { useThemeStore, useAccessibilityStore, useAnalyticsStore } from '../../store/additionalStores';
+import MarkdownRenderer from './MarkdownRenderer';
+import AttachmentChip from './AttachmentChip';
+import ToolInvocationBlock from './ToolInvocationBlock';
+import VariantSelector from './VariantSelector';
+import BranchIndicator from './BranchIndicator';
 
 interface MessageBubbleProps {
   message: Message;
@@ -95,7 +116,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     if (message.state === 'streaming') {
       chatStore.incrementViewCount(message.id);
     }
-  }, [message.state, message.id, chatStore]);
+  }, [message.state, message.id, chatStore.incrementViewCount]);
 
   // Event handlers
   const handleCopy = async () => {

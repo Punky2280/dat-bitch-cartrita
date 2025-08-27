@@ -111,95 +111,24 @@ const ComputerUseManager: React.FC<ComputerUseManagerProps> = ({ darkMode }) => 
   const loadTasks = async () => {
     setLoading(true);
     try {
-      // Mock data - in real implementation, this would fetch from API
-      const mockTasks: ComputerUseTask[] = [
-        {
-          id: 'task-1',
-          session_id: 'session-1',
-          title: 'Web Scraping Task',
-          description: 'Extract data from e-commerce product listings',
-          status: 'completed',
-          task_type: 'data_extraction',
-          created_at: new Date(Date.now() - 3600000).toISOString(),
-          started_at: new Date(Date.now() - 3500000).toISOString(),
-          completed_at: new Date(Date.now() - 300000).toISOString(),
-          duration: 3200,
-          progress: 100,
-          steps_completed: 15,
-          total_steps: 15,
-          metadata: {
-            agent_id: 'automation_agent_v2',
-            priority: 'normal',
-            estimated_duration: 3000,
-            resources_used: ['browser', 'data_parser'],
-            tags: ['scraping', 'e-commerce']
-          },
-          config: {
-            screenshots_enabled: true,
-            logging_level: 'normal',
-            timeout_seconds: 300,
-            retry_attempts: 3,
-            auto_continue: true
-          }
-        },
-        {
-          id: 'task-2',
-          session_id: 'session-2',
-          title: 'UI Testing Automation',
-          description: 'Run comprehensive UI tests on dashboard components',
-          status: 'running',
-          task_type: 'testing',
-          created_at: new Date(Date.now() - 1800000).toISOString(),
-          started_at: new Date(Date.now() - 1200000).toISOString(),
-          progress: 65,
-          steps_completed: 13,
-          total_steps: 20,
-          current_step: 'Testing navigation components...',
-          metadata: {
-            agent_id: 'automation_agent_v2',
-            priority: 'high',
-            estimated_duration: 2400,
-            resources_used: ['browser', 'testing_framework'],
-            tags: ['testing', 'ui', 'automation']
-          },
-          config: {
-            screenshots_enabled: true,
-            logging_level: 'verbose',
-            timeout_seconds: 600,
-            retry_attempts: 2,
-            auto_continue: true
-          }
-        },
-        {
-          id: 'task-3',
-          session_id: 'session-3',
-          title: 'Document Processing',
-          description: 'Process and analyze batch of PDF documents',
-          status: 'pending',
-          task_type: 'analysis',
-          created_at: new Date(Date.now() - 300000).toISOString(),
-          progress: 0,
-          steps_completed: 0,
-          total_steps: 8,
-          metadata: {
-            agent_id: 'automation_agent_v2',
-            priority: 'low',
-            estimated_duration: 1800,
-            tags: ['documents', 'analysis']
-          },
-          config: {
-            screenshots_enabled: false,
-            logging_level: 'normal',
-            timeout_seconds: 900,
-            retry_attempts: 1,
-            auto_continue: false
-          }
-        }
-      ];
+      // Fetch real tasks from API
+      const response = await fetch('/api/v2/computer-use', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
 
-      setTasks(mockTasks);
+      if (response.ok) {
+        const data = await response.json();
+        setTasks(data.tasks || []);
+      } else {
+        console.error('Failed to load computer use tasks:', response.statusText);
+        // Set empty array if API fails
+        setTasks([]);
+      }
     } catch (error) {
       console.error('Failed to load computer use tasks:', error);
+      // Set empty array on error
+      setTasks([]);
     } finally {
       setLoading(false);
     }

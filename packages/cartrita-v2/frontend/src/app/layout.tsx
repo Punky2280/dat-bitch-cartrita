@@ -4,6 +4,7 @@ import "./globals.css";
 import "../styles/font-optimization.css";
 import { FontLoadOptimizer } from "@/components/FontLoadOptimizer";
 import { FontLoadingStatus } from "@/components/FontLoadingStatus";
+import "@/lib/immer-setup";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

@@ -43,6 +43,27 @@ import PromptSuggestions from './PromptSuggestions';
 import VoiceInput from './VoiceInputSimple';
 import ModerationOverlay from './ModerationOverlay';
 
+// Whisper API transcription function based on OpenAI 2025 best practices
+const transcribeAudio = async (audioFile: File): Promise<{ text: string }> => {
+  const formData = new FormData();
+  formData.append('file', audioFile, audioFile.name);
+  formData.append('model', 'whisper-1');
+  formData.append('language', 'en'); // Can be made configurable
+  formData.append('response_format', 'json');
+
+  const response = await fetch('/api/transcribe', {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Transcription failed: ${response.status} ${response.statusText}`);
+  }
+
+  const result = await response.json();
+  return { text: result.text || '' };
+};
+
 interface PromptInputZoneProps {
   disabled?: boolean;
   placeholder?: string;
@@ -75,9 +96,11 @@ const PromptInputZone: React.FC<PromptInputZoneProps> = ({
   // Local state
   const [inputValue, setInputValue] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [showParameterDrawer, setShowParameterDrawer] = useState(false);
   const [showToolSelector, setShowToolSelector] = useState(false);
   const [showSuggestionPanel, setShowSuggestionPanel] = useState(false);
+  const [selectedSuggestion, setSelectedSuggestion] = useState(-1);
   const [selectedRole, setSelectedRole] = useState<string>('user');
   const [selectedTools, setSelectedTools] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -198,7 +221,23 @@ const PromptInputZone: React.FC<PromptInputZoneProps> = ({
     // Navigate suggestions with arrow keys
     if (showSuggestionPanel && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
       e.preventDefault();
-      // TODO: Implement suggestion navigation
+      const suggestions = getFilteredSuggestions();
+      if (suggestions.length > 0) {
+        if (e.key === 'ArrowDown') {
+          setSelectedSuggestion(prev => prev < suggestions.length - 1 ? prev + 1 : 0);
+        } else {
+          setSelectedSuggestion(prev => prev > 0 ? prev - 1 : suggestions.length - 1);
+        }
+      }
+    }
+
+    // Select suggestion with Enter
+    if (showSuggestionPanel && e.key === 'Enter' && selectedSuggestion >= 0) {
+      e.preventDefault();
+      const suggestions = getFilteredSuggestions();
+      if (suggestions[selectedSuggestion]) {
+        handleSuggestionClick(suggestions[selectedSuggestion]);
+      }
     }
 
     // Analytics
@@ -332,13 +371,49 @@ const PromptInputZone: React.FC<PromptInputZoneProps> = ({
     }
   };
 
-  const handleVoiceToggle = () => {
+  const handleVoiceToggle = async () => {
     if (isRecording) {
       setIsRecording(false);
-      // TODO: Stop voice recording
+      // Stop voice recording
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
     } else {
       setIsRecording(true);
-      // TODO: Start voice recording
+      // Start voice recording
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const recorder = new MediaRecorder(stream);
+        const chunks: BlobPart[] = [];
+        
+        recorder.ondataavailable = (e) => {
+          chunks.push(e.data);
+        };
+        
+        recorder.onstop = async () => {
+          const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+          const audioFile = new File([audioBlob], 'voice_recording.webm', { type: 'audio/webm' });
+          
+          try {
+            // Transcribe the audio using the Whisper API
+            const result = await transcribeAudio(audioFile);
+            setInputValue(prev => prev + ' ' + result.text);
+            analyticsStore.trackEvent('voice.transcribed', { length: result.text.length });
+          } catch (error) {
+            console.error('Failed to transcribe audio:', error);
+            // Fallback: show that audio was recorded but couldn't be transcribed
+            setInputValue(prev => prev + ' [Voice recording - transcription failed]');
+          } finally {
+            stream.getTracks().forEach(track => track.stop());
+          }
+        };
+        
+        setMediaRecorder(recorder);
+        recorder.start();
+      } catch (error) {
+        console.error('Failed to start recording:', error);
+        setIsRecording(false);
+      }
     }
   };
 
@@ -353,12 +428,22 @@ const PromptInputZone: React.FC<PromptInputZoneProps> = ({
   };
 
   const handleSuggestionSelect = (suggestion: string) => {
-    setInputValue(suggestion);
+    setMessage(suggestion);
     setShowSuggestionPanel(false);
+    setSelectedSuggestion(-1);
     textareaRef.current?.focus();
   };
 
-  const handleRoleSelect = (roleId: string) => {
+  const handleSuggestionClick = (suggestion: string) => {
+    handleSuggestionSelect(suggestion);
+  };
+
+  const getFilteredSuggestions = () => {
+    return suggestions.filter(s => 
+      s.toLowerCase().includes(inputValue.toLowerCase()) ||
+      inputValue.toLowerCase().includes(s.toLowerCase())
+    );
+  };  const handleRoleSelect = (roleId: string) => {
     setSelectedRole(roleId);
     const role = roleOptions.find(r => r.id === roleId);
     if (role) {

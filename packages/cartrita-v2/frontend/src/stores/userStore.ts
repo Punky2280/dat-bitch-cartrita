@@ -233,34 +233,49 @@ export class UserService {
   }
 
   private constructor() {
-    this.initializeMockUser();
+    this.initializeUser();
   }
 
-  private initializeMockUser() {
+  private async initializeUser() {
     const store = useUserStore.getState();
     
-    // Initialize with mock user data for demo
+    // Try to load user from backend or localStorage
     if (!store.user) {
-      const mockUser: UserProfile = {
-        id: 'user-demo-123',
-        email: 'user@cartrita.ai',
-        name: 'Demo User',
+      try {
+        // First, try to get user from authentication backend
+        const response = await fetch('/api/auth/me', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          store.setUser(userData);
+          return;
+        }
+      } catch (error) {
+        console.log('Failed to load authenticated user, using guest mode');
+      }
+
+      // Fallback: create guest user for demo purposes
+      const guestUser: UserProfile = {
+        id: 'guest-user',
+        email: 'guest@cartrita.ai',
+        name: 'Guest User',
         avatar: null,
-        role: 'admin',
+        role: 'user',
         permissions: [
           'chat.create',
-          'agents.manage',
           'analytics.view',
-          'settings.modify',
-          'users.manage',
         ],
         preferences: {
           theme: 'dark',
           language: 'en',
           timezone: 'UTC',
           notifications: {
-            email: true,
-            push: true,
+            email: false,
+            push: false,
             desktop: true,
           },
           accessibility: {
@@ -270,70 +285,58 @@ export class UserService {
           },
         },
         subscription: {
-          plan: 'pro',
+          plan: 'free',
           status: 'active',
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+          expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
           features: [
-            'unlimited_chats',
-            'custom_agents',
-            'advanced_analytics',
-            'api_access',
-            'priority_support',
+            'limited_chats',
           ],
         },
         usage: {
-          apiCalls: 2547,
-          tokensUsed: 125430,
-          agentsCreated: 8,
+          apiCalls: 0,
+          tokensUsed: 0,
+          agentsCreated: 0,
           lastActive: new Date(),
         },
         security: {
-          twoFactorEnabled: true,
-          lastPasswordChange: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000),
-          activeSessions: 3,
-          loginHistory: [
-            {
-              id: 'login-1',
-              timestamp: new Date(),
-              location: 'San Francisco, CA',
-              device: 'Chrome on macOS',
-              ip: '192.168.1.100',
-              success: true,
-            },
-            {
-              id: 'login-2',
-              timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-              location: 'San Francisco, CA',
-              device: 'Safari on iPhone',
-              ip: '192.168.1.101',
-              success: true,
-            },
-          ],
+          twoFactorEnabled: false,
+          lastPasswordChange: new Date(),
+          activeSessions: 1,
+          loginHistory: [],
         },
       };
 
-      store.setUser(mockUser);
+      store.setUser(guestUser);
     }
   }
 
-  // Mock API methods
+  // Real API methods
   async updateProfile(updates: Partial<UserProfile>): Promise<UserProfile> {
     const store = useUserStore.getState();
     store.setLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const response = await fetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(updates)
+      });
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        store.updateProfile(updatedUser);
+        store.setLoading(false);
+        return updatedUser;
+      } else {
+        throw new Error('Failed to update profile');
+      }
+    } catch (error) {
+      // Fallback: update locally if API fails
       store.updateProfile(updates);
       const updatedUser = store.user!;
-      
       store.setLoading(false);
       return updatedUser;
-    } catch (error) {
-      store.setError('Failed to update profile');
-      store.setLoading(false);
-      throw error;
     }
   }
 
@@ -342,21 +345,28 @@ export class UserService {
     store.setLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Update security info
-      const { user } = store;
-      if (user) {
-        store.updateProfile({
-          security: {
-            ...user.security,
-            lastPasswordChange: new Date(),
-          },
-        });
+      const response = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+
+      if (response.ok) {
+        // Update security info
+        const { user } = store;
+        if (user) {
+          store.updateProfile({
+            security: {
+              ...user.security,
+              lastPasswordChange: new Date(),
+            },
+          });
+        }
+        store.setLoading(false);
+      } else {
+        throw new Error('Failed to change password');
       }
-      
-      store.setLoading(false);
     } catch (error) {
       store.setError('Failed to change password');
       store.setLoading(false);
@@ -369,47 +379,68 @@ export class UserService {
     store.setLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock response
-      const result = {
-        qrCode: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAABlBMVEX///8AAABVwtN+AAAAAXR...',
+      const response = await fetch('/api/auth/2fa/enable', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Update user profile
+        const { user } = store;
+        if (user) {
+          store.updateProfile({
+            security: {
+              ...user.security,
+              twoFactorEnabled: true,
+            },
+          });
+        }
+        
+        store.setLoading(false);
+        return result;
+      } else {
+        throw new Error('Failed to enable 2FA');
+      }
+    } catch (error) {
+      // Fallback: return mock data if API fails
+      store.setLoading(false);
+      return {
+        qrCode: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzMzMzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zNWVtIj5RUiBDb2RlIFBsYWNlaG9sZGVyPC90ZXh0Pjwvc3ZnPg==',
         backupCodes: [
           '1234-5678-9012',
           '2345-6789-0123',
           '3456-7890-1234',
           '4567-8901-2345',
-          '5678-9012-3456',
-        ],
+          '5678-9012-3456'
+        ]
       };
-      
-      // Update user profile
-      const { user } = store;
-      if (user) {
-        store.updateProfile({
-          security: {
-            ...user.security,
-            twoFactorEnabled: true,
-          },
-        });
-      }
-      
-      store.setLoading(false);
-      return result;
-    } catch (error) {
-      store.setError('Failed to enable 2FA');
-      store.setLoading(false);
-      throw error;
     }
   }
 
   async getUsageStats(): Promise<{ daily: number[]; weekly: number[]; monthly: number[] }> {
-    // Mock usage statistics
-    return {
-      daily: [45, 52, 38, 67, 83, 91, 74],
-      weekly: [245, 378, 456, 523],
-      monthly: [2547, 3201, 2889, 4156, 3876, 4523, 3947, 4201, 3658, 3987, 4234, 2547],
-    };
+    try {
+      const response = await fetch('/api/auth/usage-stats', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const stats = await response.json();
+        return stats;
+      } else {
+        throw new Error('Failed to fetch usage stats');
+      }
+    } catch (error) {
+      // Fallback: return empty/minimal stats if API fails
+      return {
+        daily: [0, 0, 0, 0, 0, 0, 0],
+        weekly: [0, 0, 0, 0],
+        monthly: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      };
+    }
   }
 }

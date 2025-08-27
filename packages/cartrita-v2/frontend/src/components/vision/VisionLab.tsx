@@ -198,12 +198,22 @@ export default function VisionLab() {
             
             if (newProgress >= 100) {
               clearInterval(progressInterval);
+              
+              // Get the actual result from the vision store analysis
+              let analysisResult;
+              try {
+                analysisResult = await analyzeImage(selectedImage.file, analysisType);
+              } catch (error) {
+                // If analysis fails, throw error to be caught by outer try-catch
+                throw error;
+              }
+              
               return {
                 ...task,
                 status: 'completed',
                 progress: 100,
                 endTime: new Date(),
-                result: generateMockResult(analysisType, selectedImage)
+                result: analysisResult
               };
             }
             
@@ -213,7 +223,6 @@ export default function VisionLab() {
         }));
       }, 500);
 
-      await analyzeImage(selectedImage.file, analysisType);
     } catch (error) {
       setAnalysisTasks(prev => prev.map(task => 
         task.id === taskId 
@@ -225,80 +234,6 @@ export default function VisionLab() {
             }
           : task
       ));
-    }
-  };
-
-  const generateMockResult = (type: VisionAnalysisType, image: UploadedImage) => {
-    switch (type) {
-      case 'object-detection':
-        return {
-          objects: [
-            { name: 'person', confidence: 0.95, bbox: [100, 150, 200, 350] },
-            { name: 'car', confidence: 0.87, bbox: [300, 200, 450, 300] },
-            { name: 'building', confidence: 0.92, bbox: [0, 0, 800, 200] }
-          ],
-          totalObjects: 3,
-          processingTime: (Math.random() * 5 + 3).toFixed(1) + 's'
-        };
-      case 'face-recognition':
-        return {
-          faces: [
-            { 
-              id: 'face_1', 
-              confidence: 0.94, 
-              age: Math.floor(Math.random() * 40 + 20),
-              gender: Math.random() > 0.5 ? 'male' : 'female',
-              bbox: [150, 120, 250, 250]
-            }
-          ],
-          totalFaces: 1,
-          processingTime: (Math.random() * 3 + 2).toFixed(1) + 's'
-        };
-      case 'scene-analysis':
-        return {
-          scene: 'urban street',
-          confidence: 0.89,
-          attributes: ['outdoor', 'daytime', 'cloudy', 'buildings', 'vehicles'],
-          mood: 'neutral',
-          lighting: 'natural',
-          processingTime: (Math.random() * 8 + 7).toFixed(1) + 's'
-        };
-      case 'text-extraction':
-        return {
-          text: 'STOP\nMain Street\nNo Parking',
-          confidence: 0.91,
-          language: 'en',
-          wordCount: 5,
-          processingTime: (Math.random() * 4 + 3).toFixed(1) + 's'
-        };
-      case 'image-classification':
-        return {
-          categories: [
-            { name: 'urban scene', probability: 0.85 },
-            { name: 'street photography', probability: 0.72 },
-            { name: 'architecture', probability: 0.64 }
-          ],
-          topCategory: 'urban scene',
-          processingTime: (Math.random() * 2 + 1).toFixed(1) + 's'
-        };
-      case 'emotion-detection':
-        return {
-          emotions: {
-            happy: 0.15,
-            sad: 0.05,
-            angry: 0.08,
-            surprised: 0.12,
-            neutral: 0.60
-          },
-          dominantEmotion: 'neutral',
-          processingTime: (Math.random() * 4 + 2).toFixed(1) + 's'
-        };
-      default:
-        return {
-          success: true,
-          processingTime: (Math.random() * 10 + 5).toFixed(1) + 's',
-          message: 'Analysis completed successfully'
-        };
     }
   };
 

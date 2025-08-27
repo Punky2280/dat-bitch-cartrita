@@ -4,6 +4,7 @@ import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
+import { apiClient } from '../lib/api';
 
 export interface Message {
   id: string;
@@ -46,6 +47,20 @@ export interface Message {
   // Formatting
   collapsed?: boolean;
   outline?: { title: string; level: number; anchor: string }[];
+}
+
+export interface Conversation {
+  id: string;
+  title: string;
+  messages: Message[];
+  created_at: string;
+  updated_at: string;
+  archived: boolean;
+  starred: boolean;
+  pinned: boolean;
+  deleted: boolean;
+  model?: string;
+  metadata?: Record<string, any>;
 }
 
 export interface Citation {
@@ -137,10 +152,22 @@ interface ChatState {
   
   // Performance
   virtualization_enabled: boolean;
-  message_cache: Map<string, Message>;
+  message_cache: Record<string, Message>; // Changed from Map to object
 }
 
 interface ChatActions {
+  // Conversation management
+  conversations: Conversation[];
+  createConversation: (title?: string) => Promise<Conversation>;
+  deleteConversation: (id: string) => Promise<void>;
+  archiveConversation: (id: string) => Promise<void>;
+  duplicateConversation: (id: string) => Promise<Conversation>;
+  shareConversation: (id: string) => Promise<void>;
+  updateConversationTitle: (id: string, title: string) => Promise<void>;
+  toggleStar: (id: string) => Promise<void>;
+  togglePin: (id: string) => Promise<void>;
+  exportConversation: (id: string, format?: string) => Promise<void>;
+  
   // Message management
   addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => string;
   updateMessage: (id: string, updates: Partial<Message>) => void;
@@ -235,6 +262,7 @@ export const useChatStore = create<ChatStore>()(
         persist(
           (set, get) => ({
             // Initial state
+            conversations: [],
             messages: [],
             current_conversation_id: null,
             streaming: null,
@@ -256,9 +284,119 @@ export const useChatStore = create<ChatStore>()(
             search_results: [],
             filter_pinned_only: false,
             virtualization_enabled: true,
-            message_cache: new Map(),
+            message_cache: {}, // Changed from Map to object
 
             // Actions
+            // Conversation management
+            createConversation: async (title = 'New Conversation') => {
+              const newConversation: Conversation = {
+                id: uuidv4(),
+                title,
+                messages: [],
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                archived: false,
+                starred: false,
+                pinned: false,
+                deleted: false
+              };
+
+              set((state) => {
+                state.conversations.push(newConversation);
+                state.current_conversation_id = newConversation.id;
+              });
+
+              return newConversation;
+            },
+
+            deleteConversation: async (id: string) => {
+              set((state) => {
+                const index = state.conversations.findIndex(c => c.id === id);
+                if (index !== -1) {
+                  state.conversations[index].deleted = true;
+                }
+                if (state.current_conversation_id === id) {
+                  state.current_conversation_id = null;
+                }
+              });
+            },
+
+            archiveConversation: async (id: string) => {
+              set((state) => {
+                const conversation = state.conversations.find(c => c.id === id);
+                if (conversation) {
+                  conversation.archived = !conversation.archived;
+                  conversation.updated_at = new Date().toISOString();
+                }
+              });
+            },
+
+            duplicateConversation: async (id: string) => {
+              const original = get().conversations.find(c => c.id === id);
+              if (!original) throw new Error('Conversation not found');
+
+              const duplicate: Conversation = {
+                ...original,
+                id: uuidv4(),
+                title: `${original.title} (Copy)`,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                messages: original.messages.map(msg => ({
+                  ...msg,
+                  id: uuidv4()
+                }))
+              };
+
+              set((state) => {
+                state.conversations.push(duplicate);
+              });
+
+              return duplicate;
+            },
+
+            shareConversation: async (id: string) => {
+              // Implementation for sharing - could export or generate share link
+              console.log('Sharing conversation:', id);
+            },
+
+            updateConversationTitle: async (id: string, title: string) => {
+              set((state) => {
+                const conversation = state.conversations.find(c => c.id === id);
+                if (conversation) {
+                  conversation.title = title;
+                  conversation.updated_at = new Date().toISOString();
+                }
+              });
+            },
+
+            toggleStar: async (id: string) => {
+              set((state) => {
+                const conversation = state.conversations.find(c => c.id === id);
+                if (conversation) {
+                  conversation.starred = !conversation.starred;
+                  conversation.updated_at = new Date().toISOString();
+                }
+              });
+            },
+
+            togglePin: async (id: string) => {
+              set((state) => {
+                const conversation = state.conversations.find(c => c.id === id);
+                if (conversation) {
+                  conversation.pinned = !conversation.pinned;
+                  conversation.updated_at = new Date().toISOString();
+                }
+              });
+            },
+
+            exportConversation: async (id: string, format = 'json') => {
+              const conversation = get().conversations.find(c => c.id === id);
+              if (!conversation) throw new Error('Conversation not found');
+              
+              // Implementation for exporting conversation
+              console.log('Exporting conversation:', id, 'as', format);
+            },
+
             addMessage: (messageData) => {
               const id = uuidv4();
               const message: Message = {
@@ -272,7 +410,7 @@ export const useChatStore = create<ChatStore>()(
 
               set((state) => {
                 state.messages.push(message);
-                state.message_cache.set(id, message);
+                state.message_cache[id] = message;
               });
 
               return id;
@@ -283,7 +421,7 @@ export const useChatStore = create<ChatStore>()(
                 const index = state.messages.findIndex(m => m.id === id);
                 if (index !== -1) {
                   Object.assign(state.messages[index], updates);
-                  state.message_cache.set(id, state.messages[index]);
+                  state.message_cache[id] = state.messages[index];
                 }
               });
             },
@@ -291,7 +429,7 @@ export const useChatStore = create<ChatStore>()(
             deleteMessage: (id) => {
               set((state) => {
                 state.messages = state.messages.filter(m => m.id !== id);
-                state.message_cache.delete(id);
+                delete state.message_cache[id];
                 state.selected_messages = state.selected_messages.filter(sid => sid !== id);
               });
             },
@@ -299,7 +437,7 @@ export const useChatStore = create<ChatStore>()(
             clearMessages: () => {
               set((state) => {
                 state.messages = [];
-                state.message_cache.clear();
+                state.message_cache = {};
                 state.selected_messages = [];
                 state.editing_message_id = null;
               });
@@ -415,22 +553,49 @@ export const useChatStore = create<ChatStore>()(
                     selected: true
                   });
                   msg.regeneration_id = regeneration_id;
+                  msg.state = 'streaming';
                 }
               });
 
-              // TODO: Call API to regenerate
-              // For now, simulate
-              setTimeout(() => {
+              try {
+                // Find the conversation context to regenerate the response
+                const messageIndex = state.messages.findIndex(m => m.id === id);
+                const contextMessages = state.messages.slice(0, messageIndex);
+                const lastUserMessage = contextMessages.reverse().find(m => m.role === 'user');
+                
+                if (lastUserMessage && state.current_conversation_id) {
+                  // Send regeneration request to backend
+                  const response = await apiClient.sendChatMessage(lastUserMessage.content, {
+                    session_id: state.current_conversation_id,
+                    agent_id: 'supervisor'
+                  });
+                  
+                  set((draft) => {
+                    const msg = draft.messages.find(m => m.id === id);
+                    if (msg && msg.content_variants) {
+                      const variant = msg.content_variants.find(v => v.id === variant_id);
+                      if (variant) {
+                        variant.content = response.content;
+                        msg.content = response.content;
+                        msg.state = 'complete';
+                        msg.model_used = response.model;
+                      }
+                    }
+                  });
+                }
+              } catch (error) {
+                console.error('Failed to regenerate message:', error);
                 set((draft) => {
                   const msg = draft.messages.find(m => m.id === id);
                   if (msg && msg.content_variants) {
                     const variant = msg.content_variants.find(v => v.id === variant_id);
                     if (variant) {
-                      variant.content = 'This is a regenerated response with different content.';
+                      variant.content = 'Failed to regenerate response. Please try again.';
+                      msg.state = 'error';
                     }
                   }
                 });
-              }, 1000);
+              }
 
               return regeneration_id;
             },
@@ -505,7 +670,50 @@ export const useChatStore = create<ChatStore>()(
             },
 
             mergeBranch: async (source_branch_id, target_branch_id) => {
-              // TODO: Implement branch merging logic
+              const state = get();
+              const sourceBranch = state.branches.find(b => b.id === source_branch_id);
+              const targetBranch = state.branches.find(b => b.id === target_branch_id);
+              
+              if (!sourceBranch || !targetBranch) {
+                throw new Error('Invalid branch IDs for merge operation');
+              }
+
+              try {
+                // Find messages belonging to source branch
+                const sourceMessages = state.messages.filter(m => m.branch_id === source_branch_id);
+                const targetAnchorMessage = state.messages.find(m => m.id === targetBranch.parent_message_id);
+                
+                if (!targetAnchorMessage) {
+                  throw new Error('Target branch anchor message not found');
+                }
+
+                // Merge strategy: append source branch messages after target anchor
+                const targetIndex = state.messages.findIndex(m => m.id === targetBranch.parent_message_id);
+                
+                set((draft) => {
+                  // Update source messages to belong to target branch
+                  sourceMessages.forEach(msg => {
+                    const existingMsg = draft.messages.find(m => m.id === msg.id);
+                    if (existingMsg) {
+                      existingMsg.branch_id = target_branch_id;
+                    }
+                  });
+                  
+                  // Remove source branch
+                  draft.branches = draft.branches.filter(b => b.id !== source_branch_id);
+                  
+                  // Update target branch message count
+                  const targetBranchRef = draft.branches.find(b => b.id === target_branch_id);
+                  if (targetBranchRef) {
+                    targetBranchRef.message_count += sourceMessages.length;
+                  }
+                });
+
+                console.log(`Successfully merged branch ${source_branch_id} into ${target_branch_id}`);
+              } catch (error) {
+                console.error('Failed to merge branches:', error);
+                throw error;
+              }
             },
 
             pinMessage: (id) => {
@@ -651,15 +859,133 @@ export const useChatStore = create<ChatStore>()(
             },
 
             summarizeMessage: async (id) => {
-              // TODO: Implement message summarization
+              const state = get();
+              const message = state.messages.find(m => m.id === id);
+              if (!message) {
+                throw new Error('Message not found');
+              }
+
+              try {
+                // Use the summarization capability through the chat API
+                const response = await apiClient.sendChatMessage(
+                  `Please provide a concise summary of the following text in 2-3 sentences: ${message.content}`,
+                  {
+                    session_id: state.current_conversation_id || 'summarization_session',
+                    agent_id: 'supervisor'
+                  }
+                );
+
+                set((draft) => {
+                  const msg = draft.messages.find(m => m.id === id);
+                  if (msg) {
+                    if (!msg.content_variants) {
+                      msg.content_variants = [
+                        { id: 'original', content: msg.content, selected: true }
+                      ];
+                    }
+                    msg.content_variants.push({
+                      id: 'summary',
+                      content: response.content,
+                      selected: false
+                    });
+                  }
+                });
+
+                return response.content;
+              } catch (error) {
+                console.error('Failed to summarize message:', error);
+                throw error;
+              }
             },
 
             transformTone: async (id, tone) => {
-              // TODO: Implement tone transformation
+              const state = get();
+              const message = state.messages.find(m => m.id === id);
+              if (!message) {
+                throw new Error('Message not found');
+              }
+
+              try {
+                let prompt = '';
+                switch (tone) {
+                  case 'formal':
+                    prompt = `Please rewrite the following text in a formal, professional tone: ${message.content}`;
+                    break;
+                  case 'casual':
+                    prompt = `Please rewrite the following text in a casual, conversational tone: ${message.content}`;
+                    break;
+                  case 'bullet_points':
+                    prompt = `Please rewrite the following text as clear, concise bullet points: ${message.content}`;
+                    break;
+                  default:
+                    throw new Error('Invalid tone transformation type');
+                }
+
+                const response = await apiClient.sendChatMessage(prompt, {
+                  session_id: state.current_conversation_id || 'tone_transformation_session',
+                  agent_id: 'supervisor'
+                });
+
+                set((draft) => {
+                  const msg = draft.messages.find(m => m.id === id);
+                  if (msg) {
+                    if (!msg.content_variants) {
+                      msg.content_variants = [
+                        { id: 'original', content: msg.content, selected: true }
+                      ];
+                    }
+                    msg.content_variants.push({
+                      id: `tone_${tone}`,
+                      content: response.content,
+                      selected: false
+                    });
+                  }
+                });
+
+                return response.content;
+              } catch (error) {
+                console.error('Failed to transform tone:', error);
+                throw error;
+              }
             },
 
             translateMessage: async (id, target_language) => {
-              // TODO: Implement translation
+              const state = get();
+              const message = state.messages.find(m => m.id === id);
+              if (!message) {
+                throw new Error('Message not found');
+              }
+
+              try {
+                const response = await apiClient.sendChatMessage(
+                  `Please translate the following text to ${target_language}. Maintain the original meaning and context: ${message.content}`,
+                  {
+                    session_id: state.current_conversation_id || 'translation_session',
+                    agent_id: 'supervisor'
+                  }
+                );
+
+                set((draft) => {
+                  const msg = draft.messages.find(m => m.id === id);
+                  if (msg) {
+                    if (!msg.content_variants) {
+                      msg.content_variants = [
+                        { id: 'original', content: msg.content, selected: true }
+                      ];
+                    }
+                    msg.content_variants.push({
+                      id: `translation_${target_language.toLowerCase().replace(' ', '_')}`,
+                      content: response.content,
+                      selected: false
+                    });
+                  }
+                });
+
+                return response.content;
+              } catch (error) {
+                console.error('Failed to translate message:', error);
+                throw error;
+              }
             },
 
             searchMessages: (query) => {
@@ -736,8 +1062,116 @@ export const useChatStore = create<ChatStore>()(
             },
 
             exportConversation: async (format) => {
-              // TODO: Implement conversation export
-              return '';
+              const { messages, current_conversation_id, branches } = get();
+              
+              if (messages.length === 0) {
+                return '';
+              }
+
+              try {
+                switch (format) {
+                  case 'markdown': {
+                    let markdown = `# Conversation Export\n\n`;
+                    markdown += `**Date:** ${new Date().toLocaleDateString()}\n`;
+                    markdown += `**Messages:** ${messages.length}\n\n`;
+                    
+                    messages.forEach((msg, index) => {
+                      const role = msg.role.charAt(0).toUpperCase() + msg.role.slice(1);
+                      markdown += `## ${role} ${index + 1}\n\n`;
+                      markdown += `${msg.content}\n\n`;
+                      
+                      if (msg.attachments && msg.attachments.length > 0) {
+                        markdown += `**Attachments:** ${msg.attachments.map(a => a.name).join(', ')}\n\n`;
+                      }
+                      
+                      if (msg.citations && msg.citations.length > 0) {
+                        markdown += `**References:**\n`;
+                        msg.citations.forEach((citation, i) => {
+                          markdown += `${i + 1}. [${citation.text}](${citation.url || citation.source})\n`;
+                        });
+                        markdown += `\n`;
+                      }
+                      
+                      markdown += `---\n\n`;
+                    });
+                    
+                    return markdown;
+                  }
+                  
+                  case 'json': {
+                    const exportData = {
+                      conversation_id: current_conversation_id,
+                      export_date: new Date().toISOString(),
+                      message_count: messages.length,
+                      branches,
+                      messages: messages.map(msg => ({
+                        id: msg.id,
+                        role: msg.role,
+                        content: msg.content,
+                        timestamp: msg.timestamp,
+                        model_used: msg.model_used,
+                        attachments: msg.attachments,
+                        citations: msg.citations,
+                        tool_invocations: msg.tool_invocations,
+                        tokens: msg.tokens,
+                        metadata: {
+                          pinned: msg.pinned,
+                          view_count: msg.view_count,
+                          copy_count: msg.copy_count,
+                          reaction: msg.reaction
+                        }
+                      }))
+                    };
+                    return JSON.stringify(exportData, null, 2);
+                  }
+                  
+                  case 'pdf': {
+                    // For PDF export, we'll return HTML that can be converted to PDF
+                    let html = `
+                      <html>
+                        <head>
+                          <title>Conversation Export</title>
+                          <style>
+                            body { font-family: Arial, sans-serif; margin: 40px; }
+                            .message { margin: 20px 0; padding: 15px; border-left: 3px solid #007acc; }
+                            .user { background: #f0f8ff; border-left-color: #007acc; }
+                            .assistant { background: #f8f8f8; border-left-color: #28a745; }
+                            .timestamp { color: #666; font-size: 12px; margin-top: 10px; }
+                            .attachments { margin-top: 10px; color: #555; }
+                            .citations { margin-top: 10px; font-size: 14px; }
+                          </style>
+                        </head>
+                        <body>
+                          <h1>Conversation Export</h1>
+                          <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                          <p><strong>Messages:</strong> ${messages.length}</p>
+                    `;
+                    
+                    messages.forEach((msg, index) => {
+                      html += `
+                        <div class="message ${msg.role}">
+                          <h3>${msg.role.charAt(0).toUpperCase() + msg.role.slice(1)} ${index + 1}</h3>
+                          <p>${msg.content.replace(/\n/g, '<br>')}</p>
+                          ${msg.attachments && msg.attachments.length > 0 ? 
+                            `<div class="attachments">📎 ${msg.attachments.map(a => a.name).join(', ')}</div>` : ''}
+                          ${msg.citations && msg.citations.length > 0 ? 
+                            `<div class="citations">📚 References: ${msg.citations.map(c => c.text).join(', ')}</div>` : ''}
+                          <div class="timestamp">${new Date(msg.timestamp).toLocaleString()}</div>
+                        </div>
+                      `;
+                    });
+                    
+                    html += `</body></html>`;
+                    return html;
+                  }
+                  
+                  default:
+                    throw new Error(`Unsupported export format: ${format}`);
+                }
+              } catch (error) {
+                console.error('Failed to export conversation:', error);
+                throw error;
+              }
             },
 
             exportMessage: (id, format) => {
@@ -753,11 +1187,74 @@ export const useChatStore = create<ChatStore>()(
             },
 
             reportMessage: async (id, reason) => {
-              // TODO: Implement message reporting
+              const { messages, current_conversation_id } = get();
+              const message = messages.find(m => m.id === id);
+              
+              if (!message) {
+                throw new Error('Message not found');
+              }
+
+              try {
+                // Submit report through the backend (this would typically go to a moderation system)
+                const response = await apiClient.sendChatMessage(
+                  `SYSTEM: Report message for moderation. Reason: ${reason}. Message ID: ${id}. Content preview: "${message.content.substring(0, 100)}..."`,
+                  {
+                    session_id: current_conversation_id || 'moderation_session',
+                    agent_id: 'moderation_agent_v2'
+                  }
+                );
+
+                // Update message to indicate it's been reported
+                set((draft) => {
+                  const msg = draft.messages.find(m => m.id === id);
+                  if (msg) {
+                    if (!msg.moderation_flags) {
+                      msg.moderation_flags = [];
+                    }
+                    msg.moderation_flags.push(`reported:${reason}`);
+                  }
+                });
+
+                console.log('Message reported successfully:', response);
+                return response;
+              } catch (error) {
+                console.error('Failed to report message:', error);
+                throw error;
+              }
             },
 
             requestOverride: async (id, justification) => {
-              // TODO: Implement override request
+              const { messages, current_conversation_id } = get();
+              const message = messages.find(m => m.id === id);
+              
+              if (!message) {
+                throw new Error('Message not found');
+              }
+
+              try {
+                // Submit override request through the backend
+                const response = await apiClient.sendChatMessage(
+                  `SYSTEM: Override request for moderated content. Message ID: ${id}. Justification: ${justification}. Original content: "${message.content.substring(0, 200)}..."`,
+                  {
+                    session_id: current_conversation_id || 'override_request_session',
+                    agent_id: 'moderation_agent_v2'
+                  }
+                );
+
+                // Update message to indicate override has been requested
+                set((draft) => {
+                  const msg = draft.messages.find(m => m.id === id);
+                  if (msg) {
+                    msg.override_requested = true;
+                  }
+                });
+
+                console.log('Override request submitted successfully:', response);
+                return response;
+              } catch (error) {
+                console.error('Failed to request override:', error);
+                throw error;
+              }
             },
           }),
           {

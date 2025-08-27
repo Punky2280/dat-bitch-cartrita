@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { toast } from 'react-hot-toast';
+import { useChatStore } from '@/store/chatStore';
 
 // Types
 interface FileUploadZoneProps {
@@ -94,12 +95,13 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [completedFiles, setCompletedFiles] = useState<FileMetadata[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { sessionId } = useChatStore();
 
   // File upload function
   const uploadFile = useCallback(async (file: File, uploadingFileId: string): Promise<FileMetadata> => {
     const formData = new FormData();
     formData.append('files', file);
-    formData.append('session_id', 'temp-session'); // TODO: Get actual session ID
+    formData.append('session_id', sessionId || 'default-session');
     formData.append('message_id', messageId);
 
     const abortController = new AbortController();
