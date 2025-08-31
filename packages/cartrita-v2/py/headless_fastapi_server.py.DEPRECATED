@@ -1,0 +1,470 @@
+"""
+Cartrita V2 - Headless FastAPI Server
+Python backend with computer use simulation for headless environments
+"""
+
+import asyncio
+import logging
+import os
+import sys
+from datetime import datetime
+from typing import Dict, List, Optional, Any
+from pathlib import Path
+
+import uvicorn
+from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
+
+# Request/Response Models
+class ChatRequest(BaseModel):
+    message: str
+    user_id: str = "anonymous"
+    session_id: Optional[str] = None
+    priority: str = "medium"
+    preferred_agent: Optional[str] = None
+    context: Dict[str, Any] = Field(default_factory=dict)
+
+
+class ComputerUseRequest(BaseModel):
+    task_description: str
+    user_id: str = "anonymous"
+    session_id: Optional[str] = None
+    max_iterations: int = 10
+    display_width: int = 1024
+    display_height: int = 768
+    environment: str = "headless"
+
+
+class HealthResponse(BaseModel):
+    status: str
+    version: str
+    uptime: float
+    agents_active: int
+    timestamp: str
+
+
+# FastAPI Application
+app = FastAPI(
+    title="Cartrita V2 - Headless Agent Backend",
+    description="OpenAI Responses API Multi-Agent System (Headless Mode)",
+    version="2.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
+
+# CORS Configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Global state
+server_start_time = datetime.now()
+mock_agents = {
+    "supervisor_cartrita_v2": {
+        "type": "supervisor",
+        "status": "active",
+        "capabilities": ["task_delegation", "agent_coordination", "workflow_management"]
+    },
+    "research_agent_v2": {
+        "type": "research", 
+        "status": "active",
+        "capabilities": ["web_research", "fact_checking", "data_analysis"]
+    },
+    "writer_agent_v2": {
+        "type": "writer",
+        "status": "active", 
+        "capabilities": ["content_creation", "documentation", "copywriting"]
+    },
+    "vision_agent_v2": {
+        "type": "vision",
+        "status": "active",
+        "capabilities": ["image_analysis", "ocr", "visual_recognition"]
+    },
+    "computer_use_agent_v2": {
+        "type": "computer_use",
+        "status": "active",
+        "capabilities": ["gui_automation", "desktop_control", "web_navigation"]
+    },
+    "code_writer_agent_v2": {
+        "type": "code_writer",
+        "status": "active",
+        "capabilities": ["programming", "debugging", "code_review"]
+    }
+}
+
+# Mock computer actions for demonstration
+mock_computer_actions = {
+    "screenshot": {"success": True, "description": "Screenshot captured"},
+    "click": {"success": True, "description": "Mouse click executed"},
+    "type": {"success": True, "description": "Text typed"},
+    "scroll": {"success": True, "description": "Page scrolled"},
+    "navigate": {"success": True, "description": "Navigation completed"},
+    "search": {"success": True, "description": "Search performed"}
+}
+
+# Logging setup
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("cartrita.headless")
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize the headless FastAPI application"""
+    logger.info("🚀 Starting Cartrita V2 Headless Backend")
+    logger.info("✅ All agents initialized in simulation mode")
+
+
+@app.get("/health", response_model=HealthResponse)
+async def health_check():
+    """Health check endpoint"""
+    uptime = (datetime.now() - server_start_time).total_seconds()
+    
+    return HealthResponse(
+        status="healthy",
+        version="2.0.0",
+        uptime=uptime,
+        agents_active=len(mock_agents),
+        timestamp=datetime.now().isoformat()
+    )
+
+
+@app.post("/api/v2/chat")
+async def chat_endpoint(request: ChatRequest):
+    """Main chat endpoint with intelligent agent routing"""
+    
+    try:
+        logger.info(f"💬 Chat request from {request.user_id}: {request.message[:100]}...")
+        
+        # Simulate agent routing based on message content
+        message_lower = request.message.lower()
+        
+        if any(word in message_lower for word in ["screenshot", "capture", "image"]):
+            agent_id = "computer_use_agent_v2"
+            response_content = f"""I'll take a screenshot for you! 
+
+**Computer Action Simulation:**
+1. 📸 Taking screenshot of current desktop
+2. 💾 Saving image to /tmp/cartrita_screenshots/
+3. 🔍 Analyzing screen content
+4. ✅ Screenshot captured successfully
+
+*Note: Running in headless mode - actual GUI automation requires X11 display.*"""
+            
+            computer_actions = [
+                {
+                    "action": "screenshot",
+                    "coordinates": None,
+                    "success": True,
+                    "timestamp": datetime.now().isoformat(),
+                    "description": "Desktop screenshot captured"
+                }
+            ]
+            
+        elif any(word in message_lower for word in ["search", "research", "find", "web"]):
+            agent_id = "research_agent_v2"
+            response_content = f"""I'll perform a web search for you!
+
+**Research Action Simulation:**
+1. 🔍 Analyzing search query: "{request.message}"
+2. 🌐 Connecting to search engines
+3. 📊 Gathering relevant results
+4. 🎯 Filtering and ranking information
+5. ✅ Search completed successfully
+
+*Note: With OpenAI API configured, I would provide real search results.*"""
+            
+            computer_actions = []
+            
+        elif any(word in message_lower for word in ["code", "program", "script"]):
+            agent_id = "code_writer_agent_v2"
+            response_content = f"""I'll help you with coding!
+
+**Code Generation Simulation:**
+1. 🤖 Analyzing programming request
+2. 💻 Generating code solution
+3. 🔧 Optimizing implementation
+4. 📝 Adding documentation
+5. ✅ Code ready for use
+
+*Note: With OpenAI API, I would generate actual code.*"""
+            
+            computer_actions = []
+            
+        elif any(word in message_lower for word in ["write", "create", "document"]):
+            agent_id = "writer_agent_v2"
+            response_content = f"""I'll create content for you!
+
+**Writing Action Simulation:**
+1. ✍️ Understanding content requirements
+2. 📝 Structuring document outline
+3. 🎨 Crafting engaging content
+4. 📋 Reviewing and editing
+5. ✅ Content ready for delivery
+
+*Note: With OpenAI API, I would generate actual content.*"""
+            
+            computer_actions = []
+            
+        else:
+            agent_id = "supervisor_cartrita_v2"
+            response_content = f"""Hello! I'm Cartrita, your AI operating system.
+
+**Available Capabilities:**
+• 🖥️ Computer control and automation
+• 🔍 Web research and information gathering  
+• ✍️ Content creation and writing
+• 💻 Code generation and programming
+• 🎨 Image analysis and vision tasks
+• 📊 Data analysis and insights
+
+**Current Status:** Running in demonstration mode
+**Environment:** Headless (no GUI)
+**Agents Active:** {len(mock_agents)}
+
+How can I assist you today?"""
+            
+            computer_actions = []
+        
+        return {
+            "success": True,
+            "content": response_content,
+            "agent_id": agent_id,
+            "task_id": f"task_{int(datetime.now().timestamp())}",
+            "reasoning": f"Routed to {agent_id} based on message analysis",
+            "tools_used": ["message_analysis", "agent_routing"],
+            "iterations_completed": 1,
+            "execution_time_ms": 50,
+            "computer_actions": computer_actions,
+            "metadata": {
+                "model_used": "gpt-4o-simulation",
+                "environment": "headless",
+                "timestamp": datetime.now().isoformat()
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Chat request failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v2/computer-use")
+async def computer_use_endpoint(request: ComputerUseRequest):
+    """Computer use endpoint for GUI automation simulation"""
+    
+    try:
+        logger.info(f"🖥️ Computer use request: {request.task_description[:100]}...")
+        
+        # Simulate complex computer automation
+        task_lower = request.task_description.lower()
+        
+        # Generate realistic computer actions based on task
+        computer_actions = []
+        response_content = "**Computer Automation Simulation**\n\n"
+        
+        if "screenshot" in task_lower:
+            computer_actions.append({
+                "action": "screenshot",
+                "success": True,
+                "timestamp": datetime.now().isoformat(),
+                "description": "Full desktop screenshot captured"
+            })
+            response_content += "1. 📸 Taking screenshot...\n"
+        
+        if any(word in task_lower for word in ["browser", "firefox", "chrome", "web"]):
+            computer_actions.extend([
+                {
+                    "action": "click",
+                    "coordinates": [100, 50],
+                    "success": True,
+                    "timestamp": datetime.now().isoformat(),
+                    "description": "Clicked browser icon"
+                },
+                {
+                    "action": "wait",
+                    "duration": 2000,
+                    "success": True,
+                    "timestamp": datetime.now().isoformat(),
+                    "description": "Waiting for browser to load"
+                }
+            ])
+            response_content += "2. 🌐 Opening web browser...\n"
+            response_content += "3. ⏳ Waiting for browser to load...\n"
+        
+        if any(word in task_lower for word in ["google", "search", "navigate"]):
+            computer_actions.extend([
+                {
+                    "action": "click",
+                    "coordinates": [400, 300],
+                    "success": True,
+                    "timestamp": datetime.now().isoformat(),
+                    "description": "Clicked address bar"
+                },
+                {
+                    "action": "type",
+                    "text": "google.com",
+                    "success": True,
+                    "timestamp": datetime.now().isoformat(),
+                    "description": "Typed search URL"
+                },
+                {
+                    "action": "key",
+                    "key": "Return",
+                    "success": True,
+                    "timestamp": datetime.now().isoformat(),
+                    "description": "Pressed Enter key"
+                }
+            ])
+            response_content += "4. 🔍 Navigating to Google...\n"
+            response_content += "5. ⌨️ Entering search query...\n"
+            response_content += "6. 🎯 Executing search...\n"
+        
+        # Add final screenshot
+        computer_actions.append({
+            "action": "screenshot",
+            "success": True,
+            "timestamp": datetime.now().isoformat(),
+            "description": "Final state screenshot"
+        })
+        response_content += f"7. ✅ Task completed successfully!\n\n"
+        
+        response_content += f"**Summary:**\n"
+        response_content += f"• Actions executed: {len(computer_actions)}\n"
+        response_content += f"• Success rate: 100%\n"
+        response_content += f"• Environment: Headless simulation\n"
+        response_content += f"• Total steps: {len(computer_actions)}\n\n"
+        response_content += f"*Note: In a GUI environment, these actions would control the actual desktop.*"
+        
+        return {
+            "success": True,
+            "content": response_content,
+            "agent_id": "computer_use_agent_v2",
+            "task_id": f"computer_task_{int(datetime.now().timestamp())}",
+            "session_id": f"session_{request.user_id}_{int(datetime.now().timestamp())}",
+            "computer_actions": computer_actions,
+            "task_description": request.task_description,
+            "display_config": {
+                "width": request.display_width,
+                "height": request.display_height,
+                "environment": request.environment
+            },
+            "max_iterations": request.max_iterations,
+            "iterations_completed": len(computer_actions),
+            "execution_time_ms": len(computer_actions) * 100,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Computer use request failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v2/agents/status")
+async def get_agents_status():
+    """Get status of all agents"""
+    
+    try:
+        # Simulate agent status with performance metrics
+        agent_status = {}
+        
+        for agent_id, agent_info in mock_agents.items():
+            agent_status[agent_id] = {
+                **agent_info,
+                "agent_id": agent_id,
+                "performance_metrics": {
+                    "total_tasks": 42,
+                    "successful_tasks": 40,
+                    "failed_tasks": 2,
+                    "success_rate": 95.2,
+                    "average_response_time": 245.5,
+                    "last_active": datetime.now().isoformat()
+                },
+                "tools_available": 5,
+                "uptime": (datetime.now() - server_start_time).total_seconds()
+            }
+        
+        return {
+            "success": True,
+            "agents": agent_status,
+            "manager_stats": {
+                "total_agents": len(mock_agents),
+                "active_agents": len([a for a in mock_agents.values() if a["status"] == "active"]),
+                "total_tasks_processed": 420,
+                "average_response_time": 198.3
+            },
+            "system": {
+                "python_backend_version": "2.0.0",
+                "uptime_seconds": (datetime.now() - server_start_time).total_seconds(),
+                "environment": "headless",
+                "gui_available": False,
+                "openai_configured": bool(os.getenv("OPENAI_API_KEY")),
+                "timestamp": datetime.now().isoformat()
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Get agents status failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v2/stats")
+async def get_server_stats():
+    """Get comprehensive server statistics"""
+    
+    uptime = (datetime.now() - server_start_time).total_seconds()
+    
+    return {
+        "success": True,
+        "server": {
+            "version": "2.0.0",
+            "uptime_seconds": uptime,
+            "environment": "headless",
+            "mode": "simulation",
+            "timestamp": datetime.now().isoformat()
+        },
+        "agents": {
+            "total": len(mock_agents),
+            "active": len([a for a in mock_agents.values() if a["status"] == "active"]),
+            "types": list(set(a["type"] for a in mock_agents.values()))
+        },
+        "capabilities": [
+            "Computer use simulation",
+            "Multi-agent orchestration", 
+            "Intelligent task routing",
+            "Web research simulation",
+            "Content generation",
+            "Code writing assistance",
+            "Visual analysis (when GUI available)"
+        ],
+        "api_endpoints": [
+            "POST /api/v2/chat",
+            "POST /api/v2/computer-use",
+            "GET /api/v2/agents/status",
+            "GET /api/v2/stats",
+            "GET /health",
+            "GET /docs"
+        ]
+    }
+
+
+if __name__ == "__main__":
+    # Get configuration from environment
+    port = int(os.getenv("PORT", 8003))
+    host = os.getenv("HOST", "0.0.0.0")
+    
+    logger.info(f"🚀 Starting Cartrita V2 Headless FastAPI server on {host}:{port}")
+    logger.info(f"🔧 OpenAI API configured: {bool(os.getenv('OPENAI_API_KEY'))}")
+    logger.info(f"🖥️ Running in headless mode (no GUI automation)")
+    
+    uvicorn.run(
+        "headless_fastapi_server:app",
+        host=host,
+        port=port,
+        reload=False,
+        log_level="info"
+    )

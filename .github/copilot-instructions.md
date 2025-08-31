@@ -114,3 +114,536 @@ Follow spec-first approach before coding beyond stubs:
 
 ---
 Questions or missing patterns? Propose refinement via PR with concise diff + justification.
+
+## Addendum: Copilot Agent Policy Schema v1.0.0
+The following schema and policy instance define operational governance for the coding agent. Treat this as authoritative and enforce strictly. If conflicts arise with other docs, pause, reconcile via clarification, and prefer additive alignment.
+
+```json
+{
+	"schema_version": "1.0.0",
+	"_note": "This file contains two top-level objects: 'json_schema' (the JSON Schema definition) and 'policy_instance' (an instance conforming to that schema). Split them into separate files if needed.",
+	"json_schema": {
+		"$schema": "https://json-schema.org/draft/2020-12/schema",
+		"$id": "https://example.org/schemas/copilot-agent-policy.schema.json",
+		"title": "CopilotAgentPolicy",
+		"type": "object",
+		"required": ["metadata", "rules"],
+		"additionalProperties": false,
+		"properties": {
+			"metadata": {
+				"type": "object",
+					"required": ["name", "version", "created", "description"],
+					"properties": {
+						"name": { "type": "string" },
+						"version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9_.-]+)?$" },
+						"created": { "type": "string", "format": "date-time" },
+						"updated": { "type": "string", "format": "date-time" },
+						"description": { "type": "string" },
+						"owner": { "type": "string" },
+						"contact": { "type": "string" },
+						"repository": { "type": "string" },
+						"policy_hash": { "type": "string" }
+					}
+			},
+			"rules": {
+				"type": "array",
+				"minItems": 1,
+				"items": {
+					"type": "object",
+					"required": ["id", "name", "objective", "actions"],
+					"additionalProperties": false,
+					"properties": {
+						"id": { "type": "string", "pattern": "^[0-9]+$" },
+						"name": { "type": "string" },
+						"objective": { "type": "string" },
+						"scope": {
+							"type": "array",
+							"items": { "type": "string" }
+						},
+						"triggers": {
+							"type": "array",
+							"items": { "type": "string" }
+						},
+						"prerequisites": {
+							"type": "array",
+							"items": { "type": "string" }
+						},
+						"actions": {
+							"type": "array",
+							"minItems": 1,
+							"items": {
+								"type": "object",
+								"required": ["description"],
+								"properties": {
+									"description": { "type": "string" },
+									"steps": {
+										"type": "array",
+										"items": { "type": "string" }
+									},
+									"automated": { "type": "boolean" },
+									"tools": {
+										"type": "array",
+										"items": { "type": "string" }
+									},
+									"outputs": {
+										"type": "array",
+										"items": { "type": "string" }
+									}
+								},
+								"additionalProperties": false
+							}
+						},
+						"validations": {
+							"type": "array",
+							"items": { "type": "string" }
+						},
+						"failure_conditions": {
+							"type": "array",
+							"items": { "type": "string" }
+						},
+						"enforcement": {
+							"type": "object",
+							"properties": {
+								"severity": { "type": "string", "enum": ["info", "warn", "error", "critical"] },
+								"auto_remediation": { "type": "boolean" },
+								"gating": { "type": "boolean" }
+							},
+							"additionalProperties": false
+						},
+						"logging": {
+							"type": "object",
+							"properties": {
+								"record": { "type": "boolean" },
+								"fields": {
+									"type": "array",
+									"items": { "type": "string" }
+								}
+							},
+							"additionalProperties": false
+						},
+						"metrics": {
+							"type": "object",
+							"properties": {
+								"track": { "type": "boolean" },
+								"kpis": {
+									"type": "array",
+									"items": { "type": "string" }
+								}
+							},
+							"additionalProperties": false
+						},
+						"rationale": { "type": "string" },
+						"references": {
+							"type": "object",
+							"additionalProperties": { "type": "string" }
+						},
+						"tags": {
+							"type": "array",
+							"items": { "type": "string" }
+						},
+						"status": {
+							"type": "string",
+							"enum": ["active", "deprecated", "planned"]
+						}
+					}
+				}
+			},
+			"workflows": {
+				"type": "array",
+				"items": {
+					"type": "object",
+					"required": ["id", "name", "sequence"],
+					"properties": {
+						"id": { "type": "string" },
+						"name": { "type": "string" },
+						"description": { "type": "string" },
+						"sequence": {
+							"type": "array",
+							"items": { "type": "string" }
+						}
+					},
+					"additionalProperties": false
+				}
+			},
+			"checklists": {
+				"type": "object",
+				"additionalProperties": {
+					"type": "array",
+					"items": { "type": "string" }
+				}
+			},
+			"prohibited_patterns": {
+				"type": "array",
+				"items": { "type": "string" }
+			},
+			"repository_structure": {
+				"type": "array",
+				"items": { "type": "string" }
+			},
+			"expansion_hooks": {
+				"type": "array",
+				"items": {
+					"type": "object",
+					"required": ["description"],
+					"properties": {
+						"description": { "type": "string" },
+						"status": { "type": "string", "enum": ["proposed", "accepted", "rejected"] }
+					},
+					"additionalProperties": false
+				}
+			},
+			"logging_format_examples": {
+				"type": "array",
+				"items": { "type": "string" }
+			}
+		}
+	},
+	"policy_instance": {
+		"metadata": {
+			"name": "GitHub Copilot Code Agent Policy",
+			"version": "1.0.0",
+			"created": "2025-08-18T12:35:00Z",
+			"updated": "2025-08-18T12:35:00Z",
+			"description": "Operational governance policy encoding rules for autonomous/semi-autonomous code assistant.",
+			"owner": "platform-engineering",
+			"contact": "platform@example.org",
+			"repository": "git@example.org:org/repo",
+			"policy_hash": "sha256:PLACEHOLDER_HASH"
+		},
+		"rules": [
+			{
+				"id": "1",
+					"name": "Instruction Manual Refresh",
+					"objective": "Ensure agent always uses latest project policies and architectural guidance.",
+					"scope": ["edit", "commit", "pull_request"],
+					"triggers": ["before_generation", "post_commit"],
+					"actions": [
+						{
+							"description": "Reload core documents",
+							"steps": [
+								"Read README.md",
+								"Read CONTRIBUTING.md",
+								"Read ARCHITECTURE.md if exists",
+								"Read ADR docs",
+								"Read agent addendum file"
+							],
+							"automated": true,
+							"tools": ["filesystem"],
+							"outputs": ["log:INSTRUCTION_REFRESH"]
+						}
+					],
+					"validations": [
+						"Detect conflicting deprecated modules",
+						"Abort if discrepancies unresolved"
+					],
+					"failure_conditions": [
+						"Outdated patterns used",
+						"Missing newly introduced constraints"
+					],
+					"enforcement": { "severity": "error", "auto_remediation": false, "gating": true },
+					"logging": { "record": true, "fields": ["timestamp", "changed_files", "conflicts"] },
+					"metrics": { "track": true, "kpis": ["refresh_latency_ms"] },
+					"rationale": "Prevents policy drift.",
+					"references": {
+						"docs": "README.md",
+						"addendum": "docs/agent/AGENT_RULES.md"
+					},
+					"tags": ["governance", "consistency"],
+					"status": "active"
+			},
+			{
+				"id": "2",
+				"name": "Task Documentation",
+				"objective": "Maintain traceable change history and rationale.",
+				"actions": [
+					{
+						"description": "Update mandatory documents",
+						"steps": [
+							"Append CHANGELOG.md under Unreleased",
+							"Update docblocks for public APIs",
+							"Update ADR if architecture changed",
+							"Append AGENT TASK LOG to PR body"
+						],
+						"automated": true,
+						"outputs": ["CHANGELOG.md", "PR body log block"]
+					}
+				],
+				"validations": [
+					"Ensure log contains Task ID",
+					"Ensure impacted files listed"
+				],
+				"failure_conditions": [
+					"Missing changelog entry",
+					"No rationale recorded"
+				],
+				"enforcement": { "severity": "error", "auto_remediation": true, "gating": true },
+				"logging": { "record": true, "fields": ["task_id", "files_impacted"] },
+				"metrics": { "track": true, "kpis": ["documentation_completeness_rate"] },
+				"rationale": "Improves auditability.",
+				"references": { "template": "PR_TEMPLATE.md" },
+				"tags": ["documentation", "traceability"],
+				"status": "active"
+			},
+			{
+				"id": "3",
+				"name": "Dependency Validation",
+				"objective": "Keep dependencies current and secure without introducing instability.",
+				"actions": [
+					{
+						"description": "Scan and selectively upgrade dependencies",
+						"steps": [
+							"Run outdated scan (ecosystem-specific)",
+							"Filter non-major upgrades",
+							"Apply upgrades",
+							"Run tests, lint, type check, security scan",
+							"Record diff to DEPENDENCY_UPDATES.md"
+						],
+						"automated": true,
+						"tools": ["package_manager", "security_scanner"],
+						"outputs": ["DEPENDENCY_UPDATES.md"]
+					}
+				],
+				"validations": [
+					"All tests pass",
+					"Security audit clean"
+				],
+				"failure_conditions": [
+					"Silent major version bump",
+					"Introduced vulnerable package"
+				],
+				"enforcement": { "severity": "error", "auto_remediation": false, "gating": true },
+				"logging": { "record": true, "fields": ["updated_packages", "audit_status"] },
+				"metrics": { "track": true, "kpis": ["upgrade_success_rate", "audit_fail_count"] },
+				"rationale": "Balances freshness and stability.",
+				"references": { "policy": "DEPENDENCY_UPDATES.md" },
+				"tags": ["dependencies", "security"],
+				"status": "active"
+			},
+			{
+				"id": "4",
+				"name": "External Research",
+				"objective": "Discover improvements and avoid obsolete practices.",
+				"actions": [
+					{
+						"description": "Perform controlled web research",
+						"steps": [
+							"Query official docs first",
+							"Collect candidate improvements",
+							"Store summary in date-stamped note"
+						],
+						"automated": false,
+						"outputs": ["RESEARCH_NOTES/<date>-<topic>.md"]
+					}
+				],
+				"validations": ["Mark unverified items as CANDIDATE"],
+				"failure_conditions": ["Unverified code adopted directly"],
+				"enforcement": { "severity": "warn", "auto_remediation": false, "gating": false },
+				"logging": { "record": true, "fields": ["sources", "applied"] },
+				"metrics": { "track": true, "kpis": ["research_to_adoption_ratio"] },
+				"rationale": "Encourages informed evolution.",
+				"references": { "directory": "docs/agent/RESEARCH_NOTES/" },
+				"tags": ["research", "innovation"],
+				"status": "active"
+			},
+			{
+				"id": "5",
+				"name": "Performance Optimization",
+				"objective": "Maintain or improve latency and efficiency.",
+				"actions": [
+					{
+						"description": "Benchmark before and after changes",
+						"steps": [
+							"Run baseline benchmark",
+							"Implement change",
+							"Run post-change benchmark",
+							"Record metrics delta"
+						],
+						"automated": true,
+						"tools": ["benchmark_tool"],
+						"outputs": ["scripts/bench/*", "benchmark_log"]
+					}
+				],
+				"validations": ["Significant regressions flagged"],
+				"failure_conditions": ["Unexplained >10% regression"],
+				"enforcement": { "severity": "error", "auto_remediation": false, "gating": true },
+				"logging": { "record": true, "fields": ["component", "latency_before", "latency_after", "delta_pct"] },
+				"metrics": { "track": true, "kpis": ["median_latency", "regression_count"] },
+				"rationale": "Prevents gradual performance decay.",
+				"references": { "bench_dir": "scripts/bench/" },
+				"tags": ["performance"],
+				"status": "active"
+			},
+			{
+				"id": "6",
+				"name": "No Placeholders",
+				"objective": "Prevent incomplete or misleading artifacts in production code.",
+				"actions": [
+					{
+						"description": "Scan diffs for placeholder tokens",
+						"steps": [
+							"Search for TODO, FIXME, placeholder, lorem, mock data",
+							"Exclude /tests/ directory",
+							"Fail if found outside allowed scope"
+						],
+						"automated": true,
+						"outputs": ["placeholder_scan_report"]
+					}
+				],
+				"validations": ["All new code free of placeholders"],
+				"failure_conditions": ["Placeholder outside test fixtures"],
+				"enforcement": { "severity": "error", "auto_remediation": true, "gating": true },
+				"logging": { "record": true, "fields": ["violations"] },
+				"metrics": { "track": true, "kpis": ["placeholder_violation_count"] },
+				"rationale": "Ensures integrity of delivered features.",
+				"references": { "tests_dir": "tests/" },
+				"tags": ["quality", "integrity"],
+				"status": "active"
+			},
+			{
+				"id": "7",
+				"name": "Historical Search Before New File",
+				"objective": "Preserve continuity and avoid divergent patterns.",
+				"actions": [
+					{
+						"description": "Search repository history",
+						"steps": [
+							"git log for deleted similar files",
+							"Extract naming conventions",
+							"Document origin in header if reused"
+						],
+						"automated": false
+					}
+				],
+				"validations": ["Header includes origin when applicable"],
+					"failure_conditions": ["New file duplicates existing pattern without reference"],
+					"enforcement": { "severity": "warn", "auto_remediation": false, "gating": false },
+					"logging": { "record": true, "fields": ["new_file", "origin_commit"] },
+					"metrics": { "track": true, "kpis": ["historical_reference_rate"] },
+					"rationale": "Reduces style fragmentation.",
+					"references": { "command": "git log --diff-filter=D --summary" },
+					"tags": ["history", "consistency"],
+					"status": "active"
+			},
+			{
+				"id": "8",
+				"name": "Regenerate Problematic Files",
+				"objective": "Replace severely degraded files cleanly.",
+				"actions": [
+					{
+						"description": "Assess file for regeneration triggers",
+						"steps": [
+							"Evaluate coverage",
+							"Assess style fragmentation",
+							"Check security flags",
+							"If triggered, move old to legacy/ and recreate"
+						],
+						"automated": false,
+						"outputs": ["legacy/<file>", "new file"]
+					}
+				],
+				"validations": ["REGEN_NOTE added"],
+				"failure_conditions": ["Patched instead of regeneration when threshold crossed"],
+				"enforcement": { "severity": "error", "auto_remediation": false, "gating": true },
+				"logging": { "record": true, "fields": ["file", "reason"] },
+				"metrics": { "track": true, "kpis": ["regenerations_count"] },
+				"rationale": "Prevents compounding technical debt.",
+				"references": { "legacy_dir": "legacy/" },
+				"tags": ["refactor", "debt"],
+				"status": "active"
+			},
+			{
+				"id": "9",
+				"name": "System & Tooling Update",
+				"objective": "Keep build, CI, and toolchains aligned with policy.",
+				"actions": [
+					{
+						"description": "Check toolchain consistency",
+						"steps": [
+							"Verify versions in .tool-versions / eng/versions.json",
+							"Detect CI config drift",
+							"Update AGENT_STATUS.md snapshot"
+						],
+						"automated": true,
+						"outputs": ["AGENT_STATUS.md"]
+					}
+				],
+				"validations": ["All pinned versions consistent"],
+				"failure_conditions": ["CI config stale vs policy"],
+				"enforcement": { "severity": "warn", "auto_remediation": true, "gating": false },
+				"logging": { "record": true, "fields": ["tool_versions", "drift"] },
+				"metrics": { "track": true, "kpis": ["tool_drift_events"] },
+				"rationale": "Ensures reproducibility.",
+				"references": { "status_file": "AGENT_STATUS.md" },
+				"tags": ["hygiene", "tooling"],
+				"status": "active"
+			}
+		],
+		"workflows": [
+			{
+				"id": "wf_default",
+				"name": "Default Change Workflow",
+				"description": "Standard end-to-end operational sequence",
+				"sequence": [
+					"1",
+					"2",
+					"3",
+					"4",
+					"5",
+					"6",
+					"7",
+					"8",
+					"5",
+					"9"
+				]
+			}
+		],
+		"checklists": {
+			"pre_commit": [
+				"Instruction refresh performed",
+				"Public API docs updated",
+				"No placeholders outside tests",
+				"Dependency changes audited",
+				"Performance benchmarks run (if applicable)",
+				"Regenerated files justified",
+				"Security & license scans passed",
+				"Changelog updated"
+			]
+		},
+		"prohibited_patterns": [
+			"Silent dependency major bumps",
+			"Feature stubs with unimplemented logic in production code",
+			"Editing corrupted legacy file inline",
+			"Skipping performance validation on critical path",
+			"Undocumented architectural divergence",
+			"Generated artifact without source spec"
+		],
+		"repository_structure": [
+			"docs/agent/AGENT_RULES.md",
+			"docs/agent/RESEARCH_NOTES/",
+			"docs/adr/",
+			"AGENT_STATUS.md",
+			"DEPENDENCY_UPDATES.md",
+			"scripts/bench/",
+			"legacy/"
+		],
+		"expansion_hooks": [
+			{
+				"description": "Add SBOM generation via CycloneDX",
+				"status": "proposed"
+			},
+			{
+				"description": "Static complexity gate enforcement",
+				"status": "proposed"
+			},
+			{
+				"description": "Automated Conventional Commit linting",
+				"status": "proposed"
+			}
+		],
+		"logging_format_examples": [
+			"[AGENT_EXECUTION] Instruction_Refresh=OK Dependencies=updated:[...] audit=clean Regeneration=files:[...]",
+			"[BENCH] component=auth pre_ms=18 post_ms=9 delta_pct=-50 tool=hyperfine"
+		]
+	}
+}
+```

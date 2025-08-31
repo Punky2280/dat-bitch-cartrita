@@ -36,3 +36,74 @@ Thumbs.db
 
 # Secret scanning baseline
 .secrets.baseline
+# Additional security patterns
+**/*.key
+**/*.pem
+**/*.p12
+**/*.pfx
+**/*secret*
+**/*private*
+**/secrets/
+**/config/secrets/
+
+# Python cache and build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Next.js
+.next/
+out/
+
+# Docker
+.dockerignore.bak
+
+# Temporary files and reports
+*.md.bak
+*REPORT*.md
+*STATUS*.md
+*LOG*.md
+*PHASE*.md
+*COMPLETION*.md
+*analysis*.json
+*test-*.js
+*test-*.mjs
+*functionality*.json
+*validation*.json
+*report-*.json
+*.pid
+.fastapi.pid
+
+# Build artifacts
+.turbo/
+.pytest_cache/
+.cache/
+coverage/
+.nyc_output/
+*.tgz
+*.tar.gz
+
+# Temporary wolf files
+.wolf*
+
+# Editor temporary files
+*.tmp
+*.bak
+*~

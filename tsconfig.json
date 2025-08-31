@@ -3,33 +3,28 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "strict": true,
-    "esModuleInterop": true,
+    "lib": ["ES2022", "DOM"],
+    "allowJs": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "jsx": "react-jsx",
+    "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "moduleDetection": "force",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "inlineSourceMap": true,
+    "jsx": "react-jsx"
   },
-  "include": [
-    "packages/backend/src/**/*.ts",
-    "packages/backend/src/**/*.js",
-    "packages/shared/src/**/*.ts",
-    "packages/shared/src/**/*.js",
-    "packages/orchestrator/src/**/*.ts",
-    "packages/orchestrator/src/**/*.js",
-    "packages/supervisor-intelligence/src/**/*.ts",
-    "packages/supervisor-intelligence/src/**/*.js",
-    "packages/mcp-core/src/**/*.ts",
-    "packages/mcp-testing/src/**/*.ts"
-  ],
+  "include": [],
   "exclude": [
     "node_modules",
-    "packages/backend/src/opentelemetry/upstream/**",
-  "packages/backend/src/opentelemetry/upstream-source/**",
-  "packages/backend/src/opentelemetry/contrib/**",
-  "packages/backend/src/mcp/**",
     "dist",
-    "build"
+    "build",
+    "coverage"
   ]
 }

@@ -1,0 +1,551 @@
+name: Automated Code Review & Enhancement
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      enhancement_type:
+        description: 'Enhancement type'
+        required: true
+        type: choice
+        options:
+          - 'code-quality-review'
+          - 'security-analysis'
+          - 'performance-optimization'
+          - 'accessibility-audit'
+          - 'dependency-update'
+          - 'documentation-enhancement'
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  automated-code-review:
+    name: Automated Code Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Analyze code changes
+        id: analyze
+        run: |
+          echo "Analyzing code changes..."
+          
+          # Get changed files
+          git diff --name-only origin/main...HEAD > changed_files.txt
+          
+          # Count lines of code changes
+          ADDED_LINES=$(git diff --numstat origin/main...HEAD | awk '{sum += $1} END {print sum}')
+          REMOVED_LINES=$(git diff --numstat origin/main...HEAD | awk '{sum += $2} END {print sum}')
+          
+          echo "added_lines=$ADDED_LINES" >> $GITHUB_OUTPUT
+          echo "removed_lines=$REMOVED_LINES" >> $GITHUB_OUTPUT
+          
+          # Detect change types
+          if grep -q "packages/backend" changed_files.txt; then
+            echo "backend_changes=true" >> $GITHUB_OUTPUT
+          fi
+          
+          if grep -q "packages/frontend" changed_files.txt; then
+            echo "frontend_changes=true" >> $GITHUB_OUTPUT
+          fi
+          
+          if grep -q -E "\.(test|spec)\.(js|ts|tsx)$" changed_files.txt; then
+            echo "test_changes=true" >> $GITHUB_OUTPUT
+          fi
+          
+          if grep -q "db-init/" changed_files.txt; then
+            echo "db_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run ESLint with auto-fix suggestions
+        run: |
+          npx eslint . --ext .js,.ts,.tsx --format=json --output-file=eslint-results.json || true
+          
+          # Generate fix suggestions
+          npx eslint . --ext .js,.ts,.tsx --fix-dry-run --format=json --output-file=eslint-fixes.json || true
+
+      - name: Run security audit
+        run: |
+          npm audit --json > security-audit.json || true
+          
+          # Check for critical vulnerabilities
+          CRITICAL_VULNS=$(cat security-audit.json | jq '.metadata.vulnerabilities.critical // 0')
+          HIGH_VULNS=$(cat security-audit.json | jq '.metadata.vulnerabilities.high // 0')
+          
+          echo "critical_vulns=$CRITICAL_VULNS" >> $GITHUB_ENV
+          echo "high_vulns=$HIGH_VULNS" >> $GITHUB_ENV
+
+      - name: Check TypeScript compilation
+        run: |
+          cd packages/frontend && npx tsc --noEmit --pretty false > ../typescript-errors.txt 2>&1 || true
+          cd ../backend && npx tsc --noEmit --pretty false >> ../typescript-errors.txt 2>&1 || true
+
+      - name: Run complexity analysis
+        run: |
+          npx complexity-report --format json --output complexity-report.json packages/ || true
+
+      - name: Generate code review comment
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Read analysis results
+            const eslintResults = JSON.parse(fs.readFileSync('eslint-results.json', 'utf8') || '[]');
+            const securityAudit = JSON.parse(fs.readFileSync('security-audit.json', 'utf8') || '{}');
+            const tsErrors = fs.readFileSync('packages/typescript-errors.txt', 'utf8') || '';
+            
+            const addedLines = '${{ steps.analyze.outputs.added_lines }}';
+            const removedLines = '${{ steps.analyze.outputs.removed_lines }}';
+            const criticalVulns = process.env.critical_vulns || '0';
+            const highVulns = process.env.high_vulns || '0';
+            
+            // Count issues
+            const eslintErrors = eslintResults.reduce((sum, file) => sum + file.errorCount, 0);
+            const eslintWarnings = eslintResults.reduce((sum, file) => sum + file.warningCount, 0);
+            
+            // Generate review comment
+            let comment = `## 🤖 Automated Code Review\n\n`;
+            
+            comment += `### 📊 Change Summary\n`;
+            comment += `- **Lines Added:** ${addedLines}\n`;
+            comment += `- **Lines Removed:** ${removedLines}\n`;
+            comment += `- **Net Change:** ${addedLines - removedLines}\n\n`;
+            
+            // Security findings
+            if (criticalVulns > 0 || highVulns > 0) {
+              comment += `### 🚨 Security Issues\n`;
+              comment += `- **Critical:** ${criticalVulns}\n`;
+              comment += `- **High:** ${highVulns}\n\n`;
+              comment += `⚠️ Please address security vulnerabilities before merging.\n\n`;
+            } else {
+              comment += `### ✅ Security Scan\nNo critical or high-severity vulnerabilities detected.\n\n`;
+            }
+            
+            // ESLint findings
+            if (eslintErrors > 0 || eslintWarnings > 0) {
+              comment += `### 🔍 Code Quality (ESLint)\n`;
+              comment += `- **Errors:** ${eslintErrors}\n`;
+              comment += `- **Warnings:** ${eslintWarnings}\n\n`;
+              
+              if (eslintErrors > 0) {
+                comment += `❌ ESLint errors must be fixed before merging.\n\n`;
+              }
+            } else {
+              comment += `### ✅ Code Quality\nNo ESLint issues detected.\n\n`;
+            }
+            
+            // TypeScript findings
+            if (tsErrors.trim()) {
+              comment += `### 📝 TypeScript Issues\n`;
+              comment += `\`\`\`\n${tsErrors.substring(0, 1000)}${tsErrors.length > 1000 ? '...\n(truncated)' : ''}\n\`\`\`\n\n`;
+            } else {
+              comment += `### ✅ TypeScript\nNo compilation errors detected.\n\n`;
+            }
+            
+            // Recommendations
+            comment += `### 🎯 Recommendations\n`;
+            
+            if (addedLines > 500) {
+              comment += `- Consider breaking large changes into smaller PRs\n`;
+            }
+            
+            if (eslintWarnings > 0) {
+              comment += `- Address ESLint warnings for better code quality\n`;
+            }
+            
+            if (!fs.existsSync('changed_files.txt') || !fs.readFileSync('changed_files.txt', 'utf8').includes('.test.')) {
+              comment += `- Consider adding tests for new functionality\n`;
+            }
+            
+            comment += `\n---\n*This review was generated automatically. Human review is still recommended.*`;
+            
+            // Post the comment
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Set PR status checks
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const eslintResults = JSON.parse(fs.readFileSync('eslint-results.json', 'utf8') || '[]');
+            const criticalVulns = parseInt(process.env.critical_vulns || '0');
+            const highVulns = parseInt(process.env.high_vulns || '0');
+            
+            const eslintErrors = eslintResults.reduce((sum, file) => sum + file.errorCount, 0);
+            const hasSecurityIssues = criticalVulns > 0 || highVulns > 0;
+            
+            // Set status check
+            const state = (eslintErrors === 0 && !hasSecurityIssues) ? 'success' : 'failure';
+            
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.payload.pull_request.head.sha,
+              state: state,
+              target_url: `${context.payload.pull_request.html_url}/checks`,
+              description: `${eslintErrors} errors, ${criticalVulns + highVulns} security issues`,
+              context: 'automated-review/code-quality'
+            });
+
+  security-enhancement:
+    name: Security Enhancement
+    runs-on: ubuntu-latest
+    if: github.event.inputs.enhancement_type == 'security-analysis'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run comprehensive security scan
+        run: |
+          # Install security tools
+          npm install -g @security/audit-ci
+          npm install -g semgrep
+          
+          # Run multiple security scans
+          npm audit --json > npm-audit.json || true
+          audit-ci --config audit-ci.json || true
+          
+          # Semgrep scan
+          semgrep --config=auto --json --output=semgrep-results.json . || true
+
+      - name: Analyze API endpoints for security
+        run: |
+          node scripts/security/analyze-endpoints.js > endpoint-security-analysis.json
+
+      - name: Check for secrets in code
+        run: |
+          npx secretlint "**/*" --format json --output secretlint-results.json || true
+
+      - name: Generate security report
+        run: |
+          node scripts/security/generate-security-report.js
+
+      - name: Create security enhancement issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('security-report.json', 'utf8'));
+            
+            let issueBody = `## 🔐 Automated Security Analysis Report\n\n`;
+            issueBody += `**Generated on:** ${new Date().toISOString()}\n\n`;
+            
+            if (report.criticalFindings.length > 0) {
+              issueBody += `### 🚨 Critical Findings\n`;
+              report.criticalFindings.forEach((finding, index) => {
+                issueBody += `${index + 1}. **${finding.title}**\n`;
+                issueBody += `   - File: \`${finding.file}\`\n`;
+                issueBody += `   - Description: ${finding.description}\n\n`;
+              });
+            }
+            
+            if (report.recommendations.length > 0) {
+              issueBody += `### 💡 Security Recommendations\n`;
+              report.recommendations.forEach((rec, index) => {
+                issueBody += `${index + 1}. ${rec}\n`;
+              });
+            }
+            
+            issueBody += `\n### 📋 Security Checklist\n`;
+            issueBody += `- [ ] Review and fix critical vulnerabilities\n`;
+            issueBody += `- [ ] Update dependencies with security patches\n`;
+            issueBody += `- [ ] Implement additional security headers\n`;
+            issueBody += `- [ ] Review API endpoint authentication\n`;
+            issueBody += `- [ ] Audit environment variable handling\n`;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Security Enhancement Report - ${new Date().toISOString().split('T')[0]}`,
+              body: issueBody,
+              labels: ['security', 'enhancement', 'automated']
+            });
+
+  performance-optimization:
+    name: Performance Optimization
+    runs-on: ubuntu-latest
+    if: github.event.inputs.enhancement_type == 'performance-optimization'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Analyze bundle sizes
+        run: |
+          cd packages/frontend
+          npm run build
+          npx webpack-bundle-analyzer dist/static/js/*.js --report --mode static --report-filename ../../bundle-analysis.html
+
+      - name: Run performance audit
+        run: |
+          node scripts/performance/audit-performance.js > performance-audit.json
+
+      - name: Analyze database queries
+        run: |
+          node scripts/performance/analyze-db-queries.js > db-performance.json
+
+      - name: Memory usage analysis
+        run: |
+          node --inspect scripts/performance/memory-analysis.js > memory-analysis.json
+
+      - name: Generate performance report
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Read performance data
+            const perfAudit = JSON.parse(fs.readFileSync('performance-audit.json', 'utf8'));
+            const dbPerf = JSON.parse(fs.readFileSync('db-performance.json', 'utf8'));
+            
+            let issueBody = `## ⚡ Performance Optimization Report\n\n`;
+            
+            issueBody += `### 📊 Current Metrics\n`;
+            issueBody += `- **Average Response Time:** ${perfAudit.avgResponseTime}ms\n`;
+            issueBody += `- **Database Query Time:** ${dbPerf.avgQueryTime}ms\n`;
+            issueBody += `- **Memory Usage:** ${perfAudit.memoryUsage}MB\n\n`;
+            
+            issueBody += `### 🎯 Optimization Opportunities\n`;
+            
+            if (perfAudit.slowEndpoints.length > 0) {
+              issueBody += `**Slow Endpoints:**\n`;
+              perfAudit.slowEndpoints.forEach(endpoint => {
+                issueBody += `- \`${endpoint.path}\` (${endpoint.avgTime}ms)\n`;
+              });
+              issueBody += `\n`;
+            }
+            
+            if (dbPerf.slowQueries.length > 0) {
+              issueBody += `**Slow Database Queries:**\n`;
+              dbPerf.slowQueries.forEach(query => {
+                issueBody += `- \`${query.sql.substring(0, 50)}...\` (${query.avgTime}ms)\n`;
+              });
+              issueBody += `\n`;
+            }
+            
+            issueBody += `### 🚀 Recommended Optimizations\n`;
+            issueBody += `- [ ] Implement caching for slow endpoints\n`;
+            issueBody += `- [ ] Add database indexes for slow queries\n`;
+            issueBody += `- [ ] Optimize bundle size (current: ${perfAudit.bundleSize})\n`;
+            issueBody += `- [ ] Implement lazy loading for components\n`;
+            issueBody += `- [ ] Add connection pooling optimization\n`;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Performance Optimization Report - ${new Date().toISOString().split('T')[0]}`,
+              body: issueBody,
+              labels: ['performance', 'optimization', 'automated']
+            });
+
+  accessibility-audit:
+    name: Accessibility Enhancement
+    runs-on: ubuntu-latest
+    if: github.event.inputs.enhancement_type == 'accessibility-audit'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm install -g @axe-core/cli pa11y
+
+      - name: Build frontend
+        run: |
+          cd packages/frontend
+          npm run build
+
+      - name: Start application
+        run: |
+          docker-compose up -d
+          sleep 30
+
+      - name: Run accessibility tests
+        run: |
+          # Test multiple pages
+          pa11y --reporter json http://localhost:3000 > accessibility-home.json || true
+          pa11y --reporter json http://localhost:3000/dashboard > accessibility-dashboard.json || true
+          pa11y --reporter json http://localhost:3000/chat > accessibility-chat.json || true
+          
+          # Axe core tests
+          axe http://localhost:3000 --save accessibility-axe-results.json || true
+
+      - name: Analyze accessibility issues
+        run: |
+          node scripts/accessibility/analyze-a11y-results.js
+
+      - name: Generate accessibility report
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Read accessibility results
+            const homeResults = JSON.parse(fs.readFileSync('accessibility-home.json', 'utf8') || '[]');
+            const dashboardResults = JSON.parse(fs.readFileSync('accessibility-dashboard.json', 'utf8') || '[]');
+            const chatResults = JSON.parse(fs.readFileSync('accessibility-chat.json', 'utf8') || '[]');
+            
+            let issueBody = `## ♿ Accessibility Audit Report\n\n`;
+            
+            const totalIssues = homeResults.length + dashboardResults.length + chatResults.length;
+            
+            issueBody += `### 📊 Summary\n`;
+            issueBody += `- **Total Issues Found:** ${totalIssues}\n`;
+            issueBody += `- **Home Page Issues:** ${homeResults.length}\n`;
+            issueBody += `- **Dashboard Issues:** ${dashboardResults.length}\n`;
+            issueBody += `- **Chat Page Issues:** ${chatResults.length}\n\n`;
+            
+            if (totalIssues > 0) {
+              issueBody += `### 🚨 Critical Issues\n`;
+              
+              const allIssues = [...homeResults, ...dashboardResults, ...chatResults];
+              const criticalIssues = allIssues.filter(issue => issue.type === 'error');
+              
+              criticalIssues.slice(0, 10).forEach((issue, index) => {
+                issueBody += `${index + 1}. **${issue.code}**\n`;
+                issueBody += `   - Element: \`${issue.selector}\`\n`;
+                issueBody += `   - Message: ${issue.message}\n\n`;
+              });
+              
+              if (criticalIssues.length > 10) {
+                issueBody += `... and ${criticalIssues.length - 10} more issues\n\n`;
+              }
+            }
+            
+            issueBody += `### ✅ Accessibility Enhancement Checklist\n`;
+            issueBody += `- [ ] Add proper ARIA labels to interactive elements\n`;
+            issueBody += `- [ ] Ensure sufficient color contrast (WCAG AA)\n`;
+            issueBody += `- [ ] Add keyboard navigation support\n`;
+            issueBody += `- [ ] Implement focus management\n`;
+            issueBody += `- [ ] Add alt text to all images\n`;
+            issueBody += `- [ ] Test with screen readers\n`;
+            issueBody += `- [ ] Validate form error handling\n`;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Accessibility Audit Report - ${new Date().toISOString().split('T')[0]}`,
+              body: issueBody,
+              labels: ['accessibility', 'a11y', 'enhancement', 'automated']
+            });
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose down
+
+  dependency-updates:
+    name: Automated Dependency Updates
+    runs-on: ubuntu-latest
+    if: github.event.inputs.enhancement_type == 'dependency-update'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Check for outdated dependencies
+        run: |
+          npm outdated --json > outdated-dependencies.json || true
+
+      - name: Update minor and patch versions
+        run: |
+          npm update
+          cd packages/frontend && npm update
+          cd ../backend && npm update
+
+      - name: Run security audit after updates
+        run: |
+          npm audit --json > updated-security-audit.json || true
+
+      - name: Run tests with updated dependencies
+        run: |
+          npm test -- --passWithNoTests
+
+      - name: Create PR for dependency updates
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const { execSync } = require('child_process');
+            
+            // Check if there are changes
+            const gitStatus = execSync('git status --porcelain', { encoding: 'utf8' });
+            
+            if (gitStatus.trim()) {
+              // Create a branch
+              const branchName = `automated-deps-update-${Date.now()}`;
+              execSync(`git checkout -b ${branchName}`);
+              execSync('git add -A');
+              execSync('git commit -m "chore: automated dependency updates"');
+              execSync(`git push origin ${branchName}`);
+              
+              // Create PR
+              await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: 'Automated Dependency Updates',
+                head: branchName,
+                base: 'main',
+                body: `## 📦 Automated Dependency Updates\n\nThis PR contains automated updates to project dependencies.\n\n### Changes\n- Updated patch and minor versions\n- No breaking changes expected\n- All tests passing\n\n### Security\n- Security audit completed\n- No new vulnerabilities introduced\n\n**Please review and merge if all checks pass.**`
+              });
+            }

@@ -1,0 +1,201 @@
+name: Development Assistance
+
+on:
+  workflow_dispatch:
+    inputs:
+      assistance_type:
+        description: 'Type of development assistance'
+        required: true
+        type: choice
+        options:
+        - project_overview
+        - dependency_analysis  
+        - code_structure_scan
+        - performance_baseline
+        - documentation_check
+        - workspace_health
+  issues:
+    types: [opened, labeled]
+
+jobs:
+  development-assistance:
+    name: Development Assistance
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Project Overview Analysis
+      if: ${{ github.event.inputs.assistance_type == 'project_overview' }}
+      run: |
+        echo "# Cartrita Multi-Agent OS - Project Overview" > analysis-report.md
+        echo "Generated: $(date)" >> analysis-report.md
+        echo "" >> analysis-report.md
+        
+        echo "## Repository Structure" >> analysis-report.md
+        echo '```' >> analysis-report.md
+        find . -type d -name node_modules -prune -o -type d -print | head -30 | sort >> analysis-report.md
+        echo '```' >> analysis-report.md
+        echo "" >> analysis-report.md
+        
+        echo "## Package Overview" >> analysis-report.md
+        find . -name "package.json" -not -path "*/node_modules/*" -exec echo "### {}" \; -exec jq -r '.name + " v" + .version + " - " + (.description // "No description")' {} \; >> analysis-report.md
+        echo "" >> analysis-report.md
+        
+        echo "## Key Technologies" >> analysis-report.md
+        echo "- Backend: Node.js, Fastify, WebSocket" >> analysis-report.md
+        echo "- Frontend: React, Vite" >> analysis-report.md
+        echo "- Database: PostgreSQL with pgvector" >> analysis-report.md
+        echo "- AI/ML: LangChain, OpenAI" >> analysis-report.md
+        echo "- Real-time: WebSocket, Redis" >> analysis-report.md
+        echo "- DevOps: Docker, GitHub Actions" >> analysis-report.md
+        
+    - name: Dependency Analysis
+      if: ${{ github.event.inputs.assistance_type == 'dependency_analysis' }}
+      run: |
+        echo "# Dependency Analysis Report" > analysis-report.md
+        echo "Generated: $(date)" >> analysis-report.md
+        echo "" >> analysis-report.md
+        
+        echo "## Backend V2 Dependencies" >> analysis-report.md
+        if [ -f "apps/backend-v2/package.json" ]; then
+          cd apps/backend-v2
+          echo "### Production Dependencies" >> ../../analysis-report.md
+          jq -r '.dependencies | keys[]' package.json >> ../../analysis-report.md
+          echo "" >> ../../analysis-report.md
+          echo "### Development Dependencies" >> ../../analysis-report.md
+          jq -r '.devDependencies | keys[]' package.json >> ../../analysis-report.md
+          echo "" >> ../../analysis-report.md
+          cd ../..
+        fi
+        
+        echo "## Workspace Dependencies" >> analysis-report.md
+        jq -r '.dependencies | keys[]' package.json >> analysis-report.md 2>/dev/null || echo "No root dependencies"
+        
+    - name: Code Structure Scan
+      if: ${{ github.event.inputs.assistance_type == 'code_structure_scan' }}
+      run: |
+        echo "# Code Structure Analysis" > analysis-report.md
+        echo "Generated: $(date)" >> analysis-report.md
+        echo "" >> analysis-report.md
+        
+        echo "## File Count by Type" >> analysis-report.md
+        echo "JavaScript files: $(find . -name "*.js" -not -path "*/node_modules/*" | wc -l)" >> analysis-report.md
+        echo "TypeScript files: $(find . -name "*.ts" -not -path "*/node_modules/*" | wc -l)" >> analysis-report.md
+        echo "JSON files: $(find . -name "*.json" -not -path "*/node_modules/*" | wc -l)" >> analysis-report.md
+        echo "SQL files: $(find . -name "*.sql" | wc -l)" >> analysis-report.md
+        echo "Markdown files: $(find . -name "*.md" | wc -l)" >> analysis-report.md
+        echo "" >> analysis-report.md
+        
+        echo "## Largest Source Files" >> analysis-report.md
+        find . -name "*.js" -o -name "*.ts" -not -path "*/node_modules/*" | xargs wc -l | sort -nr | head -20 >> analysis-report.md
+        
+    - name: Performance Baseline
+      if: ${{ github.event.inputs.assistance_type == 'performance_baseline' }}
+      run: |
+        echo "# Performance Baseline Report" > analysis-report.md
+        echo "Generated: $(date)" >> analysis-report.md
+        echo "" >> analysis-report.md
+        
+        cd apps/backend-v2
+        npm install --no-workspaces
+        
+        echo "## Backend Startup Test" >> ../../analysis-report.md
+        timeout 30s npm start &
+        SERVER_PID=$!
+        sleep 10
+        
+        if curl -s http://localhost:8000/health >/dev/null; then
+          echo "✅ Backend startup successful" >> ../../analysis-report.md
+          
+          echo "## API Response Times" >> ../../analysis-report.md
+          echo "Health endpoint:" >> ../../analysis-report.md
+          (time curl -s http://localhost:8000/health >/dev/null) 2>&1 | grep real >> ../../analysis-report.md
+          
+          echo "System stats endpoint:" >> ../../analysis-report.md
+          (time curl -s http://localhost:8000/api/v2/realtime/system/stats >/dev/null) 2>&1 | grep real >> ../../analysis-report.md
+        else
+          echo "❌ Backend startup failed" >> ../../analysis-report.md
+        fi
+        
+        kill $SERVER_PID 2>/dev/null || true
+        
+    - name: Documentation Check
+      if: ${{ github.event.inputs.assistance_type == 'documentation_check' }}
+      run: |
+        echo "# Documentation Analysis" > analysis-report.md
+        echo "Generated: $(date)" >> analysis-report.md
+        echo "" >> analysis-report.md
+        
+        echo "## Available Documentation" >> analysis-report.md
+        find . -name "*.md" -not -path "*/node_modules/*" >> analysis-report.md
+        echo "" >> analysis-report.md
+        
+        echo "## README Files" >> analysis-report.md
+        find . -name "README.md" -not -path "*/node_modules/*" -exec echo "### {}" \; -exec head -5 {} \; -exec echo "---" \; >> analysis-report.md
+        
+    - name: Workspace Health Check
+      if: ${{ github.event.inputs.assistance_type == 'workspace_health' }}
+      run: |
+        echo "# Workspace Health Report" > analysis-report.md
+        echo "Generated: $(date)" >> analysis-report.md
+        echo "" >> analysis-report.md
+        
+        echo "## Git Status" >> analysis-report.md
+        echo "Current branch: $(git branch --show-current)" >> analysis-report.md
+        echo "Latest commit: $(git log -1 --oneline)" >> analysis-report.md
+        echo "Uncommitted changes: $(git status --porcelain | wc -l) files" >> analysis-report.md
+        echo "" >> analysis-report.md
+        
+        echo "## Package Health" >> analysis-report.md
+        for pkg in apps/*/package.json packages/*/package.json; do
+          if [ -f "$pkg" ]; then
+            dir=$(dirname "$pkg")
+            echo "### $dir" >> analysis-report.md
+            cd "$dir"
+            if npm ls >/dev/null 2>&1; then
+              echo "✅ Dependencies resolved" >> ../../analysis-report.md
+            else
+              echo "❌ Dependency issues detected" >> ../../analysis-report.md
+            fi
+            cd - >/dev/null
+          fi
+        done
+        
+    - name: Create Issue Comment (if triggered by issue)
+      if: github.event_name == 'issues'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          
+          let comment = '## Development Assistance Bot\n\n';
+          comment += 'I can help analyze this repository! To get assistance, trigger the "Development Assistance" workflow with one of these options:\n\n';
+          comment += '- **Project Overview**: Get a high-level analysis of the codebase structure\n';
+          comment += '- **Dependency Analysis**: Review all package dependencies\n';
+          comment += '- **Code Structure Scan**: Analyze file organization and complexity\n';
+          comment += '- **Performance Baseline**: Test backend startup and API response times\n';
+          comment += '- **Documentation Check**: Review available documentation\n';
+          comment += '- **Workspace Health**: Check git status and package integrity\n\n';
+          comment += 'Go to the Actions tab and run the "Development Assistance" workflow manually.';
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+        
+    - name: Upload Analysis Report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: development-analysis-report
+        path: analysis-report.md

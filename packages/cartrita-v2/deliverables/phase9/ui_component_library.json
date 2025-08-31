@@ -1,0 +1,15 @@
+{
+  "design_system": "Cartrita Design System v2.0",
+  "component_categories": [
+    "Layout components (Header, Footer, Sidebar, Navigation)",
+    "UI components (Button, Input, Modal, Card, Badge)",
+    "Data components (Table, Chart, Graph, Statistics)",
+    "Form components (FormInput, FormSelect, FormTextarea)",
+    "Chat components (ChatInterface, MessageBubble, AgentSelector)",
+    "Agent components (AgentCard, AgentStatus, AgentControls)",
+    "Workflow components (WorkflowBuilder, TaskManager, Pipeline)"
+  ],
+  "accessibility_standards": "WCAG 2.1 AA",
+  "documentation_tool": "Storybook with comprehensive examples",
+  "implementation_framework": "React 19 with TypeScript 5"
+}

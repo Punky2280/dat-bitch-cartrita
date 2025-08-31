@@ -1,0 +1,402 @@
+name: Enhanced Schema Validation
+
+on:
+  pull_request:
+    paths:
+      - 'schemas/**/*.json'
+      - 'py/cartrita_core/**/*schema*.py'
+      - 'py/cartrita_core/**/*schema*.json'
+  push:
+    branches: [main]
+    paths:
+      - 'schemas/**/*.json'
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  schema-validation:
+    runs-on: ubuntu-latest
+    name: Schema Validation & Breaking Change Detection
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for git comparisons
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install jsonschema pydantic
+      
+      - name: Make script executable
+        run: chmod +x scripts/enhanced_schema_diff_check.py
+      
+      - name: Find schema files
+        id: find-schemas
+        run: |
+          # Find all schema files
+          schema_files=$(find . -name "*.json" -path "*/schemas/*" -o -name "*schema*.json" | head -10)
+          echo "Found schema files:"
+          echo "$schema_files"
+          
+          # Convert to JSON array for matrix strategy
+          schema_array=$(echo "$schema_files" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "schema_files=$schema_array" >> $GITHUB_OUTPUT
+      
+      - name: Validate schema structure
+        run: |
+          for schema_file in schemas/*.json py/cartrita_core/*schema*.json; do
+            if [[ -f "$schema_file" ]]; then
+              echo "Validating structure of $schema_file"
+              python -c "
+              import json
+              import sys
+              try:
+                  with open('$schema_file') as f:
+                      schema = json.load(f)
+                  print('✅ Valid JSON structure')
+              except Exception as e:
+                  print(f'❌ Invalid JSON: {e}')
+                  sys.exit(1)
+              "
+            fi
+          done
+      
+      - name: Check for breaking changes (PR)
+        if: github.event_name == 'pull_request'
+        id: breaking-changes
+        run: |
+          exit_code=0
+          breaking_changes_found=false
+          
+          for schema_file in schemas/*.json py/cartrita_core/*schema*.json; do
+            if [[ -f "$schema_file" ]] && git show origin/main:"$schema_file" >/dev/null 2>&1; then
+              echo "Checking $schema_file for breaking changes..."
+              
+              # Run enhanced schema diff check
+              if python scripts/enhanced_schema_diff_check.py \
+                  "$schema_file" \
+                  --git-compare origin/main \
+                  --format markdown \
+                  --allowlist schema_break_allowlist.json \
+                  --output "/tmp/schema_report_$(basename $schema_file).md" \
+                  --fail-on-breaking; then
+                echo "✅ No breaking changes in $schema_file"
+              else
+                echo "❌ Breaking changes detected in $schema_file"
+                breaking_changes_found=true
+                exit_code=1
+                
+                # Store report for later use
+                cp "/tmp/schema_report_$(basename $schema_file).md" \
+                   "/tmp/breaking_changes_$(basename $schema_file).md"
+              fi
+            else
+              echo "⚠️ Skipping $schema_file (new file or not in main branch)"
+            fi
+          done
+          
+          echo "breaking_changes_found=$breaking_changes_found" >> $GITHUB_OUTPUT
+          echo "exit_code=$exit_code" >> $GITHUB_OUTPUT
+      
+      - name: Generate comprehensive report
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "# 📋 Schema Validation Report" > /tmp/full_report.md
+          echo "" >> /tmp/full_report.md
+          echo "**PR:** #${{ github.event.number }}" >> /tmp/full_report.md
+          echo "**Branch:** ${{ github.head_ref }}" >> /tmp/full_report.md
+          echo "**Commit:** ${{ github.sha }}" >> /tmp/full_report.md
+          echo "" >> /tmp/full_report.md
+          
+          # Add individual file reports
+          for report_file in /tmp/breaking_changes_*.md; do
+            if [[ -f "$report_file" ]]; then
+              echo "## $(basename $report_file .md | sed 's/breaking_changes_//')" >> /tmp/full_report.md
+              echo "" >> /tmp/full_report.md
+              cat "$report_file" >> /tmp/full_report.md
+              echo "" >> /tmp/full_report.md
+            fi
+          done
+          
+          # Add summary
+          if [[ "${{ steps.breaking-changes.outputs.breaking_changes_found }}" == "true" ]]; then
+            echo "## ❌ Action Required" >> /tmp/full_report.md
+            echo "" >> /tmp/full_report.md
+            echo "Breaking changes were detected. Please:" >> /tmp/full_report.md
+            echo "1. Review the changes above" >> /tmp/full_report.md
+            echo "2. Update the version appropriately" >> /tmp/full_report.md
+            echo "3. Add entries to the allowlist if intentional" >> /tmp/full_report.md
+            echo "4. Consider backward compatibility" >> /tmp/full_report.md
+          else
+            echo "## ✅ All Clear" >> /tmp/full_report.md
+            echo "" >> /tmp/full_report.md
+            echo "No breaking changes detected in schema files." >> /tmp/full_report.md
+          fi
+          
+          echo "" >> /tmp/full_report.md
+          echo "---" >> /tmp/full_report.md
+          echo "*Generated by Enhanced Schema Validation Action*" >> /tmp/full_report.md
+      
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = '/tmp/full_report.md';
+            
+            if (fs.existsSync(path)) {
+              const report = fs.readFileSync(path, 'utf8');
+              
+              // Find existing comment
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+              
+              const botComment = comments.find(comment => 
+                comment.user.type === 'Bot' && 
+                comment.body.includes('Schema Validation Report')
+              );
+              
+              if (botComment) {
+                // Update existing comment
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: botComment.id,
+                  body: report
+                });
+              } else {
+                // Create new comment
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: report
+                });
+              }
+            }
+      
+      - name: Semantic version validation
+        if: github.event_name == 'pull_request'
+        run: |
+          # Check if package.json or version files were updated for breaking changes
+          if [[ "${{ steps.breaking-changes.outputs.breaking_changes_found }}" == "true" ]]; then
+            echo "Breaking changes detected - checking version bump..."
+            
+            # Check for version changes in common version files
+            version_files_changed=false
+            
+            for file in package.json pyproject.toml setup.py version.txt VERSION; do
+              if git diff --name-only origin/main..HEAD | grep -q "^$file$"; then
+                echo "✅ Version file $file was modified"
+                version_files_changed=true
+                break
+              fi
+            done
+            
+            if [[ "$version_files_changed" == "false" ]]; then
+              echo "❌ Breaking changes detected but no version files were updated"
+              echo "Please update the version to reflect the breaking changes"
+              exit 1
+            fi
+          fi
+      
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: schema-validation-reports
+          path: /tmp/*.md
+          retention-days: 30
+      
+      - name: Set status check
+        if: github.event_name == 'pull_request'
+        run: |
+          if [[ "${{ steps.breaking-changes.outputs.exit_code }}" != "0" ]]; then
+            echo "❌ Schema validation failed"
+            exit 1
+          else
+            echo "✅ Schema validation passed"
+            exit 0
+          fi
+
+  schema-consistency-check:
+    runs-on: ubuntu-latest
+    name: Schema Consistency Check
+    needs: schema-validation
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install jsonschema jsonref
+      
+      - name: Check schema references
+        run: |
+          echo "Checking for broken schema references..."
+          
+          python << 'EOF'
+          import json
+          import sys
+          from pathlib import Path
+          
+          def check_schema_refs(schema_path):
+              """Check if all $ref references are valid"""
+              try:
+                  with open(schema_path) as f:
+                      schema = json.load(f)
+                  
+                  def find_refs(obj, path=""):
+                      refs = []
+                      if isinstance(obj, dict):
+                          for key, value in obj.items():
+                              if key == "$ref" and isinstance(value, str):
+                                  refs.append((path + ".$ref", value))
+                              else:
+                                  refs.extend(find_refs(value, path + f".{key}"))
+                      elif isinstance(obj, list):
+                          for i, item in enumerate(obj):
+                              refs.extend(find_refs(item, path + f"[{i}]"))
+                      return refs
+                  
+                  refs = find_refs(schema)
+                  broken_refs = []
+                  
+                  for ref_path, ref_value in refs:
+                      if ref_value.startswith("#/"):
+                          # Internal reference
+                          ref_parts = ref_value[2:].split("/")
+                          current = schema
+                          try:
+                              for part in ref_parts:
+                                  current = current[part]
+                          except (KeyError, TypeError):
+                              broken_refs.append((ref_path, ref_value))
+                      # External references would need more complex checking
+                  
+                  if broken_refs:
+                      print(f"❌ Broken references in {schema_path}:")
+                      for ref_path, ref_value in broken_refs:
+                          print(f"  {ref_path}: {ref_value}")
+                      return False
+                  else:
+                      print(f"✅ All references valid in {schema_path}")
+                      return True
+              
+              except Exception as e:
+                  print(f"❌ Error checking {schema_path}: {e}")
+                  return False
+          
+          # Check all schema files
+          all_valid = True
+          for schema_file in Path(".").rglob("*schema*.json"):
+              if not check_schema_refs(schema_file):
+                  all_valid = False
+          
+          sys.exit(0 if all_valid else 1)
+          EOF
+      
+      - name: Validate schema against meta-schema
+        run: |
+          echo "Validating schemas against JSON Schema meta-schema..."
+          
+          python << 'EOF'
+          import json
+          import sys
+          from pathlib import Path
+          import jsonschema
+          
+          # Load JSON Schema Draft 2020-12 meta-schema
+          meta_schema_url = "https://json-schema.org/draft/2020-12/schema"
+          
+          all_valid = True
+          for schema_file in Path(".").rglob("*schema*.json"):
+              try:
+                  with open(schema_file) as f:
+                      schema = json.load(f)
+                  
+                  # Basic validation against meta-schema
+                  # Note: This is simplified - full validation would fetch the meta-schema
+                  required_meta_fields = ["$schema", "type"]
+                  
+                  if not any(field in schema for field in ["type", "$ref", "properties", "$defs"]):
+                      print(f"⚠️  {schema_file} may not be a valid JSON schema (no type/properties/$defs)")
+                      continue
+                  
+                  print(f"✅ {schema_file} appears to be a valid schema")
+                  
+              except Exception as e:
+                  print(f"❌ Error validating {schema_file}: {e}")
+                  all_valid = False
+          
+          sys.exit(0 if all_valid else 1)
+          EOF
+
+  generate-schema-docs:
+    runs-on: ubuntu-latest
+    name: Generate Schema Documentation
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install documentation tools
+        run: |
+          pip install json-schema-for-humans
+      
+      - name: Generate schema documentation
+        run: |
+          mkdir -p docs/schemas
+          
+          for schema_file in schemas/*.json; do
+            if [[ -f "$schema_file" ]]; then
+              filename=$(basename "$schema_file" .json)
+              echo "Generating docs for $schema_file"
+              
+              generate-schema-doc \
+                --config-file docs/schema-doc-config.json \
+                "$schema_file" \
+                "docs/schemas/${filename}.html"
+            fi
+          done
+      
+      - name: Commit generated docs
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add docs/schemas/
+          
+          if git diff --staged --quiet; then
+            echo "No documentation changes to commit"
+          else
+            git commit -m "docs: update schema documentation [skip ci]"
+            git push
+          fi

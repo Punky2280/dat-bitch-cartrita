@@ -1,0 +1,85 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "build",
+    "rootDir": "."
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "references": [
+    {
+      "path": "../../../api"
+    },
+    {
+      "path": "../../../packages/opentelemetry-context-async-hooks"
+    },
+    {
+      "path": "../../../packages/opentelemetry-core"
+    },
+    {
+      "path": "../../../packages/opentelemetry-exporter-jaeger"
+    },
+    {
+      "path": "../../../packages/opentelemetry-exporter-zipkin"
+    },
+    {
+      "path": "../../../packages/opentelemetry-propagator-b3"
+    },
+    {
+      "path": "../../../packages/opentelemetry-propagator-jaeger"
+    },
+    {
+      "path": "../../../packages/opentelemetry-resources"
+    },
+    {
+      "path": "../../../packages/opentelemetry-sdk-trace-base"
+    },
+    {
+      "path": "../../../packages/opentelemetry-sdk-trace-node"
+    },
+    {
+      "path": "../../../packages/sdk-metrics"
+    },
+    {
+      "path": "../../../semantic-conventions"
+    },
+    {
+      "path": "../api-logs"
+    },
+    {
+      "path": "../exporter-logs-otlp-grpc"
+    },
+    {
+      "path": "../exporter-logs-otlp-http"
+    },
+    {
+      "path": "../exporter-logs-otlp-proto"
+    },
+    {
+      "path": "../exporter-trace-otlp-grpc"
+    },
+    {
+      "path": "../exporter-trace-otlp-http"
+    },
+    {
+      "path": "../exporter-trace-otlp-proto"
+    },
+    {
+      "path": "../opentelemetry-exporter-metrics-otlp-grpc"
+    },
+    {
+      "path": "../opentelemetry-exporter-metrics-otlp-http"
+    },
+    {
+      "path": "../opentelemetry-exporter-metrics-otlp-proto"
+    },
+    {
+      "path": "../opentelemetry-exporter-prometheus"
+    },
+    {
+      "path": "../opentelemetry-instrumentation"
+    },
+    {
+      "path": "../sdk-logs"
+    }
+  ]
+}

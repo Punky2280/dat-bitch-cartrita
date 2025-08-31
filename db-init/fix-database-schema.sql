@@ -1,6 +1,10 @@
 -- ============================================================================
 -- Cartrita Database Schema Fix Script
+-- This script creates missing tables and columns based on error analysis
 -- ============================================================================
+
+-- Connect to the database (this will be handled by the connection command)
+\c dat-bitch-cartrita;
 
 -- Enable pgvector extension if not already enabled
 CREATE EXTENSION IF NOT EXISTS vector;
@@ -47,24 +51,6 @@ CREATE TABLE IF NOT EXISTS messages (
 );
 
 -- ============================================================================
--- 3b. CONVERSATION_MESSAGES TABLE (Alternative/Legacy table structure)
--- ============================================================================
-CREATE TABLE IF NOT EXISTS conversation_messages (
-    id SERIAL PRIMARY KEY,
-    conversation_id INTEGER REFERENCES conversations(id) ON DELETE CASCADE,
-    sender TEXT,
-    message TEXT,
-    timestamp TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    role VARCHAR(50) NOT NULL DEFAULT 'user',
-    content TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    metadata JSONB DEFAULT '{}'::jsonb
-);
-
--- Add missing metadata column to conversation_messages if it doesn't exist
-ALTER TABLE conversation_messages ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb;
-
--- ============================================================================
 -- 4. WORKFLOWS TABLE
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS workflows (
@@ -107,7 +93,7 @@ CREATE TABLE IF NOT EXISTS knowledge_items (
     content TEXT,
     tags TEXT[],
     metadata JSONB DEFAULT '{}',
-    embedding vector(1536),
+    embedding vector(1536), -- OpenAI embedding dimension
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -196,19 +182,6 @@ ON messages(conversation_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_messages_user_id 
 ON messages(user_id);
 
--- Conversation Messages indexes
-CREATE INDEX IF NOT EXISTS idx_conversation_messages_conversation_id 
-ON conversation_messages(conversation_id, created_at);
-
-CREATE INDEX IF NOT EXISTS idx_conversation_messages_role 
-ON conversation_messages(role);
-
-CREATE INDEX IF NOT EXISTS idx_conversation_messages_created_at 
-ON conversation_messages(created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_conversation_messages_content 
-ON conversation_messages USING GIN(to_tsvector('english', content));
-
 -- Workflows indexes
 CREATE INDEX IF NOT EXISTS idx_workflows_user_active 
 ON workflows(user_id, is_active);
@@ -227,12 +200,18 @@ ON workflow_schedules(workflow_id);
 CREATE INDEX IF NOT EXISTS idx_knowledge_items_user_id 
 ON knowledge_items(user_id);
 
+CREATE INDEX IF NOT EXISTS idx_knowledge_items_embedding 
+ON knowledge_items USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+
 CREATE INDEX IF NOT EXISTS idx_knowledge_items_tags 
 ON knowledge_items USING GIN(tags);
 
 -- Knowledge nodes indexes
 CREATE INDEX IF NOT EXISTS idx_knowledge_nodes_user_id 
 ON knowledge_nodes(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_knowledge_nodes_embedding 
+ON knowledge_nodes USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
 
 -- Knowledge relationships indexes
 CREATE INDEX IF NOT EXISTS idx_knowledge_relationships_source 
@@ -284,4 +263,6 @@ WHERE next_run_at IS NULL AND is_active = true;
 -- ============================================================================
 -- COMPLETION MESSAGE
 -- ============================================================================
-SELECT 'Database schema setup completed successfully!' as status;
+\echo 'Database schema setup completed successfully!';
+\echo 'All tables, columns, and indexes have been created.';
+\echo 'You can now restart your Cartrita application.';

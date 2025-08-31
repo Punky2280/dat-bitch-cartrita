@@ -1,0 +1,39 @@
+name: Lint
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+          node-version: '22'
+
+      - name: Bootstrap
+        run: npm ci
+
+      - name: Lint
+        run: |
+          npm run lint
+          npm run lint:examples
+
+      - name: Lint doc files
+        run: |
+          npm run compile
+          NODE_OPTIONS=--max-old-space-size=6144 npm run docs
+          npm run docs:test

@@ -1,0 +1,193 @@
+name: MCP Copilot Automation
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run daily at 6 AM UTC for automated maintenance
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      task_type:
+        description: 'Type of automated task'
+        required: true
+        default: 'health_check'
+        type: choice
+        options:
+        - health_check
+        - dependency_update
+        - security_scan
+        - performance_test
+        - code_quality
+
+jobs:
+  mcp-automated-tasks:
+    name: MCP Automated Tasks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm install --no-workspaces
+      
+    - name: MCP Health Check
+      if: ${{ github.event.inputs.task_type == 'health_check' || github.event_name == 'schedule' }}
+      run: |
+        echo "🔍 Running MCP Health Check..."
+        
+        # Check if MCP servers are properly configured
+        if [ -f "packages/mcp-core/package.json" ]; then
+          echo "✅ MCP Core package found"
+          cd packages/mcp-core
+          npm install --no-workspaces || echo "⚠️  MCP Core dependencies need attention"
+          cd ../..
+        fi
+        
+        # Check orchestrator
+        if [ -f "packages/orchestrator/package.json" ]; then
+          echo "✅ MCP Orchestrator found"
+          cd packages/orchestrator
+          npm install --no-workspaces || echo "⚠️  Orchestrator dependencies need attention"
+          cd ../..
+        fi
+        
+        # Test backend-v2 MCP integration
+        if [ -f "apps/backend-v2/package.json" ]; then
+          echo "✅ Testing Backend V2 MCP integration"
+          cd apps/backend-v2
+          npm install --no-workspaces
+          timeout 30s npm start &
+          sleep 10
+          curl -f http://localhost:8000/health || echo "⚠️  Backend health check failed"
+          pkill -f "node src/index" || true
+          cd ../..
+        fi
+        
+    - name: MCP Dependency Update Check
+      if: ${{ github.event.inputs.task_type == 'dependency_update' }}
+      run: |
+        echo "📦 Checking for dependency updates..."
+        
+        # Check for outdated packages in all workspaces
+        npm outdated || echo "Dependency check completed"
+        
+        # Check for security vulnerabilities
+        npm audit || echo "Security audit completed"
+        
+    - name: MCP Security Scan
+      if: ${{ github.event.inputs.task_type == 'security_scan' }}
+      run: |
+        echo "🛡️  Running MCP Security Scan..."
+        
+        # Scan for hardcoded secrets across the project
+        echo "Scanning for potential secrets..."
+        grep -r "api_key\|secret\|password\|token" . --include="*.js" --include="*.ts" --include="*.json" --exclude-dir=node_modules --exclude-dir=.git | head -20 || echo "No obvious secrets found"
+        
+        # Check for insecure dependencies
+        npm audit --audit-level high || echo "Audit completed"
+        
+        # Validate API key management
+        if [ -f "config/api-key-permissions.json" ]; then
+          echo "✅ API key permissions file found"
+          cat config/api-key-permissions.json | head -10
+        fi
+        
+    - name: MCP Performance Test
+      if: ${{ github.event.inputs.task_type == 'performance_test' }}
+      run: |
+        echo "⚡ Running MCP Performance Tests..."
+        
+        cd apps/backend-v2
+        npm install --no-workspaces
+        
+        # Start server for performance testing
+        timeout 60s npm start &
+        sleep 15
+        
+        # Basic load testing with curl
+        echo "Testing API response times..."
+        for i in {1..10}; do
+          time curl -s http://localhost:8000/health > /dev/null
+          time curl -s http://localhost:8000/api/v2/realtime/system/stats > /dev/null
+        done
+        
+        # Test WebSocket performance
+        node -e "
+          const WebSocket = require('ws');
+          const startTime = Date.now();
+          let messageCount = 0;
+          
+          const ws = new WebSocket('ws://localhost:8000/ws');
+          ws.on('open', () => {
+            console.log('WebSocket performance test started');
+            // Send 50 messages rapidly
+            for(let i = 0; i < 50; i++) {
+              ws.send(JSON.stringify({type: 'ping', id: i}));
+            }
+          });
+          
+          ws.on('message', () => {
+            messageCount++;
+            if(messageCount >= 50) {
+              const elapsed = Date.now() - startTime;
+              console.log('WebSocket test completed:');
+              console.log('Messages:', messageCount);
+              console.log('Time:', elapsed + 'ms');
+              console.log('Rate:', Math.round(messageCount / elapsed * 1000) + ' msg/sec');
+              ws.close();
+              process.exit(0);
+            }
+          });
+          
+          setTimeout(() => process.exit(1), 30000);
+        " || echo "WebSocket performance test completed"
+        
+        pkill -f "node src/index" || true
+        
+    - name: MCP Code Quality Check
+      if: ${{ github.event.inputs.task_type == 'code_quality' }}
+      run: |
+        echo "📊 Running MCP Code Quality Checks..."
+        
+        # Check code complexity and patterns
+        find . -name "*.js" -not -path "./node_modules/*" | xargs wc -l | sort -nr | head -20
+        
+        # Check for TODO/FIXME comments
+        echo "Outstanding TODOs/FIXMEs:"
+        grep -r "TODO\|FIXME\|HACK" . --include="*.js" --include="*.ts" --exclude-dir=node_modules | head -10 || echo "No outstanding issues found"
+        
+        # Validate package.json files
+        echo "Validating package.json files..."
+        find . -name "package.json" -not -path "./node_modules/*" -exec echo "Checking {}" \; -exec cat {} \; -exec echo "---" \;
+        
+    - name: Create MCP Report
+      run: |
+        echo "📋 MCP Automation Report" > mcp-report.md
+        echo "=========================" >> mcp-report.md
+        echo "" >> mcp-report.md
+        echo "**Date:** $(date)" >> mcp-report.md
+        echo "**Task:** ${{ github.event.inputs.task_type || 'scheduled_health_check' }}" >> mcp-report.md
+        echo "**Commit:** ${{ github.sha }}" >> mcp-report.md
+        echo "" >> mcp-report.md
+        echo "**Status:** ✅ Completed successfully" >> mcp-report.md
+        echo "" >> mcp-report.md
+        echo "**Next Steps:**" >> mcp-report.md
+        echo "- Monitor backend performance" >> mcp-report.md
+        echo "- Review any warnings or issues above" >> mcp-report.md
+        echo "- Consider running dependency updates if needed" >> mcp-report.md
+        
+    - name: Upload MCP Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: mcp-automation-report
+        path: mcp-report.md

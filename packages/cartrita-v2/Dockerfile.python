@@ -1,0 +1,114 @@
+# Cartrita V2 Python-Only Backend Dockerfile
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    DISPLAY=:99 \
+    XAUTHORITY=/tmp/.X99-auth \
+    MPLBACKEND=Agg
+
+# Install system dependencies with better compatibility
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Build tools
+    build-essential \
+    gcc \
+    g++ \
+    cmake \
+    pkg-config \
+    # Python development (essential for GUI libraries)
+    python3-dev \
+    python3-tk \
+    # Graphics and GUI libraries (modern alternatives to obsolete packages)
+    libgl1-mesa-dev \
+    libegl1-mesa-dev \
+    libgles2-mesa-dev \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libxrandr2 \
+    libxss1 \
+    libxcursor1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxi6 \
+    libxinerama1 \
+    libxkbcommon0 \
+    libgomp1 \
+    # X11 and virtual display
+    xvfb \
+    x11-utils \
+    x11-xserver-utils \
+    xauth \
+    # System utilities
+    curl \
+    wget \
+    git \
+    nano \
+    # Audio/video processing
+    ffmpeg \
+    libsndfile1 \
+    # Database clients
+    postgresql-client \
+    # Additional dependencies for headless automation
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxdamage1 \
+    libxss1 \
+    libasound2 \
+    # Cleanup
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Create app directory
+WORKDIR /app
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash --user-group cartrita
+
+# Copy Python requirements
+COPY py/requirements.txt /app/requirements.txt
+COPY py/constraints.txt /app/constraints.txt
+
+# Install Python dependencies with better error handling
+RUN pip install --upgrade pip setuptools wheel && \
+    pip install --constraint constraints.txt -r requirements.txt --no-deps || \
+    pip install -r requirements.txt && \
+    pip install gunicorn[gthread] uvloop uvicorn[standard]
+
+# Copy application code
+COPY py/ /app/
+COPY .env /app/.env
+
+# Create necessary directories
+RUN mkdir -p /app/logs /app/temp /tmp/.X11-unix && \
+    chmod 1777 /tmp/.X11-unix && \
+    chown -R cartrita:cartrita /app
+
+# Setup virtual display
+RUN echo '#!/bin/bash\n\
+export DISPLAY=:99\n\
+export XAUTHORITY=/tmp/.X99-auth\n\
+Xvfb :99 -screen 0 1024x768x24 -ac +extension GLX +render -noreset > /dev/null 2>&1 &\n\
+sleep 2\n\
+exec "$@"' > /usr/local/bin/start-xvfb.sh && \
+    chmod +x /usr/local/bin/start-xvfb.sh
+
+# Switch to non-root user
+USER cartrita
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Expose port
+EXPOSE 8000
+
+# Start command
+ENTRYPOINT ["/usr/local/bin/start-xvfb.sh"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--loop", "uvloop"]

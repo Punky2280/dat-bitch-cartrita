@@ -1,0 +1,41 @@
+{
+  "migrations": [
+    {
+      "version": "0001_initial_baseline.sql",
+      "checksum": "SHA256:a4f5c8d1e2b9f7a3c6e8d4f2a1b3c5e9f8a2d6c4e7b1f9a5c3e8d2b4f6a9c1e5",
+      "description": "Baseline marker for v1 to v2 migration",
+      "type": "baseline",
+      "dependencies": []
+    },
+    {
+      "version": "0002_add_vector_extension.sql", 
+      "checksum": "SHA256:b1c3e5f7a9d2c4e6f8a3c5e7f9b1d3c5e7f9a1c3e5f7a9b1d3c5e7f9a1c3e5f7",
+      "description": "Add pgvector extension and enhanced embedding capabilities",
+      "type": "ddl",
+      "dependencies": ["0001_initial_baseline.sql"]
+    },
+    {
+      "version": "0003_optimize_vector_indexes.sql",
+      "checksum": "SHA256:c2d4f6a8b0c2e4f6a8c0d2f4a6c8b0d2e4f6a8c0d2f4a6c8b0d2e4f6a8c0d2f4", 
+      "description": "Optimize vector search with advanced HNSW/IVFFlat indexing",
+      "type": "performance",
+      "dependencies": ["0002_add_vector_extension.sql"]
+    },
+    {
+      "version": "0004_add_redis_hybrid_search.sql",
+      "checksum": "SHA256:d3e5f7a9c1d3e5f7a9c1d3e5f7a9c1d3e5f7a9c1d3e5f7a9c1d3e5f7a9c1d3e5",
+      "description": "Add Redis integration and hybrid vector/keyword search capabilities",
+      "type": "feature", 
+      "dependencies": ["0003_optimize_vector_indexes.sql"]
+    }
+  ],
+  "metadata": {
+    "version": "2.0",
+    "target_db": "postgresql",
+    "extensions_required": ["vector", "uuid-ossp"],
+    "min_postgres_version": "13.0",
+    "min_pgvector_version": "0.5.0",
+    "created_at": "2025-08-17T21:21:00Z",
+    "migration_strategy": "v1_to_v2_seamless"
+  }
+}

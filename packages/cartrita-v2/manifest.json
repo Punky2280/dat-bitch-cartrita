@@ -1,0 +1,127 @@
+{
+  "project": "Cartrita V2 - AI Operating System",
+  "version": "2.0.0",
+  "generated_at": "2025-01-13T10:30:00Z",
+  "total_files": 8160,
+  "architecture": "Hybrid Python FastAPI + Node.js Express + Next.js Frontend",
+  
+  "core_services": {
+    "python_backend": {
+      "path": "py/",
+      "language": "Python",
+      "framework": "FastAPI",
+      "port": 8008,
+      "status": "ACTIVE",
+      "exports": [
+        "enhanced_agent_manager", 
+        "enhanced_chat_routes",
+        "langchain_integration",
+        "fastapi_mcp_copilot",
+        "cartrita_core"
+      ],
+      "imports": [
+        "openai", "fastapi", "pydantic", "langchain", "asyncpg"
+      ],
+      "role": "AI Agent Coordination & LLM Processing"
+    },
+    
+    "node_backend": {
+      "path": "backend/",
+      "language": "JavaScript",
+      "framework": "Express.js",
+      "port": 8001,
+      "file_count": 1534,
+      "status": "EXTENSIVE_ECOSYSTEM",
+      "exports": [
+        "CommunicationExpertAgent",
+        "AgentToolRegistry", 
+        "OpenTelemetryTracing",
+        "HuggingFaceRouterService",
+        "BaseAgent"
+      ],
+      "imports": [
+        "express", "socket.io", "langchain", "openai", "@opentelemetry/api"
+      ],
+      "role": "API Gateway, Agent Orchestration, Real-time Communication"
+    },
+    
+    "frontend": {
+      "path": "frontend/",
+      "language": "TypeScript/JSX", 
+      "framework": "Next.js 15.5.0",
+      "port": 3000,
+      "file_count": 116,
+      "status": "MODERN_REACT",
+      "exports": [
+        "ChatInterface",
+        "ChatInput", 
+        "SimpleChatInterface",
+        "AgentDashboard",
+        "MultiModalInterface"
+      ],
+      "imports": [
+        "react@19.1.0", "next@15.5.0", "tailwindcss", "framer-motion", "socket.io-client"
+      ],
+      "role": "Modern UI/UX, Real-time Chat Interface"
+    }
+  },
+  
+  "critical_systems": {
+    "ai_agents": {
+      "enhanced_agent_manager": {
+        "file": "py/cartrita_core/enhanced_agent_manager.py",
+        "agents_count": 15,
+        "status": "ACTIVE",
+        "api_key": "CONFIGURED",
+        "model": "gpt-4o"
+      },
+      "node_agi_system": {
+        "base_agent": "backend/src/system/BaseAgent.js",
+        "communication_expert": "backend/src/agi/agents/CommunicationExpertAgent.js", 
+        "agent_count": "15+",
+        "status": "SOPHISTICATED_ECOSYSTEM"
+      }
+    },
+    
+    "integrations": {
+      "langchain": {
+        "file": "py/cartrita_core/langchain_integration.py",
+        "status": "ACTIVE",
+        "message_objects": "UPDATED",
+        "chains": "FUNCTIONAL"
+      },
+      "mcp_protocol": {
+        "file": "py/fastapi_mcp_copilot.py", 
+        "servers": 3,
+        "tools": 8,
+        "status": "ACTIVE"
+      },
+      "openai_api": {
+        "key": "sk-proj-C4mwpmDndn67mAMxIKv-...",
+        "model": "gpt-4o",
+        "status": "CONFIGURED"
+      }
+    },
+    
+    "database": {
+      "type": "PostgreSQL + pgvector",
+      "migrations": 32,
+      "schema": [
+        "users", "conversations", "agents", "api_keys", "workflows",
+        "vault_tables", "calendar_events", "email_messages", "contacts"
+      ],
+      "status": "COMPREHENSIVE"
+    }
+  },
+  
+  "file_distribution": {
+    "backend_js": 1534,
+    "frontend_tsx": 116, 
+    "python_py": 50,
+    "documentation_md": 580,
+    "database_sql": 32,
+    "config_files": 200,
+    "test_files": 150,
+    "other": 5498
+  }
+}
